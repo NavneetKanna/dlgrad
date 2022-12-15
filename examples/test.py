@@ -1,6 +1,6 @@
-from smallgrad.nn import MLP 
+from dlgrad.nn import MLP 
 from datasets.fetch_batch import fetch_batch
-from smallgrad.afu import AFU
+from dlgrad.afu import AFU
 
 class Net:
     def __init__(self) -> None:

@@ -1,4 +1,4 @@
-from smallgrad.tensor import Tensor
+from tensor import Tensor
 import numpy as np
 
 class MLP:
