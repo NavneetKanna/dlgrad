@@ -1,5 +1,5 @@
 from datasets import get_mnist
-from smallgrad.tensor import Tensor
+from dlgrad.tensor import Tensor
 
 
 def fetch_batch(batch_size):

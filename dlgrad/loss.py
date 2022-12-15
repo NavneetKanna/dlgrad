@@ -1,5 +1,5 @@
 import numpy as np
-from smallgrad.afu import softmax
+from afu import softmax
 
 
 def crossentropy(predictions, targets):
