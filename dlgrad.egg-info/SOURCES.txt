@@ -1,0 +1,15 @@
+README.md
+setup.py
+datasets/__init__.py
+datasets/testing.py
+dlgrad/__init__.py
+dlgrad/afu.py
+dlgrad/loss.py
+dlgrad/nn.py
+dlgrad/tensor.py
+dlgrad.egg-info/PKG-INFO
+dlgrad.egg-info/SOURCES.txt
+dlgrad.egg-info/dependency_links.txt
+dlgrad.egg-info/top_level.txt
+examples/__init__.py
+examples/test.py

@@ -1,46 +1,28 @@
 from dlgrad.nn import MLP 
-from datasets import fetch_mnist 
+from datasets import get_mnist
 from dlgrad.afu import ReLU, softmax 
-from nn.training import train
 
 class Net:
     def __init__(self) -> None:
-        self.x_train, self.y_train, self.x_test, self.y_test = fetch_mnist()
+        self.x_train, self.y_train, self.x_test, self.y_test = get_mnist()
         self.batch_size = 32
         self.epochs = 10
 
         self.fc1 = MLP(28*28, 64)
         self.fc2 = MLP(64, 10)
 
-    def forward(self, x_train):
-        x = self.fc1(x_train)
-        x = ReLU(x)
-        x = self.fc2(x_train)
-        # x = softmax(x)
+    def train(self): 
+        for _ in range(self.epochs):
+            for _ in range(self.x_train.shape()[0]/self.batch_size):
+                x = self.fc1(self.x_train)
+                x = ReLU(x)
+                x = self.fc2(self.x_train)
+                x = softmax(x)
 
-        return x
-
+                
+                
 
 net = Net()
-x_train, y_train, x_test, y_test = fetch_mnist()
-
-
-def main():
-    epochs = 10
-    x_train, y_train, x_test, y_test = fetch_mnist()
-    BS = 32
-
-    for _ in range(epochs):
-        idx = 0
-        for _ in range(x_train.shape()[0]/BS):
-            x_train = x_train[idx:idx+BS]
-            y_train = y_train[idx:idx+BS]
-            idx += BS
-            train(net, x_train, y_train)
-
-
-if __name__ == '__main__':
-    main()
 
 
 # from cmath import tanh
