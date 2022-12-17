@@ -1,4 +1,4 @@
-from tensor import Tensor
+from .tensor import Tensor
 import numpy as np
 
 class MLP:
@@ -62,10 +62,10 @@ class MLP:
         # W = [OUTPUT x INPUT]
         self.weight: Tensor = Tensor.uniform((self.output_data, self.input_data))
 
-    # assert shape 
-    def __call__(self, data: Tensor) -> Tensor:
-        if isinstance(data, Tensor):
-            return Tensor.matmul(data, self.weight.T())
+    # TODO: assert shape 
+    # def __call__(self, data):
+        # if isinstance(data, Tensor):
+            # return Tensor.matmul(data, self.weight.T())
 
     def __repr__(self) -> str:
         return f"MLP layer (input_data={self.input_data}, output_data={self.output_data})"    
