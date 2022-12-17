@@ -1,7 +1,20 @@
-from dlgrad.nn import MLP 
-from datasets import fetch_mnist 
+import sys
+import os
+
+
+# Wasted one full day on this !!!!
+
+# os.chdir(r"C:\\Users\\navne\Documents\\vs_code\\dlgrad_main")
+
+os.chdir(r"/mnt/c/Users/navne/Documents/vs_code/dlgrad_main/")
+
+sys.path.append(os.getcwd())
+
+from dlgrad.nn import MLP
+from datasets import fetch_mnist
 from dlgrad.afu import ReLU, softmax 
-from nn.training import train
+from nnn.training import train
+from dlgrad.graph import draw_cg
 
 class Net:
     def __init__(self) -> None:
@@ -23,24 +36,25 @@ class Net:
 
 net = Net()
 x_train, y_train, x_test, y_test = fetch_mnist()
+net.forward(x_train[0:32])
+draw_cg()
+
+# def main():
+#     epochs = 10
+#     x_train, y_train, x_test, y_test = fetch_mnist()
+#     BS = 32
+
+#     for _ in range(epochs):
+#         idx = 0
+#         for _ in range(x_train.shape()[0]/BS):
+#             x_train = x_train[idx:idx+BS]
+#             y_train = y_train[idx:idx+BS]
+#             idx += BS
+#             train(net, x_train, y_train)
 
 
-def main():
-    epochs = 10
-    x_train, y_train, x_test, y_test = fetch_mnist()
-    BS = 32
-
-    for _ in range(epochs):
-        idx = 0
-        for _ in range(x_train.shape()[0]/BS):
-            x_train = x_train[idx:idx+BS]
-            y_train = y_train[idx:idx+BS]
-            idx += BS
-            train(net, x_train, y_train)
-
-
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
 
 
 # from cmath import tanh
