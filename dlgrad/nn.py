@@ -63,9 +63,12 @@ class MLP:
         self.weight: Tensor = Tensor.uniform((self.output_data, self.input_data))
 
     # TODO: assert shape 
-    # def __call__(self, data):
+    def __call__(self, data):
+        print(f"data shape {data.tensor.shape} weight shape {self.weight.T().tensor.shape}")
+        return Tensor.matmul(data, self.weight.T())
         # if isinstance(data, Tensor):
-            # return Tensor.matmul(data, self.weight.T())
+        #     print("in isinstance")
+        #     return Tensor.matmul(data, self.weight.T())
 
     def __repr__(self) -> str:
         return f"MLP layer (input_data={self.input_data}, output_data={self.output_data})"    
