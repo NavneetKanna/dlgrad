@@ -9,26 +9,27 @@ import os
 os.chdir(r"/mnt/c/Users/navne/Documents/vs_code/dlgrad_main/")
 
 sys.path.append(os.getcwd())
-
+from dlgrad.tensor import Tensor
 from dlgrad.nn import MLP
-from datasets import fetch_mnist
+from datasets.fetch_mnist import fetch_mnist
 from dlgrad.afu import ReLU, softmax 
 from nnn.training import train
 from dlgrad.graph import draw_cg
 
 class Net:
     def __init__(self) -> None:
-        self.x_train, self.y_train, self.x_test, self.y_test = fetch_mnist()
+        # self.x_train, self.y_train, self.x_test, self.y_test = fetch_mnist()
         self.batch_size = 32
         self.epochs = 10
 
         self.fc1 = MLP(28*28, 64)
         self.fc2 = MLP(64, 10)
 
+    # TODO: get rid of this Tensor()
     def forward(self, x_train):
-        x = self.fc1(x_train)
+        x = self.fc1(Tensor(x_train))
         x = ReLU(x)
-        x = self.fc2(x_train)
+        x = self.fc2(x)
         # x = softmax(x)
 
         return x
@@ -36,7 +37,7 @@ class Net:
 
 net = Net()
 x_train, y_train, x_test, y_test = fetch_mnist()
-net.forward(x_train[0:32])
+net.forward(x_train.tensor[0:32])
 draw_cg()
 
 # def main():

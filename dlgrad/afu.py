@@ -1,12 +1,12 @@
 import numpy as np
 from .tensor import Tensor
-from graph import add_nodes
+from .graph import add_nodes
 
 
 def ReLU(matrix):
-    output = Tensor(np.maximum(0, matrix))
-    add_nodes('Relu', output, matrix)
-    return output 
+    output = Tensor(np.maximum(0, matrix.tensor))
+    add_nodes('Relu', output.tensor.shape, matrix.tensor.shape)
+    return output
 
 
 def softmax(matrix):
