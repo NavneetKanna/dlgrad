@@ -64,7 +64,6 @@ class MLP:
 
     # TODO: assert shape 
     def __call__(self, data):
-        print(f"data shape {data.tensor.shape} weight shape {self.weight.T().tensor.shape}")
         return Tensor.matmul(data, self.weight.T())
         # if isinstance(data, Tensor):
         #     print("in isinstance")

@@ -20,9 +20,6 @@ class Tensor:
 
     def T(self):
         a = Tensor(self.tensor.T)
-        # print(type(a))
-        # print(a.tensor.shape)
-        # print(a.tensor.T.shape)
         return Tensor(self.tensor.T)
 
     
@@ -37,7 +34,6 @@ class Tensor:
     
     def matmul(self: Tensor, other: Tensor):
         output = Tensor(self.tensor @ other.tensor)
-        print(f"idx {Tensor.idx}")
         add_nodes(f'matmul_{Tensor.idx}', output.tensor.shape, self.tensor.shape, other.tensor.shape)
         Tensor.idx += 1
         return output 
