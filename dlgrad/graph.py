@@ -39,10 +39,6 @@ def draw_cg():
        
         edges.append((i, nodes[i][-1]))
 
-        # print(nodes[i][-1])
-        # G.add_nodes_from(nodess)
-       
-
     G.add_edges_from(edges) 
     nx.drawing.nx_pydot.write_dot(G, r'/mnt/c/Users/navne/Documents/vs_code/dlgrad_main/dlgrad/net.dot')
     (graph,) = pydot.graph_from_dot_file(r'/mnt/c/Users/navne/Documents/vs_code/dlgrad_main/dlgrad/net.dot')
