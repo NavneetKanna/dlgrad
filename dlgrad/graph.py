@@ -11,9 +11,6 @@ idx = 0
 
 # One of the input can be none such as in activation functions
 def add_nodes(op, output, input1, input2=None):
-    if op == 'Relu':
-        op = f"a{idx}"
-    nodess.append(op)
     
     # Check if the output of the previous and input1/input2 shape is the same 
     print("-------------------------------")
@@ -23,10 +20,17 @@ def add_nodes(op, output, input1, input2=None):
     print(f"input1 {input1}")
     print(f"input2 {input2}")
     if nodes:
+        last_op = list(nodes.keys())[-1]
+        print(f"last_op {last_op}")
+        print(type(last_op))
+        if op == 'Relu':
+            nodes[f'{last_op} + Relu'] = nodes.pop(last_op)
+            last_op = list(nodes.keys())[-1]
+            return
         print(f"inside nodes")
         print("last item")
-        print(nodes[list(nodes.keys())[-1]][-1])
-        if nodes[list(nodes.keys())[-1]][-1] in [input1, input2]:
+        print(nodes[last_op][-1])
+        if nodes[last_op][-1] in [input1, input2]:
             print("last item matches")
             if input2:
                 print("if input2")

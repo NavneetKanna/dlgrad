@@ -1,18 +1,15 @@
 strict digraph  {
-matmul_0;
-Relu;
+"matmul_0 + Relu";
 matmul_1;
 "(32, 784)";
 "(784, 64)";
 "(32, 64)";
 "(64, 10)";
 "(32, 10)";
-matmul_0 -> "(32, 64)";
-Relu -> "(32, 64)";
+"matmul_0 + Relu" -> "(32, 64)";
 matmul_1 -> "(32, 10)";
-"(32, 784)" -> matmul_0;
-"(784, 64)" -> matmul_0;
-"(32, 64)" -> Relu;
+"(32, 784)" -> "matmul_0 + Relu";
+"(784, 64)" -> "matmul_0 + Relu";
 "(32, 64)" -> matmul_1;
 "(64, 10)" -> matmul_1;
 }
