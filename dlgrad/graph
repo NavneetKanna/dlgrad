@@ -1,0 +1,32 @@
+digraph {
+	node [shape=record]
+	0 [label=matmul]
+	1 [label="<f0> input 1|<f1> (32, 784)"]
+	2 [label="<f0> input 2|<f1> (784, 64)"]
+	3 [label="<f0> output|<f1> (32, 64)"]
+	4 [label=add]
+	5 [label="<f0> input 2|<f1> (1, 64)"]
+	6 [label="<f0> output|<f1> (32, 64)"]
+	7 [label=Relu]
+	9 [label="<f0> output|<f1> (32, 64)"]
+	10 [label=matmul]
+	11 [label="<f0> input 2|<f1> (64, 10)"]
+	12 [label="<f0> output|<f1> (32, 10)"]
+	13 [label=add]
+	14 [label="<f0> input 2|<f1> (1, 10)"]
+	15 [label="<f0> output|<f1> (32, 10)"]
+	1 -> 0
+	2 -> 0
+	0 -> 3
+	3 -> 4
+	5 -> 4
+	4 -> 6
+	6 -> 7
+	7 -> 9
+	9 -> 10
+	11 -> 10
+	10 -> 12
+	12 -> 13
+	14 -> 13
+	13 -> 15
+}

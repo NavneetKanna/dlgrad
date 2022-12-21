@@ -56,15 +56,17 @@ class MLP:
          .
          ]
     """
-    def __init__(self, input_data: int, output_data: int) -> None:
+    def __init__(self, input_data: int, output_data: int, bias=False) -> None:
         self.input_data = input_data
         self.output_data = output_data
         # W = [OUTPUT x INPUT]
         self.weight: Tensor = Tensor.uniform((self.output_data, self.input_data))
+        if bias:
+            self.bias = Tensor.uniform((1, output_data))
 
     # TODO: assert shape 
     def __call__(self, data):
-        return Tensor.matmul(data, self.weight.T())
+        return Tensor.add(Tensor.matmul(data, self.weight.T()), self.bias)
         # if isinstance(data, Tensor):
         #     print("in isinstance")
         #     return Tensor.matmul(data, self.weight.T())
