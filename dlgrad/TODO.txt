@@ -1,2 +1,4 @@
-Write optimized code for my processor 
-Assert shape when matmul
+1. Write optimized code for my processor 
+2. Assert shape when matmul
+3. Command line args ?
+4. Use _ for private

@@ -14,7 +14,7 @@ from dlgrad.nn import MLP
 from datasets.fetch_mnist import fetch_mnist
 from dlgrad.afu import ReLU, softmax 
 from nnn.training import train
-from dlgrad.graph import draw_cg
+from dlgrad.graph import display_graph 
 
 class Net:
     def __init__(self) -> None:
@@ -22,8 +22,8 @@ class Net:
         self.batch_size = 32
         self.epochs = 10
 
-        self.fc1 = MLP(28*28, 64)
-        self.fc2 = MLP(64, 10)
+        self.fc1 = MLP(28*28, 64, bias=True)
+        self.fc2 = MLP(64, 10, bias=True)
 
     # TODO: get rid of this Tensor()
     def forward(self, x_train):
@@ -38,7 +38,7 @@ class Net:
 net = Net()
 x_train, y_train, x_test, y_test = fetch_mnist()
 net.forward(x_train.tensor[0:32])
-draw_cg()
+display_graph()
 
 # def main():
 #     epochs = 10

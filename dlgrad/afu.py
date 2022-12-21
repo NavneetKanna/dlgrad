@@ -1,11 +1,15 @@
 import numpy as np
 from .tensor import Tensor
-from .graph import add_nodes
+from .graph import draw_graph 
 
 
 def ReLU(matrix):
     output = Tensor(np.maximum(0, matrix.tensor))
-    add_nodes('Relu', output.tensor.shape, matrix.tensor.shape)
+    draw_graph(
+        'Relu',
+        (output.tensor.shape, 'output'),
+        (matrix.tensor.shape, 'input')
+    )
     return output
 
 
