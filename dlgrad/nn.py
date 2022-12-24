@@ -61,8 +61,10 @@ class MLP:
         self.output_data = output_data
         # W = [OUTPUT x INPUT]
         self.weight: Tensor = Tensor.uniform((self.output_data, self.input_data))
+        Tensor.parameters.append(self.weight)
         if bias:
             self.bias = Tensor.uniform((1, output_data))
+            Tensor.parameters.append(self.bias)
 
     # TODO: assert shape 
     def __call__(self, data):

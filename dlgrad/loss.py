@@ -1,6 +1,7 @@
 import numpy as np
 from .afu import softmax
 from .tensor import Tensor
+from .graph import draw_graph
 
 
 def crossentropy(predictions: Tensor, targets: Tensor):
@@ -16,6 +17,14 @@ def crossentropy(predictions: Tensor, targets: Tensor):
     log_probs = np.log(softmax(predictions.tensor))
     nll = -(log_probs[range(targets.shape[0]), targets.tensor.T])
     out = Tensor(nll)
+    
+    Tensor.save_for_backward.append(predictions)
+
+    draw_graph(
+        'Cross-Entropy Loss',
+        (out.tensor.shape, 'Loss')
+        (predictions.shape, 'Predictions')
+    )
 
     # dL/dpreddictions = predictions-true(one-hot)
     def backward():

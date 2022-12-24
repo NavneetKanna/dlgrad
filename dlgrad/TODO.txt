@@ -4,3 +4,4 @@
 4. Use _ for private
 5. Calculate time for operations
 6. Assert in appropriate places
+7. When to use del ?
