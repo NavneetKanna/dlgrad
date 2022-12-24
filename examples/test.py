@@ -36,23 +36,19 @@ class Net:
 def main():
     epochs = 1
     x_train, y_train, x_test, y_test = fetch_mnist()
-    # print(f"x train from first {x_train.shape}")
     BS = 32
 
     net = Net()
 
-    for e in range(epochs):
+    for epoch in range(epochs):
         idx = 0
-        for u in range(int(x_train.shape[0]/BS)):
+        for _ in range(int(x_train.shape[0]/BS)):
             X_train = x_train[idx:idx+BS]
             Y_train = y_train[idx:idx+BS]
             idx += BS
-            if (u % 500) == 0:
-                train(net, X_train, Y_train, pp=True)
-            else:
-                train(net, X_train, Y_train)
+            train(net, X_train, Y_train)
 
-        print(f"epoch {e}")
+        print(f"epoch {epoch}")
 
 if __name__ == '__main__':
     main()

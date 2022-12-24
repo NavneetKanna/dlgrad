@@ -5,11 +5,19 @@ from .graph import draw_graph
 
 def ReLU(matrix):
     output = Tensor(np.maximum(0, matrix.tensor))
+    Tensor.save_for_backward.append(matrix)
     draw_graph(
         'Relu',
         (output.tensor.shape, 'output'),
         (matrix.tensor.shape, 'input')
     )
+
+    def backward():
+        matrix[matrix <= 0] = 0
+        matrix.grad =  matrix
+
+    output._backward = backward
+
     return output
 
 
