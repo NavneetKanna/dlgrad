@@ -38,8 +38,9 @@ def draw_graph(op: str, output: tuple, input1: tuple, input2: tuple=None):
         # Since either input1 or input2 is the same as the last output
         # The code will change slightly because of the labelling 
         if output_list[-1][0] == input1:
+            
             draw_edge_1_op(output_list[-1][-1], str(idx-1))
-
+            
             if input2:
                 s.node(str(idx), f'<f0> {input2_label}|<f1> {input2}')
                 draw_edge_2_op(str(idx), str(idx-1))
@@ -47,8 +48,9 @@ def draw_graph(op: str, output: tuple, input1: tuple, input2: tuple=None):
             else:
                 # Otherwise it will draw edge from input of the UnaryOps
                 idx += 1
-
+            
             s.node(str(idx), f'<f0> {output_label}|<f1> {output}')
+
             output_list.append((output, str(idx)))
             draw_edge_op_output(str(idx-2), str(idx))
             idx += 1

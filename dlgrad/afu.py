@@ -3,18 +3,19 @@ from .tensor import Tensor
 from .graph import draw_graph 
 
 
-def ReLU(matrix):
+def ReLU(matrix, flag):
     output = Tensor(np.maximum(0, matrix.tensor))
-    Tensor.save_for_backward.append(matrix)
-    draw_graph(
-        'Relu',
-        (output.tensor.shape, 'output'),
-        (matrix.tensor.shape, 'input')
-    )
+    if flag:
+        Tensor.save_for_backward.append(matrix)
+        draw_graph(
+            'Relu',
+            (output.tensor.shape, 'output'),
+            (matrix.tensor.shape, 'input')
+        )
 
     def backward():
-        matrix[matrix <= 0] = 0
-        matrix.grad =  matrix
+        matrix.tensor[matrix.tensor <= 0] = 0
+        matrix.grad = matrix.tensor
 
     output._backward = backward
 

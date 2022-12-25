@@ -15,6 +15,8 @@ digraph {
 	13 [label=add]
 	14 [label="<f0> input 2|<f1> (1, 10)"]
 	15 [label="<f0> output|<f1> (32, 10)"]
+	16 [label="Cross-Entropy Loss"]
+	18 [label="<f0> Loss|<f1> (32,)"]
 	1 -> 0
 	2 -> 0
 	0 -> 3
@@ -29,4 +31,6 @@ digraph {
 	12 -> 13
 	14 -> 13
 	13 -> 15
+	15 -> 16
+	16 -> 18
 }
