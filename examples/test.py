@@ -9,7 +9,7 @@ from datasets.fetch_mnist import fetch_mnist
 from dlgrad.afu import ReLU, softmax 
 from nnn.training import train
 from dlgrad.graph import display_graph 
-
+import numpy as np
 
 class Net:
     def __init__(self) -> None:
@@ -20,35 +20,41 @@ class Net:
         self.fc1 = MLP(28*28, 64, bias=True)
         self.fc2 = MLP(64, 10, bias=True)
 
-    def forward(self, x_train):
-        x = self.fc1(x_train)
-        x = ReLU(x)
-        x = self.fc2(x)
+    def forward(self, x_train, flag):
+        x = self.fc1(x_train, flag)
+        x = ReLU(x, flag)
+        x = self.fc2(x, flag)
         # x = softmax(x)
         return x
 
 # net = Net()
 # x_train, y_train, x_test, y_test = fetch_mnist()
 # print(y_train)
-# net.forward(x_train[0:32])
+# net.forward(x_train[0:32], True)
 # display_graph()
 
 def main():
-    epochs = 1
+    epochs = 10
     x_train, y_train, x_test, y_test = fetch_mnist()
     BS = 32
+    flag = True
 
     net = Net()
 
     for epoch in range(epochs):
+        print(f"epoch {epoch}")
         idx = 0
         for _ in range(int(x_train.shape[0]/BS)):
+            # print(_)
             X_train = x_train[idx:idx+BS]
             Y_train = y_train[idx:idx+BS]
             idx += BS
-            train(net, X_train, Y_train)
+            train(net, X_train, Y_train, flag)
+            flag = False
+        display_graph()
+        for parameters in Tensor.get_parameters():
+            parameters.grad = np.zeros(parameters.shape) 
 
-        print(f"epoch {epoch}")
 
 if __name__ == '__main__':
     main()

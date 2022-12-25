@@ -6,6 +6,7 @@ from .graph import draw_graph
 class Tensor:
     save_for_backward = []
     parameters = []
+    flag = True
 
     def __init__(self, data: np.ndarray):
         self.tensor: np.ndarray = data 
@@ -32,41 +33,49 @@ class Tensor:
         return Tensor(self.tensor.T)
     
     # BinaryOps
-    def add(self: Tensor, other: Tensor):
+    def add(self: Tensor, other: Tensor, flag):
         output = Tensor(self.tensor + other.tensor)
-        Tensor.save_for_backward.append(self, other)
 
-        draw_graph(
-            'add',
-            (output.tensor.shape, 'output'),
-            (self.tensor.shape, 'input 1'), 
-            (other.tensor.shape, 'input 2')
-        )
-        
+        if flag:
+            Tensor.save_for_backward.extend((self, other))
+
+            draw_graph(
+                'add',
+                (output.tensor.shape, 'output'),
+                (self.tensor.shape, 'input 1'), 
+                (other.tensor.shape, 'input 2')
+            )
+            
         def backward():
-            self.grad += np.identity(self.shape[0]) @ output.grad
-            other.grad += np.identity(other.shape[0]) @ output.grad
+            self.grad = self.grad + output.grad
+            other.grad = other.grad + np.sum(output.grad, axis=0, keepdims=True)
         
-        output.backward = backward
+        output._backward = backward
 
         return output
 
-    def matmul(self: Tensor, other: Tensor):
-        output = Tensor(self.tensor @ other.tensor)
-        Tensor.save_for_backward.append(self, other)
+    def sub(self, other):
+        return Tensor(self.tensor-other.tensor)
 
-        draw_graph(
-            'matmul',
-            (output.tensor.shape, 'output'),
-            (self.tensor.shape, 'input 1'),
-            (other.tensor.shape, 'input 2')
-        )
+    def matmul(self: Tensor, other: Tensor, flag):
+        output = Tensor(self.tensor @ other.tensor)
+        if flag:
+            Tensor.save_for_backward.extend((self, other))
+
+            draw_graph(
+                'matmul',
+                (output.tensor.shape, 'output'),
+                (self.tensor.shape, 'input 1'),
+                (other.tensor.shape, 'input 2')
+            )
 
         def backward():
             self.grad += output.grad @ other.tensor.T
+            # print(f"type {type(self.grad)}")
             other.grad += self.tensor.T @ output.grad
+            # print(f"type {type(other.grad)}")
 
-        output.backward = backward
+        output._backward = backward
 
         return output 
 
@@ -83,6 +92,11 @@ class Tensor:
     def get_parameters():
         return Tensor.parameters 
 
+    # def zero_grad():
+    #     for parameters in Tensor.get_parameters():
+    #         parameters.grad = np.zeros(parameters.shape)
+
+
 
     # Autograd Engine
 
@@ -91,7 +105,7 @@ class Tensor:
     # the neural network architecture sequentially.
     def backward(self):
         # Add the last node(the loss) to the list
-        Tensor.save_for_backward(self)
+        Tensor.save_for_backward.append(self)
 
         # TODO: Is this necessary ?
         self.grad = np.ones(self.shape)
