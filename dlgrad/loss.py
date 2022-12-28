@@ -2,7 +2,8 @@ import numpy as np
 from .afu import softmax
 from .tensor import Tensor
 from .graph import draw_graph
-
+import torch
+from torch import nn
 
 def crossentropy(predictions: Tensor, targets: Tensor, flag):
     """
@@ -14,26 +15,28 @@ def crossentropy(predictions: Tensor, targets: Tensor, flag):
     weighted sum of the output layer) and not probabilities.
     And targets should "not" be one-hot encoded.
     """
-    log_probs = np.log(softmax(predictions.tensor))
-    nll = -(log_probs[range(targets.shape[0]), targets.tensor.T])
-    out = Tensor(nll)
+    Tensor.save_for_backward.append(predictions)
+
+    one_hot_labels = np.zeros(predictions.shape)
+    one_hot_labels[range(predictions.shape[0]), targets.tensor.T] = 1
+
+    loss = -np.sum(one_hot_labels * np.log(softmax(predictions)))
+ 
+    out = Tensor(loss/targets.shape[0])
 
     if flag:
-        Tensor.save_for_backward.append(predictions)
-
         draw_graph(
             'Cross-Entropy Loss',
-            (out.tensor.shape, 'Loss'),
-            (predictions.shape, 'Predictions')
+            (out.tensor.shape, 'Loss', out.grad.shape),
+            (predictions.shape, 'Predictions', predictions.grad.shape)
         )
 
     # dL/dpreddictions = predictions-true(one-hot)
     def backward():
-        one_hot_labels = np.zeros((predictions.shape[0], predictions.shape[1]))
-        one_hot_labels[range(predictions.shape[0]), targets.tensor] = 1
-        # one_hot_labels = Tensor(one_hot_labels)
-        predictions.grad = predictions.grad + (predictions.tensor - one_hot_labels)
-    
+        # one_hot_labels = np.zeros(predictions.shape)
+        # one_hot_labels[range(predictions.shape[0]), targets.tensor.T] = 1
+        predictions.grad = (softmax(predictions) - one_hot_labels)
+
     out._backward = backward
         
     return out 

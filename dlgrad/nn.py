@@ -68,7 +68,7 @@ class MLP:
 
     # TODO: assert shape 
     def __call__(self, data, flag):
-        return Tensor.add(Tensor.matmul(data, self.weight.T(), flag), self.bias, flag)
+        return Tensor.add(Tensor.matmul(data, self.weight, flag), self.bias, flag)
         # if isinstance(data, Tensor):
         #     print("in isinstance")
         #     return Tensor.matmul(data, self.weight.T())

@@ -11,8 +11,6 @@ s = graphviz.Digraph(node_attr={'shape': 'record'}, format='png')
 # A better way to write this ??
 # Should we check object or shape ??
 
-
-
 def draw_edge_1_op(input: str, op: str):
     edges.append((input, op))
 
@@ -69,17 +67,17 @@ def draw_graph(op: str, output: tuple, input1: tuple, input2: tuple=None):
         s.node(str(idx), op)
         idx += 1
 
-        input1, input1_label = (*input1,)
+        input1, input1_label, input1_grad = (*input1,)
         s.node(str(idx), f'<f0> {input1_label}|<f1> {input1}')
         draw_edge_1_op(str(idx), str(idx-1))
         idx += 1
 
-        input2, input2_label = (*input2,)
+        input2, input2_label, input2_grad = (*input2,)
         s.node(str(idx), f'<f0> {input2_label}|<f1> {input2}')
         draw_edge_2_op(str(idx), str(idx-2))
         idx += 1
 
-        output, output_label = (*output,)
+        output, output_label, output_grad = (*output,)
         output_list.append((output, str(idx)))
         s.node(str(idx), f'<f0> {output_label}|<f1> {output}')
         draw_edge_op_output(str(idx-3), str(idx))
