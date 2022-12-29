@@ -11,8 +11,8 @@ def ReLU(matrix, flag):
     if flag:
         draw_graph(
             'Relu',
-            (output.tensor.shape, 'output', output.grad.shape),
-            (matrix.tensor.shape, 'input', matrix.grad.shape)
+            (output.tensor.shape, 'output'),
+            (matrix.tensor.shape, 'input')
         )
 
     def backward():
@@ -29,8 +29,11 @@ def softmax(matrix):
     We are subtracting each row with the maximum element, a kind of normalization,
     because the exp can get huge.
     """
-    max_of_row = np.amax(matrix.tensor, axis=1, keepdims=True)
-    matrix_exp = np.exp(matrix.tensor-max_of_row)
-    matrix_sum = np.sum(matrix_exp, axis=1, keepdims=True)
-    result = matrix_exp / matrix_sum
+    try:
+        max_of_row = np.amax(matrix.tensor, axis=1, keepdims=True)
+        matrix_exp = np.exp(matrix.tensor-max_of_row)
+        matrix_sum = np.sum(matrix_exp, axis=1, keepdims=True)
+        result = matrix_exp / matrix_sum
+    except RuntimeWarning:
+        print("in softmax")
     return result

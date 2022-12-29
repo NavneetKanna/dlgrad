@@ -2,21 +2,34 @@ import idx2numpy
 import numpy as np
 from dlgrad.tensor import Tensor 
 
-def fetch_mnist():
-    x_train = idx2numpy.convert_from_file(r'datasets/mnist/train-images-idx3-ubyte')
-    x_train = x_train/255.0
-    x_train = Tensor(x_train.reshape((-1, 28*28)))
+class MNIST:
+    def __init__(self):
+        self.idx = 0
 
-    y_train = idx2numpy.convert_from_file(r'datasets/mnist/train-labels-idx1-ubyte')
-    y_train = Tensor(y_train)
+        self.x_train = idx2numpy.convert_from_file(r'datasets/mnist/train-images-idx3-ubyte')
+        self.x_train = self.x_train/255.0
+        self.x_train = self.x_train.reshape((-1, 28*28))
 
-    x_test = idx2numpy.convert_from_file(r'datasets/mnist/t10k-images-idx3-ubyte')
-    x_test = x_test/255.0
-    x_test = Tensor(x_test.reshape((-1, 28*28)))
+        self.y_train = idx2numpy.convert_from_file(r'datasets/mnist/train-labels-idx1-ubyte')
+        self.y_train = self.y_train
 
-    y_test = idx2numpy.convert_from_file(r'datasets/mnist/t10k-labels-idx1-ubyte')
-    y_test = Tensor(y_test)
+        self.x_test = idx2numpy.convert_from_file(r'datasets/mnist/t10k-images-idx3-ubyte')
+        self.x_test = self.x_test/255.0
+        self.x_test = self.x_test.reshape((-1, 28*28))
 
-    return x_train, y_train, x_test, y_test
+        self.y_test = idx2numpy.convert_from_file(r'datasets/mnist/t10k-labels-idx1-ubyte')
+        self.y_test = self.y_test
+
+    def get_train_data(self) -> np.ndarray:
+        return self.x_train, self.y_train
+    
+    def get_test_data(self) -> Tensor:
+        return Tensor(self.x_test), Tensor(self.y_test)
+
+    def get_batch_data(self, x_data: np.ndarray, y_data: np.ndarray, BS: int) -> Tensor:
+        x = Tensor(x_data[self.idx:self.idx+BS])
+        y = Tensor(y_data[self.idx:self.idx+BS])
+        self.idx += BS
+        return x, y
 
 

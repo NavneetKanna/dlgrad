@@ -36,9 +36,9 @@ class Tensor:
         if flag:
             draw_graph(
                 'add',
-                (output.tensor.shape, 'output', output.grad.shape),
-                (self.tensor.shape, 'input 1', self.grad.shape), 
-                (other.tensor.shape, 'input 2', other.grad.shape)
+                (output.tensor.shape, 'output'),
+                (self.tensor.shape, 'input 1'), 
+                (other.tensor.shape, 'input 2')
             )
             
         def backward():
@@ -59,9 +59,9 @@ class Tensor:
         if flag:
             draw_graph(
                 'matmul',
-                (output.tensor.shape, 'output', output.grad.shape),
-                (self.tensor.shape, 'input 1', self.grad.shape),
-                (other.tensor.shape, 'input 2', other.grad.shape)
+                (output.tensor.shape, 'output'),
+                (self.tensor.shape, 'input 1'),
+                (other.tensor.shape, 'input 2')
             )
 
         def backward():
@@ -86,7 +86,12 @@ class Tensor:
     
     def get_parameters():
         return Tensor.parameters
-
+    
+    @staticmethod
+    def zero_grad():
+        for parameters in Tensor.save_for_backward:
+            parameters.grad = np.zeros(parameters.shape) 
+        
     # Autograd Engine
 
     # As of now I dont see any need for topological sort as others have used it. 
