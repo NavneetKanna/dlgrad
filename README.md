@@ -9,6 +9,11 @@ The purpose of this porject is to increase my knowledge in deep learning and to 
 
 ## MNIST Example
 ```python
+from dlgrad.mlp import MLP
+from datasets.fetch_mnist import MNIST 
+from dlgrad.afu import ReLU
+from nn.training import train, test, plot_metrics 
+
 class Net:
     def __init__(self) -> None:
         self.fc1 = MLP(28*28, 64, bias=True)
@@ -36,10 +41,8 @@ def main():
         x_train, y_train = mnist_dataset.get_train_data()
         steps = x_train.shape[0]//BS
 
-        train(net, mnist_dataset, x_train, y_train, steps, BS, flag, lr)
+        train(net, mnist_dataset, x_train, y_train, steps, BS, lr)
 
-        flag = False
-    
     plot_metrics()
 
     x_test, y_test = mnist_dataset.get_test_data()
