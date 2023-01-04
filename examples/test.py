@@ -11,14 +11,14 @@ from nn.training import train, test, plot_metrics
 class Net:
     def __init__(self) -> None:
         self.fc1 = MLP(28*28, 64, bias=True)
-        self.fc2 = MLP(64, 64, bias=True)
+        # self.fc2 = MLP(64, 64, bias=True)
         self.fc3 = MLP(64, 10, bias=True)
 
     def forward(self, x_train, flag=False):
         x = self.fc1(x_train, flag)
         x = ReLU(x, flag)
-        x = self.fc2(x, flag)
-        x = ReLU(x, flag)
+        # x = self.fc2(x, flag)
+        # x = ReLU(x, flag)
         x = self.fc3(x, flag)
         # x = softmax(x)
         return x
