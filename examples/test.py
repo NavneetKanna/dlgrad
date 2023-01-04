@@ -4,10 +4,10 @@ import os
 os.chdir(r"/mnt/c/Users/navne/Documents/vs_code/dlgrad_main/")
 sys.path.append(os.getcwd())
 from dlgrad.tensor import Tensor
-from dlgrad.nn import MLP
+from dlgrad.mlp import MLP
 from datasets.fetch_mnist import MNIST 
 from dlgrad.afu import ReLU, softmax 
-from nnn.training import train, test, plot_metrics 
+from nn.training import train, test, plot_metrics 
 from dlgrad.graph import display_graph 
 import numpy as np
 import matplotlib.pyplot as plt
