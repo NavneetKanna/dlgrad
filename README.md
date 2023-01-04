@@ -48,5 +48,5 @@ def main():
 
 ## Computational Graph
 <p>
-  <img src="/mnt/c/Users/navne/Documents/vs_code/dlgrad_main/dlgrad/graph.png">
+  <img src="dlgrad/graph.png">
 </p>
