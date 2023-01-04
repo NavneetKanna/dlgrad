@@ -48,5 +48,6 @@ def main():
 
 ## Computational Graph
 <p>
-  <img src="dlgrad/graph.png">
+  <img src="dlgrad/graph.png"
+  style="max-width: 100px">
 </p>
