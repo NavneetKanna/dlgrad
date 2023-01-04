@@ -3,14 +3,10 @@ import os
 # os.chdir(r"C:\\Users\\navne\Documents\\vs_code\\dlgrad_main")
 os.chdir(r"/mnt/c/Users/navne/Documents/vs_code/dlgrad_main/")
 sys.path.append(os.getcwd())
-from dlgrad.tensor import Tensor
 from dlgrad.mlp import MLP
 from datasets.fetch_mnist import MNIST 
-from dlgrad.afu import ReLU, softmax 
+from dlgrad.afu import ReLU
 from nn.training import train, test, plot_metrics 
-from dlgrad.graph import display_graph 
-import numpy as np
-import matplotlib.pyplot as plt
 
 class Net:
     def __init__(self) -> None:
@@ -31,7 +27,7 @@ class Net:
 def main():
     epochs = 5
     BS = 128
-    lr=1e-3
+    lr = 1e-3
     flag = True
     
     net = Net()
@@ -46,9 +42,7 @@ def main():
         train(net, mnist_dataset, x_train, y_train, steps, BS, flag, lr)
 
         flag = False
-    print("plotting metrics")   
     plot_metrics()
-    print("finished")
 
     x_test, y_test = mnist_dataset.get_test_data()
     test(net, x_test, y_test)
