@@ -29,7 +29,6 @@ def main():
     epochs = 5
     BS = 128
     lr = 1e-3
-    flag = True
     
     net = Net()
 
