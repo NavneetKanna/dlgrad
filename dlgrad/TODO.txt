@@ -1,8 +1,0 @@
-1. Write optimized code for my processor 
-2. Assert shape when matmul
-3. Command line args ?
-4. Use _ for private
-5. Calculate time for operations
-6. Assert in appropriate places
-7. When to use del ?
-8. Wherever any operation is done, check the shape
