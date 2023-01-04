@@ -47,6 +47,6 @@ def main():
 ```
 
 ## Computational Graph
-<p>
+<p align="center">
   <img src="dlgrad/graph.png">
 </p>
