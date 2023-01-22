@@ -1,19 +1,23 @@
 import numpy as np
 from .tensor import Tensor
-from .graph import draw_graph 
+from .graph import CG
 
 
-def ReLU(matrix, flag):
+# TODO: Tensor.maximum ?
+def ReLU(matrix: Tensor, flag=None):
     
     output = Tensor(np.maximum(0, matrix.tensor))
     Tensor.save_for_backward.append(matrix)
 
-    if flag:
-        draw_graph(
-            'Relu',
-            (output.tensor.shape, 'output'),
-            (matrix.tensor.shape, 'input')
-        )
+    if not CG.stop_processing: CG.add_nodes('ReLU', output.tensor, matrix.tensor)
+    # _add_nodes_once(output, matrix)
+
+    # if flag:
+    #     draw_graph(
+    #         'Relu',
+    #         (output.tensor.shape, 'output'),
+    #         (matrix.tensor.shape, 'input')
+    #     )
 
     def backward():
         matrix.tensor[matrix.tensor <= 0] = 0

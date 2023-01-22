@@ -32,4 +32,6 @@ class MNIST:
         self.idx += BS
         return x, y
 
+    def get_fake_data(self):
+        shap = self.x_train.s
 
