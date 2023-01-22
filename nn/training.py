@@ -14,17 +14,21 @@ pred = 0
 acc = 0
 loss = 0
 
-def train(model, train_loader, x_train, y_train, steps, BS, flag=False, lr=1e-3):
+
+# TODO: Should we delete all the objects after every loop ?
+def train(model, train_loader, x_train: np.ndarray, y_train: np.ndarray, steps: int, BS: int, lr=1e-3):
     global ff, acc_graph, loss_graph, pred, glo_acc, glo_loss
 
     # for _ in (pbar := tqdm(range(steps))):
     for _ in (pbar := trange(steps)):
+    # for i in range(steps):
         x_batch_train, y_batch_train = train_loader.get_batch_data(x_train, y_train, BS)
+
         
-        x = model.forward(x_batch_train, flag)
+        x = model.forward(x_batch_train)
         pred = x
     
-        loss = crossentropy(x, y_batch_train, flag)
+        loss = crossentropy(x, y_batch_train)
         glo_loss = loss
         
         flag = False
@@ -50,6 +54,12 @@ def train(model, train_loader, x_train, y_train, steps, BS, flag=False, lr=1e-3)
         
     # print("pred")
     # print(np.argmax(softmax(pred), axis=1))
+
+
+def draw_cg():
+    pass
+
+
 
 def plot_metrics():
     global loss_graph, acc_graph

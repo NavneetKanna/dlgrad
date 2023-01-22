@@ -1,12 +1,10 @@
 import numpy as np
 from .afu import softmax
 from .tensor import Tensor
-from .graph import draw_graph
-import torch
-from torch import nn
-import warnings
+from .graph import CG
 
-def crossentropy(predictions: Tensor, targets: Tensor, flag=False):
+
+def crossentropy(predictions: Tensor, targets: Tensor, flag=None):
     """
     Similar to PyTorch cross entropy.
     First log softmax is done and then 
@@ -27,12 +25,16 @@ def crossentropy(predictions: Tensor, targets: Tensor, flag=False):
     # loss = -np.sum(one_hot_labels * np.log(softmax(predictions)))
     out = Tensor(loss/targets.shape[0])
 
-    if flag:
-        draw_graph(
-            'Cross-Entropy Loss',
-            (out.tensor.shape, 'Loss'),
-            (predictions.shape, 'Predictions')
-        )
+    if not CG.stop_processing: CG.add_nodes('loss', out.tensor, predictions.tensor)
+    
+    # _add_nodes_once(out, predictions)
+
+    # if flag:
+    #     draw_graph(
+    #         'Cross-Entropy Loss',
+    #         (out.tensor.shape, 'Loss'),
+    #         (predictions.shape, 'Predictions')
+    #     )
 
     # dL/dpreddictions = predictions-true(one-hot)
     def backward():

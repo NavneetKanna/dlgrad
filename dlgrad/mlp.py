@@ -62,13 +62,17 @@ class MLP:
         # W = [OUTPUT x INPUT]
         self.weight: Tensor = Tensor.uniform((self.output_data, self.input_data))
         Tensor.parameters.append(self.weight)
+        # add_nodes('matmul', (('BS', output_data), None), (('BS', input_data), None), ((input_data, output_data), f'fc{MLP.idx}.weight'))
         if bias:
             self.bias = Tensor.uniform((1, output_data))
             Tensor.parameters.append(self.bias)
+            # add_nodes('add', (('BS', output_data), None), (('BS', output_data), None), ((1, output_data), f'fc{MLP.idx}.bias'))
 
     # TODO: assert shape 
-    def __call__(self, data, flag):
-        return Tensor.add(Tensor.matmul(data, self.weight, flag), self.bias, flag)
+    def __call__(self, data: Tensor):
+        return Tensor.add(Tensor.matmul(data, self.weight), self.bias)
+   
+
         # if isinstance(data, Tensor):
         #     print("in isinstance")
         #     return Tensor.matmul(data, self.weight.T())
