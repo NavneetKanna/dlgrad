@@ -44,7 +44,7 @@ def main():
 
         train(net, mnist_dataset, x_train, y_train, BS, optimizer, lr)
 
-    display_graph()
+    save_graph()
 
     x_test, y_test = mnist_dataset.get_test_data()
     test(net, x_test, y_test)

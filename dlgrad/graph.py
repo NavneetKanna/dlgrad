@@ -105,7 +105,7 @@ def draw_graph(op: str, output: tuple, input1: tuple, input2: tuple=None):
         draw_edge_op_output(str(idx-3), str(idx))
         idx += 1
 
-def display_graph(): 
+def save_graph(): 
     s.edges(edges)
     s.render('graph', directory='/mnt/c/Users/navne/Documents/vs_code/dlgrad/notes')
     
