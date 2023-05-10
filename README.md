@@ -47,5 +47,5 @@ def main():
 
 ## Computational Graph
 <p align="center">
-  <img src="https://github.com/NavneetKanna/dlgrad/raw/master/Images/graph.pngdlgrad/graph.png">
+  <img src="https://github.com/NavneetKanna/dlgrad/blob/master/Images/graph.png?raw=true">
 </p>
