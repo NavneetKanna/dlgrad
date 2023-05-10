@@ -5,8 +5,9 @@ import numpy as np
 from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 from tqdm import trange
+from typing import Optional
 
-def train(model, train_loader, x_train: np.ndarray, y_train: np.ndarray, BS: int, lr=1e-3, metrics = False) -> None | int:
+def train(model, train_loader, x_train: np.ndarray, y_train: np.ndarray, BS: int, optimizer, lr=1e-3, metrics = False) -> Optional[int]:
     acc = None
     loss = None
 
@@ -14,17 +15,11 @@ def train(model, train_loader, x_train: np.ndarray, y_train: np.ndarray, BS: int
 
     for _ in (pbar := trange(steps)):
         x_batch_train, y_batch_train = train_loader.get_batch_data(x_train, y_train, BS)
-        
         x = model.forward(x_batch_train)
-    
         loss = crossentropy(x, y_batch_train)
-
         loss.backward()
-        
-        Tensor.step(lr)
-        
-        Tensor.zero_grad()
-
+        optimizer.step()
+        optimizer.zero_grad()
         acc = accuracy_score(y_batch_train.tensor.T, np.argmax(softmax(x), axis=1))
         pbar.set_postfix_str(f"loss {loss.tensor} accuracy {acc*100}%")
 
@@ -36,7 +31,7 @@ def plot_metrics(acc_graph, loss_graph):
     ax.plot(acc_graph, label='Accuracy')
     ax.legend()
     plt.close(fig)
-    fig.savefig("Metrics.png")
+    fig.savefig("notes/Metrics.png")
 
 def test(model, x_test, y_test):
     x = model.forward(x_test)

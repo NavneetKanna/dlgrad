@@ -1,12 +1,13 @@
 import numpy as np
 from .tensor import Tensor
 from .graph import CG
-
+from .helper import backward_list
 
 # TODO: Tensor.maximum ?
 def ReLU(matrix: Tensor):
+    backward_list.append(matrix)
     output = Tensor(np.maximum(0, matrix.tensor))
-    Tensor.save_for_backward.append(matrix)
+    # Tensor.save_for_backward.append(matrix)
 
     if not CG.stop_processing: CG.add_nodes('ReLU', output.tensor, matrix.tensor)
 
