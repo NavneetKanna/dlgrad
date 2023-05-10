@@ -1,5 +1,0 @@
-1. for dictionaries we dont have to define global 
-2. to unpack a tuple and assign it to variables, we have to place it inside the brackets and add a comma
-    a, b = (*c) -> a, b = (d, e)
-    If we dont make it a tuple, then * will be interpreted as multiplicate and (a, b =) as first term, 
-    which will throw an error.
