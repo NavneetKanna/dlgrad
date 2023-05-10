@@ -24,7 +24,6 @@ class Net:
         # x = softmax(x)
         return x
 
-# TODO: remove flag, mnist_dataset
 def main():
     epochs = 3 
     BS = 128

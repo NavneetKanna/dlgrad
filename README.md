@@ -27,7 +27,6 @@ class Net:
         x = self.fc3(x)
         return x
 
-# TODO: remove flag, mnist_dataset
 def main():
     epochs = 3 
     BS = 128
