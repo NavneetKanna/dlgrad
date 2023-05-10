@@ -2,7 +2,7 @@ import numpy as np
 from .afu import softmax
 from .tensor import Tensor
 from .graph import CG
-
+from .helper import backward_list
 
 def crossentropy(predictions: Tensor, targets: Tensor) -> Tensor:
     """
@@ -14,7 +14,8 @@ def crossentropy(predictions: Tensor, targets: Tensor) -> Tensor:
     weighted sum of the output layer) and not probabilities.
     And targets should "not" be one-hot encoded.
     """
-    Tensor.save_for_backward.append(predictions)
+    backward_list.append(predictions)
+    # Tensor.save_for_backward.append(predictions)
 
     one_hot_labels = np.zeros(predictions.shape)
     one_hot_labels[range(predictions.shape[0]), targets.tensor.T] = 1

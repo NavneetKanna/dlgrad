@@ -107,7 +107,7 @@ def draw_graph(op: str, output: tuple, input1: tuple, input2: tuple=None):
 
 def display_graph(): 
     s.edges(edges)
-    s.render('graph', directory='/mnt/c/Users/navne/Documents/vs_code/dlgrad_main/notes')
+    s.render('graph', directory='/mnt/c/Users/navne/Documents/vs_code/dlgrad/notes')
     
 import numpy as np
 class CG:
