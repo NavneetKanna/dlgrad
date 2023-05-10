@@ -4,20 +4,11 @@ from .graph import CG
 
 
 # TODO: Tensor.maximum ?
-def ReLU(matrix: Tensor, flag=None):
-    
+def ReLU(matrix: Tensor):
     output = Tensor(np.maximum(0, matrix.tensor))
     Tensor.save_for_backward.append(matrix)
 
     if not CG.stop_processing: CG.add_nodes('ReLU', output.tensor, matrix.tensor)
-    # _add_nodes_once(output, matrix)
-
-    # if flag:
-    #     draw_graph(
-    #         'Relu',
-    #         (output.tensor.shape, 'output'),
-    #         (matrix.tensor.shape, 'input')
-    #     )
 
     def backward():
         matrix.tensor[matrix.tensor <= 0] = 0
