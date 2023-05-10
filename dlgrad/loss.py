@@ -4,7 +4,7 @@ from .tensor import Tensor
 from .graph import CG
 
 
-def crossentropy(predictions: Tensor, targets: Tensor, flag=None):
+def crossentropy(predictions: Tensor, targets: Tensor) -> Tensor:
     """
     Similar to PyTorch cross entropy.
     First log softmax is done and then 
@@ -26,15 +26,6 @@ def crossentropy(predictions: Tensor, targets: Tensor, flag=None):
     out = Tensor(loss/targets.shape[0])
 
     if not CG.stop_processing: CG.add_nodes('loss', out.tensor, predictions.tensor)
-    
-    # _add_nodes_once(out, predictions)
-
-    # if flag:
-    #     draw_graph(
-    #         'Cross-Entropy Loss',
-    #         (out.tensor.shape, 'Loss'),
-    #         (predictions.shape, 'Predictions')
-    #     )
 
     # dL/dpreddictions = predictions-true(one-hot)
     def backward():

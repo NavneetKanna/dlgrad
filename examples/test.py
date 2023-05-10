@@ -1,12 +1,12 @@
 import sys
 import os
-# os.chdir(r"C:\\Users\\navne\Documents\\vs_code\\dlgrad_main")
 os.chdir(r"/mnt/c/Users/navne/Documents/vs_code/dlgrad_main/")
 sys.path.append(os.getcwd())
 from dlgrad.mlp import MLP
 from datasets.fetch_mnist import MNIST 
 from dlgrad.afu import ReLU
 from nn.training import train, test, plot_metrics 
+from dlgrad.graph import display_graph
 
 class Net:
     def __init__(self) -> None:
@@ -14,8 +14,8 @@ class Net:
         # self.fc2 = MLP(64, 64, bias=True)
         self.fc3 = MLP(64, 10, bias=True)
 
-    def forward(self, x_train, flag=False):
-        x = self.fc1(x_train)
+    def forward(self, x):
+        x = self.fc1(x)
         x = ReLU(x)
         # x = self.fc2(x, flag)
         # x = ReLU(x, flag)
@@ -25,10 +25,10 @@ class Net:
 
 # TODO: remove flag, mnist_dataset
 def main():
-    epochs = 5
+    epochs = 5 
     BS = 128
     lr = 1e-3
-    flag = True
+    acc_graph, loss_graph = [], []
     
     net = Net()
 
@@ -37,12 +37,13 @@ def main():
         
         mnist_dataset = MNIST()
         x_train, y_train = mnist_dataset.get_train_data()
-        steps = x_train.shape[0]//BS
 
-        train(net, mnist_dataset, x_train, y_train, steps, BS, lr)
+        acc, loss = train(net, mnist_dataset, x_train, y_train, BS, lr, metrics=True)
+        acc_graph.append(acc)
+        loss_graph.append(loss)
 
-        flag = False
-    plot_metrics()
+    plot_metrics(acc_graph, loss_graph)
+    display_graph()
 
     x_test, y_test = mnist_dataset.get_test_data()
     test(net, x_test, y_test)

@@ -57,25 +57,17 @@ class MLP:
          ]
     """
     def __init__(self, input_data: int, output_data: int, bias=False) -> None:
-        self.input_data = input_data
-        self.output_data = output_data
-        # W = [OUTPUT x INPUT]
+        self.input_data: int = input_data
+        self.output_data: int = output_data
+        # W = [OUTPUT x INPUT] = (64, 784)
         self.weight: Tensor = Tensor.uniform((self.output_data, self.input_data))
         Tensor.parameters.append(self.weight)
-        # add_nodes('matmul', (('BS', output_data), None), (('BS', input_data), None), ((input_data, output_data), f'fc{MLP.idx}.weight'))
         if bias:
             self.bias = Tensor.uniform((1, output_data))
             Tensor.parameters.append(self.bias)
-            # add_nodes('add', (('BS', output_data), None), (('BS', output_data), None), ((1, output_data), f'fc{MLP.idx}.bias'))
 
-    # TODO: assert shape 
     def __call__(self, data: Tensor):
         return Tensor.add(Tensor.matmul(data, self.weight), self.bias)
    
-
-        # if isinstance(data, Tensor):
-        #     print("in isinstance")
-        #     return Tensor.matmul(data, self.weight.T())
-
     def __repr__(self) -> str:
         return f"MLP layer (input_data={self.input_data}, output_data={self.output_data})"    
