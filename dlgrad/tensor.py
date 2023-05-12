@@ -14,7 +14,8 @@ class Tensor:
 
     @classmethod
     def uniform(cls, shape: tuple):
-        return cls(np.random.default_rng().uniform(-1, 1, shape))
+        # TODO: Seems to be a bad way to do this as said by geohotz
+        return cls(np.random.default_rng().uniform(-1, 1, shape).astype(np.float32))
 
     # Ops
     def add(self: Tensor, other: Tensor):
@@ -33,13 +34,16 @@ class Tensor:
 
     def matmul(self: Tensor, other: Tensor):
         backward_list.extend((self, other))
-        output = Tensor(self.tensor @ other.tensor.T)
-       
+        # output = Tensor(self.tensor @ other.tensor.T)
+        output = Tensor(np.dot(self.tensor, other.tensor.T))
+
         if not CG.stop_processing: CG.add_nodes('matmul', output.tensor, self.tensor, other.tensor)
 
         def backward():
-            self.grad = (output.grad @ other.tensor)
-            other.grad = (self.tensor.T @ output.grad).T
+            # self.grad = (output.grad @ other.tensor)
+            # other.grad = (self.tensor.T @ output.grad).T
+            self.grad = np.dot(output.grad, other.tensor)
+            other.grad = np.dot(self.tensor.T, output.grad).T
 
         output._backward = backward
 

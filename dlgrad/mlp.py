@@ -63,5 +63,5 @@ class MLP:
         if bias:
             self.bias = Tensor.uniform((1, output_data))
 
-    def __call__(self, data: Tensor):
+    def __call__(self, data: Tensor) -> Tensor:
         return Tensor.add(Tensor.matmul(data, self.weight), self.bias)

@@ -1,5 +1,4 @@
 from dlgrad.loss import crossentropy
-from dlgrad.tensor import Tensor
 from dlgrad.afu import softmax
 import numpy as np
 from sklearn.metrics import accuracy_score
@@ -14,6 +13,7 @@ def train(model, train_loader, x_train: np.ndarray, y_train: np.ndarray, BS: int
     steps = train_loader.num_train_steps(BS)
 
     for _ in (pbar := trange(steps)):
+    # for i in range(1):
         x_batch_train, y_batch_train = train_loader.get_batch_data(x_train, y_train, BS)
         x = model.forward(x_batch_train)
         loss = crossentropy(x, y_batch_train)
