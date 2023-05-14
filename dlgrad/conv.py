@@ -17,16 +17,6 @@ class Conv2D:
         self.conv(data)
 
     def im2col(self, x):
-        """
-        Args:
-        x: image matrix to be translated into columns, (C,H,W)
-        hh: filter height
-        ww: filter width
-        stride: stride
-        Returns:
-        col: (new_h*new_w,hh*ww*C) matrix, each column is a cube that will convolve with a filter
-                new_h = (H-hh) // stride + 1, new_w = (W-ww) // stride + 1
-        """
         self.new_w = ((x.shape[2] - self.kernal_size + 2*0)//self.stride) + 1 
         self.new_h = ((x.shape[1] - self.kernal_size + 2*0)//self.stride) + 1 
 
