@@ -16,22 +16,37 @@ class Conv2D:
     def __call__(self, data): 
         self.conv(data)
 
+    def im2col(self, x):
+        """
+        Args:
+        x: image matrix to be translated into columns, (C,H,W)
+        hh: filter height
+        ww: filter width
+        stride: stride
+        Returns:
+        col: (new_h*new_w,hh*ww*C) matrix, each column is a cube that will convolve with a filter
+                new_h = (H-hh) // stride + 1, new_w = (W-ww) // stride + 1
+        """
+        self.new_w = ((x.shape[2] - self.kernal_size + 2*0)//self.stride) + 1 
+        self.new_h = ((x.shape[1] - self.kernal_size + 2*0)//self.stride) + 1 
+
+        res = np.zeros((self.kernal_size*self.kernal_size*x.shape[0], self.new_w*self.new_h))
+
+        idx = 0
+        for row in range(0, x.shape[-2]-self.kernal_size+ 1, self.stride):
+            for col in range(0, x.shape[-1]-self.kernal_size + 1, self.stride):
+                patch = x[..., row:row+self.kernal_size, col:col+self.kernal_size].reshape(-1)
+                res[:, idx] = patch
+                idx += 1
+        return res.T
+
     def conv(self, data):
-        size = ((data.shape[2] - self.kernal_size + 2*self.padding) / self.stride) + 1
-        self.output = np.zeros((data.shape[0], self.filters.shape[0], int(size), int(size)))
-        # for each 4 batch size
-        for batch in range(data.shape[0]):
-            # for each 6 filters
-            for total_no_of_filters in range(self.out_channels):
-                out_row = 0
-                for row in range(0, (data.shape[2]-self.kernal_size+1), self.stride):
-                    out_col = 0
-                    for col in range(0, (data.shape[2]-self.kernal_size+1), self.stride):
-                        sum = 0
-                        # for either rgb or grayscale
-                        for filter in range(self.in_channels):
-                            sum += np.sum(data[batch, filter,  row:row+self.kernal_size, col:col+self.kernal_size] * self.filters).round(4)
-                        self.output[batch][total_no_of_filters][out_row][out_col] = np.round(sum, 4) 
-                        out_col += 1
-                    out_row += 1
-        return self.output 
+        res = self.im2col(data[0, ...])
+        final = res @ self.filters.T
+        fi = final.reshape(self.new_w, self.new_h).round(4)
+        # for channel in self.in_channels:
+        #     res = self.im2col(data[channel, ...])
+        #     final = res @ self.filters.T
+        #     fi = final.reshape(self.new_w, self.new_h).round(4)
+
+        return fi
