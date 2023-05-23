@@ -15,7 +15,6 @@ def crossentropy(predictions: Tensor, targets: Tensor) -> Tensor:
     And targets should "not" be one-hot encoded.
     """
     backward_list.append(predictions)
-    # Tensor.save_for_backward.append(predictions)
 
     one_hot_labels = np.zeros(predictions.shape)
     one_hot_labels[range(predictions.shape[0]), targets.tensor.T] = 1
@@ -26,7 +25,7 @@ def crossentropy(predictions: Tensor, targets: Tensor) -> Tensor:
     # loss = -np.sum(one_hot_labels * np.log(softmax(predictions)))
     out = Tensor(loss/targets.shape[0])
 
-    if not CG.stop_processing: CG.add_nodes('loss', out.tensor, predictions.tensor)
+    # if not CG.stop_processing: CG.add_nodes('loss', out.tensor, predictions.tensor)
 
     # dL/dpreddictions = predictions-true(one-hot)
     def backward():

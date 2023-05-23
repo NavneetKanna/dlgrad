@@ -17,12 +17,26 @@ class Tensor:
         # TODO: Seems to be a bad way to do this as said by geohotz
         return cls(np.random.default_rng().uniform(-1, 1, shape).astype(np.float32))
 
+    # Only used for - flatten all dimensions except batch
+    @classmethod
+    def flatten(cls, data: Tensor) :
+        backward_list.append(data)
+        out = Tensor(data.tensor.reshape(data.shape[0], -1))
+
+        def backward():
+            data.grad = out.grad.reshape(data.tensor.shape)
+        
+        out._backward = backward
+        
+        return out
+    
+
     # Ops
     def add(self: Tensor, other: Tensor):
         backward_list.extend((self, other))
         output = Tensor(self.tensor + other.tensor)
 
-        if not CG.stop_processing: CG.add_nodes('add', output.tensor, self.tensor, other.tensor)
+        # if not CG.stop_processing: CG.add_nodes('add', output.tensor, self.tensor, other.tensor)
 
         def backward():
             self.grad = output.grad
@@ -36,11 +50,15 @@ class Tensor:
         backward_list.extend((self, other))
         output = Tensor(self.tensor @ other.tensor.T)
 
-        if not CG.stop_processing: CG.add_nodes('matmul', output.tensor, self.tensor, other.tensor)
+        # if not CG.stop_processing: CG.add_nodes('matmul', output.tensor, self.tensor, other.tensor)
 
-        def backward():
-            self.grad = (output.grad @ other.tensor)
-            other.grad = (self.tensor.T @ output.grad).T
+        def backward(op=None, data=None):
+            if op == 'conv':
+                self.grad = (data @ other.tensor)
+                other.grad = (self.tensor.T @ data).T
+            else: 
+                self.grad = (output.grad @ other.tensor)
+                other.grad = (self.tensor.T @ output.grad).T 
 
         output._backward = backward
 

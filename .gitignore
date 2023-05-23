@@ -7,3 +7,5 @@ build
 *.txt
 notes/
 graph
+datasets/cifar10/cifar10_data.npy
+datasets/cifar10/cifar10_labels.npy

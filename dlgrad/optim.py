@@ -10,9 +10,17 @@ class SGD:
     def __init__(self, obj: object, lr: float) -> None:
         self.lr = lr
         self.parameters: list[Tensor] = []
+        # print(obj.__dict__)
         for var in obj.__dict__:
+            if 'pool' in var:
+                continue
+            if not obj.__dict__[var].weight:
+                continue
             self.parameters.append(obj.__dict__[var].weight)
-            if obj.__dict__[var].bias: self.parameters.append(obj.__dict__[var].bias)
+            # bias is not supported for conv as of now
+            if "conv" in var:
+                continue 
+            if obj.__dict__[var].bias: self.parameters.append(obj.__dict__[var].bias) 
 
     def step(self):
         # Update the weights and biases
@@ -21,5 +29,5 @@ class SGD:
 
     def zero_grad(self):
         for parameters in backward_list:
-            parameters.grad = None 
+            parameters.grad = 0 
         backward_list.clear()

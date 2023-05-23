@@ -60,8 +60,12 @@ class MLP:
         self.output_data: int = output_data
         # W = [OUTPUT x INPUT] = (64, 784)
         self.weight: Tensor = Tensor.uniform((self.output_data, self.input_data))
-        if bias:
-            self.bias = Tensor.uniform((1, output_data))
+        if bias: self.bias = Tensor.uniform((1, output_data))
+        else: self.bias = None
 
     def __call__(self, data: Tensor) -> Tensor:
-        return Tensor.add(Tensor.matmul(data, self.weight), self.bias)
+        if self.bias: return Tensor.add(Tensor.matmul(data, self.weight), self.bias)
+        else: return Tensor.matmul(data, self.weight)
+
+    def __call__(self, data: Tensor) -> Tensor:
+        return Tensor.add(Tensor.matmul(data, self.weight), self.bias) 
