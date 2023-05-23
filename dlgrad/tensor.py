@@ -10,7 +10,7 @@ class Tensor:
         self.tensor: np.ndarray = data 
         self.shape = self.tensor.shape
         self._backward = lambda: None
-        self.grad = None 
+        self.grad = 0 
 
     @classmethod
     def uniform(cls, shape: tuple):

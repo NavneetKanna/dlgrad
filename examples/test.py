@@ -6,8 +6,8 @@ sys.path.append(os.getcwd())
 from dlgrad.mlp import MLP
 from dlgrad.conv import Conv2d, MaxPool2d
 # from datasets.fetch_mnist import MNIST
-# from datasets.fetch_cifar10 import CIFAR10
-from datasets.fetch_mnist_cnn import MNIST
+from datasets.fetch_cifar10 import CIFAR10
+# from datasets.fetch_mnist_cnn import MNIST
 from dlgrad.tensor import Tensor
 sys.path.append(os.getcwd())
 from dlgrad.mlp import MLP
@@ -150,8 +150,8 @@ def main():
     start_time = time.perf_counter()
     optimizer = optim.SGD(net, lr)
     
-    # cifar_dataset = CIFAR10()
-    cifar_dataset = MNIST()
+    cifar_dataset = CIFAR10()
+    # cifar_dataset = MNIST()
     # x_train.shape (60000, 784)
     # cnn x_train.shape (32000, 3, 32, 32)
     x_train, y_train = cifar_dataset.get_train_data()
