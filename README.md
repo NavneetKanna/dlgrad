@@ -99,7 +99,7 @@ def main():
     test(net, x_test, y_test)
 ```
 
-## Computational Graph
+## Computational Graph for the ANN model
 <p align="center">
   <img src="https://github.com/NavneetKanna/dlgrad/blob/main/Images/graph.png?raw=true">
 </p>
