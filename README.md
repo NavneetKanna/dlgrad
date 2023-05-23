@@ -9,6 +9,14 @@ The purpose of this porject is to increase my knowledge in deep learning and to 
 ## CNN 
 ```python
 
+from datasets.fetch_cifar10 import CIFAR10
+from dlgrad.mlp import MLP
+from dlgrad.conv import Conv2d, MaxPool2d
+from dlgrad.tensor import Tensor
+from dlgrad.afu import ReLU
+from dlgrad import optim
+from nn.training import train, test, plot_metrics 
+
 class Net:
     def __init__(self):
         self.conv1 = Conv2d(3, 6, 5)
