@@ -7,9 +7,8 @@ from .helper import backward_list
 def ReLU(matrix: Tensor):
     backward_list.append(matrix)
     output = Tensor(np.maximum(0, matrix.tensor))
-    # Tensor.save_for_backward.append(matrix)
 
-    if not CG.stop_processing: CG.add_nodes('ReLU', output.tensor, matrix.tensor)
+    # if not CG.stop_processing: CG.add_nodes('ReLU', output.tensor, matrix.tensor)
 
     def backward():
         matrix.tensor[matrix.tensor <= 0] = 0
