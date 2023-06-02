@@ -5,15 +5,17 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 from tqdm import trange
 from typing import Optional
-
-def train(model, train_loader, x_train: np.ndarray, y_train: np.ndarray, BS: int, optimizer, lr=1e-3, metrics = False) -> Optional[int]:
+from dlgrad.tensor import Tensor
+def train(model, train_loader, x_train: np.ndarray, y_train: np.ndarray, BS: int, optimizer, metrics = False) -> Optional[int]:
     acc = None
     loss = None
 
     steps = train_loader.num_train_steps(BS)
+    steps  = 100 
 
     for _ in (pbar := trange(steps)):
         x_batch_train, y_batch_train = train_loader.get_batch_data(x_train, y_train, BS)
+     
         x = model.forward(x_batch_train)
         loss = crossentropy(x, y_batch_train)
         loss.backward()
