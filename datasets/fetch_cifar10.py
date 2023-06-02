@@ -31,7 +31,8 @@ class CIFAR10:
 
         train_data, self.test_data, train_labels, self.test_labels = train_test_split(data, labels, test_size=0.2)
         self.train_data, self.val_data, self.train_labels, self.val_labels = train_test_split(train_data, train_labels, test_size=0.2)
-
+    def reset_idx(self):
+        self.idx = 0 
     def get_train_data(self):
         return self.train_data, self.train_labels 
 

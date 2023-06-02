@@ -2,6 +2,20 @@ from __future__ import annotations
 import numpy as np
 from .graph import CG
 from .helper import backward_list
+from numba import jit, njit, types 
+from numba.experimental import jitclass
+import numba as nb
+
+# spec = [
+#     ('tensor', types.Any),
+#     ('grad', types.Any),
+# ]
+
+@nb.njit(fastmath=True)
+def _matmul(a, b):
+    # print(f"a {a.dtype}")
+    # print(f"b {b.dtype}")
+    return np.dot(a, b)
 
 class Tensor:
     cg = CG()
@@ -22,9 +36,11 @@ class Tensor:
     def flatten(cls, data: Tensor) :
         backward_list.append(data)
         out = Tensor(data.tensor.reshape(data.shape[0], -1))
+        out.tensor.astype(np.float32)
 
         def backward():
             data.grad = out.grad.reshape(data.tensor.shape)
+            data.grad.astype(np.float32)
         
         out._backward = backward
         
@@ -40,24 +56,26 @@ class Tensor:
 
         def backward():
             self.grad = output.grad
-            other.grad = np.sum(output.grad, axis=0, keepdims=True)
+            other.grad = np.sum(output.grad, axis=0, keepdims=True, dtype=np.float32)
         
         output._backward = backward
 
         return output
-
-    def matmul(self: Tensor, other: Tensor):
+    
+    # @profile 
+    def matmul(self: Tensor, other: Tensor) -> Tensor:
         backward_list.extend((self, other))
+
         output = Tensor(self.tensor @ other.tensor.T)
 
         # if not CG.stop_processing: CG.add_nodes('matmul', output.tensor, self.tensor, other.tensor)
 
-        def backward(op=None, data=None):
+        def backward(op: str=None, data: np.ndarray=None):
             if op == 'conv':
-                self.grad = (data @ other.tensor)
+                self.grad = data @ other.tensor
                 other.grad = (self.tensor.T @ data).T
             else: 
-                self.grad = (output.grad @ other.tensor)
+                self.grad = output.grad @ other.tensor
                 other.grad = (self.tensor.T @ output.grad).T 
 
         output._backward = backward
@@ -75,6 +93,7 @@ class Tensor:
     # As of now I dont see any need for topological sort as others have used it. 
     # The save_for_backward list contians the nodes already ordered since we build
     # the neural network architecture sequentially.
+    # @profile
     def backward(self):
         # Tensor.save_for_backward.append(self)
         backward_list.append(self)

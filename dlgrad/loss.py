@@ -31,7 +31,7 @@ def crossentropy(predictions: Tensor, targets: Tensor) -> Tensor:
     def backward():
         # one_hot_labels = np.zeros(predictions.shape)
         # one_hot_labels[range(predictions.shape[0]), targets.tensor.T] = 1
-        predictions.grad = (softmax(predictions) - one_hot_labels)
+        predictions.grad = (softmax(predictions) - one_hot_labels).astype(np.float32)
 
     out._backward = backward
         
