@@ -14,8 +14,8 @@ class SGD:
         for var in obj.__dict__:
             if 'pool' in var:
                 continue
-            if not obj.__dict__[var].weight:
-                continue
+            # if not obj.__dict__[var].weight:
+            #     continue
             self.parameters.append(obj.__dict__[var].weight)
             # bias is not supported for conv as of now
             if "conv" in var:

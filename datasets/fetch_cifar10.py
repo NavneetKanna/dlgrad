@@ -28,9 +28,12 @@ class CIFAR10:
         data = np.concatenate(data).astype(np.float32)
         data = data.reshape(-1, 3, 32, 32)
         labels = np.array(labels)
-
         train_data, self.test_data, train_labels, self.test_labels = train_test_split(data, labels, test_size=0.2)
         self.train_data, self.val_data, self.train_labels, self.val_labels = train_test_split(train_data, train_labels, test_size=0.2)
+        self.train_data = self.train_data / 255.0
+      
+        
+
     def reset_idx(self):
         self.idx = 0 
     def get_train_data(self):
@@ -44,3 +47,12 @@ class CIFAR10:
 
     def num_train_steps(self, BS: int) -> int:
         return self.train_data.shape[0] // BS
+
+    def delete_data(self):
+        print("deleting")
+        del self.train_data
+        del self.val_data
+        del self.train_labels
+        del self.val_labels
+    
+    

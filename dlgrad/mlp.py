@@ -66,6 +66,3 @@ class MLP:
     def __call__(self, data: Tensor) -> Tensor:
         if self.bias: return Tensor.add(Tensor.matmul(data, self.weight), self.bias)
         else: return Tensor.matmul(data, self.weight)
-
-    def __call__(self, data: Tensor) -> Tensor:
-        return Tensor.add(Tensor.matmul(data, self.weight), self.bias) 

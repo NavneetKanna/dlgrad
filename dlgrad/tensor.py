@@ -2,20 +2,7 @@ from __future__ import annotations
 import numpy as np
 from .graph import CG
 from .helper import backward_list
-from numba import jit, njit, types 
-from numba.experimental import jitclass
-import numba as nb
 
-# spec = [
-#     ('tensor', types.Any),
-#     ('grad', types.Any),
-# ]
-
-@nb.njit(fastmath=True)
-def _matmul(a, b):
-    # print(f"a {a.dtype}")
-    # print(f"b {b.dtype}")
-    return np.dot(a, b)
 
 class Tensor:
     cg = CG()
@@ -45,7 +32,6 @@ class Tensor:
         out._backward = backward
         
         return out
-    
 
     # Ops
     def add(self: Tensor, other: Tensor):
@@ -65,18 +51,13 @@ class Tensor:
     # @profile 
     def matmul(self: Tensor, other: Tensor) -> Tensor:
         backward_list.extend((self, other))
-
         output = Tensor(self.tensor @ other.tensor.T)
 
         # if not CG.stop_processing: CG.add_nodes('matmul', output.tensor, self.tensor, other.tensor)
 
-        def backward(op: str=None, data: np.ndarray=None):
-            if op == 'conv':
-                self.grad = data @ other.tensor
-                other.grad = (self.tensor.T @ data).T
-            else: 
-                self.grad = output.grad @ other.tensor
-                other.grad = (self.tensor.T @ output.grad).T 
+        def backward():
+            self.grad = output.grad @ other.tensor
+            other.grad = (self.tensor.T @ output.grad).T 
 
         output._backward = backward
 
@@ -93,9 +74,7 @@ class Tensor:
     # As of now I dont see any need for topological sort as others have used it. 
     # The save_for_backward list contians the nodes already ordered since we build
     # the neural network architecture sequentially.
-    # @profile
     def backward(self):
-        # Tensor.save_for_backward.append(self)
         backward_list.append(self)
         for node in reversed(backward_list):
             node._backward() 

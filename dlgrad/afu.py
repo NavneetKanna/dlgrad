@@ -21,16 +21,6 @@ def ReLU(matrix: Tensor):
 
     return output
 
-# @nb.njit(fastmath=True, parallel=True)
-# def _sf(matrix):
-#     max_of_row = np.amax(matrix, axis=1, keepdims=True)
-#     matrix_exp = np.exp(matrix-max_of_row)
-#     matrix_sum = np.sum(matrix_exp, axis=1, keepdims=True)
-#     result = matrix_exp / matrix_sum
-
-#     return result
-
-
 def softmax(matrix):
     """
     We are subtracting each row with the maximum element, a kind of normalization,

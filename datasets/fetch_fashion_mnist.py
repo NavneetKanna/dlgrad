@@ -6,21 +6,22 @@ class MNIST:
     def __init__(self):
         self.idx = 0
 
-        self.x_train = idx2numpy.convert_from_file(r'datasets/mnist/train-images-idx3-ubyte')
+        self.x_train = idx2numpy.convert_from_file(r'datasets/fashion_mnist/train-images-idx3-ubyte')
+        self.x_train = self.x_train.astype(np.float32)
         self.x_train = self.x_train / 255.0
         # self.x_train = self.x_train.reshape((-1, 28*28)).astype(np.float32)
-        self.x_train = self.x_train.reshape((-1, 28*28))
+        self.x_train = self.x_train.reshape((-1, 1, 28, 28))
 
-        self.y_train = idx2numpy.convert_from_file(r'datasets/mnist/train-labels-idx1-ubyte')
+        self.y_train = idx2numpy.convert_from_file(r'datasets/fashion_mnist/train-labels-idx1-ubyte')
         self.y_train = self.y_train
 
-        self.x_test = idx2numpy.convert_from_file(r'datasets/mnist/t10k-images-idx3-ubyte')
-        self.x_test = self.x_test / 255.0
-        # self.x_test = self.x_test.reshape((-1, 28*28)).astype(np.float32)
-        self.x_test = self.x_test.reshape((-1, 28*28))
+        # self.x_test = idx2numpy.convert_from_file(r'datasets/mnist/t10k-images-idx3-ubyte')
+        # self.x_test = self.x_test / 255.0
+        # # self.x_test = self.x_test.reshape((-1, 28*28)).astype(np.float32)
+        # self.x_test = self.x_test.reshape((-1, 28*28))
 
-        self.y_test = idx2numpy.convert_from_file(r'datasets/mnist/t10k-labels-idx1-ubyte')
-        self.y_test = self.y_test
+        # self.y_test = idx2numpy.convert_from_file(r'datasets/mnist/t10k-labels-idx1-ubyte')
+        # self.y_test = self.y_test
 
     def get_train_data(self) -> np.ndarray:
         return self.x_train, self.y_train
@@ -33,9 +34,9 @@ class MNIST:
         y = Tensor(y_data[self.idx:self.idx+BS])
         self.idx += BS
         return x, y
+    
     def reset_idx(self):
         self.idx = 0 
+    
     def num_train_steps(self, BS):
         return self.x_train.shape[0] // BS 
-
-
