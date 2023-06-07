@@ -37,7 +37,7 @@ class Net:
         return x
 
 def main():
-    epochs =1 
+    epochs = 1 
     BS = 32 
     lr = 1e-3 
     
