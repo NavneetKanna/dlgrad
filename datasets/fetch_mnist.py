@@ -8,6 +8,7 @@ class MNIST:
 
         self.x_train = idx2numpy.convert_from_file(r'datasets/mnist/train-images-idx3-ubyte')
         self.x_train = self.x_train / 255.0
+        # self.x_train = self.x_train.reshape((-1, 28*28)).astype(np.float32)
         self.x_train = self.x_train.reshape((-1, 28*28))
 
         self.y_train = idx2numpy.convert_from_file(r'datasets/mnist/train-labels-idx1-ubyte')
@@ -15,6 +16,7 @@ class MNIST:
 
         self.x_test = idx2numpy.convert_from_file(r'datasets/mnist/t10k-images-idx3-ubyte')
         self.x_test = self.x_test / 255.0
+        # self.x_test = self.x_test.reshape((-1, 28*28)).astype(np.float32)
         self.x_test = self.x_test.reshape((-1, 28*28))
 
         self.y_test = idx2numpy.convert_from_file(r'datasets/mnist/t10k-labels-idx1-ubyte')
@@ -34,20 +36,6 @@ class MNIST:
     def reset_idx(self):
         self.idx = 0 
     def num_train_steps(self, BS):
-        return getattr(self, 'x_train_shape')[0] // BS
+        return self.x_train.shape[0] // BS 
 
-    def __getattr__(self, attr):
-        if attr == 'x_train_shape':
-            return self.x_train.shape
-        elif attr == 'y_train_shape':
-            return self.y_train.shape
-        elif attr == 'x_test_shape':
-            return self.x_test.shape
-        elif attr == 'y_test_shape':
-            return self.y_test.shape
-        else:
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{attr}'")
-
-    def get_fake_data(self):
-        shap = self.x_train.s
 
