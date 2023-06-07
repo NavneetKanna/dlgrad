@@ -7,8 +7,8 @@ np.set_printoptions(linewidth=np.inf)
 np.set_printoptions(suppress=True)
 # https://stackoverflow.com/questions/26998223/what-is-the-difference-between-contiguous-and-non-contiguous-arrays
 
-im2col_lib = ctypes.CDLL('/mnt/c/Users/navne/Documents/vs_code/test/so/im2col.so')
-col2im_lib = ctypes.CDLL('/mnt/c/Users/navne/Documents/vs_code/test/so/col2im.so')
+im2col_lib = ctypes.CDLL('so/im2col.so')
+col2im_lib = ctypes.CDLL('so/col2im.so')
 
 # Define the function prototype
 im2col_c_func = im2col_lib.im2col_c
@@ -35,7 +35,7 @@ col2im_c_func.argtypes = (
     ctypes.c_int
 )
 
-maxpool_forward_lib = ctypes.CDLL('/mnt/c/Users/navne/Documents/vs_code/test/so/maxpool_forward.so')
+maxpool_forward_lib = ctypes.CDLL('so/maxpool_forward.so')
 
 # Define the function prototype
 maxpool_forward_c_func = maxpool_forward_lib.maxpool_forward_c
@@ -51,7 +51,7 @@ maxpool_forward_c_func.argtypes = (
     ctypes.c_int
 )
 
-maxpool_backward = ctypes.CDLL('/mnt/c/Users/navne/Documents/vs_code/test/so/maxpool_backward.so')
+maxpool_backward = ctypes.CDLL('so/maxpool_backward.so')
 
 maxpool_backward_c_func = maxpool_backward.maxpool_backward_c
 maxpool_backward_c_func.argtypes = (
