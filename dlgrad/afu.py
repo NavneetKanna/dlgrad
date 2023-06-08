@@ -5,17 +5,19 @@ from .helper import backward_list
 import numba as nb
 
 
-# TODO: Tensor.maximum ?
+
 def ReLU(matrix: Tensor):
     backward_list.append(matrix)
-    output = Tensor(np.maximum(0, matrix.tensor))
+    output = Tensor(np.maximum(0, matrix.tensor), 'Relu')
 
     # if not CG.stop_processing: CG.add_nodes('ReLU', output.tensor, matrix.tensor)
 
     def backward():
+        
         matrix.tensor[matrix.tensor <= 0] = 0
         matrix.tensor[matrix.tensor > 0] = 1
         matrix.grad = (matrix.tensor * output.grad)
+
 
     output._backward = backward
 

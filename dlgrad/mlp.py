@@ -1,4 +1,5 @@
 from .tensor import Tensor
+import numpy as np
 
 class MLP:
     """
@@ -59,8 +60,10 @@ class MLP:
         self.input_data: int = input_data
         self.output_data: int = output_data
         # W = [OUTPUT x INPUT] = (64, 784)
-        self.weight: Tensor = Tensor.uniform((self.output_data, self.input_data))
+        self.weight: Tensor = Tensor(np.random.randn(self.output_data, self.input_data).astype(np.float32) * np.sqrt(2.0 / self.input_data) )
         if bias: self.bias = Tensor.uniform((1, output_data))
+        # self.weight: Tensor = Tensor.uniform((self.output_data, self.input_data), self.input_data)
+        # if bias: self.bias = Tensor.uniform((1, output_data))
         else: self.bias = None
 
     def __call__(self, data: Tensor) -> Tensor:

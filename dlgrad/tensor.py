@@ -7,10 +7,11 @@ from .helper import backward_list
 class Tensor:
     cg = CG()
 
-    def __init__(self, data: np.ndarray):
+    def __init__(self, data: np.ndarray, name=None):
         self.tensor: np.ndarray = data 
         self.shape = self.tensor.shape
         self._backward = lambda: None
+        self.name = name
         self.grad = 0 
 
     @classmethod
@@ -33,10 +34,10 @@ class Tensor:
         
         return out
 
-    # Ops
+    
     def add(self: Tensor, other: Tensor):
         backward_list.extend((self, other))
-        output = Tensor(self.tensor + other.tensor)
+        output = Tensor(self.tensor + other.tensor, 'Add')
 
         # if not CG.stop_processing: CG.add_nodes('add', output.tensor, self.tensor, other.tensor)
 
@@ -51,13 +52,14 @@ class Tensor:
     # @profile 
     def matmul(self: Tensor, other: Tensor) -> Tensor:
         backward_list.extend((self, other))
-        output = Tensor(self.tensor @ other.tensor.T)
+        output = Tensor(self.tensor @ other.tensor.T, 'Matmul')
 
         # if not CG.stop_processing: CG.add_nodes('matmul', output.tensor, self.tensor, other.tensor)
 
         def backward():
             self.grad = output.grad @ other.tensor
             other.grad = (self.tensor.T @ output.grad).T 
+            # TODO: WHY IS IT ALL 0 ? 
 
         output._backward = backward
 

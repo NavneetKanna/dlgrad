@@ -74,13 +74,17 @@ class Conv2d:
 
         self.matmul_output = []
 
-        self.weight = Tensor(np.random.random((self.out_channels, self.in_channels, self.kernal_size, self.kernal_size)).astype(np.float32))
+        # fan_in = in_channels * (kernel_size[0] * kernel_size[1])
+
+        std = np.sqrt(2.0 / (self.in_channels * self.kernal_size * self.kernal_size))
+        self.weight = Tensor(np.random.randn(self.out_channels, self.in_channels, self.kernal_size, self.kernal_size).astype(np.float32) * std, 'Conv Weight')
+        # self.weight = Tensor.uniform((self.out_channels, self.in_channels, self.kernal_size, self.kernal_size))
         
     def __call__(self, data: Tensor) -> Tensor: 
         backward_list.extend((data, self.weight))
         self.new_w = ((data.shape[-2] - self.kernal_size + 2*self.padding)//self.stride) + 1 
         self.new_h = ((data.shape[-1] - self.kernal_size + 2*self.padding)//self.stride) + 1 
-        self.conv_out = Tensor(np.zeros((data.shape[0], self.out_channels, self.new_w, self.new_h), dtype=np.float32))
+        self.conv_out = Tensor(np.zeros((data.shape[0], self.out_channels, self.new_w, self.new_h), dtype=np.float32), 'Conv Output')
         data.grad = np.zeros(data.tensor.shape, dtype=np.float32)
         return self.conv(data)
 
@@ -128,7 +132,7 @@ class MaxPool2d:
             N, C, W, H = data.shape
             new_w = ((W-self.size) // self.stride) + 1
             new_h = ((H-self.size) // self.stride) + 1
-            self.out = Tensor(np.zeros((N, C, new_w, new_h), dtype=np.float32))
+            self.out = Tensor(np.zeros((N, C, new_w, new_h), dtype=np.float32), 'Maxpool output')
             self.max_idx = np.zeros((N, C, new_w, new_h), dtype=np.int32)
             maxpool_forward_c_func(
                 data.tensor, 
