@@ -54,7 +54,7 @@ class MLP:
          .                                   .                      .                            .         
          .
          .
-         ]
+        ]
     """
     def __init__(self, input_data: int, output_data: int, bias=False) -> None:
         self.input_data: int = input_data

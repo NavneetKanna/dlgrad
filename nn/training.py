@@ -5,7 +5,6 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 from tqdm import trange
 from typing import Optional
-from dlgrad.tensor import Tensor
 
 np.set_printoptions(linewidth=np.inf)
 
