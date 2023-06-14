@@ -107,12 +107,6 @@ def main():
     test(net, x_test, y_test)
 ```
 
-## Computational Graph for the ANN model
-<p align="center">
-  <img src="https://github.com/NavneetKanna/dlgrad/blob/main/Images/graph.png?raw=true">
-</p>
-
-
 
 --------------------------------------------------------------------
 ## Testing
@@ -122,3 +116,11 @@ To run the tests go to main dir (dlgrad/) and run the command
 python -m unittest discover 
 
 ```
+
+--------------------------------------------------------------------
+## Computational Graph for the ANN model
+<p align="center">
+  <img src="https://github.com/NavneetKanna/dlgrad/blob/main/Images/graph.png?raw=true">
+</p>
+
+
