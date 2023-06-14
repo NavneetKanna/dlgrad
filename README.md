@@ -119,6 +119,6 @@ def main():
 To run the tests go to main dir (dlgrad/) and run the command
 ```shell
 
-python -m unittest discover -v
+python -m unittest discover 
 
 ```
