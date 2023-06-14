@@ -89,9 +89,14 @@ class Conv2d:
         return self.conv(data)
 
     def conv(self, data) -> Tensor:
-        new_w = (data.shape[2]-self.kernal_size) // self.stride + 1
-        new_h = (data.shape[3]-self.kernal_size) // self.stride + 1 
-        X_col = np.zeros((data.shape[0]*new_w*new_h, data.shape[1]*self.kernal_size*self.kernal_size), dtype=np.float32)
+        # new_w = (data.shape[2]-self.kernal_size) // self.stride + 1
+        # new_h = (data.shape[3]-self.kernal_size) // self.stride + 1 
+        X_col = np.zeros((
+            data.shape[0]*self.new_w*self.new_h, 
+            data.shape[1]*self.kernal_size*self.kernal_size), 
+        dtype=np.float32
+        )
+
         im2col_c_func(data.tensor, X_col, data.shape[0], data.shape[1], data.shape[2], data.shape[3], self.kernal_size, self.stride)
         
         w_col = self.weight.tensor.reshape((self.out_channels, -1))
