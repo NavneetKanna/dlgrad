@@ -89,7 +89,7 @@ def backward(data, cache, stride=1):
 
 class TestConv(unittest.TestCase):
     def test_conv_forward(self):
-        print("\n\nTesting Conv forward and backward with same weight and upstream gradient\n")
+        # print("Testing Conv forward and backward with same weight and upstream gradient")
         global torch_conv_weight
         self.torch_conv = nn.Conv2d(in_channels, out_channels, kernal_size, bias=False)
 
