@@ -85,7 +85,6 @@ def maxpool_backward_hook(module, grad_input, grad_output):
 
 class TestMaxpool(unittest.TestCase):
     def test_maxpool(self):
-        # print("Testing Maxpool forward and backward with same inp and upstream gradient")
         torch_maxpool = nn.MaxPool2d(MAXPOOL_SIZE, MAXPOOL_STRIDE)
         torch_maxpool.register_full_backward_hook(maxpool_backward_hook)
 
