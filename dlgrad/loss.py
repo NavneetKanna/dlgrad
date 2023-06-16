@@ -17,6 +17,8 @@ def crossentropy(predictions: Tensor, targets: Tensor) -> Tensor:
     backward_list.append(predictions)
 
     # (32, 10) (32,)
+
+    assert targets.tensor.ndim == 1, "dlgrad as of now only supports targets of shape (BS,)"
     one_hot_labels = np.zeros(predictions.shape)
     one_hot_labels[range(predictions.shape[0]), targets.tensor.T] = 1
 

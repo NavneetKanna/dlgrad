@@ -6,7 +6,7 @@ import numba as nb
 
 
 
-def ReLU(matrix: Tensor):
+def ReLU(matrix: Tensor) -> Tensor:
     backward_list.append(matrix)
     output = Tensor(np.maximum(0, matrix.tensor), 'Relu')
 
@@ -23,17 +23,14 @@ def ReLU(matrix: Tensor):
 
     return output
 
-def softmax(matrix):
+def softmax(matrix: Tensor) -> np.ndarray:
     """
     We are subtracting each row with the maximum element, a kind of normalization,
     because the exp can get huge.
     """
-    try:
-        # result = _sf(matrix.tensor)
-        max_of_row = np.amax(matrix.tensor, axis=1, keepdims=True)
-        matrix_exp = np.exp(matrix.tensor-max_of_row)
-        matrix_sum = np.sum(matrix_exp, axis=1, keepdims=True)
-        result = matrix_exp / matrix_sum
-    except RuntimeWarning:
-        print("in softmax")
+    max_of_row = np.amax(matrix.tensor, axis=1, keepdims=True)
+    matrix_exp = np.exp(matrix.tensor - max_of_row)
+    matrix_sum = np.sum(matrix_exp, axis=1, keepdims=True)
+    result = matrix_exp / matrix_sum
+
     return result
