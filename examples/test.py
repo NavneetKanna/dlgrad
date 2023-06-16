@@ -20,6 +20,16 @@ import numpy as np
 
 
 # kernprof -l -v --unit 1e-3 test.py
+# https://medium.com/geekculture/a-look-under-the-hood-of-pytorchs-recurrent-neural-network-module-47c34e61a02d
+# python -m unittest discover -v
+
+
+# TODO: Get rid of helper.py
+
+
+
+
+
 
 class Net:
     def __init__(self):
