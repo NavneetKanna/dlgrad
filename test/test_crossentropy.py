@@ -1,17 +1,9 @@
-import sys
-import os
-os.chdir(r"/mnt/c/Users/navne/Documents/vs_code/dlgrad/")
-sys.path.append(os.getcwd())
-
-
 import unittest
 from torch import nn
 import torch
 from dlgrad.tensor import Tensor
 from dlgrad.loss import crossentropy
 import numpy as np
-
-
 
 class TestCrossEntropy(unittest.TestCase):
     def test_cross_entropy(self):
