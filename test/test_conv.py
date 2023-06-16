@@ -1,18 +1,8 @@
-# import sys
-# import os
-# os.chdir(r"/mnt/c/Users/navne/Documents/vs_code/dlgrad/")
-# sys.path.append(os.getcwd())
-
 import unittest
 import torch 
 from torch import nn
 import numpy as np
 import ctypes
-
-
-
-
-
 
 im2col_lib = ctypes.CDLL('/mnt/c/Users/navne/Documents/vs_code/dlgrad/so/im2col.so')
 col2im_lib = ctypes.CDLL('/mnt/c/Users/navne/Documents/vs_code/dlgrad/so/col2im.so')
