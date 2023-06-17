@@ -21,7 +21,7 @@ import numpy as np
 
 # kernprof -l -v --unit 1e-3 test.py
 # python -m unittest discover -v
-
+# https://stackoverflow.com/questions/26998223/what-is-the-difference-between-contiguous-and-non-contiguous-arrays
 
 # TODO: Get rid of helper.py
 # TODO: Should afu and loss come in tensor.py ?
