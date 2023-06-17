@@ -11,7 +11,7 @@ from datasets.fetch_fashion_mnist import MNIST
 # from datasets.fetch_mnist_cnn import MNIST
 from dlgrad.tensor import Tensor
 from dlgrad.mlp import MLP
-from dlgrad.afu import ReLU
+# from dlgrad.afu import ReLU
 from nn.training import train, test, plot_metrics 
 from dlgrad.graph import save_graph
 from dlgrad import optim
@@ -20,15 +20,11 @@ import numpy as np
 
 
 # kernprof -l -v --unit 1e-3 test.py
-# https://medium.com/geekculture/a-look-under-the-hood-of-pytorchs-recurrent-neural-network-module-47c34e61a02d
 # python -m unittest discover -v
 
 
 # TODO: Get rid of helper.py
-
-
-
-
+# TODO: Should afu and loss come in tensor.py ?
 
 
 class Net:
@@ -43,16 +39,16 @@ class Net:
 
     def forward(self, x):
         x = self.conv1(x)
-        x = ReLU(x)
+        x = x.ReLU()
         x = self.pool1(x)
         x = self.conv2(x)
-        x = ReLU(x)
+        x = x.ReLU()
         x = self.pool2(x)
         x = Tensor.flatten(x) # flatten all dimensions except batch
         x = self.fc1(x)
-        x = ReLU(x)
+        x = x.ReLU()
         x = self.fc2(x)
-        x = ReLU(x)
+        x = x.ReLU()
         x = self.fc3(x)
         return x
 
@@ -70,36 +66,13 @@ def main():
     x_train, y_train = fashion_mnist_dataset.get_train_data()
     
 
-    local_dict = None
     start_time = time.perf_counter()
     for epoch in range(epochs):
             print(f"epoch {epoch+1}")
             fashion_mnist_dataset.reset_idx()
-            local_dict = train(net, fashion_mnist_dataset, x_train, y_train, BS, optimizer)
+            train(net, fashion_mnist_dataset, x_train, y_train, BS, optimizer)
+    
     fashion_mnist_dataset.delete_data()
-
-    import matplotlib.pyplot as plt
-    l = []
-    # for j, i in enumerate(local_dict):
-    #     print(f"mean {i.tensor.mean()} std {i.tensor.std()} saturated {(np.absolute(i.tensor) > 0).mean()*100}%")
-    #     hy, hx = np.histogram(i.tensor, density=True)
-    #     plt.plot(hx[:-1], hy)
-    #     l.append(f"layer {j+1} relu")
-    # plt.legend(l)
-    # plt.show()
-
-    # print("Grad")
-    # for j, i in enumerate(local_dict):
-    #     print(f"mean {i.grad.mean()} std {i.grad.std()}")
-    #     hy, hx = np.histogram(i.grad, density=True)
-    #     plt.plot(hx[:-1], hy)
-    #     l.append(f"layer {j+1} relu")
-    # plt.legend(l)
-    # plt.show()
-        
-              
-         
-
     end_time = time.perf_counter()
     dot_time = end_time - start_time
     print(f"time = {dot_time}")
