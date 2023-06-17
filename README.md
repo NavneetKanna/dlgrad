@@ -56,7 +56,7 @@ def main():
     
     for epoch in range(epochs):
         print(f"epoch {epoch+1}")
-
+        fashion_mnist_dataset.reset_idx()
         train(net, cifar_dataset, x_train, y_train, BS, optimizer)
 
 ```
@@ -96,7 +96,7 @@ def main():
     
     for epoch in range(epochs):
         print(f"epoch {epoch+1}")
-
+        mnist_dataset.reset_idx()
         train(net, mnist_dataset, x_train, y_train, BS, optimizer, lr)
 
     save_graph()

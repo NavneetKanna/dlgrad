@@ -33,8 +33,10 @@ class MNIST:
         y = Tensor(y_data[self.idx:self.idx+BS])
         self.idx += BS
         return x, y
+    
     def reset_idx(self):
         self.idx = 0 
+    
     def num_train_steps(self, BS):
         return self.x_train.shape[0] // BS 
 
