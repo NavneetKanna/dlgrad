@@ -1,5 +1,4 @@
 from typing import TYPE_CHECKING
-import numpy as np
 from .helper import backward_list
 
 if TYPE_CHECKING:
@@ -10,12 +9,11 @@ class SGD:
     def __init__(self, obj: object, lr: float) -> None:
         self.lr = lr
         self.parameters: list[Tensor] = []
-        # print(obj.__dict__)
         for var in obj.__dict__:
             if 'pool' in var:
                 continue
-            # if not obj.__dict__[var].weight:
-            #     continue
+            if not obj.__dict__[var].weight:
+                continue
             self.parameters.append(obj.__dict__[var].weight)
             # bias is not supported for conv as of now
             if "conv" in var:

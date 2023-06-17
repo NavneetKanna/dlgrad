@@ -15,13 +15,13 @@ class Tensor:
         self.grad = 0 
 
     @classmethod
-    def uniform(cls, shape: tuple):
+    def uniform(cls, shape: tuple, start=-1, end=1):
         # TODO: Seems to be a bad way to do this as said by geohotz
-        return cls(np.random.default_rng().uniform(-1, 1, shape).astype(np.float32))
+        return cls(np.random.default_rng().uniform(start, end, shape).astype(np.float32))
 
     # Only used for - flatten all dimensions except batch
     @classmethod
-    def flatten(cls, data: Tensor) :
+    def flatten(cls, data: Tensor) -> Tensor:
         backward_list.append(data)
         out = Tensor(data.tensor.reshape(data.shape[0], -1))
         out.tensor.astype(np.float32)
@@ -33,9 +33,8 @@ class Tensor:
         out._backward = backward
         
         return out
-
     
-    def add(self: Tensor, other: Tensor):
+    def add(self: Tensor, other: Tensor) -> Tensor:
         backward_list.extend((self, other))
         output = Tensor(self.tensor + other.tensor, 'Add')
 
@@ -49,7 +48,6 @@ class Tensor:
 
         return output
     
-    # @profile 
     def matmul(self: Tensor, other: Tensor) -> Tensor:
         backward_list.extend((self, other))
         output = Tensor(self.tensor @ other.tensor.T, 'Matmul')
@@ -64,6 +62,33 @@ class Tensor:
         output._backward = backward
 
         return output 
+
+    def ReLU(self, matrix: Tensor) -> Tensor:
+        backward_list.append(matrix)
+        output = Tensor(np.maximum(0, matrix.tensor), 'Relu')
+
+        # if not CG.stop_processing: CG.add_nodes('ReLU', output.tensor, matrix.tensor)
+
+        def backward():
+            matrix.tensor[matrix.tensor <= 0] = 0
+            matrix.tensor[matrix.tensor > 0] = 1
+            matrix.grad = (matrix.tensor * output.grad)
+
+        output._backward = backward
+
+        return output
+
+    def softmax(self, matrix: Tensor) -> np.ndarray:
+        """
+        We are subtracting each row with the maximum element, a kind of normalization,
+        because the exp can get huge.
+        """
+        max_of_row = np.amax(matrix.tensor, axis=1, keepdims=True)
+        matrix_exp = np.exp(matrix.tensor - max_of_row)
+        matrix_sum = np.sum(matrix_exp, axis=1, keepdims=True)
+        result = matrix_exp / matrix_sum
+
+        return result
 
     def __setitem__(self, key, val):
         self.tensor[key] = [val for i in self.tensor if i in key]

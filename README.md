@@ -13,7 +13,6 @@ from datasets.fetch_cifar10 import CIFAR10
 from dlgrad.mlp import MLP
 from dlgrad.conv import Conv2d, MaxPool2d
 from dlgrad.tensor import Tensor
-from dlgrad.afu import ReLU
 from dlgrad import optim
 from nn.training import train, test, plot_metrics 
 
@@ -29,16 +28,16 @@ class Net:
 
     def forward(self, x):
         x = self.conv1(x)
-        x = ReLU(x)
+        x = x.ReLU()
         x = self.pool1(x)
         x = self.conv2(x)
-        x = ReLU(x)
+        x = x.ReLU()
         x = self.pool2(x)
         x = Tensor.flatten(x) # flatten all dimensions except batch
         x = self.fc1(x)
-        x = ReLU(x)
+        x = x.ReLU()
         x = self.fc2(x)
-        x = ReLU(x)
+        x = x.ReLU()
         x = self.fc3(x)
         return x
 
@@ -68,7 +67,6 @@ def main():
 ```python
 from dlgrad.mlp import MLP
 from datasets.fetch_mnist import MNIST 
-from dlgrad.afu import ReLU
 from nn.training import train, test, plot_metrics 
 from dlgrad.graph import display_graph
 from dlgrad import optim
@@ -80,7 +78,7 @@ class Net:
 
     def forward(self, x):
         x = self.fc1(x)
-        x = ReLU(x)
+        x = x.ReLU()
         x = self.fc3(x)
         return x
 
