@@ -1,11 +1,9 @@
---------------------------------------------------------------------
+dlgrad (*D*eep *L*earning auto*grad*): A Lightweight Autograd Engine for Deep Learning
 
-This work is inspired by myself, [Andrej Karpathy micrograd](https://github.com/karpathy/micrograd) and [George Hotz tinygrad](https://github.com/geohot/tinygrad).
+Inspired by Andrej Karpathy's micrograd and George Hotz's tinygrad, dlgrad is my personal exploration into building an Autograd engine from scratch. Its lightweight in design and has PyTorch like API.
 
-The purpose of this porject is to increase my knowledge in deep learning and to understand how everything works under the hood.  
+---
 
-
---------------------------------------------------------------------
 ## CNN 
 ```python
 
