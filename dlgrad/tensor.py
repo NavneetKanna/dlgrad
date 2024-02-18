@@ -1,19 +1,18 @@
 from __future__ import annotations
 import numpy as np
-from .graph import CG
-from .helper import backward_list
-
+from typing import Union
+from buffer import Buffer
 
 class Tensor:
-    cg = CG()
+    __slots__ = "grad"
 
-    def __init__(self, data: np.ndarray, name=None):
-        self.tensor: np.ndarray = data 
-        self.shape = self.tensor.shape
-        self._backward = lambda: None
-        self.name = name
-        self.grad = 0 
+    def __init__(self, data: Union[list, int, float]):
+        self.data = Buffer(data)
+        self.device = ...
+        self.stride = ...
+        self.grad = ...
 
+    """
     @classmethod
     def uniform(cls, shape: tuple, start=-1, end=1):
         # TODO: Seems to be a bad way to do this as said by geohotz
@@ -79,10 +78,9 @@ class Tensor:
         return output
 
     def softmax(self) -> np.ndarray:
-        """
-        We are subtracting each row with the maximum element, a kind of normalization,
-        because the exp can get huge.
-        """
+        # We are subtracting each row with the maximum element, a kind of normalization,
+        # because the exp can get huge.
+
         max_of_row = np.amax(self.tensor, axis=1, keepdims=True)
         matrix_exp = np.exp(self.tensor - max_of_row)
         matrix_sum = np.sum(matrix_exp, axis=1, keepdims=True)
@@ -106,3 +104,4 @@ class Tensor:
         for node in reversed(backward_list):
             node._backward() 
 
+    """

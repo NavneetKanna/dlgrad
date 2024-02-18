@@ -1,8 +1,9 @@
+"""
 import unittest
 from torch import nn
 import torch
 from dlgrad.tensor import Tensor
-from dlgrad.loss import crossentropy
+from extra.archive.py.loss import crossentropy
 import numpy as np
 
 class TestCrossEntropy(unittest.TestCase):
@@ -34,3 +35,4 @@ class TestCrossEntropy(unittest.TestCase):
         # my_output2 = crossentropy(my_inp2, my_target2)
 
         # self.assertEqual(torch_output2.detach().numpy().astype(np.float32).round(2), my_output2.tensor.astype(np.float32).round(2))
+"""

@@ -1,8 +1,9 @@
+"""
 from typing import TYPE_CHECKING
 from .helper import backward_list
 
 if TYPE_CHECKING:
-    from .tensor import Tensor
+    from ....dlgrad.tensor import Tensor
 
 # It is basically mini-batch GD 
 class SGD:
@@ -29,3 +30,4 @@ class SGD:
         for parameters in backward_list:
             parameters.grad = 0 
         backward_list.clear()
+"""

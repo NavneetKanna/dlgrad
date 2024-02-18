@@ -1,3 +1,4 @@
+"""
 import unittest
 from torch import nn
 import torch
@@ -14,3 +15,4 @@ class TestSoftmax(unittest.TestCase):
         my_output = softmax(Tensor(input.numpy()))
 
         np.testing.assert_allclose(torch_output.numpy(), my_output, rtol=0, atol=10**(-2))
+"""

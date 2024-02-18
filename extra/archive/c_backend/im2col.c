@@ -1,3 +1,4 @@
+/*
 #include <stdio.h>
 
 
@@ -23,3 +24,4 @@ void im2col_c(float* array, float* res, int BS, int channels, int rows, int cols
         }   
     }
 }
+*/

@@ -113,10 +113,10 @@ python -m unittest discover
 
 ```
 
---------------------------------------------------------------------
+<!-- --------------------------------------------------------------------
 ## Computational Graph for the ANN model
 <p align="center">
   <img src="https://github.com/NavneetKanna/dlgrad/blob/main/Images/graph.png?raw=true">
-</p>
+</p>  -->
 
 

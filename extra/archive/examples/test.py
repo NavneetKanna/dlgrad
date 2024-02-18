@@ -1,20 +1,21 @@
+"""
 import sys
 import os
 os.chdir(r"/mnt/c/Users/navne/Documents/vs_code/dlgrad/")
 # os.chdir(r"C:/Users/navne/Documents/vs_code/dlgrad")
 sys.path.append(os.getcwd())
-from dlgrad.mlp import MLP
-from dlgrad.conv import Conv2d, MaxPool2d
+from extra.archive.py.mlp import MLP
+from extra.archive.py.conv import Conv2d, MaxPool2d
 # from datasets.fetch_mnist import MNIST
 from datasets.fetch_cifar10 import CIFAR10
 from datasets.fetch_fashion_mnist import MNIST
 # from datasets.fetch_mnist_cnn import MNIST
 from dlgrad.tensor import Tensor
-from dlgrad.mlp import MLP
+from extra.archive.py.mlp import MLP
 # from dlgrad.afu import ReLU
 from nn.training import train, test, plot_metrics 
-from dlgrad.graph import save_graph
-from dlgrad import optim
+from extra.archive.py.graph import save_graph
+from extra.archive.py import optim
 import time
 import numpy as np
 
@@ -80,3 +81,4 @@ def main():
 if __name__ == '__main__':
     main()
 
+"""

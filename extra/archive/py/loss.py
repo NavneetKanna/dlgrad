@@ -1,19 +1,19 @@
+"""
 import numpy as np
-from .afu import softmax
-from .tensor import Tensor
+# from .afu import softmax
+from ....dlgrad.tensor import Tensor
 from .graph import CG
 from .helper import backward_list
 
 def crossentropy(predictions: Tensor, targets: Tensor) -> Tensor:
-    """
-    Similar to PyTorch cross entropy.
-    First log softmax is done and then 
-    negative log likehood is performed.
-    Hence the targets must be logits, which means
-    they must numbers(the values after performing the 
-    weighted sum of the output layer) and not probabilities.
-    And targets should "not" be one-hot encoded.
-    """
+    # Similar to PyTorch cross entropy.
+    # First log softmax is done and then 
+    # negative log likehood is performed.
+    # Hence the targets must be logits, which means
+    # they must numbers(the values after performing the 
+    # weighted sum of the output layer) and not probabilities.
+    # And targets should "not" be one-hot encoded.
+    
     backward_list.append(predictions)
 
     # (32, 10) (32,)
@@ -39,6 +39,6 @@ def crossentropy(predictions: Tensor, targets: Tensor) -> Tensor:
     out._backward = backward
         
     return out 
-
+"""
 
 

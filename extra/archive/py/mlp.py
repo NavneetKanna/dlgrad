@@ -1,8 +1,8 @@
-from .tensor import Tensor
+"""
+from ....dlgrad.tensor import Tensor
 import numpy as np
 
 class MLP:
-    """
     MLP class is used for initializing the weights and to perfom the 
     weighted sum.
 
@@ -55,7 +55,6 @@ class MLP:
          .
          .
         ]
-    """
     def __init__(self, input_data: int, output_data: int, bias=False) -> None:
         self.input_data: int = input_data
         self.output_data: int = output_data
@@ -69,3 +68,4 @@ class MLP:
     def __call__(self, data: Tensor) -> Tensor:
         if self.bias: return Tensor.add(Tensor.matmul(data, self.weight), self.bias)
         else: return Tensor.matmul(data, self.weight)
+"""

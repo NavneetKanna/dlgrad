@@ -1,3 +1,4 @@
+"""
 import graphviz 
 
 nodes = [] 
@@ -134,3 +135,4 @@ class CG:
         elif op == 'loss':
             draw_graph('Cross-Entropy Loss', (output.shape, 'Loss'), (('BS', input1.shape[1]), 'Predictions'))
             CG.stop_processing = True
+"""
