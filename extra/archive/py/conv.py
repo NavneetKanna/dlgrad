@@ -1,5 +1,6 @@
+"""
 import numpy as np
-from .tensor import Tensor
+from ....dlgrad.tensor import Tensor
 from .helper import backward_list
 import ctypes
 
@@ -169,3 +170,4 @@ class MaxPool2d:
             self.out._backward = backward
 
             return self.out
+"""

@@ -1,3 +1,4 @@
+/*
 #include <stdio.h>
 
 
@@ -44,3 +45,4 @@ void maxpool_forward_c(float* array, float* res, int* max_index_array, int BS, i
         }
     }
 }
+*/

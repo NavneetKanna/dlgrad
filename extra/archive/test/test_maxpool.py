@@ -1,3 +1,4 @@
+"""
 import unittest
 import torch
 from torch import nn
@@ -100,3 +101,4 @@ class TestMaxpool(unittest.TestCase):
         my_pool_data_grad = maxpool_backward(inp.detach().numpy(), max_idx)
 
         np.testing.assert_allclose(inp.grad.detach().numpy().round(3), my_pool_data_grad.round(3), rtol=0, atol=10**(-2))
+"""

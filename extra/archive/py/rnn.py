@@ -1,3 +1,4 @@
+"""
 import math
 from typing import Optional
 from dlgrad.tensor import Tensor
@@ -32,4 +33,4 @@ class RNN():
                 ih_out[bs, tn] = ht
         
         return ih_out, self.hx
-
+"""

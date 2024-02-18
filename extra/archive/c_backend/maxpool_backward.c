@@ -1,3 +1,4 @@
+/*
 #include<stdio.h>
 
 
@@ -42,3 +43,4 @@ void maxpool_backward_c(float* array, float* data_grad, float* out_grad, int* ma
 
 
 }
+*/

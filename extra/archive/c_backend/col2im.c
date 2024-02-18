@@ -1,3 +1,4 @@
+/*
 #include <stdio.h>
 
 /*
@@ -17,7 +18,7 @@
   (9, 8)                                       (18, 8)
 
 
-*/
+
 
 
 void col2im_c(float* array, float* res, int BS, int channels, int rows, int cols, int kernal_size, int stride) {
@@ -53,3 +54,4 @@ void col2im_c(float* array, float* res, int BS, int channels, int rows, int cols
 
 
 }
+*/

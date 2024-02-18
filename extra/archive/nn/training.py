@@ -1,4 +1,5 @@
-from dlgrad.loss import crossentropy
+"""
+from extra.archive.py.loss import crossentropy
 # from dlgrad.afu import softmax
 from dlgrad.tensor import T
 import numpy as np
@@ -40,3 +41,4 @@ def test(model, x_test, y_test):
     print(f"Test loss : {loss.tensor}")
     acc = accuracy_score(y_test.tensor.T, np.argmax(x.softmax(), axis=1))
     print(f"Test accuracy : {acc*100}%")
+"""
