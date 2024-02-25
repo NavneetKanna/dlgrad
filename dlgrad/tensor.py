@@ -20,3 +20,4 @@ class Tensor:
         self.data = None
     
         if isinstance(data, Union[int, float]): self.data = Buffer.create_scalar_buffer(data)    
+        if isinstance(data, list): self.data = Buffer.create_list_buffer(data)
