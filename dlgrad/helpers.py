@@ -1,3 +1,5 @@
+class ShapeError(Exception): ...
+
 def get_list_dim(data: list, dim=0):
     if isinstance(data, list): 
         dim +=1
