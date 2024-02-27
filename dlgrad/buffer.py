@@ -2,13 +2,9 @@ from typing import Union
 import ctypes as ct
 # from dlgrad.helpers import get_list_dim
 
-
-dll = ct.CDLL('../backend/c/test.so')
-dll.create_rand_buffer.argtypes = ct.POINTER(ct.c_int), ct.c_int
+dll = ct.CDLL('./backend/c/test.so')
+dll.create_rand_buffer.argtypes = ct.c_int, ct.c_int, ct.c_int, ct.c_int 
 # dll.func.restype = ct.POINTER(ct.c_char)
-# dll.freeMem.argtypes = ct.c_void_p,
-# dll.freeMem.restype = None
-
 
 class Buffer:
     """
@@ -28,5 +24,8 @@ class Buffer:
     #TODO: Restrict the dim to 4, so things become easier
     @staticmethod
     def create_rand_buffer(shape): 
-
-        dll.create_rand_buffer()
+        l = len(shape)
+        if l == 1: dll.create_rand_buffer(0, 0, 0, shape[0])
+        if l == 2: dll.create_rand_buffer(0, 0, shape[0], shape[1])
+        if l == 3: dll.create_rand_buffer(0, shape[0], shape[1], shape[2])
+        if l == 4: dll.create_rand_buffer(shape[0], shape[1], shape[2], shape[3])

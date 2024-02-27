@@ -30,8 +30,8 @@ class Tensor:
         if isinstance(shape[0], tuple): shape = shape[0]
         if isinstance(shape[0], list): shape = tuple(*shape)
 
-        if not all(isinstance(item, int) for item in shape): raise ShapeError("Only ints can be passed to shape")
         if len(shape) > 4: raise ShapeError("dlgrad only supports upto 4 dim")
         if isinstance(shape[0], list): raise ShapeError("Multi-dim list cannot be passed as shape")
+        if not all(isinstance(item, int) for item in shape): raise ShapeError("Only ints can be passed to shape")
 
         Buffer.create_rand_buffer(shape)
