@@ -3,7 +3,7 @@ import ctypes as ct
 # from dlgrad.helpers import get_list_dim
 
 dll = ct.CDLL('./backend/c/test.so')
-dll.create_rand_buffer.argtypes = ct.c_int, ct.c_int, ct.c_int, ct.c_int 
+dll.create_rand_buffer.argtypes = ...
 dll.create_rand_buffer.restype = ct.POINTER(ct.c_float)  
 
 class Buffer:
