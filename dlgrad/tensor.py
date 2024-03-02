@@ -4,6 +4,7 @@
 3) detect if list is n dim
 4)  @property
 5) list should be homogeneous
+6) clang -rand
 """
 
 from __future__ import annotations
@@ -20,6 +21,8 @@ class Tensor:
         # self.grad = ...
        
         self.data = None # TODO: change repr when called
+
+        # TODO: isinstance(buffer)
     
         if isinstance(data, Union[int, float]): self.data = Buffer.create_scalar_buffer(data)    
         if isinstance(data, list): self.data = Buffer.create_list_buffer(data)
@@ -33,5 +36,11 @@ class Tensor:
         if len(shape) > 4: raise ShapeError("dlgrad only supports upto 4 dim")
         if isinstance(shape[0], list): raise ShapeError("Multi-dim list cannot be passed as shape")
         if not all(isinstance(item, int) for item in shape): raise ShapeError("Only ints can be passed to shape")
-
+        
         Buffer.create_rand_buffer(shape)
+
+
+"""
+https://stackoverflow.com/questions/7343833/srand-why-call-it-only-once
+
+"""

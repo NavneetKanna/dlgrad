@@ -4,7 +4,7 @@ import ctypes as ct
 
 dll = ct.CDLL('./backend/c/test.so')
 dll.create_rand_buffer.argtypes = ct.c_int, ct.c_int, ct.c_int, ct.c_int 
-# dll.func.restype = ct.POINTER(ct.c_char)
+dll.create_rand_buffer.restype = ct.POINTER(ct.c_float)  
 
 class Buffer:
     """
@@ -21,7 +21,6 @@ class Buffer:
     @staticmethod
     def create_list_buffer(data: list): return Buffer(data)
 
-    #TODO: Restrict the dim to 4, so things become easier
     @staticmethod
     def create_rand_buffer(shape): 
         l = len(shape)
