@@ -14,14 +14,21 @@ import numpy as np
 class Tensor:
     # __slots__ = "grad"
 
-    def __init__(self, data: Union[list, int, float]):
+    def __init__(self, data: Union[list, int, float], _len: int=None, _shape: tuple = None):
         # self.device = ...
         # self.stride = ...
         # self.grad = ...   
 
-        if isinstance(data, Union[int, float]): self._data = data    
-        if isinstance(data, list): self._data = data
-        if isinstance(data, ctypes.POINTER(ctypes.c_float)): self._data = data
+        if isinstance(data, Union[int, float]): 
+            self._data = data
+            self.len = len(data)
+        if isinstance(data, list): 
+            self._data = data
+            self.len = len(data)
+        if isinstance(data, ctypes.POINTER(ctypes.c_float)): 
+            self._data = data
+            self._len = _len
+            self._shape = _shape
 
         atexit.register(self.cleanup)
 
@@ -37,31 +44,32 @@ class Tensor:
         size = 1
         for i in shape: size *= i
         
-        return Tensor(c_rand_buffer._create(size))
+        return Tensor(c_rand_buffer._create(size), size, shape)
     
     def numpy(self):
-        """
-        read the buffer into 1D byte array
-        now shape the array as you please
-
-        ptr = ctypes.cast(a._data, ctypes.POINTER(ctypes.c_float * 2))
-        np.asarray(ptr.contents)
-        np.frombuffer(ptr.contents, dtype=np.float32)
-
-        np.ctypeslib.as_array(a._data, shape=(1, 2))
-        """
-        pass
-        # data = np.frombuffer(ctypes.cast(self._data, ctypes.POINTER(ctypes.c_char)), dtype=np.float32, count=2)
-        # print(data)
+        ptr = ctypes.cast(self._data, ctypes.POINTER(ctypes.c_float * self._len))
+        data = np.frombuffer(ptr.contents, dtype=np.float32).reshape(self._shape)
+        print(data)
 
     def __repr__(self) -> str:
         return f"{self._data}"
 
     def cleanup(self): 
         if isinstance(self._data, ctypes.POINTER(ctypes.c_float)): c_rand_buffer._free(self._data)  
+    
     # TODO: Have index func 
 
 """
 https://stackoverflow.com/questions/7343833/srand-why-call-it-only-once
 
+for rand
+--------
+read the buffer into 1D byte array
+now shape the array as you please
+
+ptr = ctypes.cast(a._data, ctypes.POINTER(ctypes.c_float * 2))
+np.asarray(ptr.contents)
+np.frombuffer(ptr.contents, dtype=np.float32)
+
+np.ctypeslib.as_array(a._data, shape=(1, 2))
 """
