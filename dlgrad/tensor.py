@@ -1,10 +1,6 @@
 """
 1) how to detect a left tensor in computational graph ?
 2) AssertionError: backward can only be called for scalar tensors
-3) detect if list is n dim
-4)  @property
-5) list should be homogeneous
-6) clang -rand
 """
 
 from __future__ import annotations
@@ -12,8 +8,8 @@ from typing import Union
 from dlgrad.c_interface import c_rand_buffer
 from dlgrad.helpers import ShapeError
 import ctypes
-import weakref
 import atexit
+import numpy as np
 
 class Tensor:
     # __slots__ = "grad"
@@ -40,9 +36,24 @@ class Tensor:
         if not all(isinstance(item, int) for item in shape): raise ShapeError("Only ints can be passed to shape")
         size = 1
         for i in shape: size *= i
-        # return Tensor(Buffer._create_rand_buffer(shape))
+        
         return Tensor(c_rand_buffer._create(size))
     
+    def numpy(self):
+        """
+        read the buffer into 1D byte array
+        now shape the array as you please
+
+        ptr = ctypes.cast(a._data, ctypes.POINTER(ctypes.c_float * 2))
+        np.asarray(ptr.contents)
+        np.frombuffer(ptr.contents, dtype=np.float32)
+
+        np.ctypeslib.as_array(a._data, shape=(1, 2))
+        """
+        pass
+        # data = np.frombuffer(ctypes.cast(self._data, ctypes.POINTER(ctypes.c_char)), dtype=np.float32, count=2)
+        # print(data)
+
     def __repr__(self) -> str:
         return f"{self._data}"
 
