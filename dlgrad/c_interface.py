@@ -10,7 +10,7 @@ class c_rand_buffer:
     dll.free_buf.restype = None
 
     @staticmethod
-    def _create(size): pass # return c_rand_buffer.dll.create_rand_buffer(size)
+    def _create(size): return c_rand_buffer.dll.create_rand_buffer(size)
         
     @staticmethod
     def _free(rand_buf_p): c_rand_buffer.dll.free_buf(rand_buf_p)
