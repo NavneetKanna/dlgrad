@@ -1,5 +1,6 @@
 from dlgrad import Tensor
 
+a = Tensor.rand(2, 2)
 
-
-a = Tensor(1)
+print(a.numpy())
+print(a[1][1])
