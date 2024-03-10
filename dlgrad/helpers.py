@@ -7,6 +7,9 @@ def get_list_dim(data: list, dim=0):
     else: return dim
 
 def calculate_stride(shape: tuple):
+    if len(shape) == 1:
+        return [1]
+
     stride = [i for i in range(len(shape))]
     
     if len(shape) == 2:
