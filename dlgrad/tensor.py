@@ -14,7 +14,10 @@ import numpy as np
 class Tensor:
     # __slots__ = "grad"
 
-    def __init__(self, data: Union[list, int, float], view: bool = False, _offset=0, _len: int = None, _shape: tuple = None):
+    def __init__(self, data: Union[list, int, float], view: bool = False, _offset: int = 0, _len: int = None, _shape: tuple = None):
+        """
+        _len = Number of elements, for ex, (4, 2) -> 8, (2, 3, 4) -> 24
+        """
         # self.device = ...
         # self.stride = ...
         # self.grad = ...   
@@ -30,13 +33,12 @@ class Tensor:
             self._data = data
             self._offset = _offset
             self._len = _len
-            # TODO: Add enum, here 4 = 4 bytes for float32 
+            # TODO: Add enum/dtype, here 4 = 4 bytes for float32 
             self._total_bytes = _len * 4
             self._shape = _shape
             self._strides = calculate_stride(_shape)
             self.ndim = len(_shape)
 
-        # TODO: Add view bool here
         if not view: atexit.register(self.cleanup)
 
     # ***** DCOPS (data creation ops) *****
@@ -52,25 +54,13 @@ class Tensor:
         size = 1
         for i in shape: size *= i
 
-        return Tensor(c_rand_buffer._create(size), _len = size, _shape=shape)
+        return Tensor(c_rand_buffer._create(size), _offset=0, _len=size, _shape=shape)
     
     def numpy(self):
-        """
-        sd = ctypes.addressof(a._data.contents) + 3 * ctypes.sizeof(ctypes.c_float)
-        ptr = (ctypes.c_float * 3).from_address(sd)
-        np.frombuffer(sd, count=3, dtype=np.float32)
-        """
-        # TODO: Why cast if type is already ctypes pointer ?
         sd = ctypes.addressof(self._data.contents) + self._offset * ctypes.sizeof(ctypes.c_float)
         ptr = (ctypes.c_float * self._len).from_address(sd)
         data = np.frombuffer(ptr, count=self._len, dtype=np.float32).reshape(self._shape)
         print(data)
-
-
-        # ptr = ctypes.cast(self._data, ctypes.POINTER(ctypes.c_float * self._len))
-        # # TODO: Change 4 to dtype
-        # data = np.frombuffer(ptr.contents, offset=self._offset*4, count=self._view_len if self._view_len else self._len, dtype=np.float32).reshape(self._shape)
-        # print(data)
 
     # TODO: If its a view add a bool = true
     # def __repr__(self) -> str:
@@ -85,17 +75,17 @@ class Tensor:
         if self.ndim == 2:
             if type(indices) == int:
                 row = indices
-                if row >= self.ndim: raise IndexError 
+                if row >= self._shape[0]: raise IndexError 
                 offset = row * self._strides[0] 
-                # if offset != 0: offset -= 1
                 size = self._strides[0]
-                return Tensor(self._data, view=True, _offset=offset, _len = size, _shape=(size,))
+                return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
                 
             elif type(indices) == tuple:
                 row, col = indices
-                if row or col >= self.ndim: raise IndexError 
+                if row >= self._shape[0] or col >= self._shape[1]: raise IndexError 
                 offset = row * self._strides[0] + col
-                print(offset)
+                size = 1
+                return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
 
 
         
