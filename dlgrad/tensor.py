@@ -75,28 +75,36 @@ class Tensor:
     
     def __getitem__(self, indices): 
         # TODO: all int, slices
-        # value(n, c, h, w) = n * CHW + c * HW + h * W + w
-        # offset_nchw(n, c, h, w) = n * CHW + c * HW + h * W + w
-        # offset_nhwc(n, c, h, w) = n * HWC + h * WC + w * C + c
+
         if type(indices) == int:
                 # if row >= self._shape[0]: raise IndexError 
-                offset = calculate_offset(h=indices, W=self._strides[0]) 
+                offset = calculate_offset(h=indices, H=self._strides[0]) 
                 size = self._strides[0]
                 return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
-        # if self.ndim == 2:
-        #     if type(indices) == int:
-        #         row = indices
-        #         # if row >= self._shape[0]: raise IndexError 
-        #         offset = row * self._strides[0] 
-        #         size = self._strides[0]
-        #         return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
+        
+        if self.ndim == 2:
+            if type(indices) == tuple:
+                h, w = indices
+                offset = calculate_offset(h=h, w=w, H=self._strides[0]) 
+                # if row >= self._shape[0] or col >= self._shape[1]: raise IndexError 
+                size = 1
+                return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
+        
+        elif self.ndim == 3:
+            if type(indices) == tuple:
+                try:
+                    c, h, w = indices
+                    offset = calculate_offset(c=c, h=h, w=w, C=self._strides[0], H=self._strides[1]) 
+                    size = 1
+                    return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
+                except: 
+                    c, h = indices
+                    offset = calculate_offset(c=c, h=h, C=self._strides[0], H=self._strides[1]) 
+                    size = self._strides[1] 
+                    return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
+                    
+
                 
-        #     elif type(indices) == tuple:
-        #         row, col = indices
-        #         if row >= self._shape[0] or col >= self._shape[1]: raise IndexError 
-        #         offset = row * self._strides[0] + col
-        #         size = 1
-        #         return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
         
         # elif self.ndim == 3: pass
 
