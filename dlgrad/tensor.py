@@ -7,7 +7,7 @@
 from __future__ import annotations
 from typing import Union
 from dlgrad.c_interface import c_rand_buffer
-from dlgrad.helpers import ShapeError, calculate_stride, calculate_offset
+from dlgrad.helpers import ShapeError, calculate_stride, calculate_nchw_offset
 import ctypes
 import atexit
 import numpy as np
@@ -78,14 +78,14 @@ class Tensor:
 
         if type(indices) == int:
                 # if row >= self._shape[0]: raise IndexError 
-                offset = calculate_offset(h=indices, H=self._strides[0]) 
+                offset = calculate_nchw_offset(h=indices, H=self._strides[0]) 
                 size = self._strides[0]
                 return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
         
         if self.ndim == 2:
             if type(indices) == tuple:
                 h, w = indices
-                offset = calculate_offset(h=h, w=w, H=self._strides[0]) 
+                offset = calculate_nchw_offset(h=h, w=w, H=self._strides[0]) 
                 # if row >= self._shape[0] or col >= self._shape[1]: raise IndexError 
                 size = 1
                 return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
@@ -95,12 +95,12 @@ class Tensor:
                 length = len(indices)
                 if length == 3:
                     c, h, w = indices
-                    offset = calculate_offset(c=c, h=h, w=w, C=self._strides[0], H=self._strides[1]) 
+                    offset = calculate_nchw_offset(c=c, h=h, w=w, C=self._strides[0], H=self._strides[1]) 
                     size = 1
                     return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
                 elif length == 2:
                     c, h = indices
-                    offset = calculate_offset(c=c, h=h, C=self._strides[0], H=self._strides[1]) 
+                    offset = calculate_nchw_offset(c=c, h=h, C=self._strides[0], H=self._strides[1]) 
                     size = self._strides[1] 
                     return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
         
@@ -109,17 +109,17 @@ class Tensor:
                 length = len(indices)
                 if length == 4:
                     n, c, h, w = indices
-                    offset = calculate_offset(n=n, c=c, h=h, w=w, N=self._strides[0], C=self._strides[1], H=self._strides[2]) 
+                    offset = calculate_nchw_offset(n=n, c=c, h=h, w=w, N=self._strides[0], C=self._strides[1], H=self._strides[2]) 
                     size = 1
                     return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
                 elif length == 3:
                     n, c, h = indices
-                    offset = calculate_offset(n=n, c=c, h=h, N=self._strides[0], C=self._strides[1], H=self._strides[2]) 
+                    offset = calculate_nchw_offset(n=n, c=c, h=h, N=self._strides[0], C=self._strides[1], H=self._strides[2]) 
                     size = self._strides[2] 
                     return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
                 elif length == 2:
                     n, c  = indices
-                    offset = calculate_offset(n=n, c=c, N=self._strides[0], C=self._strides[1]) 
+                    offset = calculate_nchw_offset(n=n, c=c, N=self._strides[0], C=self._strides[1]) 
                     size = self._strides[1] 
                     return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
                 
