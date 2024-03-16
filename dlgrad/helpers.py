@@ -27,3 +27,5 @@ def calculate_stride(shape: tuple):
     
     return stride
 
+def calculate_offset(n=0, c=0, h=0, w=0, N=0, C=0, H=0, W=0):
+    return (n * C*H*W) + (c * H*W) + (h * W) + w 

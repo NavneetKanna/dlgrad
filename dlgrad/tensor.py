@@ -1,17 +1,21 @@
 """
 1) how to detect a left tensor in computational graph ?
 2) AssertionError: backward can only be called for scalar tensors
+3) permutation
 """
 
 from __future__ import annotations
 from typing import Union
 from dlgrad.c_interface import c_rand_buffer
-from dlgrad.helpers import ShapeError, calculate_stride
+from dlgrad.helpers import ShapeError, calculate_stride, calculate_offset
 import ctypes
 import atexit
 import numpy as np
 
 class Tensor:
+    """
+    as of now i will go with NCHW, but later if required i will change to channel last
+    """
     # __slots__ = "grad"
 
     def __init__(self, data: Union[list, int, float], view: bool = False, _offset: int = 0, _len: int = None, _shape: tuple = None):
@@ -71,21 +75,30 @@ class Tensor:
     
     def __getitem__(self, indices): 
         # TODO: all int, slices
-        
-        if self.ndim == 2:
-            if type(indices) == int:
-                row = indices
-                if row >= self._shape[0]: raise IndexError 
-                offset = row * self._strides[0] 
+        # value(n, c, h, w) = n * CHW + c * HW + h * W + w
+        # offset_nchw(n, c, h, w) = n * CHW + c * HW + h * W + w
+        # offset_nhwc(n, c, h, w) = n * HWC + h * WC + w * C + c
+        if type(indices) == int:
+                # if row >= self._shape[0]: raise IndexError 
+                offset = calculate_offset(h=indices, W=self._strides[0]) 
                 size = self._strides[0]
                 return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
+        # if self.ndim == 2:
+        #     if type(indices) == int:
+        #         row = indices
+        #         # if row >= self._shape[0]: raise IndexError 
+        #         offset = row * self._strides[0] 
+        #         size = self._strides[0]
+        #         return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
                 
-            elif type(indices) == tuple:
-                row, col = indices
-                if row >= self._shape[0] or col >= self._shape[1]: raise IndexError 
-                offset = row * self._strides[0] + col
-                size = 1
-                return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
+        #     elif type(indices) == tuple:
+        #         row, col = indices
+        #         if row >= self._shape[0] or col >= self._shape[1]: raise IndexError 
+        #         offset = row * self._strides[0] + col
+        #         size = 1
+        #         return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
+        
+        # elif self.ndim == 3: pass
 
 
         
