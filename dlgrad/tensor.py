@@ -29,9 +29,13 @@ class Tensor:
         if isinstance(data, Union[int, float]): 
             self._data = data
             self._len = len(data)
+            self._view = view
+            self._contig = False
         if isinstance(data, list): 
             self._data = data
             self._len = len(data)
+            self._view = view
+            self._contig = False
         # TODO: An enum for this ?
         if isinstance(data, ctypes.POINTER(ctypes.c_float)): 
             self._data = data
@@ -42,23 +46,10 @@ class Tensor:
             self._shape = _shape
             self._strides = calculate_stride(_shape)
             self.ndim = len(_shape)
+            self._view = view
+            self._contig = True
 
         if not view: atexit.register(self.cleanup)
-
-    # ***** DCOPS (data creation ops) *****
-    @staticmethod
-    def rand(*shape) -> Tensor: 
-        # TODO: ((((?))))
-        if isinstance(shape[0], tuple): shape = shape[0]
-        if isinstance(shape[0], list): shape = tuple(*shape)
-
-        if len(shape) > 4: raise ShapeError("dlgrad only supports upto 4 dim")
-        if isinstance(shape[0], list): raise ShapeError("Multi-dim list cannot be passed as shape")
-        if not all(isinstance(item, int) for item in shape): raise ShapeError("Only ints can be passed to shape")
-        size = 1
-        for i in shape: size *= i
-
-        return Tensor(c_rand_buffer._create(size), _offset=0, _len=size, _shape=shape)
     
     def numpy(self):
         sd = ctypes.addressof(self._data.contents) + self._offset * ctypes.sizeof(ctypes.c_float)
@@ -67,8 +58,8 @@ class Tensor:
         print(data)
 
     # TODO: If its a view add a bool = true
-    # def __repr__(self) -> str:
-    #     return f"{self._data}"
+    def __repr__(self) -> str:
+        return f"Tensor <contig: {self._contig} view:{self._view} device: coming soon>"
 
     def cleanup(self): 
         if isinstance(self._data, ctypes.POINTER(ctypes.c_float)): c_rand_buffer._free(self._data)  
@@ -161,7 +152,21 @@ class Tensor:
                     offset = calculate_nchw_offset(n=n, c=c, N=self._strides[0], C=self._strides[1]) 
                     size = self._strides[1] 
                     return Tensor(self._data, view=True, _offset=offset, _len=size, _shape=(size,))
-                
+    
+    # ***** DCOPS (data creation ops) *****
+    @staticmethod
+    def rand(*shape) -> Tensor: 
+        # TODO: ((((?))))
+        if isinstance(shape[0], tuple): shape = shape[0]
+        if isinstance(shape[0], list): shape = tuple(*shape)
+
+        if len(shape) > 4: raise ShapeError("dlgrad only supports upto 4 dim")
+        if isinstance(shape[0], list): raise ShapeError("Multi-dim list cannot be passed as shape")
+        if not all(isinstance(item, int) for item in shape): raise ShapeError("Only ints can be passed to shape")
+        size = 1
+        for i in shape: size *= i
+
+        return Tensor(c_rand_buffer._create(size), _offset=0, _len=size, _shape=shape)
 
 
 """
