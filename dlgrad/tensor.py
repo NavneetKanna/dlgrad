@@ -7,14 +7,12 @@
 
 from __future__ import annotations
 from typing import Union
-from dlgrad.c_interface import c_rand_buffer, c_add
+from dlgrad.c_interface import c_rand_buffer, c_add, c_free
 from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset
 import ctypes
 import atexit
 import numpy as np
 import platform
-import inspect
-from dlgrad import c_interface
 
 class Tensor:
     """
@@ -79,19 +77,8 @@ class Tensor:
     def __repr__(self) -> str:
         return f"Tensor <contig: {self._contig} view:{self._view} device: {self._device}>"
 
-    def cleanup(self):
-        print(type(self._data))
-        c_rand_buffer._free(self._data)
-        # c_add._free(self._data)
-
-        if isinstance(self._data, ctypes.POINTER(ctypes.c_float)): 
-            classes = inspect.getmembers(c_interface, inspect.isclass)
-
-            for name, cls in classes:
-                if hasattr(cls, '_free'):
-                    print(cls)
-                    # cls.__free()
-
+    def cleanup(self): 
+        c_free._free(self._data)
 
     def __getitem__(self, indices):
         # TODO: all int, slices

@@ -11,11 +11,6 @@ float *create_rand_buffer(int len) {
     return data;
 }
 
-void free_buf(void *data) {
-    printf("freeing rand data\n");
-    free(data);
-}
-
 /*
 clang -shared -o test.so buffer.c 
 */
