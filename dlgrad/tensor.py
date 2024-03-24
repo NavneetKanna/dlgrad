@@ -182,10 +182,14 @@ class Tensor:
         return Tensor(c_rand_buffer._create(size), _offset=0, _len=size, _shape=shape)
 
     # TODO: where is broadcasting used ? 
+    # TODO: support +
     # ***** BinaryOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor): 
         assert x._shape == y._shape, f"{x._shape} and {y._shape} does not match"
+
+        def _backward(): pass
+
         # TODO: assert device
         return Tensor(c_add._add(x._data, y._data, x._len), device=x._device, _len=x._len, _shape=x._shape)
 
