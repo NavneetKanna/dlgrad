@@ -12,6 +12,6 @@ float *add(float *arr1, float *arr2, int len) {
 }
 
 void free_buf(void *data) {
-    printf("freeing data\n");
+    printf("freeing add data\n");
     free(data);
 }

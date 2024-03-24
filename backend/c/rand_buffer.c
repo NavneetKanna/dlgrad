@@ -12,7 +12,7 @@ float *create_rand_buffer(int len) {
 }
 
 void free_buf(void *data) {
-    printf("freeing data\n");
+    printf("freeing rand data\n");
     free(data);
 }
 
