@@ -3,6 +3,7 @@
 2) AssertionError: backward can only be called for scalar tensors
 3) permutation
 4) kernel dispatch
+5) what are all these __slots__ __fields__ ?
 """
 
 from __future__ import annotations
@@ -13,6 +14,8 @@ import ctypes
 import atexit
 import numpy as np
 import platform
+# from dlgrad.alias import TensorCTypes
+from dlgrad.dtype import dtypes
 
 class Tensor:
     """
@@ -23,7 +26,7 @@ class Tensor:
     # TODO: is it a good programming practice to have many args ?
     def __init__(
             self,
-            data: Union[list, int, float],
+            data: Union[list, int, dtypes.float32_ptr],
             requires_grad = True,
             device: str = "",
             view: bool = False,
@@ -38,9 +41,10 @@ class Tensor:
         # TODO: add dtype
         self.requires_grad = True
 
-        if device is None and platform.system() == 'Darwin' and platform.processor() == 'arm':
-                self._device = 'metal'
-        else: self._device = device
+        if device is None and platform.system() == 'Darwin' and platform.processor() == 'arm': 
+            self._device = 'metal'
+        else: 
+            self._device = device
 
         if isinstance(data, Union[int, float]):
             self._data = data
@@ -53,8 +57,7 @@ class Tensor:
             self._len = len(data)
             self._view = view
             self._contig = False
-        # TODO: An enum for this ?
-        if isinstance(data, ctypes.POINTER(ctypes.c_float)):
+        if isinstance(data, dtypes.float32_ptr):
             self._data = data
             self._offset = _offset
             self._len = _len
@@ -66,7 +69,8 @@ class Tensor:
             self._view = view
             self._contig = True
 
-        if not view: atexit.register(self.cleanup)
+        if not view: 
+            atexit.register(self.cleanup)
 
     def numpy(self):
         sd = ctypes.addressof(self._data.contents) + self._offset * ctypes.sizeof(ctypes.c_float)
@@ -83,7 +87,7 @@ class Tensor:
     def __getitem__(self, indices):
         # TODO: all int, slices
 
-        if type(indices) == int:
+        if isinstance(indices, int):
                 if indices > self._shape[0]:
                     raise IndexError(f"index {indices} > {self._shape[0]} of {self._shape}")
 
@@ -173,14 +177,20 @@ class Tensor:
     # ***** DCOPS (data creation ops) *****
     @staticmethod
     def rand(*shape) -> Tensor:
-        if isinstance(shape[0], tuple): shape = shape[0]
-        if isinstance(shape[0], list): shape = tuple(*shape)
+        if isinstance(shape[0], tuple): 
+            shape = shape[0]
+        if isinstance(shape[0], list): 
+            shape = tuple(*shape)
 
-        if len(shape) > 4: raise ShapeError("dlgrad only supports upto 4 dim")
-        if isinstance(shape[0], list): raise ShapeError("Multi-dim list cannot be passed as shape")
-        if not all(isinstance(item, int) for item in shape): raise ShapeError("Only ints can be passed to shape")
+        if len(shape) > 4: 
+            raise ShapeError("dlgrad only supports upto 4 dim")
+        if isinstance(shape[0], list): 
+            raise ShapeError("Multi-dim list cannot be passed as shape")
+        if not all(isinstance(item, int) for item in shape): 
+            raise ShapeError("Only ints can be passed to shape")
         size = 1
-        for i in shape: size *= i
+        for i in shape: 
+            size *= i
 
         return Tensor(c_rand_buffer._create(size), _offset=0, _len=size, _shape=shape)
 
