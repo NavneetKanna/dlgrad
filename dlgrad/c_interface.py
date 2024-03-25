@@ -1,4 +1,3 @@
-from typing import Union
 import ctypes as ct
 
 # TODO: Complie so with 02 and test 
