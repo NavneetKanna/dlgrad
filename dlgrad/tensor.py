@@ -7,7 +7,7 @@
 """
 
 from __future__ import annotations
-from typing import Union
+from typing import Union, Optional
 from dlgrad.c_interface import c_rand_buffer, c_add, c_free
 from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset
 import ctypes
@@ -32,13 +32,13 @@ class Tensor:
             view: bool = False,
             _offset: int = 0,
             _len: int = 0,
-            _shape: tuple = ()
+            _shape: tuple = (),
+            dtype: Optional[dtypes] = None
         ):
         """
         _len = Number of elements, for ex, (4, 2) -> 8, (2, 3, 4) -> 24
         """
 
-        # TODO: add dtype
         self.requires_grad = True
 
         if device is None and platform.system() == 'Darwin' and platform.processor() == 'arm': 
@@ -51,6 +51,7 @@ class Tensor:
             self._len = 1
             self._view = view
             self._contig = False
+            self.dtype = dtypes if dtype else dtypes.from_py(data)
         # TODO: Convert this to c array
         if isinstance(data, list):
             self._data = data
@@ -61,11 +62,8 @@ class Tensor:
             self._data = data
             self._offset = _offset
             self._len = _len
-            # TODO: Add enum/dtype, here 4 = 4 bytes for float32
-            self._total_bytes = _len * 4
             self._shape = _shape
             self._strides = calculate_stride(_shape)
-            self.ndim = len(_shape)
             self._view = view
             self._contig = True
 
