@@ -4,6 +4,11 @@
 3) permutation
 4) kernel dispatch
 5) what are all these __slots__ __fields__ ?
+6) scheduling
+7) tile size in matmul is l1 cache
+8) cache aware matmul
+9) hardware command queue
+10) multiply-accumulate
 """
 
 from __future__ import annotations
@@ -14,7 +19,6 @@ import ctypes
 import atexit
 import numpy as np
 import platform
-# from dlgrad.alias import TensorCTypes
 from dlgrad.dtype import dtypes
 
 class Tensor:
@@ -30,16 +34,16 @@ class Tensor:
             requires_grad = True,
             device: str = "",
             view: bool = False,
+            dtype: Optional[dtypes] = None,
             _offset: int = 0,
             _len: int = 0,
-            _shape: tuple = (),
-            dtype: Optional[dtypes] = None
+            _shape: tuple = ()
         ):
         """
         _len = Number of elements, for ex, (4, 2) -> 8, (2, 3, 4) -> 24
         """
 
-        self.requires_grad = True
+        self.requires_grad = requires_grad
 
         if device is None and platform.system() == 'Darwin' and platform.processor() == 'arm': 
             self._device = 'metal'
@@ -204,6 +208,18 @@ class Tensor:
         # TODO: assert device
         return Tensor(c_add._add(x._data, y._data, x._len), device=x._device, _len=x._len, _shape=x._shape)
 
+"""
+further reading
+
+https://arxiv.org/pdf/2001.05585.pdf
+
+https://www.youtube.com/watch?v=wIPdrbZIeKE
+
+https://www.cise.ufl.edu/~sahni/papers/gpuMatrixMultiply.pdf
+
+arxiv metal
+
+"""
 """
 https://arxiv.org/abs/1502.05767
 
