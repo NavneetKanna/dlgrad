@@ -1,9 +1,9 @@
 from typing import Final
 
 class dtypes:
-    float32: Final
-    float32_ptr: Final
-    int32: Final
+    float32: Final = None
+    float32_ptr: Final = None
+    int32: Final = None
 
     @staticmethod
     def from_py(data):

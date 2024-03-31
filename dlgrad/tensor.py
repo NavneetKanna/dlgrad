@@ -62,7 +62,7 @@ class Tensor:
             self._len = len(data)
             self._view = view
             self._contig = False
-        if isinstance(data, dtypes.float32_ptr):
+        if dtype ==  dtypes.float32_ptr:
             self._data = data
             self._offset = _offset
             self._len = _len
@@ -194,7 +194,7 @@ class Tensor:
         for i in shape: 
             size *= i
 
-        return Tensor(c_rand_buffer._create(size), _offset=0, _len=size, _shape=shape)
+        return Tensor(c_rand_buffer._create(size), _offset=0, dtype=dtypes.float32_ptr, _len=size, _shape=shape)
 
     # TODO: where is broadcasting used ?
     # TODO: support +
@@ -210,6 +210,13 @@ class Tensor:
 
 """
 further reading
+
+https://triton-lang.org/main/_images/grouped_vs_row_major_ordering.png
+https://triton-lang.org/main/_images/triton-parallel-matmul.png
+
+Standard ARMv8 SIMD/NEON vector instructions on CPU cores (128 bits wide, issue up to four per cycle on Firestorm)
+
+https://dougallj.github.io/applecpu/firestorm-simd.html
 
 https://arxiv.org/pdf/2001.05585.pdf
 
