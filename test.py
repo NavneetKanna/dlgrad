@@ -7,7 +7,7 @@ from tinygrad import Tensor
 import dlgrad
 from array import array
 
-shape = (7000, 7000)
+shape = (10000, 10000)
 
 
 def to_numpy(fa, l, s):
