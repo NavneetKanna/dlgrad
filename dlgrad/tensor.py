@@ -20,6 +20,7 @@ import atexit
 import numpy as np
 import platform
 from dlgrad.dtype import dtypes
+from dlgrad.buffer import Buffer
 
 class Tensor:
     """
@@ -62,7 +63,7 @@ class Tensor:
             self._len = len(data)
             self._view = view
             self._contig = False
-        if dtype ==  dtypes.float32_ptr:
+        if isinstance(data, Buffer):
             self._data = data
             self._offset = _offset
             self._len = _len
@@ -194,7 +195,7 @@ class Tensor:
         for i in shape: 
             size *= i
 
-        return Tensor(c_rand_buffer._create(size), _offset=0, dtype=dtypes.float32_ptr, _len=size, _shape=shape)
+        return Tensor(Buffer.create_random_buffer(size), _offset=0, dtype=dtypes.float32_ptr, _len=size, _shape=shape)
 
     # TODO: where is broadcasting used ?
     # TODO: support +
