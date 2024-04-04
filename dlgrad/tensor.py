@@ -13,7 +13,6 @@
 
 from __future__ import annotations
 from typing import Union, Optional
-from dlgrad.c_interface import c_rand_buffer, c_add, c_free
 from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset
 import ctypes
 import atexit
@@ -31,7 +30,7 @@ class Tensor:
     # TODO: is it a good programming practice to have many args ?
     def __init__(
             self,
-            data: Union[list, int, dtypes.float32_ptr],
+            data: Union[list, int, Buffer],
             requires_grad = True,
             device: str = "",
             view: bool = False,
@@ -64,7 +63,7 @@ class Tensor:
             self._view = view
             self._contig = False
         if isinstance(data, Buffer):
-            self._data = data
+            self._data = data.data_buffer
             self._offset = _offset
             self._len = _len
             self._shape = _shape
@@ -84,8 +83,9 @@ class Tensor:
     def __repr__(self) -> str:
         return f"Tensor <contig: {self._contig} view:{self._view} device: {self._device}>"
 
+    # TODO: maybe do a check for data before calling free ?
     def cleanup(self): 
-        c_free._free(self._data)
+        Buffer.free(self._data)
 
     def __getitem__(self, indices):
         # TODO: all int, slices
@@ -207,7 +207,7 @@ class Tensor:
         def _backward(): pass
 
         # TODO: assert device
-        return Tensor(c_add._add(x._data, y._data, x._len), device=x._device, _len=x._len, _shape=x._shape)
+        # return Tensor(c_add._add(x._data, y._data, x._len), device=x._device, _len=x._len, _shape=x._shape)
 
 """
 further reading
