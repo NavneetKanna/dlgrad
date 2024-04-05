@@ -5,9 +5,8 @@ import time
 import torch
 from tinygrad import Tensor
 import dlgrad
-from array import array
 
-shape = (10000, 10000)
+shape = (100, 100)
 
 
 def to_numpy(fa, l, s):
@@ -16,23 +15,11 @@ def to_numpy(fa, l, s):
     data = np.frombuffer(ptr, count=l, dtype=np.float32).reshape(s)
     print(data.shape)
 
-def gf():
-    return random.uniform(0, 1)
-
-def new2():
+def dl():
     s = time.perf_counter()
     a = dlgrad.Tensor.rand(shape)
     e = time.perf_counter()
-    print(f"new2 {e-s:.4f}s")
-
-def new():
-    s = time.perf_counter()
-    a = (ctypes.c_float * (shape[0]*shape[1]))()
-    for i in range(shape[0]*shape[1]):
-        a[i] = random.random()
-    e = time.perf_counter()
-    print(f"new {e-s:.4f}s")
-    # to_numpy(a, shape[0]*shape[1], shape)
+    print(f"dl {e-s:.4f}s")
 
 def num():
     s = time.perf_counter()
@@ -52,8 +39,7 @@ def ti():
     e = time.perf_counter()
     print(f"tinygrad {e-s:.4f}s")
 
-new2()
-new()
+dl()
 num()
 to()
 ti()

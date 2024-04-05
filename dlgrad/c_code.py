@@ -7,6 +7,8 @@ class C:
     @staticmethod
     def _random_buffer():
         # TODO: is this float32 ?
+        # TODO: is drand48 available on unix and win ?
+        # TODO: check malloc
         prg = """
         #include <stdio.h>
         #include <stdlib.h>
@@ -14,9 +16,9 @@ class C:
 
         float *create_rand_buffer(int length) {
             float *data = malloc(length * sizeof(float));
-            srand(time(NULL));
+            srand48(time(NULL));
             for (int i=0; i<length; i++) {
-                data[i] = (float)rand() / (float)RAND_MAX;
+            data[i] = drand48();
             }
             return data;
         }

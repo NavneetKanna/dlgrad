@@ -20,6 +20,8 @@ import numpy as np
 import platform
 from dlgrad.dtype import dtypes
 from dlgrad.buffer import Buffer
+import time
+
 
 class Tensor:
     """
@@ -194,7 +196,7 @@ class Tensor:
         size = 1
         for i in shape: 
             size *= i
-
+        
         return Tensor(Buffer.create_random_buffer(size), _offset=0, dtype=dtypes.float32_ptr, _len=size, _shape=shape)
 
     # TODO: where is broadcasting used ?
