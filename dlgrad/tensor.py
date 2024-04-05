@@ -20,7 +20,6 @@ import numpy as np
 import platform
 from dlgrad.dtype import dtypes
 from dlgrad.buffer import Buffer
-import time
 
 
 class Tensor:
