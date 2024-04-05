@@ -4,7 +4,7 @@ Inspired by Andrej Karpathy's micrograd and George Hotz's tinygrad, dlgrad is my
 
 ---
 
-New version of dlgrad readme coming soon
+dlgrad v1 readme coming soon
 
 <!-- --------------------------------------------------------------------
 ## Computational Graph for the ANN model
