@@ -1,6 +1,10 @@
 class ShapeError(Exception): ...
 class IndexError(Exception): ...
 
+# TODO: check win or unix
+def get_temp_loc():
+    return "/tmp"
+
 def get_list_dim(data: list, dim=0):
     if isinstance(data, list): 
         dim +=1
