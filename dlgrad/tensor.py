@@ -20,7 +20,7 @@ import numpy as np
 import platform
 from dlgrad.dtype import dtypes
 from dlgrad.buffer import Buffer
-
+import os
 
 class Tensor:
     """
@@ -72,7 +72,7 @@ class Tensor:
             self._view = view
             self._contig = True
 
-        if not view: 
+        if not view and isinstance(data, Buffer): 
             atexit.register(self.cleanup)
 
     def numpy(self):
