@@ -8,7 +8,6 @@ import dlgrad
 shape = (10000, 10000)
 
 
-
 # s = time.perf_counter()
 # a = ctypes.CDLL("rand_buffer.so")
 # e = time.perf_counter()
@@ -43,6 +42,7 @@ def ti():
     e = time.perf_counter()
     print(f"tinygrad {e-s:.4f}s")
 
+dl()
 dl()
 num()
 to()

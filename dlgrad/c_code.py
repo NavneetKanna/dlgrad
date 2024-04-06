@@ -2,8 +2,8 @@
 class C:
     @staticmethod
     def _create_empty_buffer(len):
-        prg = ...
-
+        pass
+    
     @staticmethod
     def _random_buffer():
         # TODO: is this float32 ?
