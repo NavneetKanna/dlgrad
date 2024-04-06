@@ -1,17 +1,13 @@
-import ctypes
+# import ctypes
 import numpy as np
 import time
 import torch
 from tinygrad import Tensor
 import dlgrad
+import mlx.core as mx
 
-shape = (10000, 10000)
+shape = (100, 100)
 
-
-# s = time.perf_counter()
-# a = ctypes.CDLL("rand_buffer.so")
-# e = time.perf_counter()
-# print(f"time {e-s:.4f}s")
 # def to_numpy(fa, l, s):
 #     sd = ctypes.addressof(fa) + 0 * ctypes.sizeof(ctypes.c_float)
 #     ptr = (ctypes.c_float * l).from_address(sd)
@@ -42,8 +38,15 @@ def ti():
     e = time.perf_counter()
     print(f"tinygrad {e-s:.4f}s")
 
+def mlx():
+    s = time.perf_counter()
+    _ = mx.eval(mx.random.uniform(shape=shape))
+    e = time.perf_counter()
+    print(f"mlx {e-s:.4f}s")
+
 dl()
 dl()
 num()
 to()
 ti()
+mlx()

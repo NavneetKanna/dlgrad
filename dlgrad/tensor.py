@@ -20,7 +20,8 @@ import numpy as np
 import platform
 from dlgrad.dtype import dtypes
 from dlgrad.buffer import Buffer
-import os
+import warnings
+
 
 class Tensor:
     """
@@ -46,10 +47,10 @@ class Tensor:
 
         self.requires_grad = requires_grad
 
-        if device is None and platform.system() == 'Darwin' and platform.processor() == 'arm': 
-            self._device = 'metal'
-        else: 
-            self._device = device
+        # if device is None and platform.system() == 'Darwin' and platform.processor() == 'arm': 
+        #     self._device = 'metal'
+        # else: 
+        #     self._device = device
 
         if isinstance(data, Union[int, float]):
             self._data = data
@@ -179,8 +180,15 @@ class Tensor:
 
 
     # ***** DCOPS (data creation ops) *****
+    # DCOPS as of now uses only cpu to generate data
     @staticmethod
-    def rand(*shape) -> Tensor:
+    def rand(*shape, device = 'cpu', dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
+        if device != 'cpu':
+            warnings.warn("As of now DCOPS (data creation ops) only supports cpu.")
+
+        if dtype != dtypes.float32:
+            warnings.warn("Creating data with dtype=float32. As of now dlgrad only supports float32, but more dtypes coming in future.")
+
         if isinstance(shape[0], tuple): 
             shape = shape[0]
         if isinstance(shape[0], list): 
@@ -196,7 +204,7 @@ class Tensor:
         for i in shape: 
             size *= i
         
-        return Tensor(Buffer.create_random_buffer(size), _offset=0, dtype=dtypes.float32_ptr, _len=size, _shape=shape)
+        return Tensor(Buffer.create_random_buffer(size), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
 
     # TODO: where is broadcasting used ?
     # TODO: support +

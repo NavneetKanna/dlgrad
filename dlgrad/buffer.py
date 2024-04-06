@@ -6,7 +6,6 @@ from dlgrad.c_code import C
 import subprocess
 import tempfile
 import ctypes
-import time
 import os
 from dlgrad.helpers import get_temp_loc
 import atexit
