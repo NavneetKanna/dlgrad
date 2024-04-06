@@ -31,7 +31,6 @@ class C:
         #include <stdio.h>
 
         void free_buf(void *data) {
-            printf("freeing data");
             free(data);
         }
         """
