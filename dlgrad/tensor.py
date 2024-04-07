@@ -75,6 +75,7 @@ class Tensor:
             self._strides = calculate_stride(_shape)
             self._view = view
             self._contig = True
+            self._dtype = dtype
 
         if not view and isinstance(data, Buffer): 
             atexit.register(self.cleanup)
@@ -94,6 +95,7 @@ class Tensor:
 
     def __getitem__(self, indices):
         # TODO: all int, slices
+        # NOTE: dlgrad is NCHW
 
         if isinstance(indices, int):
             if indices > self._shape[0]:
@@ -180,7 +182,6 @@ class Tensor:
                     offset = calculate_nchw_offset(n=n, c=c, N=self._strides[0], C=self._strides[1])
                     size = self._strides[1]
                     return Tensor(Buffer(self._data), device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
-
 
     # ***** DCOPS (data creation ops) *****
     # DCOPS as of now uses only cpu to generate data
