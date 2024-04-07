@@ -13,10 +13,12 @@ import atexit
 class Buffer:
     rand_temp_file = False
 
-    def __init__(self, data, temp_file_loc) -> None:
+    def __init__(self, data, temp_file_loc='') -> None:
         self.data_buffer = data
-        self._temp_file_loc = temp_file_loc
-        atexit.register(self._cleanup)
+
+        if temp_file_loc:
+            self._temp_file_loc = temp_file_loc
+            atexit.register(self._cleanup)
 
     def _cleanup(self):
         if os.path.exists(self._temp_file_loc):

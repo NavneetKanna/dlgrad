@@ -17,10 +17,11 @@ from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_n
 import ctypes
 import atexit
 import numpy as np
-import platform
+# import platform
 from dlgrad.dtype import dtypes
 from dlgrad.buffer import Buffer
 import warnings
+from dlgrad.dispatch import Dispatcher
 
 
 class Tensor:
@@ -51,13 +52,14 @@ class Tensor:
         #     self._device = 'metal'
         # else: 
         #     self._device = device
+        self._device = device
 
         if isinstance(data, Union[int, float]):
             self._data = data
             self._len = 1
             self._view = view
             self._contig = False
-            self.dtype = dtypes if dtype else dtypes.from_py(data)
+            self.dtype = dtype if dtype else dtypes.from_py(data)
         # TODO: Convert this to c array
         if isinstance(data, list):
             self._data = data
@@ -69,6 +71,7 @@ class Tensor:
             self._offset = _offset
             self._len = _len
             self._shape = _shape
+            self._ndim = len(self._shape)
             self._strides = calculate_stride(_shape)
             self._view = view
             self._contig = True
@@ -93,14 +96,14 @@ class Tensor:
         # TODO: all int, slices
 
         if isinstance(indices, int):
-                if indices > self._shape[0]:
-                    raise IndexError(f"index {indices} > {self._shape[0]} of {self._shape}")
+            if indices > self._shape[0]:
+                raise IndexError(f"index {indices} > {self._shape[0]} of {self._shape}")
 
-                offset = calculate_nchw_offset(h=indices, H=self._strides[0])
-                size = self._strides[0]
-                return Tensor(self._data, device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
+            offset = calculate_nchw_offset(h=indices, H=self._strides[0])
+            size = self._strides[0]
+            return Tensor(Buffer(self._data), device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
 
-        if self.ndim == 2:
+        if self._ndim == 2:
             if type(indices) == tuple:
                 h, w = indices
                 if h > self._shape[0]:
@@ -110,9 +113,9 @@ class Tensor:
 
                 offset = calculate_nchw_offset(h=h, w=w, H=self._strides[0])
                 size = 1
-                return Tensor(self._data, device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
+                return Tensor(Buffer(self._data), device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
 
-        elif self.ndim == 3:
+        elif self._ndim == 3:
             if type(indices) == tuple:
                 length = len(indices)
                 if length == 3:
@@ -126,7 +129,7 @@ class Tensor:
 
                     offset = calculate_nchw_offset(c=c, h=h, w=w, C=self._strides[0], H=self._strides[1])
                     size = 1
-                    return Tensor(self._data, device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
+                    return Tensor(Buffer(self._data), device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
                 elif length == 2:
                     c, h = indices
                     if c > self._shape[0]:
@@ -136,9 +139,9 @@ class Tensor:
 
                     offset = calculate_nchw_offset(c=c, h=h, C=self._strides[0], H=self._strides[1])
                     size = self._strides[1]
-                    return Tensor(self._data, device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
+                    return Tensor(Buffer(self._data), device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
 
-        elif self.ndim == 4:
+        elif self._ndim == 4:
             if type(indices) == tuple:
                 length = len(indices)
                 if length == 4:
@@ -154,7 +157,7 @@ class Tensor:
 
                     offset = calculate_nchw_offset(n=n, c=c, h=h, w=w, N=self._strides[0], C=self._strides[1], H=self._strides[2])
                     size = 1
-                    return Tensor(self._data, device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
+                    return Tensor(Buffer(self._data), device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
                 elif length == 3:
                     n, c, h = indices
                     if n > self._shape[0]:
@@ -166,7 +169,7 @@ class Tensor:
 
                     offset = calculate_nchw_offset(n=n, c=c, h=h, N=self._strides[0], C=self._strides[1], H=self._strides[2])
                     size = self._strides[2]
-                    return Tensor(self._data, device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
+                    return Tensor(Buffer(self._data), device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
                 elif length == 2:
                     n, c  = indices
                     if n > self._shape[0]:
@@ -176,15 +179,15 @@ class Tensor:
 
                     offset = calculate_nchw_offset(n=n, c=c, N=self._strides[0], C=self._strides[1])
                     size = self._strides[1]
-                    return Tensor(self._data, device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
+                    return Tensor(Buffer(self._data), device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
 
 
     # ***** DCOPS (data creation ops) *****
     # DCOPS as of now uses only cpu to generate data
     @staticmethod
-    def rand(*shape, device = 'cpu', dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
-        if device != 'cpu':
-            warnings.warn("As of now DCOPS (data creation ops) only supports cpu.")
+    def rand(*shape, device: str = 'cpu', dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
+        if device != 'cpu' and device != 'metal':
+            warnings.warn("As of now DCOPS (data creation ops) are only created on CPU.")
 
         if dtype != dtypes.float32:
             warnings.warn("Creating data with dtype=float32. As of now dlgrad only supports float32, but more dtypes coming in future.")
@@ -212,11 +215,11 @@ class Tensor:
     @staticmethod
     def add(x: Tensor, y: Tensor):
         assert x._shape == y._shape, f"{x._shape} and {y._shape} does not match"
+        assert x._device == y._device, f"{x._device} and {y._device} does not match"
 
         def _backward(): pass
 
-        # TODO: assert device
-        # return Tensor(c_add._add(x._data, y._data, x._len), device=x._device, _len=x._len, _shape=x._shape)
+        return Tensor(Dispatcher.dispatch(x, y), device=x._device, _len=x._len, _shape=x._shape, view=False)
 
 """
 further reading
