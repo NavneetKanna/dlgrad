@@ -1,3 +1,5 @@
+import os 
+
 class ShapeError(Exception): ...
 class IndexError(Exception): ...
 
@@ -37,3 +39,8 @@ def calculate_stride(shape: tuple):
 def calculate_nchw_offset(n=0, c=0, h=0, w=0, N=0, C=0, H=0): 
     return (n * N) + (c * C) + (h * H) + w 
 
+def check_temp_file_exists(starts_with: str) -> str:
+    for f in os.listdir(get_temp_loc()):
+        if f.startswith(starts_with):
+            return f 
+    return ''

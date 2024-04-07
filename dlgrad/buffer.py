@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import ctypes
 import os
-from dlgrad.helpers import get_temp_loc
+from dlgrad.helpers import get_temp_loc, check_temp_file_exists
 import atexit
 
 class Buffer:
@@ -25,27 +25,21 @@ class Buffer:
             os.remove(self._temp_file_loc)
 
     @staticmethod
-    def _check_temp_file_exists(name):
-        for f in os.listdir(get_temp_loc()):
-            if f.startswith(name):
-                return f 
-        return ''
-
-    @staticmethod
     def create_random_buffer(length: int):
         # ctypes.CDLL was taking the most time when i was compiling the prg everytime this func was called
-        # and also there is no need to compile everytime this func was called, hence compiling only once
-        # and reading the shared file, and now ctypes.CDLL is fast and is no longer taking time.
+        # and also there is no need to compile everytime this func is called, hence compiling only once
+        # and reading the shared file, ctypes.CDLL is faster and is no longer taking time, although, the 
+        # first time it is long.
 
-        temp_file = Buffer._check_temp_file_exists("rand_buffer") 
-
+        temp_file = check_temp_file_exists(starts_with="rand_buffer") 
         if temp_file:
-            rand_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
+            temp_file = f"{get_temp_loc()}/{temp_file}"
+            rand_dll = ctypes.CDLL(temp_file)
         else:
             prg = C._random_buffer()
             with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="rand_buffer") as output_file:
                 temp_file = str(output_file.name)
-                subprocess.check_output(args=['clang', '-o2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
+                subprocess.check_output(args=['clang', '-O2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
                 rand_dll = ctypes.CDLL(temp_file)
         
         rand_dll.create_rand_buffer.argtypes = (ctypes.c_int,)
@@ -54,9 +48,10 @@ class Buffer:
 
     @staticmethod
     def free(data):
-        temp_file = Buffer._check_temp_file_exists("free") 
+        temp_file = check_temp_file_exists(starts_with="free") 
         if temp_file:
-            free_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
+            temp_file = f"{get_temp_loc()}/{temp_file}"
+            free_dll = ctypes.CDLL(temp_file)
         else:
             prg = C._free()
             with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="free") as output_file:
