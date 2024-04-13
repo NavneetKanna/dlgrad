@@ -6,6 +6,29 @@ Inspired by Andrej Karpathy's micrograd and George Hotz's tinygrad, dlgrad is my
 
 ---
 
+## Features
+
+- **CPU and GPU Support**: The library currently supports both CPU and GPU (Metal) backends.
+
+---
+
+## Examples
+
+```python
+from dlgrad.tensor import Tensor
+
+# Create tensors filled with random numbers from a uniform distribution
+a = Tensor.rand(10, 10)
+b = Tensor.rand(10, 10)
+# Since the tensors are c buffers, use numpy to print
+print(a.numpy())
+print(b.numpy())
+
+c = Tensor.add(a, b)
+print(c.numpy())
+
+```
+
 
 <!-- --------------------------------------------------------------------
 ## Computational Graph for the ANN model
