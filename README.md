@@ -1,5 +1,4 @@
 # dlgrad
----
 
 dlgrad (*D*eep *L*earning auto*grad*): A Lightweight Autograd Engine for Deep Learning
 
