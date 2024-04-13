@@ -240,6 +240,20 @@ https://www.cise.ufl.edu/~sahni/papers/gpuMatrixMultiply.pdf
 
 arxiv metal
 
+Also note that M1 is only ARMv8.4-A compliant
+
+https://godbolt.org
+
+Convolutions can also be cast as matrix multiplications. For example, a classic approach for this is to preprocess the input using im2col, 
+do a matrix multiplication, and then apply col2im. This is very inefficient, because the im2col matrix needs to be generated, and takes up a lot 
+of extra memory and time. However, this approach can be made efficient using implicit im2col, resulting in an implicit GEMM convolution, which is 
+implemented in some of the cuDNN algorithms for NVIDIA GPUs. Also, a 1x1 convolution can be cast as a matrix multiplication even without im2col.
+https://datascience.stackexchange.com/questions/12830/how-are-1x1-convolutions-the-same-as-a-fully-connected-layer
+
+JIT 
+
+what is the compute of matmul ?
+
 """
 """
 https://arxiv.org/abs/1502.05767

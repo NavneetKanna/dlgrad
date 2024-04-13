@@ -6,7 +6,7 @@ from tinygrad import Tensor
 import dlgrad
 import mlx.core as mx
 
-shape = (1000, 1000)
+shape = (5000, 5000)
 
 # def to_numpy(fa, l, s):
 #     sd = ctypes.addressof(fa) + 0 * ctypes.sizeof(ctypes.c_float)
