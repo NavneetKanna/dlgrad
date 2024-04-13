@@ -9,6 +9,7 @@ class C:
         # TODO: is this float32 ?
         # TODO: is srand48 available on unix and win ?
         # TODO: check malloc
+        # TODO: is this uniform distribution ?
         prg = """
         #include <stdio.h>
         #include <stdlib.h>
