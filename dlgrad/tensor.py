@@ -61,12 +61,14 @@ class Tensor:
             self._view = view
             self._contig = False
             self.dtype = dtype if dtype else dtypes.from_py(data)
+
         # TODO: Convert this to c array
         if isinstance(data, list):
             self._data = data
             self._len = len(data)
             self._view = view
             self._contig = False
+
         if isinstance(data, Buffer):
             self._data = data.data_buffer
             self._offset = _offset
@@ -216,7 +218,7 @@ class Tensor:
     # TODO: add enum of ops
     # ***** BinaryOps *****
     @staticmethod
-    def add(x: Tensor, y: Tensor):
+    def add(x: Tensor, y: Tensor) -> Tensor:
         assert x._shape == y._shape, f"{x._shape} and {y._shape} does not match"
         assert x._device == y._device, f"{x._device} and {y._device} does not match"
 
