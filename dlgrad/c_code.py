@@ -5,7 +5,7 @@ class C:
         pass
     
     @staticmethod
-    def _random_buffer():
+    def _random_buffer() -> str:
         # TODO: is this float32 ?
         # TODO: is srand48 available on unix and win ?
         # TODO: check malloc
@@ -26,7 +26,7 @@ class C:
         """ 
         return prg
 
-    def _add(dtype, out_len):
+    def _add(dtype: str, out_len: int) -> str:
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h> 
@@ -41,7 +41,7 @@ class C:
         """
         return prg
 
-    def _free():
+    def _free() -> str:
         prg = """
         #include <stdlib.h>
         #include <stdio.h>

@@ -2,6 +2,7 @@
 This should contain all buffer related tasks.
 
 """
+from __future__ import annotations
 from dlgrad.c_code import C
 import subprocess
 import tempfile
@@ -13,7 +14,7 @@ import atexit
 class Buffer:
     rand_temp_file = False
 
-    def __init__(self, data, temp_file_loc='') -> None:
+    def __init__(self, data, temp_file_loc: str) -> None:
         self.data_buffer = data
 
         if temp_file_loc:
@@ -25,7 +26,7 @@ class Buffer:
             os.remove(self._temp_file_loc)
 
     @staticmethod
-    def create_random_buffer(length: int):
+    def create_random_buffer(length: int) -> Buffer:
         # ctypes.CDLL was taking the most time when i was compiling the prg everytime this func was called
         # and also there is no need to compile everytime this func is called, hence compiling only once
         # and reading the shared file, ctypes.CDLL is faster and is no longer taking time, although, the 
@@ -47,7 +48,7 @@ class Buffer:
         return Buffer(rand_dll.create_rand_buffer(length), temp_file)
 
     @staticmethod
-    def free(data):
+    def free(data) -> None:
         temp_file = check_temp_file_exists(starts_with="free") 
         if temp_file:
             temp_file = f"{get_temp_loc()}/{temp_file}"
