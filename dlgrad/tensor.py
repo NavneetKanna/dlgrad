@@ -9,6 +9,7 @@
 8) cache aware matmul
 9) hardware command queue
 10) multiply-accumulate
+11) kernel fusion
 """
 
 from __future__ import annotations
@@ -183,8 +184,8 @@ class Tensor:
                     size = self._strides[1]
                     return Tensor(Buffer(self._data), device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
 
-    # ***** DCOPS (data creation ops) *****
-    # DCOPS as of now uses only cpu to generate data
+    # ***** BufferOps *****
+    # BufferOps as of now uses only cpu to generate data
     @staticmethod
     def rand(*shape, device: str = 'cpu', dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
         if device != 'cpu' and device != 'metal':
@@ -212,6 +213,7 @@ class Tensor:
 
     # TODO: where is broadcasting used ?
     # TODO: support +
+    # TODO: add enum of ops
     # ***** BinaryOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor):
@@ -220,10 +222,15 @@ class Tensor:
 
         def _backward(): pass
 
-        return Tensor(Dispatcher.dispatch(x, y), device=x._device, _len=x._len, _shape=x._shape, view=False)
+        return Tensor(Dispatcher.dispatch(x, y, ops="add"), device=x._device, _len=x._len, _shape=x._shape, view=False)
 
 """
+clean git history
+does .so file work for windows
+
 further reading
+
+https://sidsite.com/posts/autodiff/
 
 https://triton-lang.org/main/_images/grouped_vs_row_major_ordering.png
 https://triton-lang.org/main/_images/triton-parallel-matmul.png

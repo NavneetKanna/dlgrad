@@ -10,12 +10,17 @@ class Dispatcher:
     def __init__(self) -> None:
         pass
 
-    def dispatch(x: Tensor, y: Tensor) -> Buffer:
-        dtype = x._dtype 
+    @staticmethod
+    def _cpu_dispatch(x: Tensor, y: Tensor, ops: str) -> Buffer:
+        if ops == 'add':
+            return CPU.add(x, y, x._dtype) 
+
+    @staticmethod
+    def dispatch(x: Tensor, y: Tensor, ops: str) -> Buffer:
         device = x._device
 
         if device == 'cpu':
-            return CPU.add(x, y, dtype) 
+            return Dispatcher._cpu_dispatch(x, y, ops)
 
         elif device == 'gpu':
             pass
