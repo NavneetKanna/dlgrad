@@ -14,6 +14,9 @@ class Dispatcher:
     def _cpu_dispatch(x: Tensor, y: Tensor, ops: str) -> Buffer:
         if ops == 'add':
             return CPU.add(x, y, x._dtype) 
+        
+        if ops == 'matmul':
+            return CPU.matmul(x, y, x._dtype)  
 
     @staticmethod
     def dispatch(x: Tensor, y: Tensor, ops: str) -> Buffer:
