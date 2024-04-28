@@ -233,6 +233,7 @@ class Tensor:
 
         def _backward(): pass
 
+        # TODO: How do i ensure data is of same dtype
         return Tensor(Dispatcher.dispatch(x, y, ops="matmul"), device=x._device, _len=x._shape[0]*y._shape[1], _shape=(x._shape[0], y._shape[1]), view=False)
 
 """
