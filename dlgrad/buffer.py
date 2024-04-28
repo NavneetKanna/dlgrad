@@ -45,7 +45,11 @@ class Buffer:
         
         rand_dll.create_rand_buffer.argtypes = (ctypes.c_int,)
         rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float) 
-        return Buffer(rand_dll.create_rand_buffer(length), temp_file)
+        data = rand_dll.create_rand_buffer(length)
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+        return Buffer(data, temp_file)
 
     @staticmethod
     def free(data) -> None:
