@@ -215,7 +215,7 @@ class Tensor:
 
     # TODO: where is broadcasting used ?
     # TODO: support +
-    # TODO: add enum of ops
+    # TODO: add enum of ops, device
     # ***** BinaryOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
@@ -225,6 +225,15 @@ class Tensor:
         def _backward(): pass
 
         return Tensor(Dispatcher.dispatch(x, y, ops="add"), device=x._device, _len=x._len, _shape=x._shape, view=False)
+    
+    @staticmethod
+    def matmul(x: Tensor, y: Tensor) -> Tensor:
+        assert x._shape[::-1] == y._shape, f"{x._shape} and {y._shape} does not match"
+        assert x._device == y._device, f"{x._device} and {y._device} does not match"
+
+        def _backward(): pass
+
+        return Tensor(Dispatcher.dispatch(x, y, ops="matmul"), device=x._device, _len=x._shape[0]*y._shape[1], _shape=(x._shape[0], y._shape[1]), view=False)
 
 """
 clean git history

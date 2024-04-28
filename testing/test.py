@@ -2,10 +2,13 @@
 import numpy as np
 import time
 import torch
-from tinygrad import Tensor
-import dlgrad
-import mlx.core as mx
-
+import tinygrad 
+# import Tensor
+import os
+import sys
+print(sys.path.append(os.getcwd()))
+from dlgrad.tensor import Tensor # noqa: E402
+import mlx.core as mx # noqa: E402
 shape = (5000, 5000)
 
 # def to_numpy(fa, l, s):
@@ -17,7 +20,7 @@ shape = (5000, 5000)
 print(f"---- create rand buffer {shape} on cpu ----")
 def create_rand_dl():
     s = time.perf_counter()
-    _ = dlgrad.Tensor.rand(shape, device='cpu')
+    _ = Tensor.rand(shape, device='cpu')
     e = time.perf_counter()
     print(f"dlgrad {e-s:.4f}s")
 
@@ -35,7 +38,7 @@ def create_rand_to():
 
 def create_rand_ti():
     s = time.perf_counter()
-    _ = Tensor.rand(shape, device='clang').numpy()
+    _ = tinygrad.Tensor.rand(shape, device='clang').numpy()
     e = time.perf_counter()
     print(f"tinygrad {e-s:.4f}s")
 
@@ -60,10 +63,10 @@ create_rand_mlx()
 
 print(f"---- add {shape} on cpu ----")
 def dl_add():
-    a = dlgrad.Tensor.rand(shape, device='cpu')
-    b = dlgrad.Tensor.rand(shape, device='cpu')
+    a = Tensor.rand(shape, device='cpu')
+    b = Tensor.rand(shape, device='cpu')
     s = time.perf_counter()
-    _ = dlgrad.Tensor.add(a, b)
+    _ = Tensor.add(a, b)
     e = time.perf_counter()
     print(f"dlgrad {e-s:.4f}s")
 
@@ -84,10 +87,10 @@ def to_add():
     print(f"torch {e-s:.4f}s")
 
 def ti_add():
-    a = Tensor.rand(shape, device='clang')
-    b = Tensor.rand(shape, device='clang')
+    a = tinygrad.Tensor.rand(shape, device='clang')
+    b = tinygrad.Tensor.rand(shape, device='clang')
     s = time.perf_counter()
-    _ = Tensor.add(a, b).numpy()
+    _ = tinygrad.Tensor.add(a, b).numpy()
     e = time.perf_counter()
     print(f"tinygrad {e-s:.4f}s")
 
@@ -105,7 +108,13 @@ to_add()
 ti_add()
 mlx_add()
 
-print(f"---- add {shape} on cpu, but calling dlgrad the second time ----")
+print(f"---- add {shape} on cpu, but calling dlgrad the second time with diff inps ----")
+create_rand_dl()
+create_rand_num()
+create_rand_to()
+create_rand_ti()
+create_rand_mlx()
+
 dl_add()
 num_add()
 to_add()
