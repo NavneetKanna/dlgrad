@@ -53,4 +53,5 @@ class CPU:
 
         matmul_dll.matmul.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
         matmul_dll.matmul.restype = ctypes.POINTER(ctypes.c_float) 
-        return Buffer(matmul_dll.matmul(x._data, y._data, x._shape[0], x._shape[1], y._shape[1]), temp_file)
+        tmp = matmul_dll.matmul(x._data, y._data, x._shape[0], x._shape[1], y._shape[1])
+        return Buffer(tmp, temp_file)
