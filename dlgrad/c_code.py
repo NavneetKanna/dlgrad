@@ -17,6 +17,10 @@ class C:
 
         float *create_rand_buffer(int length) {
             float *data = malloc(length * sizeof(float));
+            if (data == NULL)
+                return NULL
+            if (data == NULL)
+                return NULL;
             srand48(time(NULL));
             for (int i=0; i<length; i++) {
                 data[i] = drand48();
@@ -35,6 +39,8 @@ class C:
         {dtype} *add(float *x, float *y) 
         {{
             {dtype} *out = malloc({out_len} * sizeof({dtype}));
+            if (out == NULL) 
+                return NULL;
             for (int i=0; i<{out_len}; i++) {{
                 out[i] = x[i] + y[i];
             }}

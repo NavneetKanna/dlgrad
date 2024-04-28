@@ -34,7 +34,11 @@ class CPU:
 
         add_dll.add.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
         add_dll.add.restype = ctypes.POINTER(ctypes.c_float) 
-        return Buffer(add_dll.add(x._data, y._data), temp_file)
+        data = add_dll.add(x._data, y._data)
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+        return Buffer(data, temp_file)
 
     @staticmethod
     def matmul(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
@@ -53,5 +57,8 @@ class CPU:
 
         matmul_dll.matmul.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
         matmul_dll.matmul.restype = ctypes.POINTER(ctypes.c_float) 
-        tmp = matmul_dll.matmul(x._data, y._data, x._shape[0], x._shape[1], y._shape[1])
-        return Buffer(tmp, temp_file)
+        data = matmul_dll.matmul(x._data, y._data, x._shape[0], x._shape[1], y._shape[1])
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+        return Buffer(data, temp_file)
