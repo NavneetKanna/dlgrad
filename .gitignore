@@ -7,4 +7,5 @@ build
 *.prof
 *.txt
 .*
-
+*.s
+a.out
