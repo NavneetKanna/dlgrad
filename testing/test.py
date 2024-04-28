@@ -3,13 +3,12 @@ import numpy as np
 import time
 import torch
 import tinygrad 
-# import Tensor
-import os
 import sys
-print(sys.path.append(os.getcwd()))
+sys.path.append('.')
 from dlgrad.tensor import Tensor # noqa: E402
 import mlx.core as mx # noqa: E402
-shape = (5000, 5000)
+
+shape = (1000, 1000)
 
 # def to_numpy(fa, l, s):
 #     sd = ctypes.addressof(fa) + 0 * ctypes.sizeof(ctypes.c_float)
@@ -54,7 +53,7 @@ create_rand_to()
 create_rand_ti()
 create_rand_mlx()
 
-print(f"---- create rand buffer {shape} on cpu, but calling dlgrad the second time ----")
+print(f"---- create rand buffer {shape} on cpu, but calling all the second time ----")
 create_rand_dl()
 create_rand_num()
 create_rand_to()
@@ -108,15 +107,63 @@ to_add()
 ti_add()
 mlx_add()
 
-print(f"---- add {shape} on cpu, but calling dlgrad the second time with diff inps ----")
-create_rand_dl()
-create_rand_num()
-create_rand_to()
-create_rand_ti()
-create_rand_mlx()
-
+print(f"---- add {shape} on cpu, but calling all the second time ----")
 dl_add()
 num_add()
 to_add()
 ti_add()
 mlx_add()
+
+print(f"---- matmul {shape} on cpu ----")
+def dl_matmul():
+    a = Tensor.rand(shape, device='cpu')
+    b = Tensor.rand(shape, device='cpu')
+    s = time.perf_counter()
+    _ = Tensor.matmul(a, b)
+    e = time.perf_counter()
+    print(f"dlgrad {e-s:.4f}s")
+
+def num_matmul():
+    a = np.random.rand(*shape)
+    b = np.random.rand(*shape)
+    s = time.perf_counter()
+    _ = np.matmul(a, b)
+    e = time.perf_counter()
+    print(f"numpy {e-s:.4f}s")
+
+def to_matmul():
+    a = torch.rand(shape, device='cpu')
+    b = torch.rand(shape, device='cpu')
+    s = time.perf_counter()
+    _ = torch.matmul(a, b)
+    e = time.perf_counter()
+    print(f"torch {e-s:.4f}s")
+
+def ti_matmul():
+    a = tinygrad.Tensor.rand(shape, device='clang')
+    b = tinygrad.Tensor.rand(shape, device='clang')
+    s = time.perf_counter()
+    _ = tinygrad.Tensor.matmul(a, b).numpy()
+    e = time.perf_counter()
+    print(f"tinygrad {e-s:.4f}s")
+
+def mlx_matmul():
+    a = mx.random.uniform(shape=shape, stream=mx.cpu)
+    b = mx.random.uniform(shape=shape, stream=mx.cpu)
+    s = time.perf_counter()
+    _ = mx.eval(mx.matmul(a, b))
+    e = time.perf_counter()
+    print(f"mlx {e-s:.4f}s")
+
+dl_matmul()
+num_matmul()
+to_matmul()
+ti_matmul()
+mlx_matmul()
+
+print(f"---- matmul {shape} on cpu, but calling all the second time ----")
+dl_matmul()
+num_matmul()
+to_matmul()
+ti_matmul()
+mlx_matmul()
