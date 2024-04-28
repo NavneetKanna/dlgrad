@@ -32,7 +32,8 @@ class C:
         #include <stdio.h>
         #include <stdlib.h> 
 
-        {dtype} *add(float *x, float *y) {{
+        {dtype} *add(float *x, float *y) 
+        {{
             {dtype} *out = malloc({out_len} * sizeof({dtype}));
             for (int i=0; i<{out_len}; i++) {{
                 out[i] = x[i] + y[i];
@@ -49,7 +50,8 @@ class C:
         #include <stdlib.h>
         
         // loop interchange matmul
-        {dtype} *matmul({dtype} *a, {dtype} *b, int A_ROWS, int A_COLS, int B_COLS) {{
+        {dtype} *matmul({dtype} *a, {dtype} *b, int A_ROWS, int A_COLS, int B_COLS) 
+        {{
             {dtype} *c = ({dtype} *)malloc(A_ROWS * B_COLS * sizeof({dtype}));
             for (int i=0; i<A_ROWS; i++) {{
                 for (int k=0; k<A_COLS; k++) {{
@@ -68,7 +70,8 @@ class C:
         #include <stdlib.h>
         #include <stdio.h>
 
-        void free_buf(void *data) {
+        void free_buf(void *data) 
+        {
             free(data);
         }
         """
