@@ -18,7 +18,7 @@ class C:
         float *create_rand_buffer(int length) {
             float *data = malloc(length * sizeof(float));
             if (data == NULL)
-                return NULL
+                return NULL;
             if (data == NULL)
                 return NULL;
             srand48(time(NULL));
