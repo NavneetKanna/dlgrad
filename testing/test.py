@@ -6,6 +6,7 @@ import tinygrad
 import sys
 sys.path.append('.')
 from dlgrad.tensor import Tensor # noqa: E402
+from dlgrad.helpers import Device
 import mlx.core as mx # noqa: E402
 
 shape = (1000, 1000)
@@ -62,8 +63,8 @@ create_rand_mlx()
 
 print(f"---- add {shape} on cpu ----")
 def dl_add():
-    a = Tensor.rand(shape, device='cpu')
-    b = Tensor.rand(shape, device='cpu')
+    a = Tensor.rand(shape, device=Device.CPU)
+    b = Tensor.rand(shape, device=Device.CPU)
     s = time.perf_counter()
     _ = Tensor.add(a, b)
     e = time.perf_counter()
@@ -116,8 +117,8 @@ mlx_add()
 
 print(f"---- matmul {shape} on cpu ----")
 def dl_matmul():
-    a = Tensor.rand(shape, device='cpu')
-    b = Tensor.rand(shape, device='cpu')
+    a = Tensor.rand(shape, device=Device.CPU)
+    b = Tensor.rand(shape, device=Device.CPU)
     s = time.perf_counter()
     _ = Tensor.matmul(a, b)
     e = time.perf_counter()

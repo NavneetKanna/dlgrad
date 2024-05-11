@@ -1,4 +1,13 @@
 import os 
+from enum import Enum, auto
+
+class BinaryOps(Enum):
+    ADD = auto()
+    MATMUL = auto()
+
+class Device(Enum):
+    CPU = auto()
+    GPU = auto()
 
 class ShapeError(Exception): ...
 class IndexError(Exception): ...

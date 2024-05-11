@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 from typing import Union, Optional
-from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset
+from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, Device
 import ctypes
 import atexit
 import numpy as np
@@ -36,7 +36,7 @@ class Tensor:
             self,
             data: Union[list, int, Buffer],
             requires_grad = True,
-            device: str = "",
+            device: Device = Device.CPU,
             view: bool = False,
             dtype: Optional[dtypes] = None,
             _offset: int = 0,
@@ -189,12 +189,12 @@ class Tensor:
     # ***** BufferOps *****
     # BufferOps as of now uses only cpu to generate data
     @staticmethod
-    def rand(*shape, device: str = 'cpu', dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
-        if device != 'cpu' and device != 'metal':
+    def rand(*shape, device: Device = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
+        if device != Device.CPU:
             warnings.warn("As of now DCOPS (data creation ops) are only created on CPU.")
 
         if dtype != dtypes.float32:
-            warnings.warn("Creating data with dtype=float32. As of now dlgrad only supports float32, but more dtypes coming in future.")
+            warnings.warn("Currently dlgrad only supports float32, but more dtypes coming in future. Creating data with dtype=float32.")
 
         if isinstance(shape[0], tuple): 
             shape = shape[0]
@@ -224,7 +224,7 @@ class Tensor:
 
         def _backward(): pass
 
-        return Tensor(Dispatcher.dispatch(x, y, ops="add"), device=x._device, _len=x._len, _shape=x._shape, view=False)
+        return Tensor(Dispatcher.dispatch(x, y, ops=BinaryOps.ADD), device=x._device, _len=x._len, _shape=x._shape, view=False)
     
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
@@ -234,7 +234,7 @@ class Tensor:
         def _backward(): pass
 
         # TODO: How do i ensure data is of same dtype
-        return Tensor(Dispatcher.dispatch(x, y, ops="matmul"), device=x._device, _len=x._shape[0]*y._shape[1], _shape=(x._shape[0], y._shape[1]), view=False)
+        return Tensor(Dispatcher.dispatch(x, y, ops=BinaryOps.MATMUL), device=x._device, _len=x._shape[0]*y._shape[1], _shape=(x._shape[0], y._shape[1]), view=False)
 
 """
 clean git history
