@@ -215,7 +215,6 @@ class Tensor:
 
     # TODO: where is broadcasting used ?
     # TODO: support +
-    # TODO: add enum of ops, device
     # ***** BinaryOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
