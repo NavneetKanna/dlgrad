@@ -1,28 +1,54 @@
 
 class C:
     @staticmethod
-    def _create_empty_buffer(len):
-        pass
-    
-    @staticmethod
     def _random_buffer() -> str:
-        # TODO: is this float32 ?
-        # TODO: is srand48 available on unix and win ?
-        # TODO: is this uniform distribution ?
         prg = """
-        #include <stdio.h>
         #include <stdlib.h>
         #include <time.h>
+        #include <inttypes.h>
+        #include <stdio.h>
+        #include <stdint.h>
 
-        float *create_rand_buffer(int length) {
+        // xoroshiro64*
+        // https://prng.di.unimi.it/xoroshiro64star.c
+        static inline uint32_t rotl(const uint32_t x, int k) {
+            return (x << k) | (x >> (32 - k));
+        }
+
+        static uint32_t s[2];
+
+        uint32_t next(void) {
+            const uint32_t s0 = s[0];
+            uint32_t s1 = s[1];
+            const uint32_t result = s0 * 0x9E3779BB;
+
+            s1 ^= s0;
+            s[0] = rotl(s0, 26) ^ s1 ^ (s1 << 9); // a, b
+            s[1] = rotl(s1, 13); // c
+
+            return result;
+        }
+
+        float random_uniform(float a, float b) {
+            uint32_t rnd = next();
+            float normalized = rnd / (float)UINT32_MAX; // Normalize to [0, 1)
+            float new = (b-a)*(normalized) + a; // transform to range (a, b)
+            return new; 
+        }
+
+        float *create_rand_buffer(int length, float low, float high) {
+            s[0] = (uint32_t)time(NULL);
+            s[1] = (uint32_t)time(NULL) + 1; 
+
             float *data = malloc(length * sizeof(float));
             if (data == NULL)
                 return NULL;
 
-            srand48(time(NULL));
             for (int i=0; i<length; i++) {
-                data[i] = (((float)rand() / (float)RAND_MAX));
+                float random_value = random_uniform(low, high);
+                data[i] = random_value;
             }
+
             return data;
         }
         """ 
