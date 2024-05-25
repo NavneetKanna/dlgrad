@@ -9,8 +9,11 @@ class C:
         #include <stdio.h>
         #include <stdint.h>
 
-        // xoroshiro64*
-        // https://prng.di.unimi.it/xoroshiro64star.c
+        /*
+         * This block of code generates random numbers
+         * from a uniform distribution on the interval [low, high).
+         * It uses xoroshiro64* (https://prng.di.unimi.it/xoroshiro64star.c).
+         */
         static inline uint32_t rotl(const uint32_t x, int k) {
             return (x << k) | (x >> (32 - k));
         }
