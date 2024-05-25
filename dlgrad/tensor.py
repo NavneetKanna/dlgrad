@@ -211,7 +211,7 @@ class Tensor:
         for i in shape: 
             size *= i
         
-        return Tensor(Buffer.create_random_buffer(size), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
+        return Tensor(Buffer.uniform(size), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
 
     # TODO: where is broadcasting used ?
     # TODO: support +
