@@ -20,7 +20,7 @@ shape = (1000, 1000)
 print(f"---- create rand buffer {shape} on cpu ----")
 def create_rand_dl():
     s = time.perf_counter()
-    _ = Tensor.rand(shape, device='cpu')
+    _ = Tensor.rand(shape, device=Device.CPU)
     e = time.perf_counter()
     print(f"dlgrad {e-s:.4f}s")
 

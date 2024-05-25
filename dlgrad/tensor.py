@@ -23,7 +23,7 @@ from dlgrad.dtype import dtypes
 from dlgrad.buffer import Buffer
 import warnings
 from dlgrad.dispatch import Dispatcher
-
+import math
 
 class Tensor:
     """
@@ -212,6 +212,22 @@ class Tensor:
             size *= i
         
         return Tensor(Buffer.uniform(size), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
+
+    def kaiming_uniform(*shape, fan_in: int, device=Device.CPU, dtype=dtypes.float32):
+        if isinstance(shape[0], tuple): 
+            shape = shape[0]
+        if isinstance(shape[0], list): 
+            shape = tuple(*shape)
+
+        size = 1
+        for i in shape: 
+            size *= i
+
+        a = math.sqrt(5)
+        gain = math.sqrt(2 / (1 + a**2))
+        std = gain / math.sqrt(fan_in)
+        
+        return Tensor(Buffer.uniform(size, low=-std, high=std), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
 
     # TODO: where is broadcasting used ?
     # TODO: support +
