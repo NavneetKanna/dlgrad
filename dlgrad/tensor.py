@@ -213,7 +213,7 @@ class Tensor:
         
         return Tensor(Buffer.uniform(size), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
 
-    def kaiming_uniform(*shape, fan_in: int, device=Device.CPU, dtype=dtypes.float32):
+    def kaiming_uniform(*shape, device=Device.CPU, dtype=dtypes.float32):
         if isinstance(shape[0], tuple): 
             shape = shape[0]
         if isinstance(shape[0], list): 
@@ -225,9 +225,10 @@ class Tensor:
 
         a = math.sqrt(5)
         gain = math.sqrt(2 / (1 + a**2))
-        std = gain / math.sqrt(fan_in)
+        std = gain / math.sqrt(shape[1])
+        bound = math.sqrt(3) * std
         
-        return Tensor(Buffer.uniform(size, low=-std, high=std), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
+        return Tensor(Buffer.uniform(size, low=-bound, high=bound), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
 
     # TODO: where is broadcasting used ?
     # TODO: support +
