@@ -189,13 +189,14 @@ class Tensor:
     # ***** BufferOps *****
     # BufferOps as of now uses only cpu to generate data
     @staticmethod
-    def rand(*shape, device: Device = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
+    def rand(*shape, low = 0.0, high = 1.0, device: Device = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
         if device != Device.CPU:
-            warnings.warn("As of now DCOPS (data creation ops) are only created on CPU.")
+            warnings.warn("Currently BufferOps are only created on CPU.")
 
         if dtype != dtypes.float32:
             warnings.warn("Currently dlgrad only supports float32, but more dtypes coming in future. Creating data with dtype=float32.")
 
+        print(shape)
         if isinstance(shape[0], tuple): 
             shape = shape[0]
         if isinstance(shape[0], list): 
@@ -211,9 +212,9 @@ class Tensor:
         for i in shape: 
             size *= i
         
-        return Tensor(Buffer.uniform(size), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
+        return Tensor(Buffer.uniform(size, low, high), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
 
-    def kaiming_uniform(*shape, device=Device.CPU, dtype=dtypes.float32):
+    def kaiming_uniform(*shape, device = Device.CPU, dtype = dtypes.float32):
         if isinstance(shape[0], tuple): 
             shape = shape[0]
         if isinstance(shape[0], list): 
