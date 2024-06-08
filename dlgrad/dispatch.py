@@ -12,7 +12,7 @@ class Dispatcher:
         pass
 
     @staticmethod
-    def _cpu_dispatch(x: Tensor, y: Tensor, ops: str) -> Buffer:
+    def _cpu_dispatch(x: Tensor, y: Tensor, ops) -> Buffer:
         if ops == BinaryOps.ADD:
             return CPU.add(x, y, x._dtype) 
         
@@ -23,7 +23,7 @@ class Dispatcher:
             return CPU.transpose(x, x._dtype)
 
     @staticmethod
-    def dispatch(x: Tensor, ops: str, y: Tensor = None) -> Buffer:
+    def dispatch(x: Tensor, ops, y: Tensor = None) -> Buffer:
         device = x._device
         if device == Device.CPU:
             return Dispatcher._cpu_dispatch(x, y, ops)
