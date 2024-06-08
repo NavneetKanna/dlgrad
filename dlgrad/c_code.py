@@ -115,9 +115,10 @@ class C:
 
             for(int n = 0; n<rows*cols; n++) {{
                 int i = n/rows;
-                int j = n%cols;
+                int j = n%rows;
                 dst[n] = src[cols*j + i];
             }}
+            
             return dst;
         }}
         """
