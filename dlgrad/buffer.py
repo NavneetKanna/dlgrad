@@ -12,8 +12,6 @@ from dlgrad.helpers import get_temp_loc, check_temp_file_exists
 import atexit
 
 class Buffer:
-    rand_temp_file = False
-
     def __init__(self, data, temp_file_loc: str = '') -> None:
         self.data_buffer = data
 

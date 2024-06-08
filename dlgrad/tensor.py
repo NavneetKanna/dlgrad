@@ -92,6 +92,13 @@ class Tensor:
     def __repr__(self) -> str:
         return f"Tensor <contig: {self._contig} view:{self._view} device: {self._device}>"
 
+    def linear(self, weight: Tensor, bias: Tensor) -> Tensor:
+        # self*weight.T + bias
+        pass
+
+    def transpose(self):
+        pass
+
     # TODO: maybe do a check for data before calling free ?
     def cleanup(self): 
         Buffer.free(self._data)
@@ -196,7 +203,6 @@ class Tensor:
         if dtype != dtypes.float32:
             warnings.warn("Currently dlgrad only supports float32, but more dtypes coming in future. Creating data with dtype=float32.")
 
-        print(shape)
         if isinstance(shape[0], tuple): 
             shape = shape[0]
         if isinstance(shape[0], list): 
@@ -214,6 +220,7 @@ class Tensor:
         
         return Tensor(Buffer.uniform(size, low, high), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
 
+    @staticmethod
     def kaiming_uniform(*shape, device = Device.CPU, dtype = dtypes.float32):
         if isinstance(shape[0], tuple): 
             shape = shape[0]
@@ -231,8 +238,6 @@ class Tensor:
         
         return Tensor(Buffer.uniform(size, low=-bound, high=bound), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
 
-    # TODO: where is broadcasting used ?
-    # TODO: support +
     # ***** BinaryOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:

@@ -58,7 +58,6 @@ class C:
         return prg
 
     def _add(dtype: str, out_len: int) -> str:
-        # TODO: Wrong here, arr should also be dtype
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h> 
