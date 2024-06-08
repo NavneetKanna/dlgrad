@@ -97,8 +97,10 @@ class Tensor:
         pass
 
     # ***** UnaryOps ****
-    def transpose(self):
-        return Tensor(Dispatcher.dispatch(self, ops=UnaryOps.TRANSPOSE), device=self._device, _len=self._len, _shape=self._shape[::-1], view=False)
+    # TODO: What to do if i want to call x.transpose() ?
+    @staticmethod
+    def transpose(x: Tensor):
+        return Tensor(Dispatcher.dispatch(x, ops=UnaryOps.TRANSPOSE), device=x._device, _len=x._len, _shape=x._shape[::-1], view=False)
 
     # TODO: maybe do a check for data before calling free ?
     def cleanup(self): 

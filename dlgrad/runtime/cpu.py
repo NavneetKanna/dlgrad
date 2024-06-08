@@ -64,5 +64,24 @@ class CPU:
         return Buffer(data, temp_file)
 
     @staticmethod
-    def transpose(x: Tensor):
-        pass
+    def transpose(x: Tensor, dtype: dtypes):
+        c_dtype = dtypes.get_c_dtype(dtype) 
+        name = f"cpu_{c_dtype}_transpose"
+        temp_file = check_temp_file_exists(starts_with=name) 
+
+        if temp_file:
+            transpose_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
+        else:
+            prg = C._transpose(c_dtype) 
+            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file: 
+                temp_file = str(output_file.name)
+                subprocess.check_output(args=['clang', '-O2', '-march=native', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
+                transpose_dll = ctypes.CDLL(temp_file)
+
+        transpose_dll.transpose.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
+        transpose_dll.transpose.restype = ctypes.POINTER(ctypes.c_float) 
+        data = transpose_dll.transpose(x._data, x._shape[0], x._shape[1])
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+        return Buffer(data, temp_file)

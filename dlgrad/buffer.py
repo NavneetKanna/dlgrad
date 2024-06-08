@@ -23,6 +23,7 @@ class Buffer:
         if os.path.exists(self._temp_file_loc):
             os.remove(self._temp_file_loc)
 
+    # TODO: Move to cpu
     @staticmethod
     def uniform(length: int, low=0.0, high=1.0) -> Buffer:
         # ctypes.CDLL was taking the most time when i was compiling the prg everytime this func was called
