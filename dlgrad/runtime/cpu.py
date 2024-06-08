@@ -62,3 +62,7 @@ class CPU:
             # TODO: create a new error
             print("Error: could not allocate memory")
         return Buffer(data, temp_file)
+
+    @staticmethod
+    def transpose(x: Tensor):
+        pass

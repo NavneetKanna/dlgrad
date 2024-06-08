@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dlgrad.runtime.cpu import CPU
 from dlgrad.buffer import Buffer
-from dlgrad.helpers import BinaryOps, Device
+from dlgrad.helpers import BinaryOps, UnaryOps, Device
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from dlgrad.tensor import Tensor
@@ -18,9 +18,12 @@ class Dispatcher:
         
         if ops == BinaryOps.MATMUL:
             return CPU.matmul(x, y, x._dtype)  
+        
+        if ops == UnaryOps.TRANSPOSE:
+            return CPU.transpose(x)
 
     @staticmethod
-    def dispatch(x: Tensor, y: Tensor, ops: str) -> Buffer:
+    def dispatch(x: Tensor, ops: str, y: Tensor = None) -> Buffer:
         device = x._device
         if device == Device.CPU:
             return Dispatcher._cpu_dispatch(x, y, ops)

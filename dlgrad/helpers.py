@@ -5,6 +5,9 @@ class BinaryOps(Enum):
     ADD = auto()
     MATMUL = auto()
 
+class UnaryOps(Enum):
+    TRANSPOSE = auto()
+
 class Device(Enum):
     CPU = auto()
     GPU = auto()

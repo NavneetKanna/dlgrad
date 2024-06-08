@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 from typing import Union, Optional
-from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, Device
+from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, UnaryOps, Device
 import ctypes
 import atexit
 import numpy as np
@@ -96,8 +96,9 @@ class Tensor:
         # self*weight.T + bias
         pass
 
+    # ***** UnaryOps ****
     def transpose(self):
-        pass
+        return Tensor(Dispatcher.dispatch(self, ops=UnaryOps.TRANSPOSE), device=self._device, _len=self._len, _shape=self._shape[::-1], view=False)
 
     # TODO: maybe do a check for data before calling free ?
     def cleanup(self): 
