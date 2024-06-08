@@ -67,6 +67,7 @@ class C:
             {dtype} *out = malloc({out_len} * sizeof({dtype}));
             if (out == NULL) 
                 return NULL;
+
             for (int i=0; i<{out_len}; i++) {{
                 out[i] = x[i] + y[i];
             }}
@@ -85,6 +86,9 @@ class C:
         {dtype} *matmul({dtype} *a, {dtype} *b, int A_ROWS, int A_COLS, int B_COLS) 
         {{
             {dtype} *c = ({dtype} *)malloc(A_ROWS * B_COLS * sizeof({dtype}));
+            if (c == NULL) 
+                return NULL;
+
             for (int i=0; i<A_ROWS; i++) {{
                 for (int k=0; k<A_COLS; k++) {{
                    for (int j=0; j<B_COLS; j++) {{
@@ -93,6 +97,28 @@ class C:
                 }}
             }}
             return c;
+        }}
+        """
+        return prg
+
+    def _transpose(dtype):
+        prg = f"""
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        // https://stackoverflow.com/questions/16737298/what-is-the-fastest-way-to-transpose-a-matrix-in-c
+        float *transpose(float *src, int rows, int cols) 
+        {{
+            float *dst = ({dtype} *)malloc((rows*cols) * sizeof({dtype}));
+            if (dst == NULL) 
+                return NULL;
+
+            for(int n = 0; n<rows*cols; n++) {{
+                int i = n/rows;
+                int j = n%cols;
+                dst[n] = src[cols*j + i];
+            }}
+            return dst;
         }}
         """
         return prg

@@ -20,7 +20,7 @@ class Dispatcher:
             return CPU.matmul(x, y, x._dtype)  
         
         if ops == UnaryOps.TRANSPOSE:
-            return CPU.transpose(x)
+            return CPU.transpose(x, x._dtype)
 
     @staticmethod
     def dispatch(x: Tensor, ops: str, y: Tensor = None) -> Buffer:
