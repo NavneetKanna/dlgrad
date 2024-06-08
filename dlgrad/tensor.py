@@ -242,6 +242,7 @@ class Tensor:
         return Tensor(Buffer.uniform(size, low=-bound, high=bound), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
 
     # ***** BinaryOps *****
+    # TODO: Dont like the way dispatch is getting called
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
         assert x._shape == y._shape, f"{x._shape} and {y._shape} does not match"
@@ -249,7 +250,7 @@ class Tensor:
 
         def _backward(): pass
 
-        return Tensor(Dispatcher.dispatch(x, y, ops=BinaryOps.ADD), device=x._device, _len=x._len, _shape=x._shape, view=False)
+        return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD), device=x._device, _len=x._len, _shape=x._shape, view=False)
     
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
@@ -259,7 +260,7 @@ class Tensor:
         def _backward(): pass
 
         # TODO: How do i ensure data is of same dtype
-        return Tensor(Dispatcher.dispatch(x, y, ops=BinaryOps.MATMUL), device=x._device, _len=x._shape[0]*y._shape[1], _shape=(x._shape[0], y._shape[1]), view=False)
+        return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), device=x._device, _len=x._shape[0]*y._shape[1], _shape=(x._shape[0], y._shape[1]), view=False)
 
 """
 clean git history

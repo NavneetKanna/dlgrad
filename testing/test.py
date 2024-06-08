@@ -9,7 +9,7 @@ from dlgrad.tensor import Tensor # noqa: E402
 from dlgrad.helpers import Device
 import mlx.core as mx # noqa: E402
 
-shape = (1000, 1000)
+shape = (1024, 1024)
 
 # def to_numpy(fa, l, s):
 #     sd = ctypes.addressof(fa) + 0 * ctypes.sizeof(ctypes.c_float)
@@ -118,33 +118,29 @@ mlx_add()
 print(f"---- matmul {shape} on cpu ----")
 def dl_matmul():
     a = Tensor.rand(shape, device=Device.CPU)
-    b = Tensor.rand(shape, device=Device.CPU)
     s = time.perf_counter()
-    _ = Tensor.matmul(a, b)
+    _ = Tensor.transpose(a)
     e = time.perf_counter()
     print(f"dlgrad {e-s:.4f}s")
 
 def num_matmul():
     a = np.random.rand(*shape)
-    b = np.random.rand(*shape)
     s = time.perf_counter()
-    _ = np.matmul(a, b)
+    _ = a.T
     e = time.perf_counter()
     print(f"numpy {e-s:.4f}s")
 
 def to_matmul():
     a = torch.rand(shape, device='cpu')
-    b = torch.rand(shape, device='cpu')
     s = time.perf_counter()
-    _ = torch.matmul(a, b)
+    _ = a.T
     e = time.perf_counter()
     print(f"torch {e-s:.4f}s")
 
 def ti_matmul():
     a = tinygrad.Tensor.rand(shape, device='clang')
-    b = tinygrad.Tensor.rand(shape, device='clang')
     s = time.perf_counter()
-    _ = tinygrad.Tensor.matmul(a, b).numpy()
+    _ = a.T.numpy()
     e = time.perf_counter()
     print(f"tinygrad {e-s:.4f}s")
 
@@ -168,3 +164,57 @@ num_matmul()
 to_matmul()
 ti_matmul()
 mlx_matmul()
+
+
+print(f"---- transpose {shape} on cpu ----")
+def dl_transpose():
+    a = Tensor.rand(shape, device=Device.CPU)
+    b = Tensor.rand(shape, device=Device.CPU)
+    s = time.perf_counter()
+    _ = Tensor.matmul(a, b)
+    e = time.perf_counter()
+    print(f"dlgrad {e-s:.4f}s")
+
+def num_transpose():
+    a = np.random.rand(*shape)
+    b = np.random.rand(*shape)
+    s = time.perf_counter()
+    _ = np.matmul(a, b)
+    e = time.perf_counter()
+    print(f"numpy {e-s:.4f}s")
+
+def to_transpose():
+    a = torch.rand(shape, device='cpu')
+    b = torch.rand(shape, device='cpu')
+    s = time.perf_counter()
+    _ = torch.matmul(a, b)
+    e = time.perf_counter()
+    print(f"torch {e-s:.4f}s")
+
+def ti_transpose():
+    a = tinygrad.Tensor.rand(shape, device='clang')
+    b = tinygrad.Tensor.rand(shape, device='clang')
+    s = time.perf_counter()
+    _ = tinygrad.Tensor.matmul(a, b).numpy()
+    e = time.perf_counter()
+    print(f"tinygrad {e-s:.4f}s")
+
+def mlx_transpose():
+    a = mx.random.uniform(shape=shape, stream=mx.cpu)
+    s = time.perf_counter()
+    _ = mx.eval(mx.transpose(a))
+    e = time.perf_counter()
+    print(f"mlx {e-s:.4f}s")
+
+dl_transpose()
+num_transpose()
+to_transpose()
+ti_transpose()
+mlx_transpose()
+
+print(f"---- transpose {shape} on cpu, but calling all the second time ----")
+dl_transpose()
+num_transpose()
+to_transpose()
+ti_transpose()
+mlx_transpose()
