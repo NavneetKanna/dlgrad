@@ -89,12 +89,15 @@ class Tensor:
         data = np.frombuffer(ptr, count=self._len, dtype=np.float32).reshape(self._shape)
         print(data)
 
+    def _broadcast(self):
+        pass
+
     def __repr__(self) -> str:
         return f"Tensor <contig: {self._contig} view:{self._view} device: {self._device}>"
 
     def linear(self, weight: Tensor, bias: Tensor) -> Tensor:
         # self*weight.T + bias
-        pass
+        return Tensor.add(Tensor.matmul(self, Tensor.transpose(weight)), bias)
 
     # ***** UnaryOps ****
     # TODO: What to do if i want to call x.transpose() ?
@@ -241,7 +244,7 @@ class Tensor:
         
         return Tensor(Buffer.uniform(size, low=-bound, high=bound), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
 
-    # ***** BinaryOps *****
+    # ***** ElementwiseOps *****
     # TODO: Dont like the way dispatch is getting called
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
@@ -254,8 +257,12 @@ class Tensor:
     
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
+        print("in matmul")
         assert x._shape[::-1] == y._shape, f"{x._shape} and {y._shape} does not match"
         assert x._device == y._device, f"{x._device} and {y._device} does not match"
+
+        print(f"x {x._shape}")
+        print(f"y {y._shape}")
 
         def _backward(): pass
 
@@ -263,6 +270,8 @@ class Tensor:
         return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), device=x._device, _len=x._shape[0]*y._shape[1], _shape=(x._shape[0], y._shape[1]), view=False)
 
 """
+Understand what matmul or dot product means geometrically 
+
 clean git history
 does .so file work for windows
 
