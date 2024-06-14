@@ -77,7 +77,6 @@ class C:
         return prg
     
     def _matmul(dtype: str):
-        # TODO: Change to x and y maybe:
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h>
