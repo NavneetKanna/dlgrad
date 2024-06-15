@@ -89,7 +89,11 @@ class Tensor:
         data = np.frombuffer(ptr, count=self._len, dtype=np.float32).reshape(self._shape)
         print(data)
 
-    def _get_broadcast_shape(self, shape1, shape2):
+    @staticmethod
+    def _broadcast(x: Tensor, y: Tensor):
+        shape1 = x._shape
+        shape2 = y._shape
+        
         output_shape = []
         
         shape1 = shape1[::-1]
@@ -104,14 +108,7 @@ class Tensor:
                 # TODO: Add error here
                 print("Shapes are not compatible for broadcasting")
         
-        return output_shape[::-1]
-
-    def _broadcast(self, x: Tensor, y: Tensor):
-        shape1 = x._shape
-        shape2 = y._shape
-
-        output_shape = self._get_broadcast_shape(shape1, shape2)
-        pass
+        return tuple(output_shape[::-1])
 
     def __repr__(self) -> str:
         return f"Tensor <contig: {self._contig} view:{self._view} device: {self._device}>"
@@ -241,11 +238,11 @@ class Tensor:
             raise ShapeError("Multi-dim list cannot be passed as shape")
         if not all(isinstance(item, int) for item in shape): 
             raise ShapeError("Only ints can be passed to shape")
-        size = 1
+        out_len = 1
         for i in shape: 
-            size *= i
+            out_len *= i
         
-        return Tensor(Buffer.uniform(size, low, high), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
+        return Tensor(Buffer.uniform(out_len, low, high), _offset=0, device=device, dtype=dtype, _len=out_len, _shape=shape)
 
     @staticmethod
     def kaiming_uniform(*shape, device = Device.CPU, dtype = dtypes.float32):
@@ -269,17 +266,22 @@ class Tensor:
     # TODO: Dont like the way dispatch is getting called
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
-        assert x._shape == y._shape, f"{x._shape} and {y._shape} does not match"
         assert x._device == y._device, f"{x._device} and {y._device} does not match"
+
+        out_shape = Tensor._broadcast(x, y)
+        out_len = 1
+        for i in out_shape:
+            out_len *= i
 
         def _backward(): pass
 
-        return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD), device=x._device, _len=x._len, _shape=x._shape, view=False)
+        return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD), device=x._device, _len=out_len, _shape=out_shape, view=False)
     
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
         print("in matmul")
-        assert x._shape[::-1] == y._shape, f"{x._shape} and {y._shape} does not match"
+        print(x._shape, y._shape)
+        assert x._shape[-1] == y._shape[0], f"{x._shape} and {y._shape} does not match"
         assert x._device == y._device, f"{x._device} and {y._device} does not match"
 
         print(f"x {x._shape}")
