@@ -89,7 +89,28 @@ class Tensor:
         data = np.frombuffer(ptr, count=self._len, dtype=np.float32).reshape(self._shape)
         print(data)
 
-    def _broadcast(self):
+    def _get_broadcast_shape(self, shape1, shape2):
+        output_shape = []
+        
+        shape1 = shape1[::-1]
+        shape2 = shape2[::-1]
+
+        for i in range(max(len(shape1), len(shape2))):
+            dim1 = shape1[i] if i < len(shape1) else 1
+            dim2 = shape2[i] if i < len(shape2) else 1
+            if dim1 == 1 or dim2 == 1 or dim1 == dim2:
+                output_shape.append(max(dim1, dim2))
+            else:
+                # TODO: Add error here
+                print("Shapes are not compatible for broadcasting")
+        
+        return output_shape[::-1]
+
+    def _broadcast(self, x: Tensor, y: Tensor):
+        shape1 = x._shape
+        shape2 = y._shape
+
+        output_shape = self._get_broadcast_shape(shape1, shape2)
         pass
 
     def __repr__(self) -> str:
