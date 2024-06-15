@@ -15,6 +15,9 @@ class Device(Enum):
 class ShapeError(Exception): ...
 class IndexError(Exception): ...
 
+class BroadcastHelper:
+    out_len = 0
+
 # TODO: check win or unix
 def get_temp_loc():
     return "/tmp"

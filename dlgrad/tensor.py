@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 from typing import Union, Optional
-from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, UnaryOps, Device
+from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, UnaryOps, Device, BroadcastHelper
 import ctypes
 import atexit
 import numpy as np
@@ -93,6 +93,9 @@ class Tensor:
     def _broadcast(x: Tensor, y: Tensor):
         shape1 = x._shape
         shape2 = y._shape
+
+        if x._ndim > 2 or y._ndim > 2 and shape1 != shape2:
+            print("Dlgrad does not support broadcasting for dims greater than 2")
         
         output_shape = []
         
@@ -273,24 +276,22 @@ class Tensor:
         for i in out_shape:
             out_len *= i
 
+        BroadcastHelper.out_len = out_len
+
         def _backward(): pass
 
-        return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD), device=x._device, _len=out_len, _shape=out_shape, view=False)
+        return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD), device=x._device, dtype=x._dtype, _len=out_len, _shape=out_shape, view=False)
     
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
-        print("in matmul")
-        print(x._shape, y._shape)
+        # TODO: Check dtype as well
         assert x._shape[-1] == y._shape[0], f"{x._shape} and {y._shape} does not match"
         assert x._device == y._device, f"{x._device} and {y._device} does not match"
-
-        print(f"x {x._shape}")
-        print(f"y {y._shape}")
 
         def _backward(): pass
 
         # TODO: How do i ensure data is of same dtype
-        return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), device=x._device, _len=x._shape[0]*y._shape[1], _shape=(x._shape[0], y._shape[1]), view=False)
+        return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), device=x._device, dtype=x._dtype, _len=x._shape[0]*y._shape[1], _shape=(x._shape[0], y._shape[1]), view=False)
 
 """
 Understand what matmul or dot product means geometrically 
