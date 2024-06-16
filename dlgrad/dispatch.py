@@ -8,23 +8,20 @@ if TYPE_CHECKING:
 
 
 class Dispatcher:
-    def __init__(self) -> None:
-        pass
-
     @staticmethod
     def _cpu_dispatch(x: Tensor, y: Tensor, ops) -> Buffer:
         if ops == BinaryOps.ADD:
-            return CPU.add(x, y, x._dtype) 
+            return CPU.add(x, y, x.dtype) 
         
         if ops == BinaryOps.MATMUL:
-            return CPU.matmul(x, y, x._dtype)  
+            return CPU.matmul(x, y, x.dtype)  
         
         if ops == UnaryOps.TRANSPOSE:
-            return CPU.transpose(x, x._dtype)
+            return CPU.transpose(x, x.dtype)
 
     @staticmethod
     def dispatch(x: Tensor, ops, y: Tensor = None) -> Buffer:
-        device = x._device
+        device = x.device
         if device == Device.CPU:
             return Dispatcher._cpu_dispatch(x, y, ops)
 

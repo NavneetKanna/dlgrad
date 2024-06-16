@@ -9,3 +9,5 @@ build
 .*
 *.s
 a.out
+test.py
+testing/
