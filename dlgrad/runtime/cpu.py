@@ -35,7 +35,7 @@ class CPU:
 
         add_dll.add_with_broadcasting.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
         add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float) 
-        data = add_dll.add_with_broadcasting(x._data, y._data, x._len, y._len)
+        data = add_dll.add_with_broadcasting(x._data, y._data, x.numel, y.numel)
         if data is None:
             # TODO: create a new error
             print("Error: could not allocate memory")
@@ -58,7 +58,7 @@ class CPU:
 
         matmul_dll.matmul.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
         matmul_dll.matmul.restype = ctypes.POINTER(ctypes.c_float) 
-        data = matmul_dll.matmul(x._data, y._data, x._shape[0], x._shape[1], y._shape[1])
+        data = matmul_dll.matmul(x._data, y._data, x.shape[0], x.shape[1], y.shape[1])
         if data is None:
             # TODO: create a new error
             print("Error: could not allocate memory")
@@ -81,7 +81,7 @@ class CPU:
 
         transpose_dll.transpose.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
         transpose_dll.transpose.restype = ctypes.POINTER(ctypes.c_float) 
-        data = transpose_dll.transpose(x._data, x._shape[0], x._shape[1])
+        data = transpose_dll.transpose(x._data, x.shape[0], x.shape[1])
         if data is None:
             # TODO: create a new error
             print("Error: could not allocate memory")
