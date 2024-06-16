@@ -10,29 +10,26 @@ from dlgrad.buffer import Buffer
 import warnings
 from dlgrad.dispatch import Dispatcher
 import math
+from dataclasses import dataclass
+
+@dataclass
+class TensorProperties:
+    view: bool = False
+    offset: int = 0
+    numel: int = 0
+    shape: tuple = (1,)
+    ndim: int = 0
+    strides: tuple = (1,)
+    contig: bool = True
 
 class Tensor:
-    """
-    as of now i will go with NCHW, but later if required i will change to channel last
-    """
     # __slots__ = "grad"
 
     # TODO: is it a good programming practice to have many args ?
     def __init__(
-            self,
-            data: Union[list, int, Buffer],
-            requires_grad = True,
-            device: Device = Device.CPU,
-            view: bool = False,
-            dtype: Optional[dtypes] = None,
-            _offset: int = 0,
-            _len: int = 0,
-            _shape: tuple = ()
+            self, data: Union[list, int, Buffer], requires_grad = True, device: Device = Device.CPU, 
+            dtype: Optional[dtypes] = None, properties: TensorProperties = TensorProperties()
         ):
-        """
-        _len = Number of elements, for ex, (4, 2) -> 8, (2, 3, 4) -> 24
-        """
-
         self.requires_grad = requires_grad
 
         # if device is None and platform.system() == 'Darwin' and platform.processor() == 'arm': 
@@ -57,13 +54,7 @@ class Tensor:
 
         if isinstance(data, Buffer):
             self._data = data.data_buffer
-            self._offset = _offset
-            self._len = _len
-            self._shape = _shape
-            self._ndim = len(self._shape)
-            self._strides = calculate_stride(_shape)
-            self._view = view
-            self._contig = True
+            self.properties = properties
             self._dtype = dtype
 
         if not view and isinstance(data, Buffer): 
@@ -120,7 +111,8 @@ class Tensor:
 
             offset = calculate_nchw_offset(h=indices, H=self._strides[0])
             size = self._strides[0]
-            return Tensor(Buffer(self._data), device=self._device, view=True, _offset=offset, _len=size, _shape=(size,))
+            tp = TensorProperties(view=True, offset=offset, numel=size, shape=(size,), ndim=len(size), strides=calculate_stride(size), contig=True)
+            return Tensor(Buffer(self._data), device=self._device, properties=tp)
 
         if self._ndim == 2:
             if type(indices) == tuple:
@@ -224,8 +216,9 @@ class Tensor:
         out_len = 1
         for i in shape: 
             out_len *= i
-        
-        return Tensor(Buffer.uniform(out_len, low, high), _offset=0, device=device, dtype=dtype, _len=out_len, _shape=shape)
+
+        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), strides=calculate_stride(shape), contig=True)
+        return Tensor(Buffer.uniform(out_len, low, high), _offset=0, device=device, dtype=dtype, properties=tp)
 
     @staticmethod
     def kaiming_uniform(*shape, device = Device.CPU, dtype = dtypes.float32):
