@@ -106,12 +106,6 @@ class Tensor:
         # self*weight.T + bias
         return Tensor.add(Tensor.matmul(self, Tensor.transpose(weight)), bias)
 
-    # ***** UnaryOps ****
-    # TODO: What to do if i want to call x.transpose() ?
-    @staticmethod
-    def transpose(x: Tensor):
-        return Tensor(Dispatcher.dispatch(x, ops=UnaryOps.TRANSPOSE), device=x._device, _len=x._len, _shape=x._shape[::-1], view=False)
-
     # TODO: maybe do a check for data before calling free ?
     def cleanup(self): 
         Buffer.free(self._data)
@@ -250,6 +244,12 @@ class Tensor:
         bound = math.sqrt(3) * std
         
         return Tensor(Buffer.uniform(size, low=-bound, high=bound), _offset=0, device=device, dtype=dtype, _len=size, _shape=shape)
+    
+    # ***** UnaryOps ****
+    # TODO: What to do if i want to call x.transpose() ?
+    @staticmethod
+    def transpose(x: Tensor):
+        return Tensor(Dispatcher.dispatch(x, ops=UnaryOps.TRANSPOSE), device=x._device, _len=x._len, _shape=x._shape[::-1], view=False)
 
     # ***** ElementwiseOps *****
     # TODO: Dont like the way dispatch is getting called
@@ -268,6 +268,7 @@ class Tensor:
 
         return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD), device=x._device, dtype=x._dtype, _len=out_len, _shape=out_shape, view=False)
     
+    # ***** BinaryOps *****
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
         # TODO: Check dtype as well
