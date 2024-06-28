@@ -22,6 +22,7 @@ class TensorProperties:
     stride: tuple = (1,)
     contig: bool = True
 
+# TODO: Maybe we can load all ctypes files once in the beginning, so that it does not take time to load ?
 class Tensor:
     # __slots__ = "grad"
 
@@ -35,6 +36,7 @@ class Tensor:
         #     self.device = 'metal'
         # else: 
         #     self.device = device
+        print(device)
         self.device = device
 
         if isinstance(data, Union[int, float]):
@@ -254,6 +256,7 @@ class Tensor:
         for i in out_shape:
             out_len *= i
 
+        # TODO: Remove this in future
         BroadcastHelper.out_len = out_len
 
         def _backward(): pass
@@ -276,11 +279,11 @@ class Tensor:
         return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), device=x.device, dtype=x.dtype, properties=tp)
     
     def __repr__(self) -> str:
-        return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.properties.view} shape: {self.shape}>"
+        return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.view} shape: {self.shape}>"
 
     @property
     def shape(self):
-        return self.shape
+        return self.properties.shape
     
     @property
     def numel(self):
@@ -288,12 +291,18 @@ class Tensor:
 
     @property
     def stride(self):
-        return self.stride
+        return self.properties.stride
 
     @property
-    def device(self):
-        return self.device
+    def view(self):
+        return self.properties.view
+    # @property
+    # def device(self):
+    #     return self.device
+    # @device.setter
+    # def device(self, device):
+    #     self.device = device
 
     @property
     def ndim(self):
-        return self.ndim
+        return self.properties.ndim
