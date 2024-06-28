@@ -11,3 +11,4 @@ build
 a.out
 test.py
 testing/
+*.ipynb
