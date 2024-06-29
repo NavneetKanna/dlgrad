@@ -21,7 +21,7 @@ class CPU:
     def add(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
 
         if not isinstance(x.data, Buffer): 
-            pass
+            return x.data + y.data
         else:
             c_dtype = dtypes.get_c_dtype(dtype) 
             name = f"cpu_{c_dtype}_add"
@@ -47,7 +47,7 @@ class CPU:
 
     @staticmethod
     def matmul(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
-        if not isinstance(x.data, Buffer): 
+        if not isinstance(x.data, Buffer):
             pass
         else:
             c_dtype = dtypes.get_c_dtype(dtype) 
