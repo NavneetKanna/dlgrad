@@ -78,8 +78,6 @@ class Tensor:
         shape1 = shape1[::-1]
         shape2 = shape2[::-1]
 
-        print(f"shape1 {shape1}")
-        print(f"shape2 {shape2}")
         for i in range(max(len(shape1), len(shape2))):
             dim1 = shape1[i] if i < len(shape1) else 1
             dim2 = shape2[i] if i < len(shape2) else 1
@@ -257,7 +255,6 @@ class Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
         out_shape = Tensor._broadcast(x, y)
-        print(f"out_shape {out_shape}")
         out_len = 1
         for i in out_shape:
             out_len *= i
