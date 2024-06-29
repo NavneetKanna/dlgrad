@@ -17,9 +17,9 @@ class TensorProperties:
     view: bool = False
     offset: int = 0
     numel: int = 0
-    shape: tuple = (1,)
+    shape: tuple = ()   
     ndim: int = 0
-    stride: tuple = (1,)
+    stride: tuple = ()
     contig: bool = True
 
 # TODO: Maybe we can load all ctypes files once in the beginning, so that it does not take time to load ?
@@ -37,6 +37,7 @@ class Tensor:
         # else: 
         #     self.device = device
         self.device = device
+        self.properties = properties
 
         if isinstance(data, Union[int, float]):
             self.data = data
@@ -49,24 +50,27 @@ class Tensor:
 
         if isinstance(data, Buffer):
             self.data = data
-            self.properties = properties
             self.dtype = dtype
 
         if not properties.view and isinstance(data, Buffer): 
             atexit.register(self.cleanup)
 
     def numpy(self):
-        sd = ctypes.addressof(self.data._buffer.contents) + self._offset * ctypes.sizeof(ctypes.c_float)
-        ptr = (ctypes.c_float * self._len).from_address(sd)
-        data = np.frombuffer(ptr, count=self._len, dtype=np.float32).reshape(self.shape)
-        print(data)
+        if not isinstance(self.data, Buffer):
+            data = np.array(self.data)
+            print(data)
+        else:
+            sd = ctypes.addressof(self.data._buffer.contents) + self.offset * ctypes.sizeof(ctypes.c_float)
+            ptr = (ctypes.c_float * self._len).from_address(sd)
+            data = np.frombuffer(ptr, count=self._len, dtype=np.float32).reshape(self.shape)
+            print(data)
 
     @staticmethod
     def _broadcast(x: Tensor, y: Tensor):
-        shape1 = x._shape
-        shape2 = y._shape
+        shape1 = x.shape
+        shape2 = y.shape
 
-        if x._ndim > 2 or y._ndim > 2 and shape1 != shape2:
+        if x.ndim > 2 or y.ndim > 2 and shape1 != shape2:
             print("Dlgrad does not support broadcasting for dims greater than 2")
         
         output_shape = []
@@ -74,6 +78,8 @@ class Tensor:
         shape1 = shape1[::-1]
         shape2 = shape2[::-1]
 
+        print(f"shape1 {shape1}")
+        print(f"shape2 {shape2}")
         for i in range(max(len(shape1), len(shape2))):
             dim1 = shape1[i] if i < len(shape1) else 1
             dim2 = shape2[i] if i < len(shape2) else 1
@@ -251,6 +257,7 @@ class Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
         out_shape = Tensor._broadcast(x, y)
+        print(f"out_shape {out_shape}")
         out_len = 1
         for i in out_shape:
             out_len *= i
@@ -260,7 +267,7 @@ class Tensor:
 
         def _backward(): pass
 
-        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape), contig=True)
+        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True)
         return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD), device=x.device, dtype=x.dtype, properties=tp)
     
     # ***** BinaryOps *****
@@ -299,3 +306,7 @@ class Tensor:
     @property
     def ndim(self):
         return self.properties.ndim
+
+    @property
+    def offset(self):
+        return self.properties.offset
