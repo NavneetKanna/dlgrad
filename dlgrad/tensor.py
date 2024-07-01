@@ -10,9 +10,7 @@ from dlgrad.buffer import Buffer
 import warnings
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from dlgrad.dispatch import Dispatcher
+from dlgrad.dispatch import Dispatcher
 
 @dataclass
 class TensorProperties:
