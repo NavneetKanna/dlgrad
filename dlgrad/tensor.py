@@ -11,6 +11,8 @@ import warnings
 from dlgrad.dispatch import Dispatcher
 import math
 from dataclasses import dataclass
+import dlgrad.ops as ops
+
 
 @dataclass
 class TensorProperties:
@@ -22,6 +24,8 @@ class TensorProperties:
     stride: tuple = ()
     contig: bool = True
 
+
+
 # TODO: Maybe we can load all ctypes files once in the beginning, so that it does not take time to load ?
 class Tensor:
     # __slots__ = "grad"
@@ -31,13 +35,10 @@ class Tensor:
             dtype: Optional[dtypes] = None, properties: TensorProperties = TensorProperties()
         ):
         self.requires_grad = requires_grad
-
-        # if device is None and platform.system() == 'Darwin' and platform.processor() == 'arm': 
-        #     self.device = 'metal'
-        # else: 
-        #     self.device = device
+        self.grad = None
         self.device = device
         self.properties = properties
+        self._ctx = None
 
         if isinstance(data, Union[int, float]):
             self.data = data
@@ -249,24 +250,12 @@ class Tensor:
         return Tensor(Dispatcher.dispatch(x, ops=UnaryOps.TRANSPOSE), device=x.device, properties=tp)
 
     # ***** ElementwiseOps *****
-    # TODO: Dont like the way dispatch is getting called
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
-        out_shape = Tensor._broadcast(x, y)
-        out_len = 1
-        for i in out_shape:
-            out_len *= i
+        ops.Add().forward(x, y)
 
-        # TODO: Remove this in future
-        BroadcastHelper.out_len = out_len
-
-        def _backward(): pass
-
-        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True)
-        return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD), device=x.device, dtype=x.dtype, properties=tp)
-    
     # ***** BinaryOps *****
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
