@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Union, Optional
-from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, UnaryOps, Device, BroadcastHelper
+from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, UnaryOps, Device 
 import ctypes
 import atexit
 import numpy as np
@@ -8,11 +8,11 @@ import numpy as np
 from dlgrad.dtype import dtypes
 from dlgrad.buffer import Buffer
 import warnings
-from dlgrad.dispatch import Dispatcher
 import math
 from dataclasses import dataclass
-import dlgrad.ops as ops
-
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from dlgrad.dispatch import Dispatcher
 
 @dataclass
 class TensorProperties:
@@ -252,9 +252,11 @@ class Tensor:
     # ***** ElementwiseOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
+        from dlgrad.ops import Add
+
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
-        return ops.Add().forward(x, y)
+        return Add().forward(x, y)
 
     # ***** BinaryOps *****
     @staticmethod
