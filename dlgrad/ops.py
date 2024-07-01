@@ -1,6 +1,6 @@
 from dlgrad.tensor import Tensor, TensorProperties
 from dlgrad.dispatch import Dispatcher
-from dlgrad.helpers import calculate_stride, BinaryOps, BroadcastHelper
+from dlgrad.helpers import calculate_stride, BinaryOps, BroadcastHelper, calculate_numel
 
 
 class Op:
@@ -15,14 +15,11 @@ class Op:
 class Add(Op):
     def forward(self, x: Tensor, y: Tensor) -> Tensor:
         out_shape = Tensor._broadcast(x, y)
-        out_len = 1
-        for i in out_shape:
-            out_len *= i
 
         # TODO: Remove this in future
-        BroadcastHelper.out_len = out_len
+        BroadcastHelper.out_len = calculate_numel()
 
-        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True)
+        tp = TensorProperties(view=False, offset=0, numel=calculate_numel(), shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True)
         out = Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD), device=x.device, dtype=x.dtype, properties=tp)
 
         def _backward(): 

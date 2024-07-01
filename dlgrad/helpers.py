@@ -18,6 +18,12 @@ class IndexError(Exception): ...
 class BroadcastHelper:
     out_len = 0
 
+def calculate_numel(shape: tuple):
+    out_len = 1
+    for i in shape:
+        out_len *= i
+    return out_len
+
 # TODO: check win or unix
 def get_temp_loc():
     return "/tmp"
