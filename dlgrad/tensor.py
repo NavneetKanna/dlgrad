@@ -254,7 +254,7 @@ class Tensor:
     def add(x: Tensor, y: Tensor) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
-        ops.Add().forward(x, y)
+        return ops.Add().forward(x, y)
 
     # ***** BinaryOps *****
     @staticmethod
