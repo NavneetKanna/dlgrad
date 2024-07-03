@@ -27,8 +27,10 @@ class Add(Op):
 
         out._ctx = self
         self.parents = (x, y)
+        self.x, self.y = x, y
 
         return out 
 
-    def backward(self):
-        pass
+    def backward(self, grad_output):
+        self.x.grad += 1.0 * grad_output
+        self.y.grad += 1.0 * grad_output
