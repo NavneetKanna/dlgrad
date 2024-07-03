@@ -22,8 +22,6 @@ class TensorProperties:
     stride: tuple = ()
     contig: bool = True
 
-
-
 # TODO: Maybe we can load all ctypes files once in the beginning, so that it does not take time to load ?
 class Tensor:
     # __slots__ = "grad"
@@ -33,7 +31,7 @@ class Tensor:
             dtype: Optional[dtypes] = None, properties: TensorProperties = TensorProperties()
         ):
         self.requires_grad = requires_grad
-        self.grad = None
+        self.grad = 0.0
         self.device = device
         self.properties = properties
         self._ctx = None
@@ -270,6 +268,29 @@ class Tensor:
         # TODO: How do i ensure data is of same dtype
         return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), device=x.device, dtype=x.dtype, properties=tp)
     
+    def backward(self):
+        topo = []
+        visited = set()
+
+        def build_topo(v):
+            if v not in visited:
+                visited.add(v)
+                if v._ctx is not None:
+                    for child in v._ctx.parents:
+                        build_topo(child)
+                topo.append(v)
+        build_topo(self)
+        
+        print(f"topo {topo}")
+        self.grad = 1.0
+        for node in reversed(topo):
+            if node._ctx is None: 
+                continue
+            node._ctx.backward(node.grad)
+
+
+
+
     def __repr__(self) -> str:
         return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.view} shape: {self.shape}>"
 
