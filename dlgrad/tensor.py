@@ -58,33 +58,9 @@ class Tensor:
             print(data)
         else:
             sd = ctypes.addressof(self.data._buffer.contents) + self.offset * ctypes.sizeof(ctypes.c_float)
-            ptr = (ctypes.c_float * self._len).from_address(sd)
-            data = np.frombuffer(ptr, count=self._len, dtype=np.float32).reshape(self.shape)
+            ptr = (ctypes.c_float * self.numel).from_address(sd)
+            data = np.frombuffer(ptr, count=self.numel, dtype=np.float32).reshape(self.shape)
             print(data)
-
-    @staticmethod
-    def _broadcast(x: Tensor, y: Tensor):
-        shape1 = x.shape
-        shape2 = y.shape
-
-        if x.ndim > 2 or y.ndim > 2 and shape1 != shape2:
-            print("Dlgrad does not support broadcasting for dims greater than 2")
-        
-        output_shape = []
-        
-        shape1 = shape1[::-1]
-        shape2 = shape2[::-1]
-
-        for i in range(max(len(shape1), len(shape2))):
-            dim1 = shape1[i] if i < len(shape1) else 1
-            dim2 = shape2[i] if i < len(shape2) else 1
-            if dim1 == 1 or dim2 == 1 or dim1 == dim2:
-                output_shape.append(max(dim1, dim2))
-            else:
-                # TODO: Add error here
-                print("Shapes are not compatible for broadcasting")
-        
-        return tuple(output_shape[::-1])
 
     def linear(self, weight: Tensor, bias: Tensor) -> Tensor:
         # self*weight.T + bias
