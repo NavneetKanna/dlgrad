@@ -11,6 +11,33 @@ class Op:
     def __init__(self) -> None:
         self.parents: tuple = None
 
+class Broadcast(Op):
+    def forward(self, x: Tensor, y: Tensor):
+        shape1 = x.shape
+        shape2 = y.shape
+
+        if x.ndim > 2 or y.ndim > 2 and shape1 != shape2:
+            print("Dlgrad does not support broadcasting for dims greater than 2")
+        
+        output_shape = []
+        
+        shape1 = shape1[::-1]
+        shape2 = shape2[::-1]
+
+        for i in range(max(len(shape1), len(shape2))):
+            dim1 = shape1[i] if i < len(shape1) else 1
+            dim2 = shape2[i] if i < len(shape2) else 1
+            if dim1 == 1 or dim2 == 1 or dim1 == dim2:
+                output_shape.append(max(dim1, dim2))
+            else:
+                # TODO: Add error here
+                print("Shapes are not compatible for broadcasting")
+        
+        out_shape = tuple(output_shape[::-1])
+
+    def backward(self):
+        pass
+
 class Add(Op):
     def forward(self, x: Tensor, y: Tensor) -> Tensor:
         out_shape = Tensor._broadcast(x, y)
