@@ -57,7 +57,7 @@ class C:
         """ 
         return prg
 
-    def _add(dtype: str, out_len: int) -> str:
+    def _add_axis1(dtype: str, out_len: int) -> str:
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h> 
@@ -71,7 +71,30 @@ class C:
 
             for (int ptr_a = 0; ptr_a < len_a; ++ptr_a) {{
                 b_idx = ptr_a % len_b;
-                printf("b_idx %d ", b_idx);
+
+                out[ptr_a] = x[ptr_a] + y[b_idx];
+            }}
+
+            return out;
+        }}
+        """
+        return prg
+    
+    def _add_axis0(dtype: str, out_len: int) -> str:
+        prg = f"""
+        #include <stdio.h>
+        #include <stdlib.h> 
+
+        {dtype} *add_with_broadcasting(float* x, float* y, int len_a, int len_b, int ncol) 
+        {{
+            int b_idx = 0;
+            {dtype} *out = malloc({out_len} * sizeof({dtype}));
+            if (out == NULL) 
+                return NULL;
+
+            for (int ptr_a = 0; ptr_a < len_a; ++ptr_a) {{
+                if (i % ncol == 0 && i != 0)
+                    b_idx++;
 
                 out[ptr_a] = x[ptr_a] + y[b_idx];
             }}
