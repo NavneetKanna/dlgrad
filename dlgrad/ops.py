@@ -36,6 +36,9 @@ class Broadcast(Op):
         out_shape = tuple(output_shape[::-1])
 
     def backward(self):
+        """
+        Only applies to the 2nd inp, which is getting broadcasted
+        """
         pass
 
 class Add(Op):

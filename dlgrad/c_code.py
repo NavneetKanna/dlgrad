@@ -62,7 +62,8 @@ class C:
         #include <stdio.h>
         #include <stdlib.h> 
 
-        {dtype} *add_with_broadcasting(float* x, float* y, int len_a, int len_b) {{
+        {dtype} *add_with_broadcasting(float* x, float* y, int len_a, int len_b) 
+        {{
             int b_idx = 0;
             {dtype} *out = malloc({out_len} * sizeof({dtype}));
             if (out == NULL) 
@@ -70,6 +71,7 @@ class C:
 
             for (int ptr_a = 0; ptr_a < len_a; ++ptr_a) {{
                 b_idx = ptr_a % len_b;
+                printf("b_idx %d ", b_idx);
 
                 out[ptr_a] = x[ptr_a] + y[b_idx];
             }}
