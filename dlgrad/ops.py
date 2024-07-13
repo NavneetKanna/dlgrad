@@ -34,28 +34,29 @@ class Broadcast(Op):
                 print("Shapes are not compatible for broadcasting")
         
         out_shape = tuple(output_shape[::-1])
+        BroadcastHelper.out_len = calculate_numel(out_shape)
+        
+        y._ctx = self
+        # self.parents = (x, y)
+        self.x, self.y = x, y
 
     def backward(self):
         """
         Only applies to the 2nd inp, which is getting broadcasted
         """
-        pass
+        if self.x.shape[0] == self.y.shape[0]:
+            "sum along axis0"
+        elif self.x.shape[1] == self.y.shape[1]:
+            "sum along axis1"
+        else:
+            "sum full Tensor"
 
 class Add(Op):
     def forward(self, x: Tensor, y: Tensor) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
-        out_shape = Tensor._broadcast(x, y)
-
-        # TODO: Remove this in future
-        BroadcastHelper.out_len = calculate_numel(out_shape)
-
         tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True)
         out = Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD), device=x.device, dtype=x.dtype, properties=tp)
-
-        def _backward(): 
-            x.grad = out.grad
-            y.grad = out.grad
 
         out._ctx = self
         self.parents = (x, y)

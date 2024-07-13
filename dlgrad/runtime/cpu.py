@@ -44,6 +44,7 @@ class CPU:
         if axis == 0:
             add_dll.add_with_broadcasting.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float) 
+            # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
             data = add_dll.add_with_broadcasting(x.data._buffer, y.data._buffer, x.numel, y.numel, x.shape[1])
         elif axis == 1:
             add_dll.add_with_broadcasting.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
