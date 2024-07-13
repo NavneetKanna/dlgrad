@@ -249,8 +249,10 @@ class Tensor:
     # ***** ElementwiseOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
-        from dlgrad.ops import Add
+        from dlgrad.ops import Add, Broadcast
 
+        Broadcast().forward(x, y)
+        
         return Add().forward(x, y)
 
     # ***** BinaryOps *****

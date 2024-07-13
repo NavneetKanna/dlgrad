@@ -11,7 +11,10 @@ class Dispatcher:
     @staticmethod
     def _cpu_dispatch(x: Tensor, y: Tensor, ops) -> Buffer:
         if ops == BinaryOps.ADD:
-            return CPU.add(x, y, x.dtype) 
+            if x.shape[0] == y.shape[0]:
+                return CPU.add_axis0(x, y, x.dtype)
+            else:
+                return CPU._add_axis1(x, y, x.dtype)
         
         if ops == BinaryOps.MATMUL:
             return CPU.matmul(x, y, x.dtype)  
