@@ -43,6 +43,8 @@ class Broadcast(Op):
 
 class Add(Op):
     def forward(self, x: Tensor, y: Tensor) -> Tensor:
+        assert x.device == y.device, f"{x.device} and {y.device} does not match"
+
         out_shape = Tensor._broadcast(x, y)
 
         # TODO: Remove this in future

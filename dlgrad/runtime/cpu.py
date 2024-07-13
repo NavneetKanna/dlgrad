@@ -16,7 +16,6 @@ if TYPE_CHECKING:
 
 
 class CPU:
-
     @staticmethod
     def _add_axis_helper(x: Tensor, y: Tensor, dtype: dtypes, axis: int = None) -> Buffer:
         if not isinstance(x.data, Buffer): 

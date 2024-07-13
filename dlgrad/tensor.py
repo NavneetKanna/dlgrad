@@ -251,8 +251,6 @@ class Tensor:
     def add(x: Tensor, y: Tensor) -> Tensor:
         from dlgrad.ops import Add
 
-        assert x.device == y.device, f"{x.device} and {y.device} does not match"
-
         return Add().forward(x, y)
 
     # ***** BinaryOps *****
