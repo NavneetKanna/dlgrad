@@ -28,6 +28,8 @@ class Dispatcher:
                 return CPU.sum_axis0(x, x.dtype)
             elif kwargs["func"] == CPU._sum_axis1:
                 return CPU._sum_axis1(x, x.dtype)
+            elif kwargs["func"] == CPU.sum:
+                return CPU.sum(x, x.dtype)
             
     @staticmethod
     def dispatch(x: Tensor, ops, y: Tensor = None, **kwargs) -> Buffer:
