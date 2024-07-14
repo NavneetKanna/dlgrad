@@ -58,9 +58,9 @@ class CPU:
         return Buffer(data, temp_file)
 
     @staticmethod
-    def _sum_axis_helper(x: Tensor, y: Tensor, dtype: dtypes, axis: int = None) -> Buffer:
-        if not isinstance(x.data, Buffer): 
-            return x.data + y.data
+    def _sum_axis_helper(x: Tensor, dtype: dtypes, axis: int = None) -> Buffer:
+        # if not isinstance(x.data, Buffer): 
+        #     return x.data + y.data
 
         c_dtype = dtypes.get_c_dtype(dtype) 
         name = f"cpu_{c_dtype}_sum"
@@ -86,7 +86,7 @@ class CPU:
             sum_dll.sum_axis0.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             sum_dll.sum_axis0.restype = ctypes.POINTER(ctypes.c_float) 
             # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
-            data = sum_dll.sum_axis0(x.data._buffer, x.numel, y.numel, x.shape[0], x.shape[1])
+            data = sum_dll.sum_axis0(x.data._buffer, x.numel, x.shape[0], x.shape[1])
         elif axis == 1:
             sum_dll.sum_axis1.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             sum_dll.sum_axis1.restype = ctypes.POINTER(ctypes.c_float) 
@@ -107,12 +107,12 @@ class CPU:
         return CPU._add_axis_helper(x, y, dtype, axis=1)
 
     @staticmethod
-    def sum_axis0(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
-        return CPU._add_axis_helper(x, y, dtype, axis=0)
+    def sum_axis0(x: Tensor, dtype: dtypes) -> Buffer:
+        return CPU._add_axis_helper(x, dtype, axis=0)
 
     @staticmethod
-    def _sum_axis1(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
-        return CPU._add_axis_helper(x, y, dtype, axis=1)
+    def _sum_axis1(x: Tensor, dtype: dtypes) -> Buffer:
+        return CPU._add_axis_helper(x, dtype, axis=1)
 
     @staticmethod
     def matmul(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:

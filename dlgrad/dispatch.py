@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 class Dispatcher:
     @staticmethod
-    def _cpu_dispatch(x: Tensor, y: Tensor, ops) -> Buffer:
+    def _cpu_dispatch(x: Tensor, ops, y: Tensor = None, **kwargs) -> Buffer:
         if ops == BinaryOps.ADD:
             if x.shape[0] == y.shape[0]:
                 return CPU.add_axis0(x, y, x.dtype)
@@ -22,11 +22,18 @@ class Dispatcher:
         if ops == UnaryOps.TRANSPOSE:
             return CPU.transpose(x, x.dtype)
 
+        if ops == UnaryOps.SUM:
+            # To be explicit
+            if kwargs["func"] == CPU.sum_axis0:
+                return CPU.sum_axis0(x, x.dtype)
+            elif kwargs["func"] == CPU._sum_axis1:
+                return CPU._sum_axis1(x, x.dtype)
+            
     @staticmethod
-    def dispatch(x: Tensor, ops, y: Tensor = None) -> Buffer:
+    def dispatch(x: Tensor, ops, y: Tensor = None, **kwargs) -> Buffer:
         device = x.device
         if device == Device.CPU:
-            return Dispatcher._cpu_dispatch(x, y, ops)
+            return Dispatcher._cpu_dispatch(x, y, ops, **kwargs)
 
         elif device == Device.GPU:
             pass

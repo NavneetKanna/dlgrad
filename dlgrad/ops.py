@@ -1,6 +1,7 @@
 from dlgrad.dispatch import Dispatcher
-from dlgrad.helpers import calculate_stride, BinaryOps, BroadcastHelper, calculate_numel
+from dlgrad.helpers import calculate_stride, BinaryOps, UnaryOps, BroadcastHelper, calculate_numel
 from dlgrad.tensor import Tensor, TensorProperties
+from dlgrad.runtime.cpu import CPU
 
 class Op:
     """
@@ -37,6 +38,7 @@ class Broadcast(Op):
         BroadcastHelper.out_len = calculate_numel(out_shape)
         
         y._ctx = self
+        self.out_shape = out_shape
         # self.parents = (x, y)
         self.x, self.y = x, y
 
@@ -46,8 +48,17 @@ class Broadcast(Op):
         """
         if self.x.shape[0] == self.y.shape[0]:
             "sum along axis0"
+            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=len(self.out_shape), stride=calculate_stride(self.out_shape) if self.out_shape else (), contig=True)
+            out = Tensor(Dispatcher.dispatch(x=self.x, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=self.x.device, dtype=self.x.dtype, properties=tp)
+            
+            self.y.grad += out
+
         elif self.x.shape[1] == self.y.shape[1]:
             "sum along axis1"
+            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=len(self.out_shape), stride=calculate_stride(self.out_shape) if self.out_shape else (), contig=True)
+            out = Tensor(Dispatcher.dispatch(x=self.x, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=self.x.device, dtype=self.x.dtype, properties=tp)
+            
+            self.y.grad += out
         else:
             "sum full Tensor"
 
