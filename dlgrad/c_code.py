@@ -132,7 +132,7 @@ class C:
         #include <stdio.h>
         #include <stdlib.h>
 
-        {dtype} sum_axis1(float *a, int len, int nrows, int ncols) {{
+        {dtype} sum_axis1({dtype} *a, int len, int nrows, int ncols) {{
             {dtype} sum = 0.0f;
             {dtype} *res = malloc(nrows * sizeof({dtype}));
             
