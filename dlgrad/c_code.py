@@ -103,6 +103,27 @@ class C:
         }}
         """
         return prg
+
+    def _sum_axis0(dtype: str) -> str:
+        prg = f"""
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        void sum_axis0({dtype} *a, int len, int nrows, int ncols) {{
+            {dtype} sum = 0.0f;
+            {dtype} *res = malloc(ncols * sizeof({dtype}));
+            
+            for (int i=0; i<ncols; i++) {{
+                sum = 0.0f;
+                for (int j=i; j<len; j+=ncols) {{
+                    sum += a[j];
+                }}
+                res[i] = sum;
+            }}
+        }}
+        """
+
+        return prg
     
     def _matmul(dtype: str):
         prg = f"""
