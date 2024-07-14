@@ -7,6 +7,7 @@ class BinaryOps(Enum):
 
 class UnaryOps(Enum):
     TRANSPOSE = auto()
+    SUM = auto()
 
 class Device(Enum):
     CPU = auto()
