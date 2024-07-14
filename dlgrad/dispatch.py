@@ -33,7 +33,7 @@ class Dispatcher:
     def dispatch(x: Tensor, ops, y: Tensor = None, **kwargs) -> Buffer:
         device = x.device
         if device == Device.CPU:
-            return Dispatcher._cpu_dispatch(x, y, ops, **kwargs)
+            return Dispatcher._cpu_dispatch(x, ops, y, **kwargs)
 
         elif device == Device.GPU:
             pass
