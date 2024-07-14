@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Union, Optional
-from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, UnaryOps, Device 
+from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, calculate_numel, BinaryOps, UnaryOps, Device 
 import ctypes
 import atexit
 import numpy as np
@@ -23,6 +23,7 @@ class TensorProperties:
     contig: bool = True
 
 # TODO: Maybe we can load all ctypes files once in the beginning, so that it does not take time to load ?
+# TODO: Does it work on tensors with dim > 2 ? 
 class Tensor:
     # __slots__ = "grad"
 
@@ -61,30 +62,6 @@ class Tensor:
             ptr = (ctypes.c_float * self.numel).from_address(sd)
             data = np.frombuffer(ptr, count=self.numel, dtype=np.float32).reshape(self.shape)
             print(data)
-
-    @staticmethod
-    def _broadcast(x: Tensor, y: Tensor):
-        shape1 = x.shape
-        shape2 = y.shape
-
-        if x.ndim > 2 or y.ndim > 2 and shape1 != shape2:
-            print("Dlgrad does not support broadcasting for dims greater than 2")
-        
-        output_shape = []
-        
-        shape1 = shape1[::-1]
-        shape2 = shape2[::-1]
-
-        for i in range(max(len(shape1), len(shape2))):
-            dim1 = shape1[i] if i < len(shape1) else 1
-            dim2 = shape2[i] if i < len(shape2) else 1
-            if dim1 == 1 or dim2 == 1 or dim1 == dim2:
-                output_shape.append(max(dim1, dim2))
-            else:
-                # TODO: Add error here
-                print("Shapes are not compatible for broadcasting")
-        
-        return tuple(output_shape[::-1])
 
     def linear(self, weight: Tensor, bias: Tensor) -> Tensor:
         # self*weight.T + bias
@@ -246,6 +223,28 @@ class Tensor:
         tp = TensorProperties(view=False, offset=0, numel=x.numel, shape=x.shape[::-1], ndim=len(x.shape[::-1]), stride=calculate_stride(x.shape[::-1]), contig=True)
         return Tensor(Dispatcher.dispatch(x, ops=UnaryOps.TRANSPOSE), device=x.device, properties=tp)
 
+    @staticmethod
+    def sum(x: Tensor, axis: int = None):
+        from dlgrad.runtime.cpu import CPU
+        if axis == 0:
+            out_shape = x.shape[1]
+            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
+            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=x.device, dtype=x.dtype, properties=tp)
+            
+            return out
+        elif axis == 1:
+            out_shape = x.shape[1]
+            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
+            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=x.device, dtype=x.dtype, properties=tp)
+            
+            return out
+        else:
+            out_shape = x.shape[1]
+            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
+            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum), device=x.device, dtype=x.dtype, properties=tp)
+            
+            return out
+
     # ***** ElementwiseOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
@@ -269,6 +268,7 @@ class Tensor:
         # TODO: How do i ensure data is of same dtype
         return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), device=x.device, dtype=x.dtype, properties=tp)
     
+
     def backward(self):
         topo = []
         visited = set()
@@ -288,9 +288,6 @@ class Tensor:
             if node._ctx is None: 
                 continue
             node._ctx.backward(node.grad)
-
-
-
 
     def __repr__(self) -> str:
         return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.view} shape: {self.shape}>"

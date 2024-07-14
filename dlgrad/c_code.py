@@ -152,6 +152,24 @@ class C:
 
         return prg
     
+    def _sum(dtype: str):
+        prg = f"""
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        {dtype} sum({dtype} *a, int len) {{
+            {dtype} sum = 0.0f;
+            
+            for (int i=0; i<len; i++) {{
+                sum += a[i];
+            }}
+
+            return sum;
+        }}
+        """
+
+        return prg
+
     def _matmul(dtype: str):
         prg = f"""
         #include <stdio.h>
