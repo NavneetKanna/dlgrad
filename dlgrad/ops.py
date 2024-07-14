@@ -13,7 +13,7 @@ class Op:
         self.parents: tuple = None
 
 class Broadcast(Op):
-    def forward(self, x: Tensor, y: Tensor):
+    def forward(self, x: Tensor, y: Tensor) -> tuple:
         shape1 = x.shape
         shape2 = y.shape
 
@@ -42,6 +42,8 @@ class Broadcast(Op):
         # self.parents = (x, y)
         self.x, self.y = x, y
 
+        return out_shape
+
     def backward(self):
         """
         Only applies to the 2nd inp, which is getting broadcasted
@@ -63,7 +65,7 @@ class Broadcast(Op):
             "sum full Tensor"
 
 class Add(Op):
-    def forward(self, x: Tensor, y: Tensor) -> Tensor:
+    def forward(self, x: Tensor, y: Tensor, out_shape: tuple) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
         tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True)
