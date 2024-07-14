@@ -109,7 +109,7 @@ class C:
         #include <stdio.h>
         #include <stdlib.h>
 
-        void sum_axis0({dtype} *a, int len, int nrows, int ncols) {{
+        {dtype} sum_axis0({dtype} *a, int len, int nrows, int ncols) {{
             {dtype} sum = 0.0f;
             {dtype} *res = malloc(ncols * sizeof({dtype}));
             
@@ -120,6 +120,33 @@ class C:
                 }}
                 res[i] = sum;
             }}
+
+            return res;
+        }}
+        """
+
+        return prg
+
+    def _sum_axis1(dtype: str) -> str:
+        prg = f"""
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        {dtype} sum_axis1(float *a, int len, int nrows, int ncols) {{
+            {dtype} sum = 0.0f;
+            {dtype} *res = malloc(nrows * sizeof({dtype}));
+            
+            int j = 0;
+            int idx = 0;
+            for (int i=0; i<len; i+=ncols) {{
+                sum = 0.0f;
+                for (int j=i; j<(i+ncols); j++) {{
+                    sum += a[j];
+                }}
+                res[idx++] = sum;
+            }}
+
+            return res;
         }}
         """
 
