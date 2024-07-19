@@ -27,6 +27,7 @@ class CPU:
 
         add_dll = None 
         data = None
+        prg = None
 
         if temp_file:
             add_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
@@ -68,6 +69,7 @@ class CPU:
 
         sum_dll = None 
         data = None
+        prg = None
 
         if temp_file:
             sum_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
@@ -76,6 +78,8 @@ class CPU:
                 prg = C._sum_axis0(c_dtype) 
             elif axis == 1:
                 prg = C._sum_axis1(c_dtype) 
+            else:
+                prg = C._sum(c_dtype)
 
             with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file: 
                 temp_file = str(output_file.name)
