@@ -63,7 +63,7 @@ class Buffer:
                 subprocess.check_output(args=['clang', '-O2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
                 ones_dll = ctypes.CDLL(temp_file)
         
-        ones_dll.create_ones_buffer.argtypes = (ctypes.c_int)
+        ones_dll.create_ones_buffer.argtypes = (ctypes.c_int,)
         ones_dll.create_ones_buffer.restype = ctypes.POINTER(ctypes.c_float) 
         data = ones_dll.create_ones_buffer(length)
         if data is None:
