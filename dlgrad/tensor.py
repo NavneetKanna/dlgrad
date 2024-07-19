@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Union, Optional
-from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, calculate_numel, BinaryOps, UnaryOps, Device 
+from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, UnaryOps, Device 
 import ctypes
 import atexit
 import numpy as np
@@ -225,25 +225,8 @@ class Tensor:
 
     @staticmethod
     def sum(x: Tensor, axis: int = None):
-        from dlgrad.runtime.cpu import CPU
-        if axis == 0:
-            out_shape = x.shape[1]
-            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
-            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=x.device, dtype=x.dtype, properties=tp)
-            
-            return out
-        elif axis == 1:
-            out_shape = x.shape[1]
-            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
-            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=x.device, dtype=x.dtype, properties=tp)
-            
-            return out
-        else:
-            out_shape = x.shape[1]
-            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
-            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum), device=x.device, dtype=x.dtype, properties=tp)
-            
-            return out
+        from dlgrad.ops import Sum 
+        return Sum().forward(x, axis)
 
     # ***** ElementwiseOps *****
     @staticmethod
@@ -267,7 +250,6 @@ class Tensor:
         tp = TensorProperties(view=False, offset=0, numel=x.shape[0]*y.shape[1], shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True)
         # TODO: How do i ensure data is of same dtype
         return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), device=x.device, dtype=x.dtype, properties=tp)
-    
 
     def backward(self):
         topo = []
