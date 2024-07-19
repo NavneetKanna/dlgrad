@@ -114,15 +114,15 @@ class CPU:
 
     @staticmethod
     def sum_axis0(x: Tensor, dtype: dtypes) -> Buffer:
-        return CPU._add_axis_helper(x, dtype, axis=0)
+        return CPU._sum_axis_helper(x, dtype, axis=0)
 
     @staticmethod
     def _sum_axis1(x: Tensor, dtype: dtypes) -> Buffer:
-        return CPU._add_axis_helper(x, dtype, axis=1)
+        return CPU._sum_axis_helper(x, dtype, axis=1)
 
     @staticmethod
     def sum(x: Tensor, dtype: dtypes) -> Buffer:
-        return CPU._add_axis_helper(x, dtype, axis=None)
+        return CPU._sum_axis_helper(x, dtype, axis=None)
 
     @staticmethod
     def matmul(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
