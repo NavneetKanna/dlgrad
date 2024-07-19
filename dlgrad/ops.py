@@ -83,6 +83,7 @@ class Add(Op):
 
 class Sum(Op):
     def forward(self, x: Tensor, axis: int = None):
+        # TODO: Fix the shape
         if axis == 0:
             out_shape = x.shape[1]
             tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
@@ -98,12 +99,13 @@ class Sum(Op):
             return out
 
         else:
-            out_shape = x.shape[1]
-            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
+            out_shape = ()
+            tp = TensorProperties(view=False, offset=0, numel=1, shape=out_shape, ndim=1, stride=(1,), contig=True)
             out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum), device=x.device, dtype=x.dtype, properties=tp)
-            
+            self.x = x
             return out
 
-    def backward(self):
+    def backward(self, grad_output):
         # backward should only work for axis=None ? 
-        pass
+        # TODO: * grad_output
+        self.x.grad += Tensor.ones()

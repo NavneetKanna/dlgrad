@@ -250,6 +250,7 @@ class Tensor:
         tp = TensorProperties(view=False, offset=0, numel=x.numel, shape=x.shape[::-1], ndim=len(x.shape[::-1]), stride=calculate_stride(x.shape[::-1]), contig=True)
         return Tensor(Dispatcher.dispatch(x, ops=UnaryOps.TRANSPOSE), device=x.device, properties=tp)
 
+    # TODO: Cant be staticmethod
     @staticmethod
     def sum(x: Tensor, axis: int = None):
         from dlgrad.ops import Sum 
