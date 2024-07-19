@@ -198,6 +198,33 @@ class Tensor:
         return Tensor(Buffer.uniform(out_len, low, high), device=device, dtype=dtype, properties=tp)
 
     @staticmethod
+    def ones(*shape, device: Device = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
+        if device != Device.CPU:
+            warnings.warn("Currently BufferOps are only created on CPU.")
+
+        if dtype != dtypes.float32:
+            warnings.warn("Currently dlgrad only supports float32, but more dtypes coming in future. Creating data with dtype=float32.")
+
+        if isinstance(shape[0], tuple): 
+            shape = shape[0]
+        if isinstance(shape[0], list): 
+            shape = tuple(*shape)
+
+        if len(shape) > 4: 
+            raise ShapeError("dlgrad only supports upto 4 dim")
+        if isinstance(shape[0], list): 
+            raise ShapeError("Multi-dim list cannot be passed as shape")
+        if not all(isinstance(item, int) for item in shape): 
+            raise ShapeError("Only ints can be passed to shape")
+
+        out_len = 1
+        for i in shape: 
+            out_len *= i
+
+        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True)
+        return Tensor(Buffer.ones(out_len), device=device, dtype=dtype, properties=tp)
+
+    @staticmethod
     def kaiming_uniform(*shape, device = Device.CPU, dtype = dtypes.float32):
         if isinstance(shape[0], tuple): 
             shape = shape[0]
