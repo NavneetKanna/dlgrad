@@ -80,3 +80,30 @@ class Add(Op):
     def backward(self, grad_output):
         self.x.grad += 1.0 * grad_output
         self.y.grad += 1.0 * grad_output
+
+class Sum(Op):
+    def forward(self, x: Tensor, axis: int = None):
+        if axis == 0:
+            out_shape = x.shape[1]
+            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
+            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=x.device, dtype=x.dtype, properties=tp)
+            
+            return out
+
+        elif axis == 1:
+            out_shape = x.shape[1]
+            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
+            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=x.device, dtype=x.dtype, properties=tp)
+            
+            return out
+
+        else:
+            out_shape = x.shape[1]
+            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
+            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum), device=x.device, dtype=x.dtype, properties=tp)
+            
+            return out
+
+    def backward(self):
+        # backward should only work for axis=None ? 
+        pass

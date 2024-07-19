@@ -1,5 +1,6 @@
 
 class C:
+    # TODO: Pass all args when compling itself ?
     @staticmethod
     def _random_buffer() -> str:
         prg = """
@@ -57,6 +58,25 @@ class C:
         """ 
         return prg
 
+    def _ones_buffer() -> str:
+        prg = """
+        #include <stdio.h>
+        #include <stdlib.h>
+
+        float *create_ones_buffer(int length) 
+        {
+            float *c = malloc(length * sizeof(float));
+            if (c == NULL) 
+                return NULL;
+            
+            for (int i=0; i<length; i++)
+                c[i] = 1.0f;
+            
+            return c;
+        }
+        """
+        return prg 
+    
     def _add_axis1(dtype: str, out_len: int) -> str:
         prg = f"""
         #include <stdio.h>
