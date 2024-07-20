@@ -10,7 +10,7 @@ class Op:
     and define it there (here).
     """
     def __init__(self) -> None:
-        self.parents: tuple = None
+        self.parents: tuple = ()
 
 class Broadcast(Op):
     def forward(self, x: Tensor, y: Tensor) -> tuple:
@@ -44,23 +44,31 @@ class Broadcast(Op):
 
         return out_shape
 
-    def backward(self):
+    def backward(self, grad_output):
+        print("in broadcast backward")
+        print(grad_output.numpy())
         """
         Only applies to the 2nd inp, which is getting broadcasted
         """
         if self.x.shape[0] == self.y.shape[0]:
-            "sum along axis0"
+            print("sum axis0")
+            # sum along axis0
             tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=1, stride=(1,), contig=True)
-            out = Tensor(Dispatcher.dispatch(x=self.x, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=self.x.device, dtype=self.x.dtype, properties=tp)
+            # out = Tensor(Dispatcher.dispatch(x=self.x, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=self.x.device, dtype=self.x.dtype, properties=tp)
+            out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=self.x.device, dtype=self.x.dtype, properties=tp)
             
-            self.y.grad += out
+            # self.y.grad += out
+            self.y.grad = out
 
         elif self.x.shape[1] == self.y.shape[1]:
-            "sum along axis1"
+            print("sum axis1")
+            # sum along axis1
             tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=1, stride=(1,), contig=True)
-            out = Tensor(Dispatcher.dispatch(x=self.x, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=self.x.device, dtype=self.x.dtype, properties=tp)
-            
-            self.y.grad += out
+            # out = Tensor(Dispatcher.dispatch(x=self.x, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=self.x.device, dtype=self.x.dtype, properties=tp)
+            out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=self.x.device, dtype=self.x.dtype, properties=tp)
+            print(out.numpy())
+            # self.y.grad += out
+            self.y.grad = out
         else:
             "sum full Tensor"
 
@@ -78,8 +86,10 @@ class Add(Op):
         return out 
 
     def backward(self, grad_output):
-        self.x.grad += 1.0 * grad_output
-        self.y.grad += 1.0 * grad_output
+        # self.x.grad += 1.0 * grad_output
+        # self.y.grad += 1.0 * grad_output
+        self.x.grad = grad_output
+        self.y.grad = grad_output
 
 class Sum(Op):
     def forward(self, x: Tensor, axis: int = None):
@@ -103,9 +113,13 @@ class Sum(Op):
             tp = TensorProperties(view=False, offset=0, numel=1, shape=out_shape, ndim=1, stride=(1,), contig=True)
             out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum), device=x.device, dtype=x.dtype, properties=tp)
             self.x = x
+            out._ctx = self
+            self.parents = (x,)
             return out
 
     def backward(self, grad_output):
         # backward should only work for axis=None ? 
         # TODO: * grad_output
-        self.x.grad += Tensor.ones()
+        # TODO: +=
+        # self.x.grad += Tensor.ones(self.x.shape)
+        self.x.grad = Tensor.ones(self.x.shape)
