@@ -254,6 +254,7 @@ class Tensor:
     @staticmethod
     def sum(x: Tensor, axis: int = None):
         from dlgrad.ops import Sum 
+
         return Sum().forward(x, axis)
 
     # ***** ElementwiseOps *****
@@ -284,6 +285,7 @@ class Tensor:
         visited = set()
 
         def build_topo(v):
+            print(f"v {v}")
             if v not in visited:
                 visited.add(v)
                 if v._ctx is not None:
@@ -301,6 +303,9 @@ class Tensor:
 
     def __repr__(self) -> str:
         return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.view} shape: {self.shape}>"
+
+    def __iadd__(self, other):
+        pass
 
     @property
     def shape(self):

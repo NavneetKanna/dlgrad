@@ -29,14 +29,19 @@ class CPU:
         data = None
         prg = None
 
+    
+        if axis == 0:
+            prg = C._add_axis0(c_dtype, out_len=BroadcastHelper.out_len) 
+            name = f"cpu_{c_dtype}_add0"
+            temp_file = check_temp_file_exists(starts_with=name) 
+        elif axis == 1:
+            prg = C._add_axis1(c_dtype, out_len=BroadcastHelper.out_len) 
+            name = f"cpu_{c_dtype}_add1"
+            temp_file = check_temp_file_exists(starts_with=name) 
+
         if temp_file:
             add_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
         else:
-            if axis == 0:
-                prg = C._add_axis0(c_dtype, out_len=BroadcastHelper.out_len) 
-            elif axis == 1:
-                prg = C._add_axis1(c_dtype, out_len=BroadcastHelper.out_len) 
-
             with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file: 
                 temp_file = str(output_file.name)
                 subprocess.check_output(args=['clang', '-O2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
@@ -64,23 +69,30 @@ class CPU:
         #     return x.data + y.data
 
         c_dtype = dtypes.get_c_dtype(dtype) 
-        name = f"cpu_{c_dtype}_sum"
-        temp_file = check_temp_file_exists(starts_with=name) 
 
         sum_dll = None 
         data = None
         prg = None
+        temp_file = None
+        name = None
+
+
+        if axis == 0:
+            prg = C._sum_axis0(c_dtype) 
+            name = f"cpu_{c_dtype}_sum0"
+            temp_file = check_temp_file_exists(starts_with=name) 
+        elif axis == 1:
+            prg = C._sum_axis1(c_dtype) 
+            name = f"cpu_{c_dtype}_sum1"
+            temp_file = check_temp_file_exists(starts_with=name) 
+        else:
+            prg = C._sum(c_dtype)
+            name = f"cpu_{c_dtype}_sum"
+            temp_file = check_temp_file_exists(starts_with=name) 
 
         if temp_file:
             sum_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
         else:
-            if axis == 0:
-                prg = C._sum_axis0(c_dtype) 
-            elif axis == 1:
-                prg = C._sum_axis1(c_dtype) 
-            else:
-                prg = C._sum(c_dtype)
-
             with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file: 
                 temp_file = str(output_file.name)
                 subprocess.check_output(args=['clang', '-O2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
