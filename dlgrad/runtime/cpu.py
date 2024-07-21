@@ -85,7 +85,7 @@ class CPU:
             prg = C._sum_axis1(c_dtype) 
             name = f"cpu_{c_dtype}_sum1"
             temp_file = check_temp_file_exists(starts_with=name) 
-        else:
+        elif axis == -1:
             prg = C._sum(c_dtype)
             name = f"cpu_{c_dtype}_sum"
             temp_file = check_temp_file_exists(starts_with=name) 
@@ -98,7 +98,7 @@ class CPU:
                 subprocess.check_output(args=['clang', '-O2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
                 sum_dll = ctypes.CDLL(temp_file)
 
-        if not axis:
+        if axis == -1:
             sum_dll.sum.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
             sum_dll.sum.restype = ctypes.POINTER(ctypes.c_int) 
             # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
@@ -138,7 +138,7 @@ class CPU:
 
     @staticmethod
     def sum(x: Tensor, dtype: dtypes) -> Buffer:
-        return CPU._sum_axis_helper(x, dtype, axis=None)
+        return CPU._sum_axis_helper(x, dtype, axis=-1)
 
     @staticmethod
     def matmul(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
