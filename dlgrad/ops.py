@@ -38,7 +38,7 @@ class Broadcast(Op):
         BroadcastHelper.out_len = calculate_numel(out_shape)
         
         y._ctx = self
-        self.out_shape = out_shape
+        self.out_shape = y.shape
         # self.parents = (x, y)
         self.x, self.y = x, y
 
@@ -51,21 +51,21 @@ class Broadcast(Op):
         Only applies to the 2nd inp, which is getting broadcasted
         """
         if self.x.shape[0] == self.y.shape[0]:
-            print("sum axis0")
+            print("sum axis1")
             # sum along axis0
             tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=1, stride=(1,), contig=True)
             # out = Tensor(Dispatcher.dispatch(x=self.x, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=self.x.device, dtype=self.x.dtype, properties=tp)
-            out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=self.x.device, dtype=self.x.dtype, properties=tp)
+            out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=self.x.device, dtype=self.x.dtype, properties=tp)
             
             # self.y.grad += out
             self.y.grad = out
 
         elif self.x.shape[1] == self.y.shape[1]:
-            print("sum axis1")
+            print("sum axis0")
             # sum along axis1
             tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=1, stride=(1,), contig=True)
             # out = Tensor(Dispatcher.dispatch(x=self.x, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=self.x.device, dtype=self.x.dtype, properties=tp)
-            out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=self.x.device, dtype=self.x.dtype, properties=tp)
+            out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=self.x.device, dtype=self.x.dtype, properties=tp)
             print(out.numpy())
             # self.y.grad += out
             self.y.grad = out
