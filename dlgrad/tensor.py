@@ -32,7 +32,7 @@ class Tensor:
             dtype: Optional[dtypes] = None, properties: TensorProperties = TensorProperties()
         ):
         self.requires_grad = requires_grad
-        self.grad = 0.0
+        self.grad = None
         self.device = device
         self.properties = properties
         self._ctx = None
@@ -50,7 +50,9 @@ class Tensor:
             self.data = data
             self.dtype = dtype
 
-        if not properties.view and isinstance(data, Buffer): 
+        # TODO: A better way to write this
+        if not properties.view and isinstance(data, Buffer) and properties.numel != 1: 
+            self.numpy()
             atexit.register(self.cleanup)
 
     def numpy(self):
@@ -285,7 +287,7 @@ class Tensor:
         visited = set()
 
         def build_topo(v):
-            print(f"v {v}")
+            # print(f"v {v}")
             if v not in visited:
                 visited.add(v)
                 if v._ctx is not None:
@@ -294,18 +296,18 @@ class Tensor:
                 topo.append(v)
         build_topo(self)
         
-        print(f"topo {topo}")
+        # print(f"topo {topo}")
         self.grad = 1.0
         for node in reversed(topo):
             if node._ctx is None: 
                 continue
             node._ctx.backward(node.grad)
 
-    def __repr__(self) -> str:
-        return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.view} shape: {self.shape}>"
+    # def __repr__(self) -> str:
+    #     return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.view} shape: {self.shape}>"
 
-    def __iadd__(self, other):
-        pass
+    def __add__(self, other):
+        return Tensor.add(self, other)
 
     @property
     def shape(self):

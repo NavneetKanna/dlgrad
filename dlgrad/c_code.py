@@ -172,6 +172,7 @@ class C:
 
         return prg
     
+    # TODO: Cant call free for this 
     def _sum(dtype: str):
         prg = f"""
         #include <stdio.h>
@@ -244,6 +245,7 @@ class C:
 
         void free_buf(void *data) 
         {
+
             free(data);
         }
         """
