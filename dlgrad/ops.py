@@ -3,6 +3,7 @@ from dlgrad.helpers import calculate_stride, BinaryOps, UnaryOps, BroadcastHelpe
 from dlgrad.tensor import Tensor, TensorProperties
 from dlgrad.runtime.cpu import CPU
 
+
 class Op:
     """
     This class may not be required since we can store the parents in each op class, however,
@@ -75,6 +76,9 @@ class Add(Op):
         out._ctx = self
         self.parents = (x, y)
         self.x, self.y = x, y
+
+        if graph.GRAPH:
+            pass
 
         return out 
 

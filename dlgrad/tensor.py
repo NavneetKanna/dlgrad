@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Union, Optional
-from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, UnaryOps, Device 
+from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, UnaryOps, Device, set_graph
 import ctypes
 import atexit
 import numpy as np
@@ -11,6 +11,7 @@ import warnings
 import math
 from dataclasses import dataclass
 from dlgrad.dispatch import Dispatcher
+
 
 @dataclass
 class TensorProperties:
@@ -283,6 +284,8 @@ class Tensor:
         return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), device=x.device, dtype=x.dtype, properties=tp)
 
     def backward(self):
+        set_graph(0)
+
         topo = []
         visited = set()
 

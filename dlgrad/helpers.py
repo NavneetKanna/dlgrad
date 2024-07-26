@@ -1,6 +1,15 @@
 import os 
 from enum import Enum, auto
 
+GRAPH = os.getenv("GRAPH", 0)
+
+def get_graph():
+    return GRAPH
+
+def set_graph(val):
+    global GRAPH
+    GRAPH = val
+
 class BinaryOps(Enum):
     ADD = auto()
     MATMUL = auto()
