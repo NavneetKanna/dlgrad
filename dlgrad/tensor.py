@@ -287,24 +287,23 @@ class Tensor:
         visited = set()
 
         def build_topo(v):
-            # print(f"v {v}")
             if v not in visited:
                 visited.add(v)
                 if v._ctx is not None:
-                    for child in v._ctx.parents:
-                        build_topo(child)
+                    for i in v._ctx.parents:
+                        build_topo(i)
                 topo.append(v)
         build_topo(self)
         
-        # print(f"topo {topo}")
         self.grad = 1.0
         for node in reversed(topo):
+            # Since input nodes are there as well
             if node._ctx is None: 
                 continue
             node._ctx.backward(node.grad)
 
-    # def __repr__(self) -> str:
-    #     return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.view} shape: {self.shape}>"
+    def __repr__(self) -> str:
+        return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.view} shape: {self.shape}>"
 
     def __add__(self, other):
         return Tensor.add(self, other)
