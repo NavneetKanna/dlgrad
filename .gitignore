@@ -12,3 +12,5 @@ a.out
 test.py
 testing/
 *.ipynb
+*.svg
+*.dot

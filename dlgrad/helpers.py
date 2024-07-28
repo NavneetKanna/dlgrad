@@ -18,6 +18,10 @@ class UnaryOps(Enum):
     TRANSPOSE = auto()
     SUM = auto()
 
+class BufferOps(Enum):
+    RAND = auto()
+    ONES = auto()
+
 class Device(Enum):
     CPU = auto()
     GPU = auto()
