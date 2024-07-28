@@ -260,7 +260,7 @@ class Tensor:
 
         return Sum().forward(x, axis)
 
-    # ***** ElementwiseOps *****
+    # ***** BinaryOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
         from dlgrad.ops import Add, Broadcast
@@ -269,7 +269,6 @@ class Tensor:
         
         return Add().forward(x, y, out_shape)
 
-    # ***** BinaryOps *****
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
         # TODO: Check dtype as well
