@@ -226,7 +226,6 @@ class Tensor:
 
         tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True)
         return Tensor(Dispatcher.dispatch(ops=BufferOps.ONES, out_len=out_len), device=device, dtype=dtype, properties=tp)
-        # return Tensor(Buffer.ones(out_len), device=device, dtype=dtype, properties=tp)
 
     @staticmethod
     def kaiming_uniform(*shape, device = Device.CPU, dtype = dtypes.float32):
