@@ -191,3 +191,29 @@ class CPU:
                 # TODO: create a new error
                 print("Error: could not allocate memory")
             return Buffer(data, temp_file)
+
+    @staticmethod
+    def uniform(length: int, low=0.0, high=1.0) -> Buffer:
+        # ctypes.CDLL was taking the most time when i was compiling the prg everytime this func was called
+        # and also there is no need to compile everytime this func is called, hence compiling only once
+        # and reading the shared file, ctypes.CDLL is faster and is no longer taking time, although, the 
+        # first time it is long.
+
+        temp_file = check_temp_file_exists(starts_with="rand_buffer") 
+        if temp_file:
+            temp_file = f"{get_temp_loc()}/{temp_file}"
+            rand_dll = ctypes.CDLL(temp_file)
+        else:
+            prg = C._random_buffer()
+            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="rand_buffer") as output_file:
+                temp_file = str(output_file.name)
+                subprocess.check_output(args=['clang', '-O2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
+                rand_dll = ctypes.CDLL(temp_file)
+        
+        rand_dll.create_rand_buffer.argtypes = (ctypes.c_int, ctypes.c_float, ctypes.c_float)
+        rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float) 
+        data = rand_dll.create_rand_buffer(length, low, high)
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+        return Buffer(data, temp_file)

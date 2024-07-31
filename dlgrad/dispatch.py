@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dlgrad.runtime.cpu import CPU
 from dlgrad.buffer import Buffer
-from dlgrad.helpers import BinaryOps, UnaryOps, Device
+from dlgrad.helpers import BinaryOps, UnaryOps, BufferOps, Device
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from dlgrad.tensor import Tensor
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 class Dispatcher:
     @staticmethod
-    def _cpu_dispatch(x: Tensor, ops, y: Tensor = None, **kwargs) -> Buffer:
+    def _cpu_dispatch(ops, x: Tensor = None, y: Tensor = None, **kwargs) -> Buffer:
         if ops == BinaryOps.ADD:
             if x.shape[0] == y.shape[0]:
                 return CPU.add_axis0(x, y, x.dtype)
@@ -31,8 +31,11 @@ class Dispatcher:
             elif kwargs["func"] == CPU.sum:
                 return CPU.sum(x, x.dtype)
             
+        if ops == BufferOps.UNIFORM:
+            return CPU.uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
+
     @staticmethod
-    def dispatch(x: Tensor, ops, y: Tensor = None, **kwargs) -> Buffer:
+    def dispatch(ops, x: Tensor = None, y: Tensor = None, **kwargs) -> Buffer:
         device = x.device
         if device == Device.CPU:
             return Dispatcher._cpu_dispatch(x, ops, y, **kwargs)
