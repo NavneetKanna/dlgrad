@@ -24,27 +24,6 @@ class Buffer:
             os.remove(self._temp_file_loc)
 
     @staticmethod
-    def ones(length: int) -> Buffer:
-        temp_file = check_temp_file_exists(starts_with="ones_buffer") 
-        if temp_file:
-            temp_file = f"{get_temp_loc()}/{temp_file}"
-            ones_dll = ctypes.CDLL(temp_file)
-        else:
-            prg = C._ones_buffer()
-            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="ones_buffer") as output_file:
-                temp_file = str(output_file.name)
-                subprocess.check_output(args=['clang', '-O2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
-                ones_dll = ctypes.CDLL(temp_file)
-        
-        ones_dll.create_ones_buffer.argtypes = (ctypes.c_int,)
-        ones_dll.create_ones_buffer.restype = ctypes.POINTER(ctypes.c_float) 
-        data = ones_dll.create_ones_buffer(length)
-        if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
-        return Buffer(data, temp_file)
-
-    @staticmethod
     def free(data) -> None:
         temp_file = check_temp_file_exists(starts_with="free") 
         if temp_file:
