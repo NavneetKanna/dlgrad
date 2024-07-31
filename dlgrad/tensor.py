@@ -244,7 +244,7 @@ class Tensor:
         bound = math.sqrt(3) * std
         
         tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True)
-        return Tensor(Buffer.uniform(out_len, low=-bound, high=bound), device=device, dtype=dtype, properties=tp)
+        return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=-bound, high=bound), device=device, dtype=dtype, properties=tp)
     
     # ***** UnaryOps ****
     # TODO: What to do if i want to call x.transpose() ?
