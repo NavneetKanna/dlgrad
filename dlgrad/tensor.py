@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Union, Optional
-from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, UnaryOps, Device, set_graph
+from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, UnaryOps, BufferOps, Device, set_graph
 import ctypes
 import atexit
 import numpy as np
@@ -198,7 +198,7 @@ class Tensor:
             out_len *= i
 
         tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True)
-        return Tensor(Buffer.uniform(out_len, low, high), device=device, dtype=dtype, properties=tp)
+        return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high), device=device, dtype=dtype, properties=tp)
 
     @staticmethod
     def ones(*shape, device: Device = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:

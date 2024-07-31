@@ -19,7 +19,7 @@ class UnaryOps(Enum):
     SUM = auto()
 
 class BufferOps(Enum):
-    RAND = auto()
+    UNIFORM = auto()
     ONES = auto()
 
 class Device(Enum):

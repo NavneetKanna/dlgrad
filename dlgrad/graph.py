@@ -6,12 +6,11 @@ class Graph:
     def __init__(self):
         self.G = nx.DiGraph() if get_graph() else None
         self.ops_colour = {BinaryOps: '#e74c3c', UnaryOps: '#1abc9c', BufferOps: '#f1c40f'}
-        self.create_id_iter = self.create_id
+        self.id = 0
 
-    def create_id(self):
-        id = 0
-        yield id
-        id += 1
+    def get_create_id(self):
+        self.id += 1
+        return self.id 
 
     def add_node(self, label: str, ops):
         if self.G is not None:
