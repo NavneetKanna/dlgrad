@@ -34,6 +34,9 @@ class Dispatcher:
         if ops == BufferOps.UNIFORM:
             return CPU.uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
 
+        if ops == BufferOps.ONES:
+            return CPU.ones(kwargs["out_len"])
+
     @staticmethod
     def dispatch(ops, x: Tensor = None, y: Tensor = None, **kwargs) -> Buffer:
         device = x.device
