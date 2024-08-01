@@ -7,7 +7,7 @@ from __future__ import annotations
 import ctypes
 import subprocess
 import tempfile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from dlgrad.buffer import Buffer
 from dlgrad.c_code import C
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 class CPU:
     @staticmethod
-    def _add_axis_helper(x: Tensor, y: Tensor, dtype: dtypes, axis: int = None) -> Buffer:
+    def _add_axis_helper(x: Tensor, y: Tensor, dtype: dtypes, axis: Optional[int] = None) -> Buffer:
         if not isinstance(x.data, Buffer): 
             return x.data + y.data
 
@@ -42,6 +42,10 @@ class CPU:
             prg = C._add_axis1(c_dtype, out_len=BroadcastHelper.out_len) 
             name = f"cpu_{c_dtype}_add1"
             temp_file = check_temp_file_exists(starts_with=name) 
+        else:
+            prg = C._add(c_dtype, out_len=BroadcastHelper.out_len) 
+            name = f"cpu_{c_dtype}_add"
+            temp_file = check_temp_file_exists(starts_with=name) 
 
         if temp_file:
             add_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
@@ -60,6 +64,10 @@ class CPU:
             add_dll.add_with_broadcasting.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
             add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float) 
             data = add_dll.add_with_broadcasting(x.data._buffer, y.data._buffer, x.numel, y.numel)
+        else:
+            add_dll.add.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+            add_dll.add.restype = ctypes.POINTER(ctypes.c_float) 
+            data = add_dll.add(x.data._buffer, y.data._buffer)
 
         if data is None:
             # TODO: create a new error
@@ -68,7 +76,7 @@ class CPU:
         return Buffer(data, temp_file)
 
     @staticmethod
-    def _sum_axis_helper(x: Tensor, dtype: dtypes, axis: int = None) -> Buffer:
+    def _sum_axis_helper(x: Tensor, dtype: dtypes, axis: Optional[int] = None) -> Buffer:
         # if not isinstance(x.data, Buffer): 
         #     return x.data + y.data
 
@@ -80,7 +88,6 @@ class CPU:
         temp_file = None
         name = None
 
-
         if axis == 0:
             prg = C._sum_axis0(c_dtype) 
             name = f"cpu_{c_dtype}_sum0"
@@ -89,7 +96,7 @@ class CPU:
             prg = C._sum_axis1(c_dtype) 
             name = f"cpu_{c_dtype}_sum1"
             temp_file = check_temp_file_exists(starts_with=name) 
-        elif axis == -1:
+        else:
             prg = C._sum(c_dtype)
             name = f"cpu_{c_dtype}_sum"
             temp_file = check_temp_file_exists(starts_with=name) 
@@ -102,12 +109,6 @@ class CPU:
                 subprocess.check_output(args=['clang', '-O2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
                 sum_dll = ctypes.CDLL(temp_file)
 
-        if axis == -1:
-            sum_dll.sum.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
-            sum_dll.sum.restype = ctypes.POINTER(ctypes.c_int) 
-            # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
-            data = sum_dll.sum(x.data._buffer, x.numel)
-
         if axis == 0:
             sum_dll.sum_axis0.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             sum_dll.sum_axis0.restype = ctypes.POINTER(ctypes.c_float) 
@@ -117,12 +118,21 @@ class CPU:
             sum_dll.sum_axis1.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             sum_dll.sum_axis1.restype = ctypes.POINTER(ctypes.c_float) 
             data = sum_dll.sum_axis1(x.data._buffer, x.numel, x.shape[0], x.shape[1])
+        else:
+            sum_dll.sum.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
+            sum_dll.sum.restype = ctypes.POINTER(ctypes.c_int) 
+            # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
+            data = sum_dll.sum(x.data._buffer, x.numel)
 
         if data is None:
             # TODO: create a new error
             print("Error: could not allocate memory")
 
         return Buffer(data, temp_file)
+    
+    @staticmethod
+    def add(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
+        return CPU._add_axis_helper(x, y, dtype)
     
     @staticmethod
     def add_axis0(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
@@ -142,7 +152,7 @@ class CPU:
 
     @staticmethod
     def sum(x: Tensor, dtype: dtypes) -> Buffer:
-        return CPU._sum_axis_helper(x, dtype, axis=-1)
+        return CPU._sum_axis_helper(x, dtype)
 
     @staticmethod
     def matmul(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
