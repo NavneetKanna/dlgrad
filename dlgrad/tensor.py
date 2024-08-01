@@ -1,16 +1,21 @@
 from __future__ import annotations
-from typing import Union, Optional
-from dlgrad.helpers import ShapeError, IndexError, calculate_stride, calculate_nchw_offset, BinaryOps, UnaryOps, BufferOps, Device, set_graph
-import ctypes
+
 import atexit
+import ctypes
+import math
+import warnings
+from dataclasses import dataclass
+from typing import Optional, Union
+
 import numpy as np
+
+from dlgrad.buffer import Buffer
+from dlgrad.dispatch import Dispatcher
 # import platform
 from dlgrad.dtype import dtypes
-from dlgrad.buffer import Buffer
-import warnings
-import math
-from dataclasses import dataclass
-from dlgrad.dispatch import Dispatcher
+from dlgrad.helpers import (BinaryOps, BufferOps, Device, IndexError,
+                            ShapeError, UnaryOps, calculate_nchw_offset,
+                            calculate_stride, set_graph)
 
 
 @dataclass

@@ -3,13 +3,16 @@ This should contain all buffer related tasks.
 
 """
 from __future__ import annotations
-from dlgrad.c_code import C
-import subprocess
-import tempfile
+
+import atexit
 import ctypes
 import os
-from dlgrad.helpers import get_temp_loc, check_temp_file_exists
-import atexit
+import subprocess
+import tempfile
+
+from dlgrad.c_code import C
+from dlgrad.helpers import check_temp_file_exists, get_temp_loc
+
 
 class Buffer:
     def __init__(self, data, temp_file_loc: str = '') -> None:

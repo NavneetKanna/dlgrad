@@ -1,4 +1,4 @@
-import os 
+import os
 from enum import Enum, auto
 
 GRAPH = os.getenv("GRAPH", 0)
