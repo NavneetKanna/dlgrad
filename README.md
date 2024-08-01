@@ -24,7 +24,7 @@ b = Tensor.rand(10, 10)
 a.numpy()
 b.numpy()
 
-c = a, b
+c = a+b
 c.numpy()
 
 ```
