@@ -33,7 +33,7 @@ class Dispatcher:
                 return CPU._sum_axis1(x, x.dtype)
             elif kwargs["func"] == CPU.sum:
                 return CPU.sum(x, x.dtype)
-            
+
         if ops == BufferOps.UNIFORM:
             return CPU.uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
 
@@ -42,9 +42,9 @@ class Dispatcher:
 
     @staticmethod
     def dispatch(ops, x: Tensor = None, y: Tensor = None, **kwargs) -> Buffer:
-        device = x.device
+        device = x.device if x is not None else kwargs['device']
         if device == Device.CPU:
-            return Dispatcher._cpu_dispatch(x, ops, y, **kwargs)
+            return Dispatcher._cpu_dispatch(ops, x, y, **kwargs)
 
         elif device == Device.GPU:
             pass
