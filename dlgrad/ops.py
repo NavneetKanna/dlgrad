@@ -79,8 +79,8 @@ class Add(Op):
         self.parents = (x, y)
         self.x, self.y = x, y
 
-        if graph.GRAPH:
-            pass
+        # if graph.GRAPH:
+        #     pass
 
         return out 
 

@@ -21,10 +21,10 @@ from dlgrad.tensor import Tensor
 a = Tensor.rand(10, 10)
 b = Tensor.rand(10, 10)
 # Since the tensors are c buffers, use numpy to print
-print(a.numpy())
-print(b.numpy())
+a.numpy()
+b.numpy()
 
-c = Tensor.add(a, b)
-print(c.numpy())
+c = a, b
+c.numpy()
 
 ```
