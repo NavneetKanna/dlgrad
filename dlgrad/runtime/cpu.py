@@ -213,16 +213,17 @@ class CPU:
         # and reading the shared file, ctypes.CDLL is faster and is no longer taking time, although, the 
         # first time it is long.
 
-        temp_file = check_temp_file_exists(starts_with="rand_buffer") 
-        if temp_file:
-            temp_file = f"{get_temp_loc()}/{temp_file}"
+        # NOTE: Using the same rand_dll is generating the same random numbers, but why though ? 
+        # temp_file = check_temp_file_exists(starts_with="rand_buffer") 
+        # if temp_file:
+        #     temp_file = f"{get_temp_loc()}/{temp_file}"
+        #     rand_dll = ctypes.CDLL(temp_file)
+        # else:
+        prg = C._random_buffer()
+        with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="rand_buffer") as output_file:
+            temp_file = str(output_file.name)
+            subprocess.check_output(args=['clang', '-O2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
             rand_dll = ctypes.CDLL(temp_file)
-        else:
-            prg = C._random_buffer()
-            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="rand_buffer") as output_file:
-                temp_file = str(output_file.name)
-                subprocess.check_output(args=['clang', '-O2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
-                rand_dll = ctypes.CDLL(temp_file)
         
         rand_dll.create_rand_buffer.argtypes = (ctypes.c_int, ctypes.c_float, ctypes.c_float)
         rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float) 
