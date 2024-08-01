@@ -58,7 +58,6 @@ class Tensor:
 
         # TODO: A better way to write this
         if not properties.view and isinstance(data, Buffer) and properties.numel != 1: 
-            self.numpy()
             atexit.register(self.cleanup)
 
     def numpy(self):
@@ -203,7 +202,7 @@ class Tensor:
             out_len *= i
 
         tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True)
-        return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high), device=device, dtype=dtype, properties=tp)
+        return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high, device=device), device=device, dtype=dtype, properties=tp)
 
     @staticmethod
     def ones(*shape, device: Device = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
