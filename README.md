@@ -6,7 +6,7 @@ Inspired by Andrej Karpathy's micrograd and George Hotz's tinygrad, dlgrad is my
 
 ## Features
 
-- **CPU and GPU Support**: The library currently supports both CPU and GPU (Metal) backends.
+- **CPU and GPU Support**: The library currently supports CPU backend and GPU support is coming in future.
 
 ## Internals
 
