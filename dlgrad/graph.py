@@ -1,5 +1,6 @@
 import networkx as nx
-from dlgrad.helpers import get_graph, BinaryOps, UnaryOps, BufferOps
+
+from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, get_graph
 
 
 class Graph:

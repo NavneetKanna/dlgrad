@@ -1,8 +1,9 @@
-from dlgrad.dispatch import Dispatcher
-from dlgrad.helpers import calculate_stride, BinaryOps, UnaryOps, BroadcastHelper, calculate_numel
-from dlgrad.tensor import Tensor, TensorProperties
-from dlgrad.runtime.cpu import CPU
 import dlgrad.graph as graph
+from dlgrad.dispatch import Dispatcher
+from dlgrad.helpers import (BinaryOps, BroadcastHelper, UnaryOps,
+                            calculate_numel, calculate_stride)
+from dlgrad.runtime.cpu import CPU
+from dlgrad.tensor import Tensor, TensorProperties
 
 
 class Op:

@@ -1,6 +1,7 @@
 # idea from tinygrad
 from dataclasses import dataclass
 
+
 @dataclass
 class DType:
     name: str
