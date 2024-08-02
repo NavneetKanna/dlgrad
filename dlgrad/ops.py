@@ -51,15 +51,7 @@ class Broadcast(Op):
         """
         Only applies to the 2nd inp, which is getting broadcasted
         """
-        if self.x.shape == self.y.shape:
-            # print("in broadcast backward")
-            # grad_output.numpy()
-            # print(grad_output.data._buffer)
-            # tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=1, stride=(1,), contig=True)
-            # out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, func=CPU.sum), device=self.x.device, dtype=self.x.dtype, properties=tp, name='sumfullbroadcast')
-
-            self.y.grad = grad_output
-        elif self.x.shape[0] == self.y.shape[0]:
+        if self.x.shape[0] == self.y.shape[0]:
             tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=1, stride=(1,), contig=True)
             out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=self.x.device, dtype=self.x.dtype, properties=tp)
             
@@ -87,11 +79,6 @@ class Add(Op):
         return out 
 
     def backward(self, grad_output):
-        # print("in add backward")
-        # print(self.x.grad)
-        # print(self.y.grad)
-        # grad_output.numpy()
-        # print(grad_output.data._buffer)
         self.x.grad = grad_output if self.x.grad is None else self.x.grad + grad_output
         self.y.grad = grad_output if self.y.grad is None else self.y.grad + grad_output
 
@@ -121,9 +108,5 @@ class Sum(Op):
             return out
 
     def backward(self, grad_output):
-        # print("in sum backward")
         # NOTE: backward only works for axis=None 
-        # # print(self.x.shape)
-        # print("generating ones")
         self.x.grad = Tensor.ones(self.x.shape) if self.x.grad is None else self.x.grad + Tensor.ones(self.x.shape)
-        # print(self.x.grad.data._buffer)

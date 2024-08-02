@@ -58,21 +58,11 @@ class Tensor:
             self.data = data
 
         if isinstance(data, Buffer):
-            # print("it is a buffer")
             self.data = data
-            # print(data._buffer)
-            # self.numpy()
             self.dtype = dtype
 
         # TODO: A better way to write this, a queue ?
         if (not properties.view) and isinstance(data, Buffer) and properties.numel != 1: 
-            # # print("--")
-            # # print("registering for")
-            # # print(self.name)
-            # self.numpy()
-            # self.numel
-            
-            # # print(f"registering {t} {self.name}")
             atexit.register(self.cleanup)
 
     def numpy(self):
@@ -91,16 +81,6 @@ class Tensor:
 
     # TODO: maybe do a check for data before calling free ?
     def cleanup(self): 
-        # print("+++++")
-        # print(self.name)
-        # self.numpy()
-        # # print(self)
-        # # print(self.freed)
-        # # print(kwargs['name'])
-        # if self.name == 'ones':
-        #     # print(self.data._buffer)
-        #     # print("returning since ones")
-        #     return
         Buffer.free(self.data._buffer)
         self.freed = True
 
@@ -314,7 +294,6 @@ class Tensor:
         return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), device=x.device, dtype=x.dtype, properties=tp)
 
     def backward(self):
-        # print("------------ backward --------------")
         set_graph(0)
 
         topo = []
@@ -331,19 +310,13 @@ class Tensor:
         
         self.grad = 1.0
         for node in reversed(topo):
-            # print("----")
-            # print(f"node name {node.name}")
-            # if not isinstance(self.grad, float):
-                # print(f"node grad {node.grad.name}")
             # Since input nodes are there as well
             if node._ctx is None: 
                 continue
             node._ctx.backward(node.grad)
-            # print("----")
 
-        # print("--------------------------")
-    # def __repr__(self) -> str:
-    #     return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.view} shape: {self.shape}>"
+    def __repr__(self) -> str:
+        return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.view} shape: {self.shape}>"
 
     def __add__(self, other):
         return Tensor.add(self, other)
