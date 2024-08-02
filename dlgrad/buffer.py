@@ -1,7 +1,3 @@
-"""
-This should contain all buffer related tasks.
-
-"""
 from __future__ import annotations
 
 import atexit
