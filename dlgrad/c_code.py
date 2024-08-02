@@ -255,16 +255,3 @@ class C:
         }}
         """
         return prg
-
-    def _free() -> str:
-        prg = """
-        #include <stdlib.h>
-        #include <stdio.h>
-
-        void free_buf(void *data) 
-        {
-
-            free(data);
-        }
-        """
-        return prg
