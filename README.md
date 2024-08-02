@@ -25,6 +25,11 @@ a.numpy()
 b.numpy()
 
 c = a+b
-c.numpy()
+
+# Do a backward pass
+c.sum().backward()
+
+a.grad.numpy()
+b.grad.numpy()
 
 ```
