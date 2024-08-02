@@ -213,6 +213,7 @@ class CPU:
         # and reading the shared file, ctypes.CDLL is faster and is no longer taking time, although, the 
         # first time it is long.
 
+        # TODO: Below not fixing it, some times the same random numbers are generated
         # NOTE: Using the same rand_dll is generating the same random numbers, but why though ? 
         # temp_file = check_temp_file_exists(starts_with="rand_buffer") 
         # if temp_file:
