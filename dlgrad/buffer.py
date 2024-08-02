@@ -25,7 +25,5 @@ class Buffer:
     def free(data) -> None:
         libc = ctypes.CDLL(None)  # Load the standard C library
 
-        if data is not None:
-            # print("data is not none")
-            libc.free(data)
-            data = None
+        libc.free(data)
+        data = None

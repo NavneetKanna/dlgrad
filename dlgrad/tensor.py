@@ -273,6 +273,7 @@ class Tensor:
     def add(x: Tensor, y: Tensor) -> Tensor:
         from dlgrad.ops import Add, Broadcast
 
+        # TODO: Check in broadcast ?
         if not x.shape == y.shape:
             out_shape = Broadcast().forward(x, y)
         else:
