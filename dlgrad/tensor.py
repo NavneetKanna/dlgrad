@@ -35,13 +35,18 @@ class Tensor:
 
     def __init__(
             self, data: Union[list, int, Buffer], requires_grad = True, device: Device = Device.CPU, 
-            dtype: Optional[dtypes] = None, properties: TensorProperties = TensorProperties()
+            dtype: Optional[dtypes] = None, properties: TensorProperties = TensorProperties(), name=None
         ):
         self.requires_grad = requires_grad
         self.grad = None
         self.device = device
         self.properties = properties
         self._ctx = None
+        import random
+        import string
+        self.name = ''.join(random.choices(string.ascii_uppercase))
+        # print(f"created tensor for {self.name} {properties.shape}")
+        self.freed = False
 
         if isinstance(data, Union[int, float]):
             self.data = data
@@ -53,16 +58,26 @@ class Tensor:
             self.data = data
 
         if isinstance(data, Buffer):
+            # print("it is a buffer")
             self.data = data
+            # print(data._buffer)
+            # self.numpy()
             self.dtype = dtype
 
-        # TODO: A better way to write this
-        if not properties.view and isinstance(data, Buffer) and properties.numel != 1: 
+        # TODO: A better way to write this, a queue ?
+        if (not properties.view) and isinstance(data, Buffer) and properties.numel != 1: 
+            # # print("--")
+            # # print("registering for")
+            # # print(self.name)
+            # self.numpy()
+            # self.numel
+            
+            # # print(f"registering {t} {self.name}")
             atexit.register(self.cleanup)
 
     def numpy(self):
-        if not isinstance(self.data, Buffer):
-            data = np.array(self.data)
+        if not isinstance(self.data, Buffer) or self.numel == 1:
+            data = np.array(self.data._buffer.contents)
             print(data)
         else:
             sd = ctypes.addressof(self.data._buffer.contents) + self.offset * ctypes.sizeof(ctypes.c_float)
@@ -76,7 +91,18 @@ class Tensor:
 
     # TODO: maybe do a check for data before calling free ?
     def cleanup(self): 
+        # print("+++++")
+        # print(self.name)
+        # self.numpy()
+        # # print(self)
+        # # print(self.freed)
+        # # print(kwargs['name'])
+        # if self.name == 'ones':
+        #     # print(self.data._buffer)
+        #     # print("returning since ones")
+        #     return
         Buffer.free(self.data._buffer)
+        self.freed = True
 
     def __getitem__(self, indices):
         # TODO: all int, slices
@@ -202,7 +228,7 @@ class Tensor:
             out_len *= i
 
         tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True)
-        return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high, device=device), device=device, dtype=dtype, properties=tp)
+        return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high, device=device), device=device, dtype=dtype, properties=tp, name='rand')
 
     @staticmethod
     def ones(*shape, device: Device = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
@@ -229,7 +255,7 @@ class Tensor:
             out_len *= i
 
         tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True)
-        return Tensor(Dispatcher.dispatch(ops=BufferOps.ONES, out_len=out_len), device=device, dtype=dtype, properties=tp)
+        return Tensor(Dispatcher.dispatch(ops=BufferOps.ONES, out_len=out_len, device=device), device=device, dtype=dtype, properties=tp, name='ones')
 
     @staticmethod
     def kaiming_uniform(*shape, device = Device.CPU, dtype = dtypes.float32):
@@ -257,20 +283,21 @@ class Tensor:
         tp = TensorProperties(view=False, offset=0, numel=x.numel, shape=x.shape[::-1], ndim=len(x.shape[::-1]), stride=calculate_stride(x.shape[::-1]), contig=True)
         return Tensor(Dispatcher.dispatch(x, ops=UnaryOps.TRANSPOSE), device=x.device, properties=tp)
 
-    # TODO: Cant be staticmethod
-    @staticmethod
-    def sum(x: Tensor, axis: int = None):
+    def sum(self, axis: int = None):
         from dlgrad.ops import Sum 
 
-        return Sum().forward(x, axis)
+        return Sum().forward(self, axis)
 
     # ***** BinaryOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
         from dlgrad.ops import Add, Broadcast
 
-        out_shape = Broadcast().forward(x, y)
-        
+        if not x.shape == y.shape:
+            out_shape = Broadcast().forward(x, y)
+        else:
+            out_shape = x.shape
+
         return Add().forward(x, y, out_shape)
 
     @staticmethod
@@ -287,6 +314,7 @@ class Tensor:
         return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), device=x.device, dtype=x.dtype, properties=tp)
 
     def backward(self):
+        # print("------------ backward --------------")
         set_graph(0)
 
         topo = []
@@ -303,13 +331,19 @@ class Tensor:
         
         self.grad = 1.0
         for node in reversed(topo):
+            # print("----")
+            # print(f"node name {node.name}")
+            # if not isinstance(self.grad, float):
+                # print(f"node grad {node.grad.name}")
             # Since input nodes are there as well
             if node._ctx is None: 
                 continue
             node._ctx.backward(node.grad)
+            # print("----")
 
-    def __repr__(self) -> str:
-        return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.view} shape: {self.shape}>"
+        # print("--------------------------")
+    # def __repr__(self) -> str:
+    #     return f"Tensor <dtype: {self.dtype} device: {self.device} view:{self.view} shape: {self.shape}>"
 
     def __add__(self, other):
         return Tensor.add(self, other)
