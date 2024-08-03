@@ -32,7 +32,7 @@ class Graph:
 
             self.G.add_node(
                 node.properties.metadata['node_id'], 
-                label, 
+                label=label, 
                 fillcolor=self.ops_colour[node.properties.metadata['ops']], 
                 color="black",  
                 style="filled, bold"
