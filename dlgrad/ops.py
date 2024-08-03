@@ -1,7 +1,7 @@
 import dlgrad.graph as graph
 from dlgrad.dispatch import Dispatcher
 from dlgrad.helpers import (BinaryOps, BroadcastHelper, UnaryOps,
-                            calculate_numel, calculate_stride)
+                            calculate_numel, calculate_stride, get_graph)
 from dlgrad.runtime.cpu import CPU
 from dlgrad.tensor import Tensor, TensorProperties
 
@@ -15,6 +15,7 @@ class Op:
     def __init__(self) -> None:
         self.parents: tuple = ()
 
+# TODO: Add graph 
 class Broadcast(Op):
     def forward(self, x: Tensor, y: Tensor) -> tuple:
         shape1 = x.shape
@@ -66,15 +67,15 @@ class Add(Op):
     def forward(self, x: Tensor, y: Tensor, out_shape: tuple) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
-        tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True)
+        tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True, metadata={'created_by': 'Add', 'ops': BinaryOps})
         out = Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD), device=x.device, dtype=x.dtype, properties=tp, name='addout')
 
         out._ctx = self
         self.parents = (x, y)
         self.x, self.y = x, y
 
-        # if graph.GRAPH:
-        #     pass
+        if get_graph():
+            graph.add_edge(child=out, parents=(x, y))
 
         return out 
 
@@ -86,25 +87,34 @@ class Sum(Op):
     def forward(self, x: Tensor, axis: int = None):
         if axis == 0:
             out_shape = x.shape[1]
-            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
+            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': UnaryOps})
             out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=x.device, dtype=x.dtype, properties=tp)
-            
+
+            if get_graph():
+                graph.add_edge(child=out, parents=(x,))
+
             return out
         elif axis == 1:
             out_shape = x.shape[1]
-            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True)
+            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': UnaryOps})
             out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=x.device, dtype=x.dtype, properties=tp)
             
+            if get_graph():
+                graph.add_edge(child=out, parents=(x,))
+
             return out
         else:
             out_shape = ()
             tp = TensorProperties(view=False, offset=0, numel=1, shape=out_shape, ndim=1, stride=(1,), contig=True)
-            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum), device=x.device, dtype=x.dtype, properties=tp, name='sumfull')
+            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum), device=x.device, dtype=x.dtype, properties=tp, name='sumfull', metadata={'created_by': 'Sum', 'ops': UnaryOps})
 
             self.x = x
             out._ctx = self
             self.parents = (x,)
-
+            
+            if get_graph():
+                graph.add_edge(child=out, parents=(x,))
+                
             return out
 
     def backward(self, grad_output):

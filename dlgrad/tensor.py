@@ -4,7 +4,7 @@ import atexit
 import ctypes
 import math
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Union
 
 import numpy as np
@@ -18,6 +18,7 @@ from dlgrad.helpers import (BinaryOps, BufferOps, Device, IndexError,
                             calculate_stride, set_graph)
 
 
+# TODO: Is this the right usage ? 
 @dataclass
 class TensorProperties:
     view: bool = False
@@ -42,6 +43,7 @@ class Tensor:
         self.device = device
         self.properties = properties
         self._ctx = None
+        _metadata: dict = {"created_by": '', 'ops': None, 'node_id': None} # used for graph
         import random
         import string
         self.name = ''.join(random.choices(string.ascii_uppercase))
@@ -207,8 +209,10 @@ class Tensor:
         for i in shape: 
             out_len *= i
 
-        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True)
-        return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high, device=device), device=device, dtype=dtype, properties=tp, name='rand')
+        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), 
+                              stride=calculate_stride(shape), contig=True, metadata={'created_by': 'rand', 'ops': BufferOps})
+        return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high, device=device), 
+                      device=device, dtype=dtype, properties=tp, name='rand')
 
     @staticmethod
     def ones(*shape, device: Device = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
@@ -234,7 +238,7 @@ class Tensor:
         for i in shape: 
             out_len *= i
 
-        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True)
+        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={'created_by': 'ones', 'ops': BufferOps})
         return Tensor(Dispatcher.dispatch(ops=BufferOps.ONES, out_len=out_len, device=device), device=device, dtype=dtype, properties=tp, name='ones')
 
     @staticmethod
@@ -253,7 +257,7 @@ class Tensor:
         std = gain / math.sqrt(shape[1])
         bound = math.sqrt(3) * std
         
-        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True)
+        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={'created_by': 'kaiming_uniform', 'ops': BufferOps})
         return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=-bound, high=bound), device=device, dtype=dtype, properties=tp)
     
     # ***** UnaryOps ****
