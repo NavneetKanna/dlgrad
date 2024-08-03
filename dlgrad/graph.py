@@ -30,7 +30,7 @@ class Graph:
             # for broadcast
             if node.properties.metadata['ops'] is None:
                 label = "BROADCAST"
-                colour = 'green'
+                colour = '#51f542'
             else:
                 label = f"{node.properties.metadata['ops']}\n{node.properties.metadata['created_by']}"
                 colour = self.ops_colour[node.properties.metadata['ops']]
@@ -38,7 +38,7 @@ class Graph:
             self.G.add_node(
                 node.properties.metadata['node_id'], 
                 label=label, 
-                fillcolour=colour, 
+                fillcolor=colour, 
                 color="black",  
                 style="filled, bold"
             )
