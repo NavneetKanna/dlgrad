@@ -46,6 +46,12 @@ class Broadcast(Op):
         # self.parents = (x, y)
         self.x, self.y = x, y
 
+        tp = TensorProperties(view=None, offset=None, numel=None, shape=None, ndim=None, stride=None, contig=None, metadata={'created_by': None, 'ops': None})
+        out = Tensor(data=None, requires_grad=None, device=None, dtype=None, properties=tp)
+
+        if get_graph():
+            graph.add_edge(child=out, parents=(y,))
+
         return out_shape
 
     def backward(self, grad_output):
