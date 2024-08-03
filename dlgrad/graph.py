@@ -22,18 +22,23 @@ class Graph:
 
     def add_node(self, node):
         if self.G is not None:
-            print(node.properties.metadata)
             if node.properties.metadata['node_id'] is None:
                 node.properties.metadata['node_id'] = self.create_id()
             else: 
                 return
             
-            label = f"{node.properties.metadata['ops']}\n{node.properties.metadata['created_by']}"
+            # for broadcast
+            if node.properties.metadata['ops'] is None:
+                label = "BROADCAST"
+                colour = 'green'
+            else:
+                label = f"{node.properties.metadata['ops']}\n{node.properties.metadata['created_by']}"
+                colour = self.ops_colour[node.properties.metadata['ops']]
 
             self.G.add_node(
                 node.properties.metadata['node_id'], 
                 label=label, 
-                fillcolor=self.ops_colour[node.properties.metadata['ops']], 
+                fillcolour=colour, 
                 color="black",  
                 style="filled, bold"
             )
@@ -43,8 +48,11 @@ class Graph:
             self.add_node(child)
             for p in parents:
                 self.add_node(p)
-                print(f"adding edge betwen {p.properties.metadata['node_id']} {child.properties.metadata['node_id']}")
                 self.G.add_edge(p.properties.metadata['node_id'], child.properties.metadata['node_id'])
+                # for broadcast
+                if child.properties.metadata['ops'] is None:
+                    p.properties.metadata['node_id'] = child.properties.metadata['node_id']
+
 
     def save_graph(self):
         print("Saving graph to /tmp")

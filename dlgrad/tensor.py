@@ -21,16 +21,16 @@ from dlgrad.helpers import (BinaryOps, BufferOps, Device, IndexError,
 # TODO: Is this the right usage ? 
 class TensorProperties:
     def __init__(self, **kwargs) -> None:
-        self.view: bool = kwargs['view']
-        self.offset: int = kwargs['offset']
-        self.numel: int = kwargs['numel']
-        self.shape: tuple = kwargs['shape']
-        self.ndim: int = kwargs['ndim']
-        self.stride: tuple = kwargs['stride']
-        self.contig: bool = kwargs['contig']
+        self.view: bool = kwargs['view'] 
+        self.offset: int = kwargs['offset'] 
+        self.numel: int = kwargs['numel'] 
+        self.shape: tuple = kwargs['shape'] 
+        self.ndim: int = kwargs['ndim'] 
+        self.stride: tuple = kwargs['stride'] 
+        self.contig: bool = kwargs['contig'] 
         self.set_metadata(**kwargs['metadata'])
         
-    def set_metadata(self, created_by, ops, node_id=None):
+    def set_metadata(self, created_by=None, ops=None, node_id=None):
         self.metadata = {'created_by': created_by, 'ops': ops, 'node_id': node_id}
 
 # TODO: Maybe we can load all ctypes files once in the beginning, so that it does not take time to load ?
