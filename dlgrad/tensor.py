@@ -19,15 +19,19 @@ from dlgrad.helpers import (BinaryOps, BufferOps, Device, IndexError,
 
 
 # TODO: Is this the right usage ? 
-@dataclass
 class TensorProperties:
-    view: bool = False
-    offset: int = 0
-    numel: int = 0
-    shape: tuple = ()   
-    ndim: int = 0
-    stride: tuple = ()
-    contig: bool = True
+    def __init__(self, **kwargs) -> None:
+        self.view: bool = kwargs['view']
+        self.offset: int = kwargs['offset']
+        self.numel: int = kwargs['numel']
+        self.shape: tuple = kwargs['shape']
+        self.ndim: int = kwargs['ndim']
+        self.stride: tuple = kwargs['stride']
+        self.contig: bool = kwargs['contig']
+        self.set_metadata(**kwargs['metadata'])
+        
+    def set_metadata(self, created_by, ops, node_id=None):
+        self.metadata = {'created_by': created_by, 'ops': ops, 'node_id': node_id}
 
 # TODO: Maybe we can load all ctypes files once in the beginning, so that it does not take time to load ?
 # TODO: Does it work on tensors with dim > 2 ? 
@@ -36,14 +40,13 @@ class Tensor:
 
     def __init__(
             self, data: Union[list, int, Buffer], requires_grad = True, device: Device = Device.CPU, 
-            dtype: Optional[dtypes] = None, properties: TensorProperties = TensorProperties(), name=None
+            dtype: Optional[dtypes] = None, properties: TensorProperties = None
         ):
         self.requires_grad = requires_grad
         self.grad = None
         self.device = device
         self.properties = properties
         self._ctx = None
-        _metadata: dict = {"created_by": '', 'ops': None, 'node_id': None} # used for graph
         import random
         import string
         self.name = ''.join(random.choices(string.ascii_uppercase))
@@ -212,7 +215,7 @@ class Tensor:
         tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), 
                               stride=calculate_stride(shape), contig=True, metadata={'created_by': 'rand', 'ops': BufferOps})
         return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high, device=device), 
-                      device=device, dtype=dtype, properties=tp, name='rand')
+                      device=device, dtype=dtype, properties=tp)
 
     @staticmethod
     def ones(*shape, device: Device = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
@@ -239,7 +242,7 @@ class Tensor:
             out_len *= i
 
         tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={'created_by': 'ones', 'ops': BufferOps})
-        return Tensor(Dispatcher.dispatch(ops=BufferOps.ONES, out_len=out_len, device=device), device=device, dtype=dtype, properties=tp, name='ones')
+        return Tensor(Dispatcher.dispatch(ops=BufferOps.ONES, out_len=out_len, device=device), device=device, dtype=dtype, properties=tp)
 
     @staticmethod
     def kaiming_uniform(*shape, device = Device.CPU, dtype = dtypes.float32):
