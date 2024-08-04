@@ -18,23 +18,13 @@ class Dispatcher:
 
         if isinstance(op, BinaryOps):
             if op == BinaryOps.ADD:
-                if axis == 0:
-                    return CPU._add_axis0(x, y, x.dtype)
-                elif axis == 1:
-                    return CPU._add_axis1(x, y, x.dtype)
-                else:
-                    return CPU._add(x, y, x.dtype)
+                return CPU._add(x, y, x.dtype, axis)
             elif op == BinaryOps.MATMUL:
                 return CPU._matmul(x, y, x.dtype)  
         
         elif isinstance(op, UnaryOps):
             if op == UnaryOps.SUM:
-                if axis == 0:
-                    return CPU._sum_axis0(x, x.dtype)
-                elif axis == 1:
-                    return CPU._sum_axis1(x, x.dtype)
-                else:
-                    return CPU._sum(x, x.dtype)
+                return CPU._sum(x, x.dtype, axis)
             elif op == UnaryOps.TRANSPOSE:
                 return CPU._transpose(x, x.dtype)
 
