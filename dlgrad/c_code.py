@@ -1,4 +1,3 @@
-
 class C:
     # TODO: Pass all args when compling itself ?
     @staticmethod
@@ -55,7 +54,7 @@ class C:
 
             return data;
         }
-        """ 
+        """
         return prg
 
     @staticmethod
@@ -76,7 +75,7 @@ class C:
             return c;
         }
         """
-        return prg 
+        return prg
 
     @staticmethod
     def add(dtype: str, out_len: int) -> str:
@@ -97,7 +96,7 @@ class C:
         }}
         """
         return prg
-    
+
     @staticmethod
     def add_axis1(dtype: str, out_len: int) -> str:
         prg = f"""
@@ -121,7 +120,7 @@ class C:
         }}
         """
         return prg
-    
+
     @staticmethod
     def add_axis0(dtype: str, out_len: int) -> str:
         prg = f"""
@@ -196,7 +195,7 @@ class C:
         """
 
         return prg
-    
+
     @staticmethod
     def sum(dtype: str):
         prg = f"""

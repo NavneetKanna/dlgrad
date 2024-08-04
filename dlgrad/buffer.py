@@ -6,7 +6,7 @@ import os
 
 
 class Buffer:
-    def __init__(self, data, temp_file_loc: str = '') -> None:
+    def __init__(self, data, temp_file_loc: str = "") -> None:
         self.buffer = data
 
         if temp_file_loc:
