@@ -38,13 +38,14 @@ class Dispatcher:
         elif ops == UnaryOps.TRANSPOSE:
             return CPU.transpose(x, x.dtype)
 
+        # Buffer Ops
         if ops == BufferOps.UNIFORM:
             return CPU.uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
-
-        if ops == BufferOps.ONES:
+        elif ops == BufferOps.ONES:
             return CPU.ones(kwargs["out_len"])
 
     @staticmethod
+    # both the inputs can be None since BufferOps are also dispatched
     def dispatch(ops, x: Tensor = None, y: Tensor = None, **kwargs) -> Buffer:
         device = x.device if x is not None else kwargs['device']
         if device == Device.CPU:

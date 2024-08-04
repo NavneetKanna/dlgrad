@@ -60,12 +60,12 @@ class Broadcast(Op):
         """
         if self.x.shape[0] == self.y.shape[0]:
             tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=1, stride=(1,), contig=True)
-            out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=self.x.device, dtype=self.x.dtype, properties=tp)
+            out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, axis=1), device=self.x.device, dtype=self.x.dtype, properties=tp)
             
             self.y.grad = out 
         elif self.x.shape[1] == self.y.shape[1]:
             tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=1, stride=(1,), contig=True)
-            out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=self.x.device, dtype=self.x.dtype, properties=tp)
+            out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, axis=0), device=self.x.device, dtype=self.x.dtype, properties=tp)
 
             self.y.grad = out 
 
@@ -73,11 +73,11 @@ class Add(Op):
     def forward(self, x: Tensor, y: Tensor, out_shape: tuple) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
-        if x.shape == y.shape:
+        if x.shape == y.shape: 
             axis = -1
-        elif x.shape[0] == y.shape[0]:
+        elif x.shape[0] == y.shape[0]: 
             axis = 0
-        else:
+        else: 
             axis = 1
 
         tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True, metadata={'created_by': 'Add', 'ops': 'BinaryOps'})
@@ -97,21 +97,20 @@ class Add(Op):
         self.y.grad = grad_output if self.y.grad is None else self.y.grad + grad_output
 
 class Sum(Op):
-    def forward(self, x: Tensor, axis: int = -1):
+    def forward(self, x: Tensor):
         out_shape = x.shape[1]
         tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': 'UnaryOps'})
-        out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, axis=axis), device=x.device, dtype=x.dtype, properties=tp)
+        out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, axis=-1), device=x.device, dtype=x.dtype, properties=tp)
 
         if get_graph():
             graph.add_edge(child=out, parents=(x,))
 
-        if axis == -1:
-            self.x = x
-            out._ctx = self
-            self.parents = (x,)
+        self.x = x
+        out._ctx = self
+        self.parents = (x,)
 
         return out
 
     def backward(self, grad_output):
-        # NOTE: backward only works for axis=None 
+        # NOTE: backward only works for axis=-1:
         self.x.grad = Tensor.ones(self.x.shape) if self.x.grad is None else self.x.grad + Tensor.ones(self.x.shape)
