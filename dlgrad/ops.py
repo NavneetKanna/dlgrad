@@ -14,7 +14,6 @@ class Op:
     def __init__(self) -> None:
         self.parents: tuple = ()
 
-# TODO: Add graph 
 class Broadcast(Op):
     def forward(self, x: Tensor, y: Tensor) -> tuple:
         shape1 = x.shape
