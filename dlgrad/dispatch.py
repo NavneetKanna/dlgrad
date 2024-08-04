@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Callable
 
 from dlgrad.buffer import Buffer
 from dlgrad.helpers import BinaryOps, BufferOps, Device, UnaryOps
@@ -11,30 +11,27 @@ if TYPE_CHECKING:
 
 
 class Dispatcher:
+
     @staticmethod
-    def _cpu_dispatch(ops, x: Tensor = None, y: Tensor = None, **kwargs) -> Buffer:
+    def _cpu_dispatch(ops, x: Optional[Tensor] = None, y: Optional[Tensor] = None, **kwargs) -> Buffer:
+        # Binary Ops
+        axis = kwargs.get("axis", None)
         if ops == BinaryOps.ADD:
-            if x.shape == y.shape:
-                return CPU.add(x, y, x.dtype)
-            elif x.shape[0] == y.shape[0]:
+            if axis == 0:
                 return CPU.add_axis0(x, y, x.dtype)
-            else:
+            elif axis == 1:
                 return CPU._add_axis1(x, y, x.dtype)
-        
-        if ops == BinaryOps.MATMUL:
+            else:
+                return CPU.add(x, y, x.dtype)
+        elif ops == BinaryOps.MATMUL:
             return CPU.matmul(x, y, x.dtype)  
         
+        # Unary Ops
         if ops == UnaryOps.TRANSPOSE:
             return CPU.transpose(x, x.dtype)
-
-        if ops == UnaryOps.SUM:
-            # To be explicit
-            if kwargs["func"] == CPU.sum_axis0:
-                return CPU.sum_axis0(x, x.dtype)
-            elif kwargs["func"] == CPU._sum_axis1:
-                return CPU._sum_axis1(x, x.dtype)
-            elif kwargs["func"] == CPU.sum:
-                return CPU.sum(x, x.dtype)
+        elif ops == UnaryOps.SUM:
+            sum_func: Callable = kwargs["func"]
+            return sum_func(x, x.dtype)
 
         if ops == BufferOps.UNIFORM:
             return CPU.uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
