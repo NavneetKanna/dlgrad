@@ -4,13 +4,13 @@ from networkx.drawing.nx_pydot import write_dot
 import os
 import atexit
 
-from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, get_graph
+from dlgrad.helpers import get_graph
 
 
 class Graph:
     def __init__(self):
         self.G = nx.DiGraph() if get_graph() else None
-        self.ops_colour = {BinaryOps: '#fd7f6f', UnaryOps: '#bd7ebe', BufferOps: '#7eb0d5'}
+        self.ops_colour = {'BinaryOps': '#fd7f6f', 'UnaryOps': '#bd7ebe', 'BufferOps': '#7eb0d5'}
         self.id = 0
         self.nodes = []
 
@@ -30,18 +30,20 @@ class Graph:
             
             # for broadcast
             if node.properties.metadata['ops'] is None:
-                label = "BROADCAST"
+                label = f"{node.shape}\nBROADCAST"
                 colour = '#b2e061'
+                style = "filled, dashed"
             else:
-                label = f"{node.properties.metadata['ops']}\n{node.properties.metadata['created_by']}"
+                label = f"{node.shape}\n{node.properties.metadata['ops']}\n{node.properties.metadata['created_by']}"
                 colour = self.ops_colour[node.properties.metadata['ops']]
+                style = "filled, bold"
 
             self.G.add_node(
                 node.properties.metadata['node_id'], 
                 label=label, 
                 fillcolor=colour, 
                 color="black",  
-                style="filled, bold"
+                style=style
             )
 
     def add_edge(self, child, parents: tuple):

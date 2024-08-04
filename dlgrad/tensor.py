@@ -212,7 +212,7 @@ class Tensor:
             out_len *= i
 
         tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), 
-                              stride=calculate_stride(shape), contig=True, metadata={'created_by': 'rand', 'ops': BufferOps})
+                              stride=calculate_stride(shape), contig=True, metadata={'created_by': 'rand', 'ops': 'BufferOps'})
         return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high, device=device), 
                       device=device, dtype=dtype, properties=tp)
 
@@ -240,7 +240,7 @@ class Tensor:
         for i in shape: 
             out_len *= i
 
-        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={'created_by': 'ones', 'ops': BufferOps})
+        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={'created_by': 'ones', 'ops': 'BufferOps'})
         return Tensor(Dispatcher.dispatch(ops=BufferOps.ONES, out_len=out_len, device=device), device=device, dtype=dtype, properties=tp)
 
     @staticmethod
@@ -259,7 +259,7 @@ class Tensor:
         std = gain / math.sqrt(shape[1])
         bound = math.sqrt(3) * std
         
-        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={'created_by': 'kaiming_uniform', 'ops': BufferOps})
+        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={'created_by': 'kaiming_uniform', 'ops': 'BufferOps'})
         return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=-bound, high=bound), device=device, dtype=dtype, properties=tp)
     
     # ***** UnaryOps ****

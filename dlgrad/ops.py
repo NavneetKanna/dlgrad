@@ -46,7 +46,7 @@ class Broadcast(Op):
         # self.parents = (x, y)
         self.x, self.y = x, y
 
-        tp = TensorProperties(view=None, offset=None, numel=None, shape=None, ndim=None, stride=None, contig=None, metadata={'created_by': None, 'ops': None})
+        tp = TensorProperties(view=None, offset=None, numel=None, shape=x.shape, ndim=None, stride=None, contig=None, metadata={'created_by': None, 'ops': None})
         out = Tensor(data=None, requires_grad=None, device=None, dtype=None, properties=tp)
 
         if get_graph():
@@ -73,7 +73,7 @@ class Add(Op):
     def forward(self, x: Tensor, y: Tensor, out_shape: tuple) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
-        tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True, metadata={'created_by': 'Add', 'ops': BinaryOps})
+        tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True, metadata={'created_by': 'Add', 'ops': 'BinaryOps'})
         out = Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD), device=x.device, dtype=x.dtype, properties=tp)
 
         out._ctx = self
@@ -93,7 +93,7 @@ class Sum(Op):
     def forward(self, x: Tensor, axis: int = None):
         if axis == 0:
             out_shape = x.shape[1]
-            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': UnaryOps})
+            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': 'UnaryOps'})
             out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum_axis0), device=x.device, dtype=x.dtype, properties=tp)
 
             if get_graph():
@@ -102,7 +102,7 @@ class Sum(Op):
             return out
         elif axis == 1:
             out_shape = x.shape[1]
-            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': UnaryOps})
+            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': 'UnaryOps'})
             out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU._sum_axis1), device=x.device, dtype=x.dtype, properties=tp)
             
             if get_graph():
@@ -111,7 +111,7 @@ class Sum(Op):
             return out
         else:
             out_shape = ()
-            tp = TensorProperties(view=False, offset=0, numel=1, shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': UnaryOps})
+            tp = TensorProperties(view=False, offset=0, numel=1, shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': 'UnaryOps'})
             out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, func=CPU.sum), device=x.device, dtype=x.dtype, properties=tp)
 
             self.x = x
