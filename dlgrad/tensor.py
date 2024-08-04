@@ -18,7 +18,6 @@ from dlgrad.helpers import (BinaryOps, BufferOps, Device, IndexError,
                             calculate_stride, set_graph)
 
 
-# TODO: Is this the right usage ? 
 class TensorProperties:
     def __init__(self, **kwargs) -> None:
         self.view: bool = kwargs['view'] 

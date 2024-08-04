@@ -14,7 +14,8 @@ class Graph:
         self.id = 0
         self.nodes = []
 
-        atexit.register(self.save_graph)
+        if self.G:
+            atexit.register(self.save_graph)
 
     def create_id(self):
         self.id += 1
