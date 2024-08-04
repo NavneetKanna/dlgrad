@@ -12,7 +12,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.dispatch import Dispatcher
 # import platform
 from dlgrad.dtype import dtypes
-from dlgrad.helpers import (BinaryOps, BufferOps, Device, IndexError,
+from dlgrad.helpers import (BinaryOps, BufferOps, Device,
                             ShapeError, UnaryOps, calculate_nchw_offset,
                             calculate_stride, set_graph)
 
@@ -38,19 +38,18 @@ class Tensor:
     # __slots__ = "grad"
 
     def __init__(
-            self, data: Union[list, int, Buffer], requires_grad = True, device: Device = Device.CPU, 
-            dtype: Optional[dtypes] = None, properties: TensorProperties = None
+            self, 
+            data: Union[list, int, Buffer], 
+            requires_grad = True, 
+            device: Device = Device.CPU, 
+            dtype: Optional[dtypes] = None, 
+            properties: TensorProperties = None
         ):
         self.requires_grad = requires_grad
         self.grad = None
         self.device = device
         self.properties = properties
         self._ctx = None
-        import random
-        import string
-        self.name = ''.join(random.choices(string.ascii_uppercase))
-        # print(f"created tensor for {self.name} {properties.shape}")
-        self.freed = False
 
         if isinstance(data, Union[int, float]):
             self.data = data
@@ -71,10 +70,10 @@ class Tensor:
 
     def numpy(self):
         if not isinstance(self.data, Buffer) or self.numel == 1:
-            data = np.array(self.data._buffer.contents)
+            data = np.array(self.data.buffer.contents)
             print(data)
         else:
-            sd = ctypes.addressof(self.data._buffer.contents) + self.offset * ctypes.sizeof(ctypes.c_float)
+            sd = ctypes.addressof(self.data.buffer.contents) + self.offset * ctypes.sizeof(ctypes.c_float)
             ptr = (ctypes.c_float * self.numel).from_address(sd)
             data = np.frombuffer(ptr, count=self.numel, dtype=np.float32).reshape(self.shape)
             print(data)
@@ -85,8 +84,7 @@ class Tensor:
 
     # TODO: maybe do a check for data before calling free ?
     def cleanup(self): 
-        Buffer.free(self.data._buffer)
-        self.freed = True
+        Buffer.free(self.data.buffer)
 
     def __getitem__(self, indices):
         # TODO: all int, slices
@@ -99,7 +97,7 @@ class Tensor:
             offset = calculate_nchw_offset(h=indices, H=self.stride[0])
             size = self.stride[0]
             tp = TensorProperties(view=True, offset=offset, numel=size, shape=(size,), ndim=len(size), stride=calculate_stride(size), contig=True)
-            return Tensor(Buffer(self.data._buffer), device=self.device, properties=tp)
+            return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
 
         if self.ndim == 2:
             if type(indices) == tuple:
@@ -112,9 +110,9 @@ class Tensor:
                 offset = calculate_nchw_offset(h=h, w=w, H=self.stride[0])
                 size = 1
                 tp = TensorProperties(view=True, offset=offset, numel=size, shape=(size,), ndim=len(size), stride=calculate_stride(size), contig=True)
-                return Tensor(Buffer(self.data._buffer), device=self.device, properties=tp)
+                return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
 
-        elif self.ndim == 3:
+        if self.ndim == 3:
             if type(indices) == tuple:
                 length = len(indices)
                 if length == 3:
@@ -129,8 +127,8 @@ class Tensor:
                     offset = calculate_nchw_offset(c=c, h=h, w=w, C=self.stride[0], H=self.stride[1])
                     size = 1
                     tp = TensorProperties(view=True, offset=offset, numel=size, shape=(size,), ndim=len(size), stride=calculate_stride(size), contig=True)
-                    return Tensor(Buffer(self.data._buffer), device=self.device, properties=tp)
-                elif length == 2:
+                    return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
+                if length == 2:
                     c, h = indices
                     if c > self.shape[0]:
                         raise IndexError(f"index {indices} > {self.shape[0]} of {self.shape}")
@@ -140,9 +138,9 @@ class Tensor:
                     offset = calculate_nchw_offset(c=c, h=h, C=self.stride[0], H=self.stride[1])
                     size = self.stride[1]
                     tp = TensorProperties(view=True, offset=offset, numel=size, shape=(size,), ndim=len(size), stride=calculate_stride(size), contig=True)
-                    return Tensor(Buffer(self.data._buffer), device=self.device, properties=tp)
+                    return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
 
-        elif self.ndim == 4:
+        if self.ndim == 4:
             if type(indices) == tuple:
                 length = len(indices)
                 if length == 4:
@@ -159,8 +157,8 @@ class Tensor:
                     offset = calculate_nchw_offset(n=n, c=c, h=h, w=w, N=self.stride[0], C=self.stride[1], H=self.stride[2])
                     size = 1
                     tp = TensorProperties(view=True, offset=offset, numel=size, shape=(size,), ndim=len(size), stride=calculate_stride(size), contig=True)
-                    return Tensor(Buffer(self.data._buffer), device=self.device, properties=tp)
-                elif length == 3:
+                    return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
+                if length == 3:
                     n, c, h = indices
                     if n > self.shape[0]:
                         raise IndexError(f"index {indices} > {self.shape[0]} of {self.shape}")
@@ -172,8 +170,8 @@ class Tensor:
                     offset = calculate_nchw_offset(n=n, c=c, h=h, N=self.stride[0], C=self.stride[1], H=self.stride[2])
                     size = self.stride[2]
                     tp = TensorProperties(view=True, offset=offset, numel=size, shape=(size,), ndim=len(size), stride=calculate_stride(size), contig=True)
-                    return Tensor(Buffer(self.data._buffer), device=self.device, properties=tp)
-                elif length == 2:
+                    return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
+                if length == 2:
                     n, c  = indices
                     if n > self.shape[0]:
                         raise IndexError(f"index {indices} > {self.shape[0]} of {self.shape}")
@@ -183,7 +181,7 @@ class Tensor:
                     offset = calculate_nchw_offset(n=n, c=c, N=self.stride[0], C=self.stride[1])
                     size = self.stride[1]
                     tp = TensorProperties(view=True, offset=offset, numel=size, shape=(size,), ndim=len(size), stride=calculate_stride(size), contig=True)
-                    return Tensor(Buffer(self.data._buffer), device=self.device, properties=tp)
+                    return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
 
     # ***** BufferOps *****
     # BufferOps as of now uses only cpu to generate data
