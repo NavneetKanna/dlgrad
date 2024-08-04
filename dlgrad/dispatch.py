@@ -19,30 +19,30 @@ class Dispatcher:
         if isinstance(op, BinaryOps):
             if op == BinaryOps.ADD:
                 if axis == 0:
-                    return CPU.add_axis0(x, y, x.dtype)
+                    return CPU._add_axis0(x, y, x.dtype)
                 elif axis == 1:
                     return CPU._add_axis1(x, y, x.dtype)
                 else:
-                    return CPU.add(x, y, x.dtype)
+                    return CPU._add(x, y, x.dtype)
             elif op == BinaryOps.MATMUL:
-                return CPU.matmul(x, y, x.dtype)  
+                return CPU._matmul(x, y, x.dtype)  
         
         elif isinstance(op, UnaryOps):
             if op == UnaryOps.SUM:
                 if axis == 0:
-                    return CPU.sum_axis0(x, x.dtype)
+                    return CPU._sum_axis0(x, x.dtype)
                 elif axis == 1:
                     return CPU._sum_axis1(x, x.dtype)
                 else:
-                    return CPU.sum(x, x.dtype)
+                    return CPU._sum(x, x.dtype)
             elif op == UnaryOps.TRANSPOSE:
-                return CPU.transpose(x, x.dtype)
+                return CPU._transpose(x, x.dtype)
 
         elif isinstance(op, BufferOps):
             if op == BufferOps.UNIFORM:
-                return CPU.uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
+                return CPU._uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
             elif op == BufferOps.ONES:
-                return CPU.ones(kwargs["out_len"])
+                return CPU._ones(kwargs["out_len"])
 
     @staticmethod
     # both the inputs can be None since BufferOps are also dispatched

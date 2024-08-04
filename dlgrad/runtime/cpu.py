@@ -131,11 +131,11 @@ class CPU:
         return Buffer(data, temp_file)
     
     @staticmethod
-    def add(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
+    def _add(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         return CPU._add_axis_helper(x, y, dtype)
     
     @staticmethod
-    def add_axis0(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
+    def _add_axis0(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         return CPU._add_axis_helper(x, y, dtype, axis=0)
 
     @staticmethod
@@ -143,7 +143,7 @@ class CPU:
         return CPU._add_axis_helper(x, y, dtype, axis=1)
 
     @staticmethod
-    def sum_axis0(x: Tensor, dtype: dtypes) -> Buffer:
+    def _sum_axis0(x: Tensor, dtype: dtypes) -> Buffer:
         return CPU._sum_axis_helper(x, dtype, axis=0)
 
     @staticmethod
@@ -151,11 +151,11 @@ class CPU:
         return CPU._sum_axis_helper(x, dtype, axis=1)
 
     @staticmethod
-    def sum(x: Tensor, dtype: dtypes) -> Buffer:
+    def _sum(x: Tensor, dtype: dtypes) -> Buffer:
         return CPU._sum_axis_helper(x, dtype)
 
     @staticmethod
-    def matmul(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
+    def _matmul(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         if not isinstance(x.data, Buffer):
             pass
         else:
@@ -181,7 +181,7 @@ class CPU:
             return Buffer(data, temp_file)
 
     @staticmethod
-    def transpose(x: Tensor, dtype: dtypes):
+    def _transpose(x: Tensor, dtype: dtypes):
         if not isinstance(x.data, Buffer): 
             pass
         else:
@@ -207,7 +207,7 @@ class CPU:
             return Buffer(data, temp_file)
 
     @staticmethod
-    def uniform(length: int, low=0.0, high=1.0) -> Buffer:
+    def _uniform(length: int, low=0.0, high=1.0) -> Buffer:
         # ctypes.CDLL was taking the most time when i was compiling the prg everytime this func was called
         # and also there is no need to compile everytime this func is called, hence compiling only once
         # and reading the shared file, ctypes.CDLL is faster and is no longer taking time, although, the 
@@ -235,7 +235,7 @@ class CPU:
         return Buffer(data, temp_file)
 
     @staticmethod
-    def ones(length: int) -> Buffer:
+    def _ones(length: int) -> Buffer:
         temp_file = check_temp_file_exists(starts_with="ones_buffer") 
         if temp_file:
             temp_file = f"{get_temp_loc()}/{temp_file}"
