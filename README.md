@@ -14,7 +14,8 @@ You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Beh
 
 ## Things I'm Working On
 - [x] Graph visualisation
-- [] Refactoring code according to prospector, vulture and pycodestyle
+- [x] Refactoring code according to prospector, vulture and pycodestyle
+- [] working on nn.Linear
 
 ## Examples
 

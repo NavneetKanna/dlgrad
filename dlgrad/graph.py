@@ -12,7 +12,6 @@ class Graph:
         self.G = nx.DiGraph() if get_graph() else None
         self.ops_colour = {'BinaryOps': '#fd7f6f', 'UnaryOps': '#bd7ebe', 'BufferOps': '#7eb0d5'}
         self.id = 0
-        self.nodes = []
 
         if get_graph():
             atexit.register(self.save_graph)
