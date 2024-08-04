@@ -1,8 +1,7 @@
 import dlgrad.graph as graph
 from dlgrad.dispatch import Dispatcher
 from dlgrad.helpers import (BinaryOps, BroadcastHelper, UnaryOps,
-                            calculate_numel, calculate_stride, get_graph)
-from dlgrad.runtime.cpu import CPU
+                            calculate_numel, calculate_stride, get_graph, calculate_axis)
 from dlgrad.tensor import Tensor, TensorProperties
 
 
@@ -73,12 +72,7 @@ class Add(Op):
     def forward(self, x: Tensor, y: Tensor, out_shape: tuple) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
-        if x.shape == y.shape: 
-            axis = -1
-        elif x.shape[0] == y.shape[0]: 
-            axis = 0
-        else: 
-            axis = 1
+        axis = calculate_axis(x.shape, y.shape)
 
         tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True, metadata={'created_by': 'Add', 'ops': 'BinaryOps'})
         out = Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD, axis=axis), device=x.device, dtype=x.dtype, properties=tp)
