@@ -13,16 +13,18 @@ Inspired by Andrej Karpathy's micrograd and George Hotz's tinygrad, dlgrad is my
 You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Behind-the-scenes.html) to learn more about how dlgrad operates.
 
 ## Things I'm Working On
-- [ ] Graph visualisation
+- [x] Graph visualisation
 
 ## Examples
 
 ```python
+# Can call with GRAPH=1 to visualise the computational graph
+ 
 from dlgrad.tensor import Tensor
 
 # Create tensors filled with random numbers from a uniform distribution
-a = Tensor.rand(10, 10)
-b = Tensor.rand(10, 10)
+a = Tensor.rand(2, 3)
+b = Tensor.rand(1, 3)
 # Since the tensors are c buffers, use numpy to print
 a.numpy()
 b.numpy()
