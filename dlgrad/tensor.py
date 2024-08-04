@@ -100,7 +100,7 @@ class Tensor:
             return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
 
         if self.ndim == 2:
-            if type(indices) == tuple:
+            if isinstance(indices, tuple):
                 h, w = indices
                 if h > self.shape[0]:
                     raise IndexError(f"index {indices} > {self.shape[0]} of {self.shape}")
@@ -113,7 +113,7 @@ class Tensor:
                 return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
 
         if self.ndim == 3:
-            if type(indices) == tuple:
+            if isinstance(indices, tuple):
                 length = len(indices)
                 if length == 3:
                     c, h, w = indices
@@ -209,10 +209,22 @@ class Tensor:
         for i in shape: 
             out_len *= i
 
-        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), 
-                              stride=calculate_stride(shape), contig=True, metadata={'created_by': 'rand', 'ops': 'BufferOps'})
-        return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high, device=device), 
-                      device=device, dtype=dtype, properties=tp)
+        tp = TensorProperties(
+            view=False, 
+            offset=0, 
+            numel=out_len, 
+            shape=shape, 
+            ndim=len(shape), 
+            stride=calculate_stride(shape), 
+            contig=True, 
+            metadata={'created_by': 'rand', 'ops': 'BufferOps'}
+        )
+        return Tensor(
+            Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high, device=device), 
+            device=device, 
+            dtype=dtype, 
+            properties=tp
+        )
 
     @staticmethod
     def ones(*shape, device: Device = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
@@ -238,8 +250,22 @@ class Tensor:
         for i in shape: 
             out_len *= i
 
-        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={'created_by': 'ones', 'ops': 'BufferOps'})
-        return Tensor(Dispatcher.dispatch(ops=BufferOps.ONES, out_len=out_len, device=device), device=device, dtype=dtype, properties=tp)
+        tp = TensorProperties(
+            view=False, 
+            offset=0, 
+            numel=out_len, 
+            shape=shape, 
+            ndim=len(shape), 
+            stride=calculate_stride(shape), 
+            contig=True, 
+            metadata={'created_by': 'ones', 'ops': 'BufferOps'}
+        )
+        return Tensor(
+            Dispatcher.dispatch(ops=BufferOps.ONES, out_len=out_len, device=device), 
+            device=device, 
+            dtype=dtype, 
+            properties=tp
+        )
 
     @staticmethod
     def kaiming_uniform(*shape, device = Device.CPU, dtype = dtypes.float32):
@@ -257,15 +283,37 @@ class Tensor:
         std = gain / math.sqrt(shape[1])
         bound = math.sqrt(3) * std
         
-        tp = TensorProperties(view=False, offset=0, numel=out_len, shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={'created_by': 'kaiming_uniform', 'ops': 'BufferOps'})
-        return Tensor(Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=-bound, high=bound), device=device, dtype=dtype, properties=tp)
+        tp = TensorProperties(
+            view=False, 
+            offset=0, 
+            numel=out_len, 
+            shape=shape, 
+            ndim=len(shape), 
+            stride=calculate_stride(shape), 
+            contig=True, 
+            metadata={'created_by': 'kaiming_uniform', 'ops': 'BufferOps'}
+        )
+        return Tensor(
+            Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=-bound, high=bound), 
+            device=device, 
+            dtype=dtype, 
+            properties=tp
+        )
     
     # ***** UnaryOps ****
     # TODO: What to do if i want to call x.transpose() ?
     @staticmethod
     def transpose(x: Tensor):
-        tp = TensorProperties(view=False, offset=0, numel=x.numel, shape=x.shape[::-1], ndim=len(x.shape[::-1]), stride=calculate_stride(x.shape[::-1]), contig=True)
-        return Tensor(Dispatcher.dispatch(x, ops=UnaryOps.TRANSPOSE), device=x.device, properties=tp)
+        tp = TensorProperties(
+            view=False, 
+            offset=0, 
+            numel=x.numel, 
+            shape=x.shape[::-1], 
+            ndim=len(x.shape[::-1]), 
+            stride=calculate_stride(x.shape[::-1]), 
+            contig=True
+        )
+        return Tensor(Dispatcher.dispatch(ops=UnaryOps.TRANSPOSE, x=x), device=x.device, properties=tp)
 
     def sum(self):
         from dlgrad.ops import Sum 
@@ -294,9 +342,22 @@ class Tensor:
         def _backward(): pass
 
         shape = (x.shape[0], y.shape[1])
-        tp = TensorProperties(view=False, offset=0, numel=x.shape[0]*y.shape[1], shape=shape, ndim=len(shape), stride=calculate_stride(shape), contig=True)
+        tp = TensorProperties(
+            view=False, 
+            offset=0, 
+            numel=x.shape[0]*y.shape[1], 
+            shape=shape, 
+            ndim=len(shape), 
+            stride=calculate_stride(shape), 
+            contig=True
+        )
         # TODO: How do i ensure data is of same dtype
-        return Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), device=x.device, dtype=x.dtype, properties=tp)
+        return Tensor(
+            Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL), 
+            device=x.device, 
+            dtype=x.dtype, 
+            properties=tp
+        )
 
     def backward(self):
         set_graph(0)
