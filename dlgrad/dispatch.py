@@ -30,11 +30,11 @@ class Dispatcher:
         elif isinstance(op, UnaryOps):
             if op == UnaryOps.SUM:
                 if axis == 0:
-                    return CPU.sum_axis0(x, y, x.dtype)
+                    return CPU.sum_axis0(x, x.dtype)
                 elif axis == 1:
-                    return CPU._sum_axis1(x, y, x.dtype)
+                    return CPU._sum_axis1(x, x.dtype)
                 else:
-                    return CPU.sum(x, y, x.dtype)
+                    return CPU.sum(x, x.dtype)
             elif op == UnaryOps.TRANSPOSE:
                 return CPU.transpose(x, x.dtype)
 

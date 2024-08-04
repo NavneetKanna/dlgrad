@@ -1,7 +1,7 @@
 import dlgrad.graph as graph
 from dlgrad.dispatch import Dispatcher
 from dlgrad.helpers import (BinaryOps, BroadcastHelper, UnaryOps,
-                            calculate_numel, calculate_stride, get_graph, calculate_axis)
+                            calculate_numel, calculate_stride, get_graph, calculate_add_axis, calculate_sum_axis)
 from dlgrad.tensor import Tensor, TensorProperties
 
 
@@ -57,22 +57,17 @@ class Broadcast(Op):
         """
         Only applies to the 2nd inp, which is getting broadcasted
         """
-        if self.x.shape[0] == self.y.shape[0]:
-            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=1, stride=(1,), contig=True)
-            out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, axis=1), device=self.x.device, dtype=self.x.dtype, properties=tp)
+        axis = calculate_sum_axis(self.x.shape, self.y.shape)
+        tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=1, stride=(1,), contig=True)
+        out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, axis=axis), device=self.x.device, dtype=self.x.dtype, properties=tp)
             
-            self.y.grad = out 
-        elif self.x.shape[1] == self.y.shape[1]:
-            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, ndim=1, stride=(1,), contig=True)
-            out = Tensor(Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, axis=0), device=self.x.device, dtype=self.x.dtype, properties=tp)
-
-            self.y.grad = out 
+        self.y.grad = out 
 
 class Add(Op):
     def forward(self, x: Tensor, y: Tensor, out_shape: tuple) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
-        axis = calculate_axis(x.shape, y.shape)
+        axis = calculate_add_axis(x.shape, y.shape)
 
         tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True, metadata={'created_by': 'Add', 'ops': 'BinaryOps'})
         out = Tensor(Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD, axis=axis), device=x.device, dtype=x.dtype, properties=tp)
@@ -92,8 +87,7 @@ class Add(Op):
 
 class Sum(Op):
     def forward(self, x: Tensor):
-        out_shape = x.shape[1]
-        tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': 'UnaryOps'})
+        tp = TensorProperties(view=False, offset=0, numel=1, shape=(), ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': 'UnaryOps'})
         out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, axis=-1), device=x.device, dtype=x.dtype, properties=tp)
 
         if get_graph():
