@@ -13,36 +13,36 @@ if TYPE_CHECKING:
 class Dispatcher:
 
     @staticmethod
-    def _cpu_dispatch(ops, x: Optional[Tensor] = None, y: Optional[Tensor] = None, **kwargs) -> Buffer:
+    def _cpu_dispatch(op, x: Optional[Tensor] = None, y: Optional[Tensor] = None, **kwargs) -> Buffer:
         axis = kwargs.get("axis", None)
 
-        # Binary Ops
-        if ops == BinaryOps.ADD:
-            if axis == 0:
-                return CPU.add_axis0(x, y, x.dtype)
-            elif axis == 1:
-                return CPU._add_axis1(x, y, x.dtype)
-            else:
-                return CPU.add(x, y, x.dtype)
-        elif ops == BinaryOps.MATMUL:
-            return CPU.matmul(x, y, x.dtype)  
+        if isinstance(op, BinaryOps):
+            if op == BinaryOps.ADD:
+                if axis == 0:
+                    return CPU.add_axis0(x, y, x.dtype)
+                elif axis == 1:
+                    return CPU._add_axis1(x, y, x.dtype)
+                else:
+                    return CPU.add(x, y, x.dtype)
+            elif op == BinaryOps.MATMUL:
+                return CPU.matmul(x, y, x.dtype)  
         
-        # Unary Ops
-        if ops == UnaryOps.SUM:
-            if axis == 0:
-                return CPU.sum_axis0(x, y, x.dtype)
-            elif axis == 1:
-                return CPU._sum_axis1(x, y, x.dtype)
-            else:
-                return CPU.sum(x, y, x.dtype)
-        elif ops == UnaryOps.TRANSPOSE:
-            return CPU.transpose(x, x.dtype)
+        elif isinstance(op, UnaryOps):
+            if op == UnaryOps.SUM:
+                if axis == 0:
+                    return CPU.sum_axis0(x, y, x.dtype)
+                elif axis == 1:
+                    return CPU._sum_axis1(x, y, x.dtype)
+                else:
+                    return CPU.sum(x, y, x.dtype)
+            elif op == UnaryOps.TRANSPOSE:
+                return CPU.transpose(x, x.dtype)
 
-        # Buffer Ops
-        if ops == BufferOps.UNIFORM:
-            return CPU.uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
-        elif ops == BufferOps.ONES:
-            return CPU.ones(kwargs["out_len"])
+        elif isinstance(op, BufferOps):
+            if op == BufferOps.UNIFORM:
+                return CPU.uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
+            elif op == BufferOps.ONES:
+                return CPU.ones(kwargs["out_len"])
 
     @staticmethod
     # both the inputs can be None since BufferOps are also dispatched
