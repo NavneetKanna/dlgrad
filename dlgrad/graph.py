@@ -1,8 +1,8 @@
+import atexit
+import os
+
 import networkx as nx
 from networkx.drawing.nx_pydot import write_dot
-
-import os
-import atexit
 
 from dlgrad.helpers import get_graph
 
