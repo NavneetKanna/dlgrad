@@ -130,19 +130,11 @@ class CPU:
         return Buffer(data, temp_file)
     
     @staticmethod
-    def _add(x: Tensor, y: Tensor, dtype: dtypes, axis: int) -> Buffer:
+    def add(x: Tensor, y: Tensor, dtype: dtypes, axis: int) -> Buffer:
         return CPU._add_axis_helper(x, y, dtype, axis)
-    
-    @staticmethod
-    def _add_axis0(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
-        return CPU._add_axis_helper(x, y, dtype, axis=0)
 
     @staticmethod
-    def _add_axis1(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
-        return CPU._add_axis_helper(x, y, dtype, axis=1)
-
-    @staticmethod
-    def _sum(x: Tensor, dtype: dtypes, axis: int) -> Buffer:
+    def sum(x: Tensor, dtype: dtypes, axis: int) -> Buffer:
         return CPU._sum_axis_helper(x, dtype, axis)
 
     @staticmethod

@@ -18,13 +18,13 @@ class Dispatcher:
 
         if isinstance(op, BinaryOps):
             if op == BinaryOps.ADD:
-                return CPU._add(x, y, x.dtype, axis)
+                return CPU.add(x, y, x.dtype, axis)
             elif op == BinaryOps.MATMUL:
                 return CPU._matmul(x, y, x.dtype)  
         
         elif isinstance(op, UnaryOps):
             if op == UnaryOps.SUM:
-                return CPU._sum(x, x.dtype, axis)
+                return CPU.sum(x, x.dtype, axis)
             elif op == UnaryOps.TRANSPOSE:
                 return CPU._transpose(x, x.dtype)
 
@@ -33,6 +33,8 @@ class Dispatcher:
                 return CPU._uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
             elif op == BufferOps.ONES:
                 return CPU._ones(kwargs["out_len"])
+
+        raise ValueError(f"Unsupported operation: {op}")
 
     @staticmethod
     # both the inputs can be None since BufferOps are also dispatched
