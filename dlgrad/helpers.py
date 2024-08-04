@@ -1,7 +1,7 @@
 import os
 from enum import Enum, auto
 
-GRAPH = os.getenv("GRAPH", 0)
+GRAPH = os.getenv("GRAPH")
 
 def get_graph():
     return GRAPH
@@ -27,7 +27,6 @@ class Device(Enum):
     GPU = auto()
 
 class ShapeError(Exception): ...
-class IndexError(Exception): ...
 
 class BroadcastHelper:
     out_len = 0
@@ -35,16 +34,14 @@ class BroadcastHelper:
 def calculate_sum_axis(shape1: tuple, shape2: tuple) -> int:
     if shape1[0] == shape2[0]:
         return 1
-    else:
-        return 0
+    return 0
 
 def calculate_add_axis(shape1: tuple, shape2: tuple) -> int:
     if shape1 == shape2: 
         return -1
-    elif shape1[0] == shape2[0]: 
+    if shape1[0] == shape2[0]: 
         return 0
-    else: 
-        return 1
+    return 1
 
 def calculate_numel(shape: tuple):
     out_len = 1
@@ -56,18 +53,11 @@ def calculate_numel(shape: tuple):
 def get_temp_loc():
     return "/tmp"
 
-def get_list_dim(data: list, dim=0):
-    if isinstance(data, list): 
-        dim +=1
-        return get_list_dim(data[0], dim)
-    else: 
-        return dim
-
 def calculate_stride(shape: tuple):
     if len(shape) == 1:
         return [1]
 
-    stride = [i for i in range(len(shape))]
+    stride = list(range(len(shape))) 
     
     if len(shape) == 2:
         stride[0] = shape[-1]

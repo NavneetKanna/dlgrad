@@ -35,15 +35,15 @@ class CPU:
 
     
         if axis == 0:
-            prg = C._add_axis0(c_dtype, out_len=BroadcastHelper.out_len) 
+            prg = C.add_axis0(c_dtype, out_len=BroadcastHelper.out_len) 
             name = f"cpu_{c_dtype}_add0"
             temp_file = check_temp_file_exists(starts_with=name) 
         elif axis == 1:
-            prg = C._add_axis1(c_dtype, out_len=BroadcastHelper.out_len) 
+            prg = C.add_axis1(c_dtype, out_len=BroadcastHelper.out_len) 
             name = f"cpu_{c_dtype}_add1"
             temp_file = check_temp_file_exists(starts_with=name) 
         elif axis == -1:
-            prg = C._add(c_dtype, out_len=BroadcastHelper.out_len) 
+            prg = C.add(c_dtype, out_len=BroadcastHelper.out_len) 
             name = f"cpu_{c_dtype}_add"
             temp_file = check_temp_file_exists(starts_with=name) 
 
@@ -59,15 +59,15 @@ class CPU:
             add_dll.add_with_broadcasting.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float) 
             # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
-            data = add_dll.add_with_broadcasting(x.data._buffer, y.data._buffer, x.numel, y.numel, x.shape[1])
+            data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel, x.shape[1])
         elif axis == 1:
             add_dll.add_with_broadcasting.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
             add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float) 
-            data = add_dll.add_with_broadcasting(x.data._buffer, y.data._buffer, x.numel, y.numel)
+            data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel)
         elif axis == -1:
             add_dll.add.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
             add_dll.add.restype = ctypes.POINTER(ctypes.c_float) 
-            data = add_dll.add(x.data._buffer, y.data._buffer)
+            data = add_dll.add(x.data.buffer, y.data.buffer)
 
         if data is None:
             # TODO: create a new error
@@ -89,15 +89,15 @@ class CPU:
         name = None
 
         if axis == 0:
-            prg = C._sum_axis0(c_dtype) 
+            prg = C.sum_axis0(c_dtype) 
             name = f"cpu_{c_dtype}_sum0"
             temp_file = check_temp_file_exists(starts_with=name) 
         elif axis == 1:
-            prg = C._sum_axis1(c_dtype) 
+            prg = C.sum_axis1(c_dtype) 
             name = f"cpu_{c_dtype}_sum1"
             temp_file = check_temp_file_exists(starts_with=name) 
         elif axis == -1:
-            prg = C._sum(c_dtype)
+            prg = C.sum(c_dtype)
             name = f"cpu_{c_dtype}_sum"
             temp_file = check_temp_file_exists(starts_with=name) 
 
@@ -113,15 +113,15 @@ class CPU:
             sum_dll.sum_axis0.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             sum_dll.sum_axis0.restype = ctypes.POINTER(ctypes.c_float) 
             # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
-            data = sum_dll.sum_axis0(x.data._buffer, x.numel, x.shape[0], x.shape[1])
+            data = sum_dll.sum_axis0(x.data.buffer, x.numel, x.shape[0], x.shape[1])
         elif axis == 1:
             sum_dll.sum_axis1.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             sum_dll.sum_axis1.restype = ctypes.POINTER(ctypes.c_float) 
-            data = sum_dll.sum_axis1(x.data._buffer, x.numel, x.shape[0], x.shape[1])
+            data = sum_dll.sum_axis1(x.data.buffer, x.numel, x.shape[0], x.shape[1])
         elif axis == -1:
             sum_dll.sum.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
             sum_dll.sum.restype = ctypes.POINTER(ctypes.c_int) 
-            data = sum_dll.sum(x.data._buffer, x.numel)
+            data = sum_dll.sum(x.data.buffer, x.numel)
 
         if data is None:
             # TODO: create a new error
@@ -138,7 +138,7 @@ class CPU:
         return CPU._sum_axis_helper(x, dtype, axis)
 
     @staticmethod
-    def _matmul(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
+    def matmul(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         if not isinstance(x.data, Buffer):
             pass
         else:
@@ -149,7 +149,7 @@ class CPU:
             if temp_file:
                 matmul_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
             else:
-                prg = C._matmul(c_dtype) 
+                prg = C.matmul(c_dtype) 
                 with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file: 
                     temp_file = str(output_file.name)
                     subprocess.check_output(args=['clang', '-O2', '-march=native', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
@@ -157,14 +157,14 @@ class CPU:
 
             matmul_dll.matmul.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             matmul_dll.matmul.restype = ctypes.POINTER(ctypes.c_float) 
-            data = matmul_dll.matmul(x.data._buffer, y.data._buffer, x.shape[0], x.shape[1], y.shape[1])
+            data = matmul_dll.matmul(x.data.buffer, y.data.buffer, x.shape[0], x.shape[1], y.shape[1])
             if data is None:
                 # TODO: create a new error
                 print("Error: could not allocate memory")
             return Buffer(data, temp_file)
 
     @staticmethod
-    def _transpose(x: Tensor, dtype: dtypes):
+    def transpose(x: Tensor, dtype: dtypes):
         if not isinstance(x.data, Buffer): 
             pass
         else:
@@ -175,7 +175,7 @@ class CPU:
             if temp_file:
                 transpose_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
             else:
-                prg = C._transpose(c_dtype) 
+                prg = C.transpose(c_dtype) 
                 with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file: 
                     temp_file = str(output_file.name)
                     subprocess.check_output(args=['clang', '-O2', '-march=native', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
@@ -183,14 +183,14 @@ class CPU:
 
             transpose_dll.transpose.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
             transpose_dll.transpose.restype = ctypes.POINTER(ctypes.c_float) 
-            data = transpose_dll.transpose(x.data._buffer, x.shape[0], x.shape[1])
+            data = transpose_dll.transpose(x.data.buffer, x.shape[0], x.shape[1])
             if data is None:
                 # TODO: create a new error
                 print("Error: could not allocate memory")
             return Buffer(data, temp_file)
 
     @staticmethod
-    def _uniform(length: int, low=0.0, high=1.0) -> Buffer:
+    def uniform(length: int, low=0.0, high=1.0) -> Buffer:
         # ctypes.CDLL was taking the most time when i was compiling the prg everytime this func was called
         # and also there is no need to compile everytime this func is called, hence compiling only once
         # and reading the shared file, ctypes.CDLL is faster and is no longer taking time, although, the 
@@ -203,7 +203,7 @@ class CPU:
         #     temp_file = f"{get_temp_loc()}/{temp_file}"
         #     rand_dll = ctypes.CDLL(temp_file)
         # else:
-        prg = C._random_buffer()
+        prg = C.random_buffer()
         with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="rand_buffer") as output_file:
             temp_file = str(output_file.name)
             subprocess.check_output(args=['clang', '-O2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))
@@ -218,13 +218,13 @@ class CPU:
         return Buffer(data, temp_file)
 
     @staticmethod
-    def _ones(length: int) -> Buffer:
+    def ones(length: int) -> Buffer:
         temp_file = check_temp_file_exists(starts_with="ones_buffer") 
         if temp_file:
             temp_file = f"{get_temp_loc()}/{temp_file}"
             ones_dll = ctypes.CDLL(temp_file)
         else:
-            prg = C._ones_buffer()
+            prg = C.ones_buffer()
             with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="ones_buffer") as output_file:
                 temp_file = str(output_file.name)
                 subprocess.check_output(args=['clang', '-O2', '-march=native', '-fPIC', '-x', 'c', '-', '-shared', '-o', temp_file], input=prg.encode('utf-8'))

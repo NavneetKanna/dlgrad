@@ -63,6 +63,7 @@ class Graph:
         os.system('dot -Tsvg /tmp/file.dot -o /tmp/graph.svg')
         print("Done")
 
+
 graph_instance = Graph()
 
 add_node = graph_instance.add_node

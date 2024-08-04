@@ -2,7 +2,7 @@
 class C:
     # TODO: Pass all args when compling itself ?
     @staticmethod
-    def _random_buffer() -> str:
+    def random_buffer() -> str:
         prg = """
         #include <stdlib.h>
         #include <time.h>
@@ -59,7 +59,7 @@ class C:
         return prg
 
     @staticmethod
-    def _ones_buffer() -> str:
+    def ones_buffer() -> str:
         prg = """
         #include <stdio.h>
         #include <stdlib.h>
@@ -79,7 +79,7 @@ class C:
         return prg 
 
     @staticmethod
-    def _add(dtype: str, out_len: int) -> str:
+    def add(dtype: str, out_len: int) -> str:
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h> 
@@ -99,7 +99,7 @@ class C:
         return prg
     
     @staticmethod
-    def _add_axis1(dtype: str, out_len: int) -> str:
+    def add_axis1(dtype: str, out_len: int) -> str:
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h> 
@@ -123,7 +123,7 @@ class C:
         return prg
     
     @staticmethod
-    def _add_axis0(dtype: str, out_len: int) -> str:
+    def add_axis0(dtype: str, out_len: int) -> str:
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h> 
@@ -148,7 +148,7 @@ class C:
         return prg
 
     @staticmethod
-    def _sum_axis0(dtype: str) -> str:
+    def sum_axis0(dtype: str) -> str:
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h>
@@ -172,7 +172,7 @@ class C:
         return prg
 
     @staticmethod
-    def _sum_axis1(dtype: str) -> str:
+    def sum_axis1(dtype: str) -> str:
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h>
@@ -198,7 +198,7 @@ class C:
         return prg
     
     @staticmethod
-    def _sum(dtype: str):
+    def sum(dtype: str):
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h>
@@ -217,7 +217,7 @@ class C:
         return prg
 
     @staticmethod
-    def _matmul(dtype: str):
+    def matmul(dtype: str):
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h>
@@ -242,7 +242,7 @@ class C:
         return prg
 
     @staticmethod
-    def _transpose(dtype):
+    def transpose(dtype):
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h>

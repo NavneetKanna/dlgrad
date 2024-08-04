@@ -19,20 +19,20 @@ class Dispatcher:
         if isinstance(op, BinaryOps):
             if op == BinaryOps.ADD:
                 return CPU.add(x, y, x.dtype, axis)
-            elif op == BinaryOps.MATMUL:
-                return CPU._matmul(x, y, x.dtype)  
+            if op == BinaryOps.MATMUL:
+                return CPU.matmul(x, y, x.dtype)  
         
         elif isinstance(op, UnaryOps):
             if op == UnaryOps.SUM:
                 return CPU.sum(x, x.dtype, axis)
-            elif op == UnaryOps.TRANSPOSE:
-                return CPU._transpose(x, x.dtype)
+            if op == UnaryOps.TRANSPOSE:
+                return CPU.transpose(x, x.dtype)
 
         elif isinstance(op, BufferOps):
             if op == BufferOps.UNIFORM:
-                return CPU._uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
-            elif op == BufferOps.ONES:
-                return CPU._ones(kwargs["out_len"])
+                return CPU.uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
+            if op == BufferOps.ONES:
+                return CPU.ones(kwargs["out_len"])
 
         raise ValueError(f"Unsupported operation: {op}")
 
@@ -42,6 +42,7 @@ class Dispatcher:
         device = x.device if x is not None else kwargs['device']
         if device == Device.CPU:
             return Dispatcher._cpu_dispatch(ops, x, y, **kwargs)
-
-        elif device == Device.GPU:
+        if device == Device.GPU:
             pass
+        else:
+            raise ValueError(f"Unsupported device: {device}")
