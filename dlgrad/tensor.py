@@ -12,9 +12,8 @@ from dlgrad.buffer import Buffer
 from dlgrad.dispatch import Dispatcher
 # import platform
 from dlgrad.dtype import dtypes
-from dlgrad.helpers import (BinaryOps, BufferOps, Device,
-                            ShapeError, UnaryOps, calculate_nchw_offset,
-                            calculate_stride, set_graph)
+from dlgrad.helpers import (BinaryOps, BufferOps, Device, ShapeError, UnaryOps,
+                            calculate_nchw_offset, calculate_stride, set_graph)
 
 
 class TensorProperties:
