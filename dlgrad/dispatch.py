@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Callable
+from typing import TYPE_CHECKING, Optional
 
 from dlgrad.buffer import Buffer
 from dlgrad.helpers import BinaryOps, BufferOps, Device, UnaryOps
@@ -14,8 +14,9 @@ class Dispatcher:
 
     @staticmethod
     def _cpu_dispatch(ops, x: Optional[Tensor] = None, y: Optional[Tensor] = None, **kwargs) -> Buffer:
-        # Binary Ops
         axis = kwargs.get("axis", None)
+
+        # Binary Ops
         if ops == BinaryOps.ADD:
             if axis == 0:
                 return CPU.add_axis0(x, y, x.dtype)
@@ -27,11 +28,15 @@ class Dispatcher:
             return CPU.matmul(x, y, x.dtype)  
         
         # Unary Ops
-        if ops == UnaryOps.TRANSPOSE:
+        if ops == UnaryOps.SUM:
+            if axis == 0:
+                return CPU.sum_axis0(x, y, x.dtype)
+            elif axis == 1:
+                return CPU._sum_axis1(x, y, x.dtype)
+            else:
+                return CPU.sum(x, y, x.dtype)
+        elif ops == UnaryOps.TRANSPOSE:
             return CPU.transpose(x, x.dtype)
-        elif ops == UnaryOps.SUM:
-            sum_func: Callable = kwargs["func"]
-            return sum_func(x, x.dtype)
 
         if ops == BufferOps.UNIFORM:
             return CPU.uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])

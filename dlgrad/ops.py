@@ -97,38 +97,20 @@ class Add(Op):
         self.y.grad = grad_output if self.y.grad is None else self.y.grad + grad_output
 
 class Sum(Op):
-    def forward(self, x: Tensor, axis: int = None):
-        if axis == 0:
-            out_shape = x.shape[1]
-            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': 'UnaryOps'})
-            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, axis=0), device=x.device, dtype=x.dtype, properties=tp)
+    def forward(self, x: Tensor, axis: int = -1):
+        out_shape = x.shape[1]
+        tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': 'UnaryOps'})
+        out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, axis=axis), device=x.device, dtype=x.dtype, properties=tp)
 
-            if get_graph():
-                graph.add_edge(child=out, parents=(x,))
+        if get_graph():
+            graph.add_edge(child=out, parents=(x,))
 
-            return out
-        elif axis == 1:
-            out_shape = x.shape[1]
-            tp = TensorProperties(view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': 'UnaryOps'})
-            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, axis=1), device=x.device, dtype=x.dtype, properties=tp)
-            
-            if get_graph():
-                graph.add_edge(child=out, parents=(x,))
-
-            return out
-        else:
-            out_shape = ()
-            tp = TensorProperties(view=False, offset=0, numel=1, shape=out_shape, ndim=1, stride=(1,), contig=True, metadata={'created_by': 'Sum', 'ops': 'UnaryOps'})
-            out = Tensor(Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, axis=-1), device=x.device, dtype=x.dtype, properties=tp)
-
+        if axis == -1:
             self.x = x
             out._ctx = self
             self.parents = (x,)
-            
-            if get_graph():
-                graph.add_edge(child=out, parents=(x,))
 
-            return out
+        return out
 
     def backward(self, grad_output):
         # NOTE: backward only works for axis=None 
