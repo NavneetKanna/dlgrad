@@ -10,11 +10,11 @@ from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, get_graph
 class Graph:
     def __init__(self):
         self.G = nx.DiGraph() if get_graph() else None
-        self.ops_colour = {BinaryOps: '#e74c3c', UnaryOps: '#1abc9c', BufferOps: '#f1c40f'}
+        self.ops_colour = {BinaryOps: '#fd7f6f', UnaryOps: '#bd7ebe', BufferOps: '#7eb0d5'}
         self.id = 0
         self.nodes = []
 
-        if self.G:
+        if get_graph():
             atexit.register(self.save_graph)
 
     def create_id(self):
@@ -31,7 +31,7 @@ class Graph:
             # for broadcast
             if node.properties.metadata['ops'] is None:
                 label = "BROADCAST"
-                colour = '#51f542'
+                colour = '#b2e061'
             else:
                 label = f"{node.properties.metadata['ops']}\n{node.properties.metadata['created_by']}"
                 colour = self.ops_colour[node.properties.metadata['ops']]
