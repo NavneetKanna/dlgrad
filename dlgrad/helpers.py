@@ -32,6 +32,14 @@ class IndexError(Exception): ...
 class BroadcastHelper:
     out_len = 0
 
+def calculate_axis(shape1: tuple, shape2: tuple) -> int:
+    if shape1 == shape2: 
+        return -1
+    elif shape1[0] == shape2[0]: 
+        return 0
+    else: 
+        return 1
+
 def calculate_numel(shape: tuple):
     out_len = 1
     for i in shape:
