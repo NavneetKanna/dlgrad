@@ -15,7 +15,7 @@ You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Beh
 ## Things I'm Working On
 - [x] Graph visualisation
 - [x] Refactoring code according to prospector, vulture, pycodestyle and ruff
-- [ ] working on nn.Linear
+- [ ] trying to make ctypes faster
 
 ## Examples
 
