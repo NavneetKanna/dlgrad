@@ -1,10 +1,6 @@
-"""
-This should contain all ops to be performed on the cpu
-
-"""
-
 from __future__ import annotations
 
+import os
 import ctypes
 import subprocess
 import tempfile
@@ -19,6 +15,8 @@ if TYPE_CHECKING:
     from dlgrad.tensor import Tensor
 
 
+
+# TODO: Test diff flags with dlopen (https://manpages.debian.org/bookworm/manpages-dev/dlopen.3.en.html)
 class CPU:
     @staticmethod
     def _add_axis_helper(
@@ -49,7 +47,7 @@ class CPU:
             temp_file = check_temp_file_exists(starts_with=name)
 
         if temp_file:
-            add_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
+            add_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}", mode=os.RTLD_LAZY)
         else:
             with tempfile.NamedTemporaryFile(
                 delete=False, dir=get_temp_loc(), prefix=name
@@ -58,8 +56,10 @@ class CPU:
                 subprocess.check_output(
                     args=[
                         "clang",
-                        "-O2",
+                        "-O3",
                         "-march=native",
+                        "-ffast-math",
+                        "-funroll-loops",
                         "-fPIC",
                         "-x",
                         "c",
@@ -70,7 +70,7 @@ class CPU:
                     ],
                     input=prg.encode("utf-8"),
                 )
-                add_dll = ctypes.CDLL(temp_file)
+                add_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
 
         if axis == 0:
             add_dll.add_with_broadcasting.argtypes = [
@@ -82,9 +82,13 @@ class CPU:
             ]
             add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
             # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
+            import time
+            s = time.perf_counter()
             data = add_dll.add_with_broadcasting(
                 x.data.buffer, y.data.buffer, x.numel, y.numel, x.shape[1]
             )
+            e = time.perf_counter()
+            print(f"actual {e-s:.4f}s")
         elif axis == 1:
             add_dll.add_with_broadcasting.argtypes = [
                 ctypes.POINTER(ctypes.c_float),
@@ -93,16 +97,24 @@ class CPU:
                 ctypes.c_int,
             ]
             add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
+            import time 
+            s = time.perf_counter()
             data = add_dll.add_with_broadcasting(
                 x.data.buffer, y.data.buffer, x.numel, y.numel
             )
+            e = time.perf_counter()
+            print(f"actual {e-s:.4f}s")
         elif axis == -1:
             add_dll.add.argtypes = [
                 ctypes.POINTER(ctypes.c_float),
                 ctypes.POINTER(ctypes.c_float),
             ]
             add_dll.add.restype = ctypes.POINTER(ctypes.c_float)
+            import time
+            s = time.perf_counter()
             data = add_dll.add(x.data.buffer, y.data.buffer)
+            e = time.perf_counter()
+            print(f"actual {e-s:.4f}s")
 
         if data is None:
             # TODO: create a new error
@@ -137,17 +149,18 @@ class CPU:
             temp_file = check_temp_file_exists(starts_with=name)
 
         if temp_file:
-            sum_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
+            sum_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}", mode=os.RTLD_LAZY)
         else:
-            with tempfile.NamedTemporaryFile(
-                delete=False, dir=get_temp_loc(), prefix=name
-            ) as output_file:
+            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
                 temp_file = str(output_file.name)
                 subprocess.check_output(
                     args=[
                         "clang",
                         "-O2",
                         "-march=native",
+                        "-ffast-math",
+                        "-ftree-vectorize",
+                        "-funroll-loops",
                         "-fPIC",
                         "-x",
                         "c",
@@ -158,7 +171,7 @@ class CPU:
                     ],
                     input=prg.encode("utf-8"),
                 )
-                sum_dll = ctypes.CDLL(temp_file)
+                sum_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
 
         if axis == 0:
             sum_dll.sum_axis0.argtypes = [
@@ -182,7 +195,11 @@ class CPU:
         elif axis == -1:
             sum_dll.sum.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
             sum_dll.sum.restype = ctypes.POINTER(ctypes.c_int)
+            import time
+            s = time.perf_counter()
             data = sum_dll.sum(x.data.buffer, x.numel)
+            e = time.perf_counter()
+            print(f"actual: {e-s:.4f}s")
 
         if data is None:
             # TODO: create a new error
@@ -208,7 +225,7 @@ class CPU:
             temp_file = check_temp_file_exists(starts_with=name)
 
             if temp_file:
-                matmul_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
+                matmul_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}", mode=os.RTLD_LAZY)
             else:
                 prg = C.matmul(c_dtype)
                 with tempfile.NamedTemporaryFile(
@@ -229,7 +246,7 @@ class CPU:
                         ],
                         input=prg.encode("utf-8"),
                     )
-                    matmul_dll = ctypes.CDLL(temp_file)
+                    matmul_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
 
             matmul_dll.matmul.argtypes = [
                 ctypes.POINTER(ctypes.c_float),
@@ -257,7 +274,7 @@ class CPU:
             temp_file = check_temp_file_exists(starts_with=name)
 
             if temp_file:
-                transpose_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}")
+                transpose_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}", mode=os.RTLD_LAZY)
             else:
                 prg = C.transpose(c_dtype)
                 with tempfile.NamedTemporaryFile(
@@ -278,7 +295,7 @@ class CPU:
                         ],
                         input=prg.encode("utf-8"),
                     )
-                    transpose_dll = ctypes.CDLL(temp_file)
+                    transpose_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
 
             transpose_dll.transpose.argtypes = [
                 ctypes.POINTER(ctypes.c_float),
@@ -294,39 +311,33 @@ class CPU:
 
     @staticmethod
     def uniform(length: int, low=0.0, high=1.0) -> Buffer:
-        # ctypes.CDLL was taking the most time when i was compiling the prg everytime this func was called
-        # and also there is no need to compile everytime this func is called, hence compiling only once
-        # and reading the shared file, ctypes.CDLL is faster and is no longer taking time, although, the
-        # first time it is long.
-
-        # TODO: Below not fixing it, some times the same random numbers are generated
-        # NOTE: Using the same rand_dll is generating the same random numbers, but why though ?
-        # temp_file = check_temp_file_exists(starts_with="rand_buffer")
-        # if temp_file:
-        #     temp_file = f"{get_temp_loc()}/{temp_file}"
-        #     rand_dll = ctypes.CDLL(temp_file)
-        # else:
-        prg = C.random_buffer()
-        with tempfile.NamedTemporaryFile(
-            delete=False, dir=get_temp_loc(), prefix="rand_buffer"
-        ) as output_file:
-            temp_file = str(output_file.name)
-            subprocess.check_output(
-                args=[
-                    "clang",
-                    "-O2",
-                    "-march=native",
-                    "-fPIC",
-                    "-x",
-                    "c",
-                    "-",
-                    "-shared",
-                    "-o",
-                    temp_file,
-                ],
-                input=prg.encode("utf-8"),
-            )
-            rand_dll = ctypes.CDLL(temp_file)
+        temp_file = check_temp_file_exists(starts_with="rand_buffer")
+        if temp_file:
+            temp_file = f"{get_temp_loc()}/{temp_file}"
+            rand_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
+        else:
+            prg = C.random_buffer()
+            with tempfile.NamedTemporaryFile(
+                delete=False, dir=get_temp_loc(), prefix="rand_buffer"
+            ) as output_file:
+                temp_file = str(output_file.name)
+                subprocess.check_output(
+                    args=[
+                        "clang",
+                        "-O3",
+                        "-march=native",
+                        "-ffast-math",
+                        "-fPIC",
+                        "-x",
+                        "c",
+                        "-",
+                        "-shared",
+                        "-o",
+                        temp_file,
+                    ],
+                    input=prg.encode("utf-8"),
+                )
+                rand_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
 
         rand_dll.create_rand_buffer.argtypes = (
             ctypes.c_int,
@@ -334,7 +345,11 @@ class CPU:
             ctypes.c_float,
         )
         rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float)
+        import time 
+        s = time.perf_counter()
         data = rand_dll.create_rand_buffer(length, low, high)
+        e = time.perf_counter()
+        print(f"actual {e-s:.4f}s")
         if data is None:
             # TODO: create a new error
             print("Error: could not allocate memory")
@@ -345,7 +360,7 @@ class CPU:
         temp_file = check_temp_file_exists(starts_with="ones_buffer")
         if temp_file:
             temp_file = f"{get_temp_loc()}/{temp_file}"
-            ones_dll = ctypes.CDLL(temp_file)
+            ones_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
         else:
             prg = C.ones_buffer()
             with tempfile.NamedTemporaryFile(
@@ -367,7 +382,7 @@ class CPU:
                     ],
                     input=prg.encode("utf-8"),
                 )
-                ones_dll = ctypes.CDLL(temp_file)
+                ones_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
 
         ones_dll.create_ones_buffer.argtypes = (ctypes.c_int,)
         ones_dll.create_ones_buffer.restype = ctypes.POINTER(ctypes.c_float)

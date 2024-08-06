@@ -40,8 +40,14 @@ class C:
         }
 
         float *create_rand_buffer(int length, float low, float high) {
-            s[0] = (uint32_t)time(NULL);
-            s[1] = (uint32_t)time(NULL) + 1; 
+            static int seeded = 0;
+            if (!seeded) {
+                s[0] = (uint32_t)time(NULL);
+                s[1] = (uint32_t)time(NULL) + 1;
+                seeded = 1;
+            }
+            // s[0] = (uint32_t)time(NULL);
+            // s[1] = (uint32_t)time(NULL) + 1; 
 
             float *data = malloc(length * sizeof(float));
             if (data == NULL)
@@ -155,6 +161,9 @@ class C:
         {dtype} *sum_axis0({dtype} *a, int len, int nrows, int ncols) {{
             {dtype} sum = 0.0f;
             {dtype} *res = malloc(ncols * sizeof({dtype}));
+            if (res == NULL) {{
+                return NULL;
+            }}
             
             for (int i=0; i<ncols; i++) {{
                 sum = 0.0f;
