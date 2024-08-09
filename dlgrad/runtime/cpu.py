@@ -314,7 +314,7 @@ class CPU:
         temp_file = check_temp_file_exists(starts_with="rand_buffer")
         if temp_file:
             temp_file = f"{get_temp_loc()}/{temp_file}"
-            rand_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
+            rand_dll = ctypes.CDLL(temp_file)
         else:
             prg = C.random_buffer()
             with tempfile.NamedTemporaryFile(
@@ -337,7 +337,7 @@ class CPU:
                     ],
                     input=prg.encode("utf-8"),
                 )
-                rand_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
+                rand_dll = ctypes.CDLL(temp_file)
 
         rand_dll.create_rand_buffer.argtypes = (
             ctypes.c_int,
@@ -345,11 +345,7 @@ class CPU:
             ctypes.c_float,
         )
         rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float)
-        import time 
-        s = time.perf_counter()
         data = rand_dll.create_rand_buffer(length, low, high)
-        e = time.perf_counter()
-        print(f"actual {e-s:.4f}s")
         if data is None:
             # TODO: create a new error
             print("Error: could not allocate memory")
