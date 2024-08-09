@@ -89,7 +89,7 @@ class C:
         #include <stdio.h>
         #include <stdlib.h> 
 
-        {dtype} *add(float *x, float *y) 
+        void *add(float *x, float *y) 
         {{
             {dtype} *out = malloc({out_len} * sizeof({dtype}));
             if (out == NULL) 
