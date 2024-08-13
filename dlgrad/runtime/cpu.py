@@ -10,7 +10,7 @@ from collections import defaultdict
 from dlgrad.buffer import Buffer
 from dlgrad.c_code import C
 from dlgrad.dtype import dtypes
-from dlgrad.helpers import BroadcastHelper, check_temp_file_exists, get_temp_loc, get_shared_lib_name
+from dlgrad.helpers import BroadcastHelper, get_temp_loc, get_shared_lib_name
 
 if TYPE_CHECKING:
     from dlgrad.tensor import Tensor
