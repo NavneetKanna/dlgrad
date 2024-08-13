@@ -222,12 +222,10 @@ class CPU:
             pass
         else:
             c_dtype = dtypes.get_c_dtype(dtype)
-            name = f"cpu_{c_dtype}_matmul"
-            temp_file = check_temp_file_exists(starts_with=name)
+            name = get_shared_lib_name("matmul", c_dtype, x.device.name)
+            matmul_dll = CPUHelper.dlls.get(name)
 
-            if temp_file:
-                matmul_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}", mode=os.RTLD_LAZY)
-            else:
+            if not matmul_dll:
                 prg = C.matmul(c_dtype)
                 with tempfile.NamedTemporaryFile(
                     delete=False, dir=get_temp_loc(), prefix=name
@@ -248,6 +246,7 @@ class CPU:
                         input=prg.encode("utf-8"),
                     )
                     matmul_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
+                    CPUHelper.dlls[name] = matmul_dll
 
             matmul_dll.matmul.argtypes = [
                 ctypes.POINTER(ctypes.c_float),
@@ -263,60 +262,60 @@ class CPU:
             if data is None:
                 # TODO: create a new error
                 print("Error: could not allocate memory")
+
             return Buffer(data, temp_file)
 
     @staticmethod
     def transpose(x: Tensor, dtype: dtypes):
         if not isinstance(x.data, Buffer):
             pass
-        else:
-            c_dtype = dtypes.get_c_dtype(dtype)
-            name = f"cpu_{c_dtype}_transpose"
-            temp_file = check_temp_file_exists(starts_with=name)
 
-            if temp_file:
-                transpose_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}", mode=os.RTLD_LAZY)
-            else:
-                prg = C.transpose(c_dtype)
-                with tempfile.NamedTemporaryFile(
-                    delete=False, dir=get_temp_loc(), prefix=name
-                ) as output_file:
-                    temp_file = str(output_file.name)
-                    subprocess.check_output(
-                        args=[
-                            "clang",
-                            "-O2",
-                            "-march=native",
-                            "-x",
-                            "c",
-                            "-",
-                            "-shared",
-                            "-o",
-                            temp_file,
-                        ],
-                        input=prg.encode("utf-8"),
-                    )
-                    transpose_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
+        c_dtype = dtypes.get_c_dtype(dtype)
+        name = get_shared_lib_name("transpose", c_dtype, x.device.name)
+        transpose_dll = CPUHelper.dlls.get(name) 
 
-            transpose_dll.transpose.argtypes = [
-                ctypes.POINTER(ctypes.c_float),
-                ctypes.c_int,
-                ctypes.c_int,
-            ]
-            transpose_dll.transpose.restype = ctypes.POINTER(ctypes.c_float)
-            data = transpose_dll.transpose(x.data.buffer, x.shape[0], x.shape[1])
-            if data is None:
-                # TODO: create a new error
-                print("Error: could not allocate memory")
-            return Buffer(data, temp_file)
+        if not transpose_dll:
+            prg = C.transpose(c_dtype)
+            with tempfile.NamedTemporaryFile(
+                delete=False, dir=get_temp_loc(), prefix=name
+            ) as output_file:
+                temp_file = str(output_file.name)
+                subprocess.check_output(
+                    args=[
+                        "clang",
+                        "-O2",
+                        "-march=native",
+                        "-x",
+                        "c",
+                        "-",
+                        "-shared",
+                        "-o",
+                        temp_file,
+                    ],
+                    input=prg.encode("utf-8"),
+                )
+                transpose_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
+                CPUHelper.dlls[name] = transpose_dll
+
+        transpose_dll.transpose.argtypes = [
+            ctypes.POINTER(ctypes.c_float),
+            ctypes.c_int,
+            ctypes.c_int,
+        ]
+        transpose_dll.transpose.restype = ctypes.POINTER(ctypes.c_float)
+        data = transpose_dll.transpose(x.data.buffer, x.shape[0], x.shape[1])
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
 
     @staticmethod
     def uniform(length: int, low=0.0, high=1.0) -> Buffer:
-        temp_file = check_temp_file_exists(starts_with="rand_buffer")
-        if temp_file:
-            temp_file = f"{get_temp_loc()}/{temp_file}"
-            rand_dll = ctypes.CDLL(temp_file)
-        else:
+        name = get_shared_lib_name("uniform")
+        rand_dll = CPUHelper.dlls.get(name) 
+
+        if not rand_dll:
             prg = C.random_buffer()
             with tempfile.NamedTemporaryFile(
                 delete=False, dir=get_temp_loc(), prefix="rand_buffer"
@@ -339,6 +338,7 @@ class CPU:
                     input=prg.encode("utf-8"),
                 )
                 rand_dll = ctypes.CDLL(temp_file)
+                CPUHelper.dlls[name] = rand_dll
 
         rand_dll.create_rand_buffer.argtypes = (
             ctypes.c_int,
@@ -350,15 +350,15 @@ class CPU:
         if data is None:
             # TODO: create a new error
             print("Error: could not allocate memory")
+
         return Buffer(data, temp_file)
 
     @staticmethod
     def ones(length: int) -> Buffer:
-        temp_file = check_temp_file_exists(starts_with="ones_buffer")
-        if temp_file:
-            temp_file = f"{get_temp_loc()}/{temp_file}"
-            ones_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
-        else:
+        name = get_shared_lib_name("transpose")
+        ones_dll = CPUHelper.dlls.get(name)
+
+        if not ones_dll:
             prg = C.ones_buffer()
             with tempfile.NamedTemporaryFile(
                 delete=False, dir=get_temp_loc(), prefix="ones_buffer"
@@ -380,6 +380,7 @@ class CPU:
                     input=prg.encode("utf-8"),
                 )
                 ones_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
+                CPUHelper.dlls[name] = ones_dll
 
         ones_dll.create_ones_buffer.argtypes = (ctypes.c_int,)
         ones_dll.create_ones_buffer.restype = ctypes.POINTER(ctypes.c_float)
@@ -387,4 +388,5 @@ class CPU:
         if data is None:
             # TODO: create a new error
             print("Error: could not allocate memory")
+
         return Buffer(data, temp_file)
