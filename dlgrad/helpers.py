@@ -91,6 +91,6 @@ def check_temp_file_exists(starts_with: str) -> str:
             return f
     return ""
 
-def get_shared_lib_name(name: str, dtype: str, device: str) -> str:
+def get_shared_lib_name(name: str, dtype: str = '', device: str = '') -> str:
     # TODO: Check if mac or linux
     return f"{get_temp_loc()}/{name}_{dtype}_{device}.dylib"
