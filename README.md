@@ -15,8 +15,7 @@ You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Beh
 ## Things I'm Working On
 - [x] Graph visualisation
 - [x] Refactoring code according to prospector, vulture, pycodestyle and ruff
-- [x] ~~trying to make ctypes faster~~ There is no need for this, can do something similar to torch.compile, see blog for more details
-- [ ] nn.linear
+- [x] Trying to improve loading of shared library
 
 ## Examples
 
