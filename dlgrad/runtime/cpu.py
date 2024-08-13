@@ -5,18 +5,20 @@ import ctypes
 import subprocess
 import tempfile
 from typing import TYPE_CHECKING, Optional
+from collections import defaultdict
 
 from dlgrad.buffer import Buffer
 from dlgrad.c_code import C
 from dlgrad.dtype import dtypes
-from dlgrad.helpers import BroadcastHelper, check_temp_file_exists, get_temp_loc
+from dlgrad.helpers import BroadcastHelper, check_temp_file_exists, get_temp_loc, get_shared_lib_name
 
 if TYPE_CHECKING:
     from dlgrad.tensor import Tensor
 
-
-
-# TODO: Test diff flags with dlopen (https://manpages.debian.org/bookworm/manpages-dev/dlopen.3.en.html)
+class CPUHelper:
+    dlls: defaultdict[ctypes.CDLL]
+    
+# TODO: is it dll or sha_lib ?
 class CPU:
     @staticmethod
     def _add_axis_helper(
@@ -26,8 +28,8 @@ class CPU:
             return x.data + y.data
 
         c_dtype = dtypes.get_c_dtype(dtype)
-        name = f"cpu_{c_dtype}_add"
-        temp_file = check_temp_file_exists(starts_with=name)
+        name = ""
+        add_dll = None
 
         add_dll = None
         data = None
@@ -35,20 +37,20 @@ class CPU:
 
         if axis == 0:
             prg = C.add_axis0(c_dtype, out_len=BroadcastHelper.out_len)
-            name = f"cpu_{c_dtype}_add0"
-            temp_file = check_temp_file_exists(starts_with=name)
+            name = get_shared_lib_name("add0", c_dtype, x.device.name)
+            add_dll = CPUHelper.dlls.get(name)
         elif axis == 1:
             prg = C.add_axis1(c_dtype, out_len=BroadcastHelper.out_len)
-            name = f"cpu_{c_dtype}_add1"
-            temp_file = check_temp_file_exists(starts_with=name)
+            name = get_shared_lib_name("add1", c_dtype, x.device.name)
+            # temp_file = check_temp_file_exists(starts_with=name)
+            add_dll = CPUHelper.dlls.get(name)
         elif axis == -1:
             prg = C.add(c_dtype, out_len=BroadcastHelper.out_len)
-            name = f"cpu_{c_dtype}_add"
-            temp_file = check_temp_file_exists(starts_with=name)
+            name = get_shared_lib_name("add", c_dtype, x.device.name)
+            # temp_file = check_temp_file_exists(starts_with=name)
+            add_dll = CPUHelper.dlls.get(name)
 
-        if temp_file:
-            add_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}", mode=os.RTLD_LAZY)
-        else:
+        if not add_dll:
             with tempfile.NamedTemporaryFile(
                 delete=False, dir=get_temp_loc(), prefix=name
             ) as output_file:
@@ -71,6 +73,7 @@ class CPU:
                     input=prg.encode("utf-8"),
                 )
                 add_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
+                CPUHelper.dlls[name] = add_dll
 
         if axis == 0:
             add_dll.add_with_broadcasting.argtypes = [
@@ -132,25 +135,22 @@ class CPU:
         sum_dll = None
         data = None
         prg = None
-        temp_file = None
-        name = None
+        name = ""
 
         if axis == 0:
             prg = C.sum_axis0(c_dtype)
-            name = f"cpu_{c_dtype}_sum0"
-            temp_file = check_temp_file_exists(starts_with=name)
+            name = get_shared_lib_name("sum0", c_dtype, x.device.name)
+            sum_dll = CPUHelper.dlls.get(name)
         elif axis == 1:
             prg = C.sum_axis1(c_dtype)
-            name = f"cpu_{c_dtype}_sum1"
-            temp_file = check_temp_file_exists(starts_with=name)
+            name = get_shared_lib_name("sum1", c_dtype, x.device.name)
+            sum_dll = CPUHelper.dlls.get(name)
         elif axis == -1:
             prg = C.sum(c_dtype)
-            name = f"cpu_{c_dtype}_sum"
-            temp_file = check_temp_file_exists(starts_with=name)
+            name = get_shared_lib_name("sum", c_dtype, x.device.name)
+            sum_dll = CPUHelper.dlls.get(name)
 
-        if temp_file:
-            sum_dll = ctypes.CDLL(f"{get_temp_loc()}/{temp_file}", mode=os.RTLD_LAZY)
-        else:
+        if not sum_dll:
             with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
                 temp_file = str(output_file.name)
                 subprocess.check_output(
@@ -172,6 +172,7 @@ class CPU:
                     input=prg.encode("utf-8"),
                 )
                 sum_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
+                CPUHelper.dlls[name] = sum_dll
 
         if axis == 0:
             sum_dll.sum_axis0.argtypes = [

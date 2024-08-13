@@ -76,8 +76,8 @@ class Tensor:
             self.dtype = dtype
 
         # TODO: A better way to write this, a queue ?
-        # if (not properties.view) and isinstance(data, Buffer) and properties.numel != 1:
-        #     atexit.register(self.cleanup)
+        if (not properties.view) and isinstance(data, Buffer) and properties.numel != 1:
+            atexit.register(self.cleanup)
 
     def numpy(self):
         if not isinstance(self.data, Buffer) or self.numel == 1:
