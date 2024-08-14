@@ -13,10 +13,9 @@ Inspired by Andrej Karpathy's micrograd and George Hotz's tinygrad, dlgrad is my
 You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Behind-the-scenes.html) to learn more about how dlgrad operates.
 
 ## Things I'm Working On
-- [x] Graph visualisation
-- [x] Refactoring code according to prospector, vulture, pycodestyle and ruff
 - [x] Trying to improve loading of shared library
-- [ ] nn.Linear
+- [x] nn.Linear
+- [ ] Activation functions
 
 ## Examples
 

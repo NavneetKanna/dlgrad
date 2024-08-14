@@ -94,7 +94,7 @@ class Tensor:
             print(data)
 
     def linear(self, weight: Tensor, bias: Tensor) -> Tensor:
-        # self*weight.T + bias
+        # self@weight.T + bias
         return Tensor.add(Tensor.matmul(self, Tensor.transpose(weight)), bias)
 
     # TODO: maybe do a check for data before calling free ?
@@ -450,7 +450,7 @@ class Tensor:
         )
         return Tensor(
             Dispatcher.dispatch(
-                ops=BufferOps.UNIFORM, out_len=out_len, low=-bound, high=bound
+                ops=BufferOps.UNIFORM, out_len=out_len, low=-bound, high=bound, device=device
             ),
             device=device,
             dtype=dtype,
