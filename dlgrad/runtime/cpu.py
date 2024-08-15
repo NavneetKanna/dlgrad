@@ -369,3 +369,43 @@ class CPU:
             print("Error: could not allocate memory")
 
         return Buffer(data, temp_file)
+
+    @staticmethod
+    def relu(x: Tensor) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(x.dtype)
+        name = get_shared_lib_name("relu")
+        relu_dll = CPUHelper.dlls.get(name)
+        temp_file = ''
+
+        if not relu_dll:
+            prg = C.relu(c_dtype)
+            with tempfile.NamedTemporaryFile(
+                delete=False, dir=get_temp_loc(), prefix="relu_buffer"
+            ) as output_file:
+                temp_file = str(output_file.name)
+                subprocess.check_output(
+                    args=[
+                        "clang",
+                        "-O2",
+                        "-march=native",
+                        "-fPIC",
+                        "-x",
+                        "c",
+                        "-",
+                        "-shared",
+                        "-o",
+                        temp_file,
+                    ],
+                    input=prg.encode("utf-8"),
+                )
+                relu_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
+                CPUHelper.dlls[name] = relu_dll
+
+        relu_dll.relu.argtypes = (ctypes.POINTER(ctypes.c_float), ctypes.c_int)
+        relu_dll.relu.restype = ctypes.POINTER(ctypes.c_float)
+        data = relu_dll.relu(x.data.buffer, x.numel)
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)

@@ -1,5 +1,6 @@
 class C:
     # TODO: Pass all args when compling itself ?
+    # TODO: Should I create the output tensors in ctypes itself ?
     @staticmethod
     def random_buffer() -> str:
         prg = """
@@ -256,7 +257,7 @@ class C:
         #include <stdlib.h>
 
         // https://stackoverflow.com/questions/16737298/what-is-the-fastest-way-to-transpose-a-matrix-in-c
-        float *transpose(float *src, int rows, int cols) 
+        {dtype} *transpose({dtype} *src, int rows, int cols) 
         {{
             float *dst = ({dtype} *)malloc((rows*cols) * sizeof({dtype}));
             if (dst == NULL) 
@@ -269,6 +270,30 @@ class C:
             }}
             
             return dst;
+        }}
+        """
+        return prg
+
+    @staticmethod
+    def relu(dtype: str):
+        prg = f"""
+        #include <stdlib.h>
+
+        {dtype} *relu({dtype} *a, int len) 
+        {{
+            {dtype} *out = malloc(len * sizeof({dtype}));
+            if (out == NULL)
+                return NULL;
+
+            for (int i=0; i<len; i++) {{
+                if (a[i] < 0) {{
+                    out[i] = 0;
+                }} else {{
+                    out[i] = a[i];
+                }}
+            }}
+            
+            return out;
         }}
         """
         return prg
