@@ -79,7 +79,7 @@ class Tensor:
         if (not properties.view) and isinstance(data, Buffer) and properties.numel != 1:
             atexit.register(self.cleanup)
 
-    def numpy(self):
+    def numpy(self) -> np.ndarray:
         if not isinstance(self.data, Buffer) or self.numel == 1:
             data = np.array(self.data.buffer.contents)
             print(data)
@@ -91,7 +91,7 @@ class Tensor:
             data = np.frombuffer(ptr, count=self.numel, dtype=np.float32).reshape(
                 self.shape
             )
-            print(data)
+            return data
 
     def linear(self, weight: Tensor, bias: Tensor) -> Tensor:
         # self@weight.T + bias
