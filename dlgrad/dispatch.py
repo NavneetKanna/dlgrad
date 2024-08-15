@@ -28,6 +28,8 @@ class Dispatcher:
                 return CPU.sum(x, x.dtype, axis)
             if op == UnaryOps.TRANSPOSE:
                 return CPU.transpose(x, x.dtype)
+            if op == UnaryOps.MAX:
+                return CPU.relu(x)
 
         elif isinstance(op, BufferOps):
             if op == BufferOps.UNIFORM:

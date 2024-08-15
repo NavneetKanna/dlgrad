@@ -500,9 +500,6 @@ class Tensor:
         assert x.shape[-1] == y.shape[0], f"{x.shape} and {y.shape} does not match"
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
-        def _backward():
-            pass
-
         shape = (x.shape[0], y.shape[1])
         tp = TensorProperties(
             view=False,
@@ -520,6 +517,13 @@ class Tensor:
             dtype=x.dtype,
             properties=tp,
         )
+
+    # ***** Activation functions *****
+    @staticmethod
+    def relu(x: Tensor) -> Tensor:
+        from dlgrad.ops import Relu
+
+        return Relu().forward(x)
 
     def backward(self):
         set_graph(0)

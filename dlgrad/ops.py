@@ -169,3 +169,27 @@ class Sum(Op):
             if self.x.grad is None
             else self.x.grad + Tensor.ones(self.x.shape)
         )
+
+class Relu(Op):
+    def forward(self, x: Tensor):
+        tp = TensorProperties(
+            view=False,
+            offset=0,
+            numel=x.numel,
+            shape=x.shape,
+            ndim=x.ndim,
+            stride=x.stride,
+            contig=True,
+            metadata={"created_by": "Relu", "ops": "UnaryOps"},
+        )
+        out = Tensor(
+            Dispatcher.dispatch(x=x, ops=UnaryOps.MAX),
+            device=x.device,
+            dtype=x.dtype,
+            properties=tp,
+        )
+        
+        if get_graph():
+            graph.add_edge(child=out, parents=(x,))
+
+        return out
