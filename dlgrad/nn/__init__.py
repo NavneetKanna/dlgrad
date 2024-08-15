@@ -8,7 +8,7 @@ class Linear:
         # TODO: Remove kaiming
         self.weight = Tensor.kaiming_uniform(out_dim, inp_dim)
         bound = 1 / math.sqrt(inp_dim)
-        self.bias = Tensor.rand(out_dim, low=-bound, high=bound)
+        self.bias = Tensor.rand((1, out_dim), low=-bound, high=bound)
 
     # x@weight.T + bias
     def __call__(self, x: Tensor) -> Tensor:
