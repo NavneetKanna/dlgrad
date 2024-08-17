@@ -19,7 +19,6 @@ class Op:
     since parents variable is common to all ops, it is a good practice to have a super class
     and define it there (here).
     """
-
     def __init__(self) -> None:
         self.parents: tuple = ()
 
@@ -55,14 +54,8 @@ class Broadcast(Op):
         self.x, self.y = x, y
 
         tp = TensorProperties(
-            view=None,
-            offset=None,
-            numel=None,
-            shape=x.shape,
-            ndim=None,
-            stride=None,
-            contig=None,
-            metadata={"created_by": None, "ops": None},
+            view=None, offset=None, numel=None, shape=x.shape,
+            ndim=None, stride=None, contig=None, metadata={"created_by": None, "ops": None},
         )
         out = Tensor(
             data=None, requires_grad=None, device=None, dtype=None, properties=tp
@@ -79,19 +72,12 @@ class Broadcast(Op):
         """
         axis = calculate_sum_axis(self.x.shape, self.y.shape)
         tp = TensorProperties(
-            view=False,
-            offset=0,
-            numel=calculate_numel(self.out_shape),
-            shape=self.out_shape,
-            ndim=1,
-            stride=(1,),
-            contig=True,
+            view=False, offset=0, numel=calculate_numel(self.out_shape), shape=self.out_shape, 
+            ndim=1, stride=(1,), contig=True,
         )
         out = Tensor(
             Dispatcher.dispatch(x=grad_output, ops=UnaryOps.SUM, axis=axis),
-            device=self.x.device,
-            dtype=self.x.dtype,
-            properties=tp,
+            device=self.x.device, dtype=self.x.dtype, properties=tp,
         )
 
         self.y.grad = out
@@ -104,20 +90,13 @@ class Add(Op):
         axis = calculate_add_axis(x.shape, y.shape)
 
         tp = TensorProperties(
-            view=False,
-            offset=0,
-            numel=calculate_numel(out_shape),
-            shape=out_shape,
-            ndim=len(out_shape),
-            stride=calculate_stride(out_shape) if out_shape else (),
-            contig=True,
-            metadata={"created_by": "Add", "ops": "BinaryOps"},
+            view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape,
+            ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True, 
+            metadata={"created_by": "Add", "ops": "BinaryOps"}
         )
         out = Tensor(
             Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD, axis=axis),
-            device=x.device,
-            dtype=x.dtype,
-            properties=tp,
+            device=x.device, dtype=x.dtype, properties=tp
         )
 
         out._ctx = self
@@ -137,20 +116,12 @@ class Add(Op):
 class Sum(Op):
     def forward(self, x: Tensor):
         tp = TensorProperties(
-            view=False,
-            offset=0,
-            numel=1,
-            shape=(),
-            ndim=1,
-            stride=(1,),
-            contig=True,
-            metadata={"created_by": "Sum", "ops": "UnaryOps"},
+            view=False, offset=0, numel=1, shape=(),
+            ndim=1, stride=(1,), contig=True, metadata={"created_by": "Sum", "ops": "UnaryOps"},
         )
         out = Tensor(
             Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, axis=-1),
-            device=x.device,
-            dtype=x.dtype,
-            properties=tp,
+            device=x.device, dtype=x.dtype, properties=tp
         )
 
         if get_graph():
@@ -173,20 +144,12 @@ class Sum(Op):
 class Relu(Op):
     def forward(self, x: Tensor):
         tp = TensorProperties(
-            view=False,
-            offset=0,
-            numel=x.numel,
-            shape=x.shape,
-            ndim=x.ndim,
-            stride=x.stride,
-            contig=True,
-            metadata={"created_by": "Relu", "ops": "UnaryOps"},
+            view=False, offset=0, numel=x.numel, shape=x.shape,
+            ndim=x.ndim, stride=x.stride, contig=True, metadata={"created_by": "Relu", "ops": "UnaryOps"},
         )
         out = Tensor(
             Dispatcher.dispatch(x=x, ops=UnaryOps.MAX),
-            device=x.device,
-            dtype=x.dtype,
-            properties=tp,
+            device=x.device, dtype=x.dtype, properties=tp,
         )
         
         if get_graph():
