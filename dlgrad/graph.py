@@ -60,12 +60,10 @@ class Graph:
                 )
                 # for broadcast
                 if child.properties.metadata["ops"] is None:
-                    p.properties.metadata["node_id"] = child.properties.metadata[
-                        "node_id"
-                    ]
+                    p.properties.metadata["node_id"] = child.properties.metadata["node_id"]
 
     def save_graph(self):
-        print("Saving graph to /tmp")
+        print("Saving graph /tmp/file.dot")
         write_dot(self.G, "/tmp/file.dot")
         os.system("dot -Tsvg /tmp/file.dot -o /tmp/graph.svg")
         print("Done")

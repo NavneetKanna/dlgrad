@@ -37,33 +37,19 @@ class CPU:
         elif axis == 1:
             prg = C.add_axis1(c_dtype, out_len=BroadcastHelper.out_len)
             name = get_shared_lib_name("add1", c_dtype, x.device.name)
-            # temp_file = check_temp_file_exists(starts_with=name)
             add_dll = CPUHelper.dlls.get(name)
         elif axis == -1:
             prg = C.add(c_dtype, out_len=BroadcastHelper.out_len)
             name = get_shared_lib_name("add", c_dtype, x.device.name)
-            # temp_file = check_temp_file_exists(starts_with=name)
             add_dll = CPUHelper.dlls.get(name)
 
         if not add_dll:
-            with tempfile.NamedTemporaryFile(
-                delete=False, dir=get_temp_loc(), prefix=name
-            ) as output_file:
+            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
                 temp_file = str(output_file.name)
                 subprocess.check_output(
                     args=[
-                        "clang",
-                        "-O3",
-                        "-march=native",
-                        "-ffast-math",
-                        "-funroll-loops",
-                        "-fPIC",
-                        "-x",
-                        "c",
-                        "-",
-                        "-shared",
-                        "-o",
-                        temp_file,
+                        "clang", "-O3", "-march=native", "-ffast-math", "-funroll-loops", "-fPIC",
+                        "-x", "c", "-", "-shared", "-o", temp_file
                     ],
                     input=prg.encode("utf-8"),
                 )
@@ -72,33 +58,21 @@ class CPU:
 
         if axis == 0:
             add_dll.add_with_broadcasting.argtypes = [
-                ctypes.POINTER(ctypes.c_float),
-                ctypes.POINTER(ctypes.c_float),
-                ctypes.c_int,
-                ctypes.c_int,
-                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int, ctypes.c_int, ctypes.c_int
             ]
             add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
             # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
-            data = add_dll.add_with_broadcasting(
-                x.data.buffer, y.data.buffer, x.numel, y.numel, x.shape[1]
-            )
+            data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel, x.shape[1])
         elif axis == 1:
             add_dll.add_with_broadcasting.argtypes = [
-                ctypes.POINTER(ctypes.c_float),
-                ctypes.POINTER(ctypes.c_float),
-                ctypes.c_int,
-                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int, ctypes.c_int
             ]
             add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
-            data = add_dll.add_with_broadcasting(
-                x.data.buffer, y.data.buffer, x.numel, y.numel
-            )
+            data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel)
         elif axis == -1:
-            add_dll.add.argtypes = [
-                ctypes.POINTER(ctypes.c_float),
-                ctypes.POINTER(ctypes.c_float),
-            ]
+            add_dll.add.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
             add_dll.add.restype = ctypes.POINTER(ctypes.c_float)
             data = add_dll.add(x.data.buffer, y.data.buffer)
 
@@ -134,19 +108,8 @@ class CPU:
                 temp_file = str(output_file.name)
                 subprocess.check_output(
                     args=[
-                        "clang",
-                        "-O2",
-                        "-march=native",
-                        "-ffast-math",
-                        "-ftree-vectorize",
-                        "-funroll-loops",
-                        "-fPIC",
-                        "-x",
-                        "c",
-                        "-",
-                        "-shared",
-                        "-o",
-                        temp_file,
+                        "clang", "-O2", "-march=native", "-ffast-math", "-ftree-vectorize", "-funroll-loops",
+                        "-fPIC", "-x", "c", "-", "-shared", "-o", temp_file,
                     ],
                     input=prg.encode("utf-8"),
                 )
@@ -154,22 +117,12 @@ class CPU:
                 CPUHelper.dlls[name] = sum_dll
 
         if axis == 0:
-            sum_dll.sum_axis0.argtypes = [
-                ctypes.POINTER(ctypes.c_float),
-                ctypes.c_int,
-                ctypes.c_int,
-                ctypes.c_int,
-            ]
+            sum_dll.sum_axis0.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             sum_dll.sum_axis0.restype = ctypes.POINTER(ctypes.c_float)
             # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
             data = sum_dll.sum_axis0(x.data.buffer, x.numel, x.shape[0], x.shape[1])
         elif axis == 1:
-            sum_dll.sum_axis1.argtypes = [
-                ctypes.POINTER(ctypes.c_float),
-                ctypes.c_int,
-                ctypes.c_int,
-                ctypes.c_int,
-            ]
+            sum_dll.sum_axis1.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             sum_dll.sum_axis1.restype = ctypes.POINTER(ctypes.c_float)
             data = sum_dll.sum_axis1(x.data.buffer, x.numel, x.shape[0], x.shape[1])
         elif axis == -1:
@@ -203,21 +156,12 @@ class CPU:
 
         if not matmul_dll:
             prg = C.matmul(c_dtype)
-            with tempfile.NamedTemporaryFile(
-                delete=False, dir=get_temp_loc(), prefix=name
-            ) as output_file:
+            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
                 temp_file = str(output_file.name)
                 subprocess.check_output(
                     args=[
-                        "clang",
-                        "-O2",
-                        "-march=native",
-                        "-x",
-                        "c",
-                        "-",
-                        "-shared",
-                        "-o",
-                        temp_file,
+                        "clang", "-O2", "-march=native", "-x",
+                        "c", "-", "-shared", "-o", temp_file
                     ],
                     input=prg.encode("utf-8"),
                 )
@@ -225,16 +169,11 @@ class CPU:
                 CPUHelper.dlls[name] = matmul_dll
 
         matmul_dll.matmul.argtypes = [
-            ctypes.POINTER(ctypes.c_float),
-            ctypes.POINTER(ctypes.c_float),
-            ctypes.c_int,
-            ctypes.c_int,
-            ctypes.c_int,
+            ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
+            ctypes.c_int, ctypes.c_int, ctypes.c_int
         ]
         matmul_dll.matmul.restype = ctypes.POINTER(ctypes.c_float)
-        data = matmul_dll.matmul(
-            x.data.buffer, y.data.buffer, x.shape[0], x.shape[1], y.shape[1]
-        )
+        data = matmul_dll.matmul(x.data.buffer, y.data.buffer, x.shape[0], x.shape[1], y.shape[1])
         if data is None:
             # TODO: create a new error
             print("Error: could not allocate memory")
@@ -253,32 +192,19 @@ class CPU:
 
         if not transpose_dll:
             prg = C.transpose(c_dtype)
-            with tempfile.NamedTemporaryFile(
-                delete=False, dir=get_temp_loc(), prefix=name
-            ) as output_file:
+            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
                 temp_file = str(output_file.name)
                 subprocess.check_output(
                     args=[
-                        "clang",
-                        "-O2",
-                        "-march=native",
-                        "-x",
-                        "c",
-                        "-",
-                        "-shared",
-                        "-o",
-                        temp_file,
+                        "clang", "-O2", "-march=native", "-x",
+                        "c", "-", "-shared", "-o", temp_file
                     ],
                     input=prg.encode("utf-8"),
                 )
                 transpose_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
                 CPUHelper.dlls[name] = transpose_dll
 
-        transpose_dll.transpose.argtypes = [
-            ctypes.POINTER(ctypes.c_float),
-            ctypes.c_int,
-            ctypes.c_int,
-        ]
+        transpose_dll.transpose.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
         transpose_dll.transpose.restype = ctypes.POINTER(ctypes.c_float)
         data = transpose_dll.transpose(x.data.buffer, x.shape[0], x.shape[1])
         if data is None:
@@ -295,34 +221,19 @@ class CPU:
 
         if not rand_dll:
             prg = C.random_buffer()
-            with tempfile.NamedTemporaryFile(
-                delete=False, dir=get_temp_loc(), prefix="rand_buffer"
-            ) as output_file:
+            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="rand_buffer") as output_file:
                 temp_file = str(output_file.name)
                 subprocess.check_output(
                     args=[
-                        "clang",
-                        "-O3",
-                        "-march=native",
-                        "-ffast-math",
-                        "-fPIC",
-                        "-x",
-                        "c",
-                        "-",
-                        "-shared",
-                        "-o",
-                        temp_file,
+                        "clang", "-O3", "-march=native", "-ffast-math", "-fPIC",
+                        "-x", "c", "-", "-shared", "-o", temp_file
                     ],
                     input=prg.encode("utf-8"),
                 )
                 rand_dll = ctypes.CDLL(temp_file)
                 CPUHelper.dlls[name] = rand_dll
 
-        rand_dll.create_rand_buffer.argtypes = (
-            ctypes.c_int,
-            ctypes.c_float,
-            ctypes.c_float,
-        )
+        rand_dll.create_rand_buffer.argtypes = (ctypes.c_int, ctypes.c_float, ctypes.c_float)
         rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float)
         data = rand_dll.create_rand_buffer(length, low, high)
         if data is None:
@@ -333,28 +244,18 @@ class CPU:
 
     @staticmethod
     def ones(length: int) -> Buffer:
-        name = get_shared_lib_name("transpose")
+        name = get_shared_lib_name("ones")
         ones_dll = CPUHelper.dlls.get(name)
         temp_file = ''
 
         if not ones_dll:
             prg = C.ones_buffer()
-            with tempfile.NamedTemporaryFile(
-                delete=False, dir=get_temp_loc(), prefix="ones_buffer"
-            ) as output_file:
+            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="ones_buffer") as output_file:
                 temp_file = str(output_file.name)
                 subprocess.check_output(
                     args=[
-                        "clang",
-                        "-O2",
-                        "-march=native",
-                        "-fPIC",
-                        "-x",
-                        "c",
-                        "-",
-                        "-shared",
-                        "-o",
-                        temp_file,
+                        "clang", "-O2", "-march=native", "-fPIC",
+                        "-x", "c", "-", "-shared", "-o", temp_file
                     ],
                     input=prg.encode("utf-8"),
                 )
@@ -379,22 +280,12 @@ class CPU:
 
         if not relu_dll:
             prg = C.relu(c_dtype)
-            with tempfile.NamedTemporaryFile(
-                delete=False, dir=get_temp_loc(), prefix="relu_buffer"
-            ) as output_file:
+            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="relu_buffer") as output_file:
                 temp_file = str(output_file.name)
                 subprocess.check_output(
                     args=[
-                        "clang",
-                        "-O2",
-                        "-march=native",
-                        "-fPIC",
-                        "-x",
-                        "c",
-                        "-",
-                        "-shared",
-                        "-o",
-                        temp_file,
+                        "clang", "-O2", "-march=native", "-fPIC",
+                        "-x", "c", "-", "-shared", "-o", temp_file
                     ],
                     input=prg.encode("utf-8"),
                 )
