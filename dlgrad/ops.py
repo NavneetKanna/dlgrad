@@ -1,15 +1,8 @@
 from dlgrad import graph
 from dlgrad.dispatch import Dispatcher
-from dlgrad.helpers import (
-    BinaryOps,
-    BroadcastHelper,
-    UnaryOps,
-    calculate_add_axis,
-    calculate_numel,
-    calculate_stride,
-    calculate_sum_axis,
-    get_graph,
-)
+from dlgrad.helpers import (BinaryOps, BroadcastHelper, UnaryOps,
+                            calculate_add_axis, calculate_numel,
+                            calculate_stride, calculate_sum_axis, get_graph)
 from dlgrad.tensor import Tensor, TensorProperties
 
 

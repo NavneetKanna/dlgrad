@@ -7,20 +7,12 @@ import warnings
 from typing import Optional, Union
 
 import numpy as np
+
 from dlgrad.buffer import Buffer
 from dlgrad.dispatch import Dispatcher
-
 from dlgrad.dtype import dtypes
-from dlgrad.helpers import (
-    BinaryOps,
-    BufferOps,
-    Device,
-    ShapeError,
-    UnaryOps,
-    calculate_nchw_offset,
-    calculate_stride,
-    set_graph,
-)
+from dlgrad.helpers import (BinaryOps, BufferOps, Device, ShapeError, UnaryOps,
+                            calculate_nchw_offset, calculate_stride, set_graph)
 
 
 class TensorProperties:
