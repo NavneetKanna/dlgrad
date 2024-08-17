@@ -1,7 +1,7 @@
 import math
 
 from dlgrad.tensor import Tensor
-
+from module import Module # noqa: F401
 
 class Linear:
     def __init__(self, inp_dim: int, out_dim: int) -> None:
