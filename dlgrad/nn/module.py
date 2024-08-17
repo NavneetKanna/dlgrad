@@ -7,5 +7,5 @@ class Module:
     def __init__(self) -> None:
         pass
 
-    def __call__(self, *args: Any, **kwds: Any) -> Any:
-        pass
+    def __call__(self, x) -> Any:
+        return self.forward(x)

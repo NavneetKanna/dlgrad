@@ -1,6 +1,6 @@
 import math
 
-from module import Module  # noqa: F401
+from .module import Module  # noqa: F401
 
 from dlgrad.tensor import Tensor
 
