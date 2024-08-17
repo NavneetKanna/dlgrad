@@ -7,11 +7,9 @@ import warnings
 from typing import Optional, Union
 
 import numpy as np
-
 from dlgrad.buffer import Buffer
 from dlgrad.dispatch import Dispatcher
 
-# import platform
 from dlgrad.dtype import dtypes
 from dlgrad.helpers import (
     BinaryOps,
@@ -43,24 +41,18 @@ class TensorProperties:
         self.metadata = {"created_by": created_by, "ops": ops, "node_id": node_id}
 
 
-# TODO: Maybe we can load all ctypes files once in the beginning, so that it does not take time to load ?
-# TODO: Does it work on tensors with dim > 2 ?
 class Tensor:
     # __slots__ = "grad"
 
     def __init__(
-        self,
-        data: Union[list, int, Buffer],
-        requires_grad=True,
-        device: Device = Device.CPU,
-        dtype: Optional[dtypes] = None,
-        properties: TensorProperties = None,
+            self, data: Union[list, int, Buffer], requires_grad = True, device: Optional[Device] = Device.CPU, 
+            dtype: Optional[dtypes] = dtypes.float32, properties: Optional[TensorProperties] = None,
     ):
         self.requires_grad = requires_grad
-        self.grad = None
         self.device = device
         self.properties = properties
         self._ctx = None
+        self.grad = None
 
         if isinstance(data, Union[int, float]):
             self.data = data
@@ -321,14 +313,10 @@ class Tensor:
                     )
 
     # ***** BufferOps *****
-    # BufferOps as of now uses only cpu to generate data
     @staticmethod
     def rand(
-        *shape,
-        low=0.0,
-        high=1.0,
-        device: Device = Device.CPU,
-        dtype: Optional[dtypes] = dtypes.float32,
+        *shape, low=0.0, high=1.0,
+        device: Optional[Device] = Device.CPU, dtype: Optional[dtypes] = dtypes.float32,
     ) -> Tensor:
         if device != Device.CPU:
             warnings.warn("Currently BufferOps are only created on CPU.")
@@ -355,31 +343,17 @@ class Tensor:
             out_len *= i
 
         tp = TensorProperties(
-            view=False,
-            offset=0,
-            numel=out_len,
-            shape=shape,
-            ndim=len(shape),
-            stride=calculate_stride(shape),
-            contig=True,
-            metadata={"created_by": "rand", "ops": "BufferOps"},
+            view=False, offset=0, numel=out_len, shape=shape,
+            ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={"created_by": "rand", "ops": "BufferOps"},
         )
         return Tensor(
-            Dispatcher.dispatch(
-                ops=BufferOps.UNIFORM,
-                out_len=out_len,
-                low=low,
-                high=high,
-                device=device,
-            ),
-            device=device,
-            dtype=dtype,
-            properties=tp,
+            Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high, device=device),
+            device=device, dtype=dtype, properties=tp,
         )
 
     @staticmethod
     def ones(
-        *shape, device: Device = Device.CPU, dtype: Optional[dtypes] = dtypes.float32
+        *shape, device: Optional[Device] = Device.CPU, dtype: Optional[dtypes] = dtypes.float32
     ) -> Tensor:
         if device != Device.CPU:
             warnings.warn("Currently BufferOps are only created on CPU.")
@@ -406,20 +380,12 @@ class Tensor:
             out_len *= i
 
         tp = TensorProperties(
-            view=False,
-            offset=0,
-            numel=out_len,
-            shape=shape,
-            ndim=len(shape),
-            stride=calculate_stride(shape),
-            contig=True,
-            metadata={"created_by": "ones", "ops": "BufferOps"},
+            view=False, offset=0, numel=out_len, shape=shape,
+            ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={"created_by": "ones", "ops": "BufferOps"},
         )
         return Tensor(
             Dispatcher.dispatch(ops=BufferOps.ONES, out_len=out_len, device=device),
-            device=device,
-            dtype=dtype,
-            properties=tp,
+            device=device, dtype=dtype, properties=tp
         )
 
     @staticmethod
@@ -439,22 +405,12 @@ class Tensor:
         bound = math.sqrt(3) * std
 
         tp = TensorProperties(
-            view=False,
-            offset=0,
-            numel=out_len,
-            shape=shape,
-            ndim=len(shape),
-            stride=calculate_stride(shape),
-            contig=True,
-            metadata={"created_by": "kaiming_uniform", "ops": "BufferOps"},
+            view=False, offset=0, numel=out_len, shape=shape,
+            ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={"created_by": "kaiming_uniform", "ops": "BufferOps"},
         )
         return Tensor(
-            Dispatcher.dispatch(
-                ops=BufferOps.UNIFORM, out_len=out_len, low=-bound, high=bound, device=device
-            ),
-            device=device,
-            dtype=dtype,
-            properties=tp,
+            Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=-bound, high=bound, device=device),
+            device=device, dtype=dtype, properties=tp
         )
 
     # ***** UnaryOps ****
@@ -462,18 +418,12 @@ class Tensor:
     @staticmethod
     def transpose(x: Tensor):
         tp = TensorProperties(
-            view=False,
-            offset=0,
-            numel=x.numel,
-            shape=x.shape[::-1],
-            ndim=len(x.shape[::-1]),
-            stride=calculate_stride(x.shape[::-1]),
-            contig=True,
+            view=False, offset=0, numel=x.numel, shape=x.shape[::-1],
+            ndim=len(x.shape[::-1]), stride=calculate_stride(x.shape[::-1]), contig=True
         )
         return Tensor(
             Dispatcher.dispatch(ops=UnaryOps.TRANSPOSE, x=x),
-            device=x.device,
-            properties=tp,
+            device=x.device, properties=tp,
         )
 
     def sum(self):
@@ -502,20 +452,13 @@ class Tensor:
 
         shape = (x.shape[0], y.shape[1])
         tp = TensorProperties(
-            view=False,
-            offset=0,
-            numel=x.shape[0] * y.shape[1],
-            shape=shape,
-            ndim=len(shape),
-            stride=calculate_stride(shape),
-            contig=True,
+            view=False, offset=0, numel=x.shape[0] * y.shape[1], shape=shape,
+            ndim=len(shape), stride=calculate_stride(shape), contig=True
         )
         # TODO: How do i ensure data is of same dtype
         return Tensor(
             Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL),
-            device=x.device,
-            dtype=x.dtype,
-            properties=tp,
+            device=x.device, dtype=x.dtype, properties=tp
         )
 
     # ***** Activation functions *****
