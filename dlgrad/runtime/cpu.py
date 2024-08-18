@@ -133,6 +133,7 @@ class CPU:
         prg = C.sum(c_dtype)
         name = get_shared_lib_name("sum", c_dtype, x.device.name)
         sum_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+
         sum_dll.sum.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
         sum_dll.sum.restype = ctypes.POINTER(ctypes.c_int)
         data = sum_dll.sum(x.data.buffer, x.numel)
@@ -147,28 +148,14 @@ class CPU:
         if not isinstance(x.data, Buffer):
             pass
             
-        temp_file = ''
         c_dtype = dtypes.get_c_dtype(dtype)
+        prg = C.matmul(c_dtype)
         name = get_shared_lib_name("matmul", c_dtype, x.device.name)
-        matmul_dll = CPUHelper.dlls.get(name)
-
-        if not matmul_dll:
-            prg = C.matmul(c_dtype)
-            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
-                temp_file = str(output_file.name)
-                subprocess.check_output(
-                    args=[
-                        "clang", "-O2", "-march=native", "-x",
-                        "c", "-", "-shared", "-o", temp_file
-                    ],
-                    input=prg.encode("utf-8"),
-                )
-                matmul_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
-                CPUHelper.dlls[name] = matmul_dll
+        matmul_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
 
         matmul_dll.matmul.argtypes = [
-            ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
-            ctypes.c_int, ctypes.c_int, ctypes.c_int
+                ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int, ctypes.c_int, ctypes.c_int
         ]
         matmul_dll.matmul.restype = ctypes.POINTER(ctypes.c_float)
         data = matmul_dll.matmul(x.data.buffer, y.data.buffer, x.shape[0], x.shape[1], y.shape[1])
@@ -183,24 +170,10 @@ class CPU:
         if not isinstance(x.data, Buffer):
             pass
 
-        temp_file = ''
         c_dtype = dtypes.get_c_dtype(dtype)
+        prg = C.transpose(c_dtype)
         name = get_shared_lib_name("transpose", c_dtype, x.device.name)
-        transpose_dll = CPUHelper.dlls.get(name) 
-
-        if not transpose_dll:
-            prg = C.transpose(c_dtype)
-            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
-                temp_file = str(output_file.name)
-                subprocess.check_output(
-                    args=[
-                        "clang", "-O2", "-march=native", "-x",
-                        "c", "-", "-shared", "-o", temp_file
-                    ],
-                    input=prg.encode("utf-8"),
-                )
-                transpose_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
-                CPUHelper.dlls[name] = transpose_dll
+        transpose_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
 
         transpose_dll.transpose.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
         transpose_dll.transpose.restype = ctypes.POINTER(ctypes.c_float)
@@ -213,23 +186,9 @@ class CPU:
 
     @staticmethod
     def uniform(length: int, low=0.0, high=1.0) -> Buffer:
+        prg = C.random_buffer()
         name = get_shared_lib_name("uniform")
-        rand_dll = CPUHelper.dlls.get(name) 
-        temp_file = ''
-
-        if not rand_dll:
-            prg = C.random_buffer()
-            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="rand_buffer") as output_file:
-                temp_file = str(output_file.name)
-                subprocess.check_output(
-                    args=[
-                        "clang", "-O3", "-march=native", "-ffast-math", "-fPIC",
-                        "-x", "c", "-", "-shared", "-o", temp_file
-                    ],
-                    input=prg.encode("utf-8"),
-                )
-                rand_dll = ctypes.CDLL(temp_file)
-                CPUHelper.dlls[name] = rand_dll
+        rand_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
 
         rand_dll.create_rand_buffer.argtypes = (ctypes.c_int, ctypes.c_float, ctypes.c_float)
         rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float)
@@ -242,23 +201,9 @@ class CPU:
 
     @staticmethod
     def ones(length: int) -> Buffer:
+        prg = C.ones_buffer()
         name = get_shared_lib_name("ones")
-        ones_dll = CPUHelper.dlls.get(name)
-        temp_file = ''
-
-        if not ones_dll:
-            prg = C.ones_buffer()
-            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="ones_buffer") as output_file:
-                temp_file = str(output_file.name)
-                subprocess.check_output(
-                    args=[
-                        "clang", "-O2", "-march=native", "-fPIC",
-                        "-x", "c", "-", "-shared", "-o", temp_file
-                    ],
-                    input=prg.encode("utf-8"),
-                )
-                ones_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
-                CPUHelper.dlls[name] = ones_dll
+        ones_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
 
         ones_dll.create_ones_buffer.argtypes = (ctypes.c_int,)
         ones_dll.create_ones_buffer.restype = ctypes.POINTER(ctypes.c_float)
@@ -272,23 +217,9 @@ class CPU:
     @staticmethod
     def relu(x: Tensor) -> Buffer:
         c_dtype = dtypes.get_c_dtype(x.dtype)
+        prg = C.relu(c_dtype)
         name = get_shared_lib_name("relu")
-        relu_dll = CPUHelper.dlls.get(name)
-        temp_file = ''
-
-        if not relu_dll:
-            prg = C.relu(c_dtype)
-            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix="relu_buffer") as output_file:
-                temp_file = str(output_file.name)
-                subprocess.check_output(
-                    args=[
-                        "clang", "-O2", "-march=native", "-fPIC",
-                        "-x", "c", "-", "-shared", "-o", temp_file
-                    ],
-                    input=prg.encode("utf-8"),
-                )
-                relu_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
-                CPUHelper.dlls[name] = relu_dll
+        relu_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
 
         relu_dll.relu.argtypes = (ctypes.POINTER(ctypes.c_float), ctypes.c_int)
         relu_dll.relu.restype = ctypes.POINTER(ctypes.c_float)
