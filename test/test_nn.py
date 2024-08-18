@@ -24,7 +24,7 @@ class TestNN(unittest.TestCase):
             fc.bias[:] = torch.tensor(b.numpy(), dtype=torch.float32, device="cpu")
             tr_out = fc(x)
 
-        np.testing.assert_allclose(dl_out.numpy(), tr_out.detach().numpy(), atol=1e-3) 
+        np.testing.assert_allclose(dl_out.numpy(), tr_out.detach().numpy(), atol=1e-4) 
 
     def test_linear_with_relu(self):
         pass
