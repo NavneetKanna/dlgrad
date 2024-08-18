@@ -15,70 +15,67 @@ from dlgrad.helpers import BroadcastHelper, get_shared_lib_name, get_temp_loc
 if TYPE_CHECKING:
     from dlgrad.tensor import Tensor
 
-class CPUHelper:
-    dlls = defaultdict(ctypes.CDLL)
-    
+
+def _compile_clang(name: str, prg: str) -> tuple[ctypes.CDLL, str]:
+    with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
+        temp_file = str(output_file.name)
+        subprocess.check_output(
+            args=[
+                "clang", "-O3", "-march=native", "-ffast-math", "-funroll-loops", "-fPIC",
+                "-x", "c", "-", "-shared", "-o", temp_file
+            ],
+            input=prg.encode("utf-8"),
+        )
+        dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
+        CPU.dlls[name] = dll, temp_file
+
+    return dll, temp_file
+
+
 # TODO: is it dll or sha_lib ?
 class CPU:
+    dlls: dict[ctypes.CDLL] = {}
+    
     @staticmethod
-    def _add_axis_helper(
-        x: Tensor, y: Tensor, dtype: dtypes, axis: Optional[int]
-    ) -> Buffer:
+    def add_axis0(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(dtype)
+
+        prg = C.add_axis0(c_dtype, out_len=BroadcastHelper.out_len)
+        name = get_shared_lib_name("add0", c_dtype, x.device.name)
+        add_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+
+        add_dll.add_with_broadcasting.argtypes = [
+                ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int, ctypes.c_int, ctypes.c_int
+        ]
+        add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
+        # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
+        data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel, x.shape[1])
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
+
+    @staticmethod
+    def add_axis1(x: Tensor, y: Tensor, dtype: dtypes, axis: Optional[int]) -> Buffer:
         if not isinstance(x.data, Buffer):
             return x.data + y.data
 
         c_dtype = dtypes.get_c_dtype(dtype)
-        temp_file = ''
+        prg = C.add_axis1(c_dtype, out_len=BroadcastHelper.out_len)
+        name = get_shared_lib_name("add1", c_dtype, x.device.name)
+        add_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
 
-        if axis == 0:
-            prg = C.add_axis0(c_dtype, out_len=BroadcastHelper.out_len)
-            name = get_shared_lib_name("add0", c_dtype, x.device.name)
-            add_dll = CPUHelper.dlls.get(name)
-        elif axis == 1:
-            prg = C.add_axis1(c_dtype, out_len=BroadcastHelper.out_len)
-            name = get_shared_lib_name("add1", c_dtype, x.device.name)
-            add_dll = CPUHelper.dlls.get(name)
-        elif axis == -1:
-            prg = C.add(c_dtype, out_len=BroadcastHelper.out_len)
-            name = get_shared_lib_name("add", c_dtype, x.device.name)
-            add_dll = CPUHelper.dlls.get(name)
-
-        if not add_dll:
-            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
-                temp_file = str(output_file.name)
-                subprocess.check_output(
-                    args=[
-                        "clang", "-O3", "-march=native", "-ffast-math", "-funroll-loops", "-fPIC",
-                        "-x", "c", "-", "-shared", "-o", temp_file
-                    ],
-                    input=prg.encode("utf-8"),
-                )
-                add_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
-                CPUHelper.dlls[name] = add_dll
-
-        if axis == 0:
-            add_dll.add_with_broadcasting.argtypes = [
-                ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
-                ctypes.c_int, ctypes.c_int, ctypes.c_int
-            ]
-            add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
-            # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
-            data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel, x.shape[1])
-        elif axis == 1:
-            add_dll.add_with_broadcasting.argtypes = [
+        add_dll.add_with_broadcasting.argtypes = [
                 ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
                 ctypes.c_int, ctypes.c_int
-            ]
-            add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
-            data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel)
-        elif axis == -1:
-            add_dll.add.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
-            add_dll.add.restype = ctypes.POINTER(ctypes.c_float)
-            data = add_dll.add(x.data.buffer, y.data.buffer)
-
+        ]
+        add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
+        data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel)
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+                # TODO: create a new error
+                print("Error: could not allocate memory")
 
         return Buffer(data, temp_file)
 
@@ -138,7 +135,19 @@ class CPU:
 
     @staticmethod
     def add(x: Tensor, y: Tensor, dtype: dtypes, axis: int) -> Buffer:
-        return CPU._add_axis_helper(x, y, dtype, axis)
+        c_dtype = dtypes.get_c_dtype(dtype)
+        prg = C.add(c_dtype, out_len=BroadcastHelper.out_len)
+        name = get_shared_lib_name("add", c_dtype, x.device.name)
+        add_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+
+        add_dll.add.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+        add_dll.add.restype = ctypes.POINTER(ctypes.c_float)
+        data = add_dll.add(x.data.buffer, y.data.buffer)
+        if data is None:
+                # TODO: create a new error
+                print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
 
     @staticmethod
     def sum(x: Tensor, dtype: dtypes, axis: int) -> Buffer:
