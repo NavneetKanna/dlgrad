@@ -15,18 +15,16 @@ class TestOps(unittest.TestCase):
     def test_add(self):
         y = Tensor.rand((3, 2))
         dl_out = self.x+y
-
         np_out = self.x.numpy() + y.numpy()
-
         np.testing.assert_equal(dl_out.numpy(), np_out)
 
     def test_transpose(self):
         y = Tensor.transpose(self.x)
-
         np.testing.assert_equal(y.numpy(), self.x.numpy().T)
 
     def test_sum(self):
-        pass
+        dl_out = self.x.sum()
+        np.testing.assert_equal(dl_out.numpy(), self.x.numpy().sum())
         
 
 if __name__ == "__main__":
