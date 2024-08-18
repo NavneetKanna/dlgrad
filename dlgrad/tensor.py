@@ -64,17 +64,14 @@ class Tensor:
             atexit.register(self.cleanup)
 
     def numpy(self) -> np.ndarray:
-        if not isinstance(self.data, Buffer) or self.numel == 1:
-            data = np.array(self.data.buffer.contents)
-            print(data)
+        if not isinstance(self.data, Buffer):
+            pass
+        elif self.numel == 1:
+            return self.data.buffer
         else:
-            sd = ctypes.addressof(
-                self.data.buffer.contents
-            ) + self.offset * ctypes.sizeof(ctypes.c_float)
+            sd = ctypes.addressof(self.data.buffer.contents) + self.offset * ctypes.sizeof(ctypes.c_float)
             ptr = (ctypes.c_float * self.numel).from_address(sd)
-            data = np.frombuffer(ptr, count=self.numel, dtype=np.float32).reshape(
-                self.shape
-            )
+            data = np.frombuffer(ptr, count=self.numel, dtype=np.float32).reshape(self.shape)
             return data
 
     def linear(self, weight: Tensor, bias: Tensor) -> Tensor:
