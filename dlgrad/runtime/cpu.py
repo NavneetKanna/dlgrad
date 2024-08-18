@@ -39,7 +39,6 @@ class CPU:
     @staticmethod
     def add_axis0(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         c_dtype = dtypes.get_c_dtype(dtype)
-
         prg = C.add_axis0(c_dtype, out_len=BroadcastHelper.out_len)
         name = get_shared_lib_name("add0", c_dtype, x.device.name)
         add_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
@@ -78,61 +77,7 @@ class CPU:
                 print("Error: could not allocate memory")
 
         return Buffer(data, temp_file)
-
-    @staticmethod
-    def _sum_axis_helper(x: Tensor, dtype: dtypes, axis: Optional[int]) -> Buffer:
-        # if not isinstance(x.data, Buffer):
-        #     return x.data + y.data
-
-        c_dtype = dtypes.get_c_dtype(dtype)
-        temp_file = ''
-
-        if axis == 0:
-            prg = C.sum_axis0(c_dtype)
-            name = get_shared_lib_name("sum0", c_dtype, x.device.name)
-            sum_dll = CPUHelper.dlls.get(name)
-        elif axis == 1:
-            prg = C.sum_axis1(c_dtype)
-            name = get_shared_lib_name("sum1", c_dtype, x.device.name)
-            sum_dll = CPUHelper.dlls.get(name)
-        elif axis == -1:
-            prg = C.sum(c_dtype)
-            name = get_shared_lib_name("sum", c_dtype, x.device.name)
-            sum_dll = CPUHelper.dlls.get(name)
-
-        if not sum_dll:
-            with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
-                temp_file = str(output_file.name)
-                subprocess.check_output(
-                    args=[
-                        "clang", "-O2", "-march=native", "-ffast-math", "-ftree-vectorize", "-funroll-loops",
-                        "-fPIC", "-x", "c", "-", "-shared", "-o", temp_file,
-                    ],
-                    input=prg.encode("utf-8"),
-                )
-                sum_dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
-                CPUHelper.dlls[name] = sum_dll
-
-        if axis == 0:
-            sum_dll.sum_axis0.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
-            sum_dll.sum_axis0.restype = ctypes.POINTER(ctypes.c_float)
-            # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
-            data = sum_dll.sum_axis0(x.data.buffer, x.numel, x.shape[0], x.shape[1])
-        elif axis == 1:
-            sum_dll.sum_axis1.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
-            sum_dll.sum_axis1.restype = ctypes.POINTER(ctypes.c_float)
-            data = sum_dll.sum_axis1(x.data.buffer, x.numel, x.shape[0], x.shape[1])
-        elif axis == -1:
-            sum_dll.sum.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
-            sum_dll.sum.restype = ctypes.POINTER(ctypes.c_int)
-            data = sum_dll.sum(x.data.buffer, x.numel)
-
-        if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
-
-        return Buffer(data, temp_file)
-
+    
     @staticmethod
     def add(x: Tensor, y: Tensor, dtype: dtypes, axis: int) -> Buffer:
         c_dtype = dtypes.get_c_dtype(dtype)
@@ -150,8 +95,52 @@ class CPU:
         return Buffer(data, temp_file)
 
     @staticmethod
-    def sum(x: Tensor, dtype: dtypes, axis: int) -> Buffer:
-        return CPU._sum_axis_helper(x, dtype, axis)
+    def sum_axis0(x: Tensor, dtype: dtypes) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(dtype)
+        prg = C.sum_axis0(c_dtype)
+        name = get_shared_lib_name("sum0", c_dtype, x.device.name)
+        sum_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+
+        sum_dll.sum_axis0.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
+        sum_dll.sum_axis0.restype = ctypes.POINTER(ctypes.c_float)
+        # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
+        data = sum_dll.sum_axis0(x.data.buffer, x.numel, x.shape[0], x.shape[1])
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
+    
+    @staticmethod
+    def sum_axis1(x: Tensor, dtype: dtypes) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(dtype)
+        prg = C.sum_axis1(c_dtype)
+        name = get_shared_lib_name("sum1", c_dtype, x.device.name)
+        sum_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+
+        sum_dll.sum_axis1.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
+        sum_dll.sum_axis1.restype = ctypes.POINTER(ctypes.c_float)
+        data = sum_dll.sum_axis1(x.data.buffer, x.numel, x.shape[0], x.shape[1])
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
+
+    @staticmethod
+    def sum(x: Tensor, dtype: dtypes) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(dtype)
+        prg = C.sum(c_dtype)
+        name = get_shared_lib_name("sum", c_dtype, x.device.name)
+        sum_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+        sum_dll.sum.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
+        sum_dll.sum.restype = ctypes.POINTER(ctypes.c_int)
+        data = sum_dll.sum(x.data.buffer, x.numel)
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
 
     @staticmethod
     def matmul(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
