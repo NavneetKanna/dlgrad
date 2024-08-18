@@ -9,7 +9,7 @@ build
 .*
 *.s
 a.out
-test.py
+t.py
 testing/
 *.ipynb
 *.svg
