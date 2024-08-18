@@ -4,7 +4,6 @@ import ctypes
 import os
 import subprocess
 import tempfile
-from collections import defaultdict
 from typing import TYPE_CHECKING, Optional
 
 from dlgrad.buffer import Buffer
@@ -79,7 +78,7 @@ class CPU:
         return Buffer(data, temp_file)
     
     @staticmethod
-    def add(x: Tensor, y: Tensor, dtype: dtypes, axis: int) -> Buffer:
+    def add(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         c_dtype = dtypes.get_c_dtype(dtype)
         prg = C.add(c_dtype, out_len=BroadcastHelper.out_len)
         name = get_shared_lib_name("add", c_dtype, x.device.name)
