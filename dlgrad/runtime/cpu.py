@@ -4,7 +4,7 @@ import ctypes
 import os
 import subprocess
 import tempfile
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING 
 
 from dlgrad.buffer import Buffer
 from dlgrad.c_code import C
