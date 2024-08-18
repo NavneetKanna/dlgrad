@@ -26,6 +26,9 @@ class TestOps(unittest.TestCase):
         dl_out = self.x.sum()
         np.testing.assert_equal(dl_out.numpy(), self.x.numpy().sum())
         
+    def test_relu(self):
+        dl_out = Tensor.relu(self.x)
+        np.testing.assert_equal(dl_out.numpy(), np.maximum(0, self.x.numpy()))
 
 if __name__ == "__main__":
     unittest.main()
