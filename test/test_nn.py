@@ -1,11 +1,14 @@
-import os 
+import os
 import sys
+
 sys.path.append(os.getcwd())
 import unittest
-from dlgrad.tensor import Tensor
-from dlgrad import nn
+
 import numpy as np
 import torch
+
+from dlgrad import nn
+from dlgrad.tensor import Tensor
 
 
 class TestNN(unittest.TestCase):

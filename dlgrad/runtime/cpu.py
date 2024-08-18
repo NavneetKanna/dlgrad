@@ -56,7 +56,7 @@ class CPU:
         return Buffer(data, temp_file)
 
     @staticmethod
-    def add_axis1(x: Tensor, y: Tensor, dtype: dtypes, axis: Optional[int]) -> Buffer:
+    def add_axis1(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         if not isinstance(x.data, Buffer):
             return x.data + y.data
 
