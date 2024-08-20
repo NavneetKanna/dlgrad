@@ -1,6 +1,7 @@
 class C:
     # TODO: Pass all args when compling itself ?
     # TODO: Should I create the output tensors in ctypes itself ?
+    # TODO: Change the dtype in func
     @staticmethod
     def random_buffer() -> str:
         prg = """
@@ -84,13 +85,35 @@ class C:
         """
         return prg
 
+    # TODO: diff exps based on dtype
+    @staticmethod
+    def exp(dtype: str) -> str:
+        prg = f"""
+        #include <math.h>
+        #include <stdlib.h>
+
+        {dtype} exp({dtype} *arg, int len) 
+        {{
+            {dtype} *c = malloc(length * sizeof({dtype}));
+            if (c == NULL) 
+                return NULL;
+
+            for(int i=0, i<len; i++) {{
+                c[i] = exp(x);
+            }}
+
+            return c;
+        }}
+        """
+        return prg
+    
     @staticmethod
     def add(dtype: str, out_len: int) -> str:
         prg = f"""
         #include <stdio.h>
         #include <stdlib.h> 
 
-        void *add(float *x, float *y) 
+        {dtype} *add(float *x, float *y) 
         {{
             {dtype} *out = malloc({out_len} * sizeof({dtype}));
             if (out == NULL) 
