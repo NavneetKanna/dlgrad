@@ -457,6 +457,12 @@ class Tensor:
 
         return Relu().forward(x)
 
+    # ***** Loss functions *****
+    @staticmethod
+    def crossentropy_loss(logits: Tensor, targets: Tensor):
+        # NLL(log(softmax(logits)), targets)
+        pass
+
     def backward(self):
         set_graph(0)
 

@@ -149,3 +149,10 @@ class Relu(Op):
             graph.add_edge(child=out, parents=(x,))
 
         return out
+
+class Exp(Op):
+    def forward(self, x: Tensor):
+        pass
+    
+    def backward(self):
+        pass

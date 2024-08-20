@@ -228,3 +228,20 @@ class CPU:
             print("Error: could not allocate memory")
 
         return Buffer(data, temp_file)
+
+    @staticmethod
+    def exp(x: Tensor) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(x.dtype)
+        prg = C.exp(c_dtype)
+        name = get_shared_lib_name("exp")
+        exp_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+
+        exp_dll.exp.argtypes = (ctypes.POINTER(ctypes.c_float), ctypes.c_int)
+        exp_dll.exp.restype = ctypes.POINTER(ctypes.c_float)
+        data = exp_dll.exp(x.data.buffer, x.numel)
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
+    
