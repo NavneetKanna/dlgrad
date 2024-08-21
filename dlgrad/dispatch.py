@@ -23,9 +23,9 @@ class Dispatcher:
                     return CPU.add_axis0(x, y, x.dtype)
                 elif axis == 1:
                     return CPU.add_axis1(x, y, x.dtype)
-                return CPU.add(x, y, x.dtype)
+                return CPU._add(x, y, x.dtype)
             if op == BinaryOps.MATMUL:
-                return CPU.matmul(x, y, x.dtype)
+                return CPU._matmul(x, y, x.dtype)
 
         elif isinstance(op, UnaryOps):
             if op == UnaryOps.SUM:
@@ -33,17 +33,17 @@ class Dispatcher:
                     return CPU.sum_axis0(x, x.dtype)
                 elif axis == 1:
                     return CPU.sum_axis1(x, x.dtype)
-                return CPU.sum(x, x.dtype)
+                return CPU._sum(x, x.dtype)
             if op == UnaryOps.TRANSPOSE:
-                return CPU.transpose(x, x.dtype)
+                return CPU._transpose(x, x.dtype)
             if op == UnaryOps.MAX:
-                return CPU.relu(x)
+                return CPU._]relu(x)
 
         elif isinstance(op, BufferOps):
             if op == BufferOps.UNIFORM:
-                return CPU.uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
+                return CPU._uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
             if op == BufferOps.ONES:
-                return CPU.ones(kwargs["out_len"])
+                return CPU._]ones(kwargs["out_len"])
 
         raise ValueError(f"Unsupported operation: {op}")
 
