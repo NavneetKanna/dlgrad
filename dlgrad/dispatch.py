@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 from dlgrad.buffer import Buffer
-from dlgrad.helpers import BinaryOps, BufferOps, Device, UnaryOps
+from dlgrad.helpers import Device
 from dlgrad.runtime.cpu import CPU
 
 if TYPE_CHECKING:
@@ -12,40 +12,8 @@ if TYPE_CHECKING:
 
 class Dispatcher:
     @staticmethod
-    def _cpu_dispatch(
-        op, x: Optional[Tensor] = None, y: Optional[Tensor] = None, **kwargs
-    ) -> Buffer:
-        axis = kwargs.get("axis", None)
-
-        if isinstance(op, BinaryOps):
-            if op == BinaryOps.ADD:
-                if axis == 0:
-                    return CPU.add_axis0(x, y, x.dtype)
-                elif axis == 1:
-                    return CPU.add_axis1(x, y, x.dtype)
-                return CPU._add(x, y, x.dtype)
-            if op == BinaryOps.MATMUL:
-                return CPU._matmul(x, y, x.dtype)
-
-        elif isinstance(op, UnaryOps):
-            if op == UnaryOps.SUM:
-                if axis == 0:
-                    return CPU.sum_axis0(x, x.dtype)
-                elif axis == 1:
-                    return CPU.sum_axis1(x, x.dtype)
-                return CPU._sum(x, x.dtype)
-            if op == UnaryOps.TRANSPOSE:
-                return CPU._transpose(x, x.dtype)
-            if op == UnaryOps.MAX:
-                return CPU._]relu(x)
-
-        elif isinstance(op, BufferOps):
-            if op == BufferOps.UNIFORM:
-                return CPU._uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
-            if op == BufferOps.ONES:
-                return CPU._]ones(kwargs["out_len"])
-
-        raise ValueError(f"Unsupported operation: {op}")
+    def _cpu_dispatch(op, x: Optional[Tensor] = None, y: Optional[Tensor] = None, **kwargs) -> Buffer:
+        CPU.interface(op, x, y, **kwargs)
 
     @staticmethod
     # both the inputs can be None since BufferOps are also dispatched
