@@ -4,31 +4,19 @@ import ctypes
 import os
 import subprocess
 import tempfile
-from typing import TYPE_CHECKING 
+from typing import TYPE_CHECKING, Optional 
 
 from dlgrad.buffer import Buffer
 from dlgrad.c_code import C
 from dlgrad.dtype import dtypes
 from dlgrad.helpers import BroadcastHelper, get_shared_lib_name, get_temp_loc
+from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps
 
 if TYPE_CHECKING:
     from dlgrad.tensor import Tensor
 
 
-def _compile_clang(name: str, prg: str) -> tuple[ctypes.CDLL, str]:
-    with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
-        temp_file = str(output_file.name)
-        subprocess.check_output(
-            args=[
-                "clang", "-O3", "-march=native", "-ffast-math", "-funroll-loops", "-fPIC",
-                "-x", "c", "-", "-shared", "-o", temp_file
-            ],
-            input=prg.encode("utf-8"),
-        )
-        dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
-        CPU.dlls[name] = dll, temp_file
 
-    return dll, temp_file
 
 
 # TODO: is it dll or sha_lib ?
@@ -42,7 +30,7 @@ class CPU:
 
         if axis == 0:
             prg = C.add_axis0(c_dtype, out_len=BroadcastHelper.out_len)
-            add_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+            add_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
             add_dll.add_with_broadcasting.argtypes = [
                 ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
                 ctypes.c_int, ctypes.c_int, ctypes.c_int
@@ -51,7 +39,7 @@ class CPU:
             data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel, x.shape[1])
         elif axis == 1:
             prg = C.add_axis1(c_dtype, out_len=BroadcastHelper.out_len)
-            add_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+            add_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
             add_dll.add_with_broadcasting.argtypes = [
                 ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
                 ctypes.c_int, ctypes.c_int
@@ -60,7 +48,7 @@ class CPU:
             data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel)
         else:
             prg = C.add(c_dtype, out_len=BroadcastHelper.out_len)
-            add_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+            add_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
             add_dll.add.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
             add_dll.add.restype = ctypes.POINTER(ctypes.c_float)
             data = add_dll.add(x.data.buffer, y.data.buffer)
@@ -78,20 +66,20 @@ class CPU:
 
         if axis == 0:
             prg = C.sum_axis0(c_dtype)
-            sum_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+            sum_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
             sum_dll.sum_axis0.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             sum_dll.sum_axis0.restype = ctypes.POINTER(ctypes.c_float)
             # TODO: assuming y is getting broadcasted, maybe pass from dispatch ?
             data = sum_dll.sum_axis0(x.data.buffer, x.numel, x.shape[0], x.shape[1])
         elif axis == 1:
             prg = C.sum_axis1(c_dtype)
-            sum_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+            sum_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
             sum_dll.sum_axis1.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int]
             sum_dll.sum_axis1.restype = ctypes.POINTER(ctypes.c_float)
             data = sum_dll.sum_axis1(x.data.buffer, x.numel, x.shape[0], x.shape[1])
         else:
             prg = C.sum(c_dtype)
-            sum_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+            sum_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
             sum_dll.sum.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
             sum_dll.sum.restype = ctypes.c_float
             data = sum_dll.sum(x.data.buffer, x.numel)
@@ -110,7 +98,7 @@ class CPU:
         c_dtype = dtypes.get_c_dtype(dtype)
         prg = C.matmul(c_dtype)
         name = get_shared_lib_name("matmul", c_dtype, x.device.name)
-        matmul_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+        matmul_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
 
         matmul_dll.matmul.argtypes = [
                 ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
@@ -132,7 +120,7 @@ class CPU:
         c_dtype = dtypes.get_c_dtype(dtype)
         prg = C.transpose(c_dtype)
         name = get_shared_lib_name("transpose", c_dtype, x.device.name)
-        transpose_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+        transpose_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
 
         transpose_dll.transpose.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
         transpose_dll.transpose.restype = ctypes.POINTER(ctypes.c_float)
@@ -147,7 +135,7 @@ class CPU:
     def _uniform(length: int, low=0.0, high=1.0) -> Buffer:
         prg = C.random_buffer()
         name = get_shared_lib_name("uniform")
-        rand_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+        rand_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
 
         rand_dll.create_rand_buffer.argtypes = (ctypes.c_int, ctypes.c_float, ctypes.c_float)
         rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float)
@@ -162,7 +150,7 @@ class CPU:
     def _ones(length: int) -> Buffer:
         prg = C.ones_buffer()
         name = get_shared_lib_name("ones")
-        ones_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+        ones_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
 
         ones_dll.create_ones_buffer.argtypes = (ctypes.c_int,)
         ones_dll.create_ones_buffer.restype = ctypes.POINTER(ctypes.c_float)
@@ -178,7 +166,7 @@ class CPU:
         c_dtype = dtypes.get_c_dtype(x.dtype)
         prg = C.relu(c_dtype)
         name = get_shared_lib_name("relu")
-        relu_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+        relu_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
 
         relu_dll.relu.argtypes = (ctypes.POINTER(ctypes.c_float), ctypes.c_int)
         relu_dll.relu.restype = ctypes.POINTER(ctypes.c_float)
@@ -194,7 +182,7 @@ class CPU:
         c_dtype = dtypes.get_c_dtype(x.dtype)
         prg = C.exp(c_dtype)
         name = get_shared_lib_name("exp")
-        exp_dll, temp_file = CPU.dlls.get(name, _compile_clang(name, prg))
+        exp_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
 
         exp_dll.exp.argtypes = (ctypes.POINTER(ctypes.c_float), ctypes.c_int)
         exp_dll.exp.restype = ctypes.POINTER(ctypes.c_float)
@@ -206,5 +194,43 @@ class CPU:
         return Buffer(data, temp_file)
     
     @staticmethod
-    def interface():
-        pass
+    def _compile_clang(name: str, prg: str) -> tuple[ctypes.CDLL, str]:
+        with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
+            temp_file = str(output_file.name)
+            subprocess.check_output(
+                args=[
+                    "clang", "-O3", "-march=native", "-ffast-math", "-funroll-loops", "-fPIC",
+                    "-x", "c", "-", "-shared", "-o", temp_file
+                ],
+                input=prg.encode("utf-8"),
+            )
+            dll = ctypes.CDLL(temp_file, mode=os.RTLD_LAZY)
+            CPU.dlls[name] = dll, temp_file
+
+        return dll, temp_file
+
+    @staticmethod
+    def interface(op, x: Optional[Tensor] = None, y: Optional[Tensor] = None, **kwargs) -> Buffer:
+        axis = kwargs.get("axis", None)
+
+        if isinstance(op, BinaryOps):
+            if op == BinaryOps.ADD:
+                return CPU._add(x, y, axis, x.dtype)
+            if op == BinaryOps.MATMUL:
+                return CPU._matmul(x, y, x.dtype)
+
+        elif isinstance(op, UnaryOps):
+            if op == UnaryOps.SUM:
+                return CPU._sum(x, axis, x.dtype)
+            if op == UnaryOps.TRANSPOSE:
+                return CPU._transpose(x, x.dtype)
+            if op == UnaryOps.MAX:
+                return CPU._relu(x)
+
+        elif isinstance(op, BufferOps):
+            if op == BufferOps.UNIFORM:
+                return CPU._uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
+            if op == BufferOps.ONES:
+                return CPU._ones(kwargs["out_len"])
+
+        raise ValueError(f"Unsupported operation: {op}")
