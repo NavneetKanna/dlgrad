@@ -8,6 +8,7 @@ import numpy as np
 
 from dlgrad.tensor import Tensor
 
+
 class TestOps(unittest.TestCase):
     def setUp(self):
         self.x = Tensor.rand((3, 2))

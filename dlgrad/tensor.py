@@ -341,9 +341,7 @@ class Tensor:
         )
 
     @staticmethod
-    def ones(
-        *shape, device: Optional[Device] = Device.CPU, dtype: Optional[dtypes] = dtypes.float32
-    ) -> Tensor:
+    def ones(*shape, device: Optional[Device] = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
         if device != Device.CPU:
             warnings.warn("Currently BufferOps are only created on CPU.")
 
