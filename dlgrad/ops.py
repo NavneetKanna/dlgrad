@@ -15,7 +15,6 @@ class Op:
     def __init__(self) -> None:
         self.parents: tuple = ()
 
-
 class Broadcast(Op):
     def forward(self, x: Tensor, y: Tensor) -> tuple:
         shape1 = x.shape
@@ -75,7 +74,6 @@ class Broadcast(Op):
 
         self.y.grad = out
 
-
 class Add(Op):
     def forward(self, x: Tensor, y: Tensor, out_shape: tuple) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
@@ -104,7 +102,6 @@ class Add(Op):
     def backward(self, grad_output):
         self.x.grad = grad_output if self.x.grad is None else self.x.grad + grad_output
         self.y.grad = grad_output if self.y.grad is None else self.y.grad + grad_output
-
 
 class Sum(Op):
     def forward(self, x: Tensor):
