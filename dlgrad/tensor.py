@@ -66,8 +66,8 @@ class Tensor:
     def numpy(self) -> np.ndarray:
         if not isinstance(self.data, Buffer):
             pass
-        elif self.numel == 1:
-            return self.data.buffer
+        # elif self.numel == 1:
+        #     return self.data.buffer.contents
         else:
             sd = ctypes.addressof(self.data.buffer.contents) + self.offset * ctypes.sizeof(ctypes.c_float)
             ptr = (ctypes.c_float * self.numel).from_address(sd)
@@ -95,7 +95,7 @@ class Tensor:
             offset = calculate_nchw_offset(h=indices, H=self.stride[0])
             tp = TensorProperties(
                 view=True,
-                offset=offset,
+                offset=self.offset+offset,
                 numel=prod(self.shape[1:]),
                 shape=self.shape[1:],
                 ndim=len(self.shape[1:]),
@@ -103,203 +103,6 @@ class Tensor:
                 contig=True,
             )
             return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
-
-        if self.ndim == 2:
-            if isinstance(indices, tuple):
-                h, w = indices
-                if h > self.shape[0]:
-                    raise IndexError(
-                        f"index {indices} > {self.shape[0]} of {self.shape}"
-                    )
-                if w > self.shape[1]:
-                    raise IndexError(
-                        f"index {indices} > {self.shape[1]} of {self.shape}"
-                    )
-
-                offset = calculate_nchw_offset(h=h, w=w, H=self.stride[0])
-                size = 1
-                tp = TensorProperties(
-                    view=True,
-                    offset=offset,
-                    numel=size,
-                    shape=(size,),
-                    ndim=len(size),
-                    stride=calculate_stride(size),
-                    contig=True,
-                )
-                return Tensor(
-                    Buffer(self.data.buffer), device=self.device, properties=tp
-                )
-
-        if self.ndim == 3:
-            if isinstance(indices, tuple):
-                length = len(indices)
-                if length == 3:
-                    c, h, w = indices
-                    if c > self.shape[0]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[0]} of {self.shape}"
-                        )
-                    if h > self.shape[1]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[1]} of {self.shape}"
-                        )
-                    if w > self.shape[2]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[2]} of {self.shape}"
-                        )
-
-                    offset = calculate_nchw_offset(
-                        c=c, h=h, w=w, C=self.stride[0], H=self.stride[1]
-                    )
-                    size = 1
-                    tp = TensorProperties(
-                        view=True,
-                        offset=offset,
-                        numel=size,
-                        shape=(size,),
-                        ndim=len(size),
-                        stride=calculate_stride(size),
-                        contig=True,
-                    )
-                    return Tensor(
-                        Buffer(self.data.buffer), device=self.device, properties=tp
-                    )
-                if length == 2:
-                    c, h = indices
-                    if c > self.shape[0]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[0]} of {self.shape}"
-                        )
-                    if h > self.shape[1]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[1]} of {self.shape} "
-                        )
-
-                    offset = calculate_nchw_offset(
-                        c=c, h=h, C=self.stride[0], H=self.stride[1]
-                    )
-                    size = self.stride[1]
-                    tp = TensorProperties(
-                        view=True,
-                        offset=offset,
-                        numel=size,
-                        shape=(size,),
-                        ndim=len(size),
-                        stride=calculate_stride(size),
-                        contig=True,
-                    )
-                    return Tensor(
-                        Buffer(self.data.buffer), device=self.device, properties=tp
-                    )
-
-        if self.ndim == 4:
-            if type(indices) == tuple:
-                length = len(indices)
-                if length == 4:
-                    n, c, h, w = indices
-                    if n > self.shape[0]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[0]} of {self.shape}"
-                        )
-                    if c > self.shape[1]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[1]} of {self.shape}"
-                        )
-                    if h > self.shape[2]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[2]} of {self.shape}"
-                        )
-                    if w > self.shape[3]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[3]} of {self.shape}"
-                        )
-
-                    offset = calculate_nchw_offset(
-                        n=n,
-                        c=c,
-                        h=h,
-                        w=w,
-                        N=self.stride[0],
-                        C=self.stride[1],
-                        H=self.stride[2],
-                    )
-                    size = 1
-                    tp = TensorProperties(
-                        view=True,
-                        offset=offset,
-                        numel=size,
-                        shape=(size,),
-                        ndim=len(size),
-                        stride=calculate_stride(size),
-                        contig=True,
-                    )
-                    return Tensor(
-                        Buffer(self.data.buffer), device=self.device, properties=tp
-                    )
-                if length == 3:
-                    n, c, h = indices
-                    if n > self.shape[0]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[0]} of {self.shape}"
-                        )
-                    if w > self.shape[1]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[1]} of {self.shape}"
-                        )
-                    if h > self.shape[2]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[2]} of {self.shape}"
-                        )
-
-                    offset = calculate_nchw_offset(
-                        n=n,
-                        c=c,
-                        h=h,
-                        N=self.stride[0],
-                        C=self.stride[1],
-                        H=self.stride[2],
-                    )
-                    size = self.stride[2]
-                    tp = TensorProperties(
-                        view=True,
-                        offset=offset,
-                        numel=size,
-                        shape=(size,),
-                        ndim=len(size),
-                        stride=calculate_stride(size),
-                        contig=True,
-                    )
-                    return Tensor(
-                        Buffer(self.data.buffer), device=self.device, properties=tp
-                    )
-                if length == 2:
-                    n, c = indices
-                    if n > self.shape[0]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[0]} of {self.shape}"
-                        )
-                    if c > self.shape[1]:
-                        raise IndexError(
-                            f"index {indices} > {self.shape[1]} of {self.shape}"
-                        )
-
-                    offset = calculate_nchw_offset(
-                        n=n, c=c, N=self.stride[0], C=self.stride[1]
-                    )
-                    size = self.stride[1]
-                    tp = TensorProperties(
-                        view=True,
-                        offset=offset,
-                        numel=size,
-                        shape=(size,),
-                        ndim=len(size),
-                        stride=calculate_stride(size),
-                        contig=True,
-                    )
-                    return Tensor(
-                        Buffer(self.data.buffer), device=self.device, properties=tp
-                    )
 
     # ***** BufferOps *****
     @staticmethod
