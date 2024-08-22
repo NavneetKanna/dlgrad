@@ -12,7 +12,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.dispatch import Dispatcher
 from dlgrad.dtype import dtypes
 from dlgrad.helpers import (BinaryOps, BufferOps, Device, ShapeError, UnaryOps,
-                            calculate_nchw_offset, calculate_stride, set_graph)
+                            calculate_nchw_offset, calculate_stride, set_graph, prod)
 
 
 class TensorProperties:
@@ -83,6 +83,7 @@ class Tensor:
         Buffer.free(self.data.buffer)
 
     # TODO: its complex, refactor later
+    # TODO: broken, fix and write test
     def __getitem__(self, indices):
         # TODO: all int, slices
         # NOTE: dlgrad is NCHW
@@ -92,14 +93,13 @@ class Tensor:
                 raise IndexError(f"index {indices} > {self.shape[0]} of {self.shape}")
 
             offset = calculate_nchw_offset(h=indices, H=self.stride[0])
-            size = self.stride[0]
             tp = TensorProperties(
                 view=True,
                 offset=offset,
-                numel=size,
-                shape=(size,),
-                ndim=len(size),
-                stride=calculate_stride(size),
+                numel=prod(self.shape[1:]),
+                shape=self.shape[1:],
+                ndim=len(self.shape[1:]),
+                stride=self.stride[1:],
                 contig=True,
             )
             return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
@@ -340,6 +340,7 @@ class Tensor:
             device=device, dtype=dtype, properties=tp,
         )
 
+    # ***** BufferOps ****
     @staticmethod
     def ones(*shape, device: Optional[Device] = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
         if device != Device.CPU:
@@ -424,6 +425,20 @@ class Tensor:
 
         return Exp().forward(self)
 
+    @staticmethod
+    def relu(x: Tensor) -> Tensor:
+        from dlgrad.ops import Relu
+
+        return Relu().forward(x)
+
+    @staticmethod
+    def softmax():
+        pass
+
+    @staticmethod
+    def log_softmax():
+        pass
+
     # ***** BinaryOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
@@ -453,13 +468,6 @@ class Tensor:
             Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.MATMUL),
             device=x.device, dtype=x.dtype, properties=tp
         )
-
-    # ***** Activation functions *****
-    @staticmethod
-    def relu(x: Tensor) -> Tensor:
-        from dlgrad.ops import Relu
-
-        return Relu().forward(x)
 
     # ***** Loss functions *****
     @staticmethod

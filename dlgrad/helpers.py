@@ -59,6 +59,12 @@ def calculate_numel(shape: tuple):
         out_len *= i
     return out_len
 
+def prod(x):
+    o = 1
+    for i in x: 
+        o *= i
+    return o
+
 def calculate_stride(shape: tuple):
     if len(shape) == 1:
         return [1]
