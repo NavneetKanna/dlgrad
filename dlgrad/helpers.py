@@ -21,6 +21,7 @@ class UnaryOps(Enum):
     TRANSPOSE = auto()
     SUM = auto()
     MAX = auto()
+    EXP = auto()
 
 
 class BufferOps(Enum):

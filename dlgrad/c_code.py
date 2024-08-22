@@ -92,14 +92,14 @@ class C:
         #include <math.h>
         #include <stdlib.h>
 
-        {dtype} exp({dtype} *arg, int len) 
+        {dtype} *expp({dtype} *x, int len) 
         {{
-            {dtype} *c = malloc(length * sizeof({dtype}));
+            {dtype} *c = malloc(len * sizeof({dtype}));
             if (c == NULL) 
                 return NULL;
 
-            for(int i=0, i<len; i++) {{
-                c[i] = exp(x);
+            for(int i=0; i<len; i++) {{
+                c[i] = expf(x[i]);
             }}
 
             return c;

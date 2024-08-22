@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 class Dispatcher:
     @staticmethod
     def _cpu_dispatch(op, x: Optional[Tensor] = None, y: Optional[Tensor] = None, **kwargs) -> Buffer:
-        CPU.interface(op, x, y, **kwargs)
+        return CPU.interface(op, x, y, **kwargs)
 
     @staticmethod
     # both the inputs can be None since BufferOps are also dispatched
