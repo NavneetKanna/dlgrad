@@ -33,7 +33,7 @@ class TestOps(unittest.TestCase):
     
     def test_exp(self):
         dl_out = Tensor.exp(self.x)
-        np.testing.assert_equal(dl_out.numpy(), np.exp(dl_out.numpy()))
+        np.testing.assert_equal(dl_out.numpy(), np.exp(self.x.numpy()))
 
 if __name__ == "__main__":
     unittest.main()
