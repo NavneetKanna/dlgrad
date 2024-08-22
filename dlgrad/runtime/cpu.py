@@ -181,9 +181,9 @@ class CPU:
         name = get_shared_lib_name("exp")
         exp_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
 
-        exp_dll.exp.argtypes = (ctypes.POINTER(ctypes.c_float), ctypes.c_int)
-        exp_dll.exp.restype = ctypes.POINTER(ctypes.c_float)
-        data = exp_dll.exp(x.data.buffer, x.numel)
+        exp_dll.expp.argtypes = (ctypes.POINTER(ctypes.c_float), ctypes.c_int)
+        exp_dll.expp.restype = ctypes.POINTER(ctypes.c_float)
+        data = exp_dll.expp(x.data.buffer, x.numel)
         if data is None:
             # TODO: create a new error
             print("Error: could not allocate memory")
@@ -223,6 +223,8 @@ class CPU:
                 return CPU._transpose(x, x.dtype)
             if op == UnaryOps.MAX:
                 return CPU._relu(x)
+            if op == UnaryOps.EXP:
+                return CPU._exp(x)
 
         elif isinstance(op, BufferOps):
             if op == BufferOps.UNIFORM:

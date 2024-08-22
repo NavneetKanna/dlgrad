@@ -149,7 +149,19 @@ class Relu(Op):
 
 class Exp(Op):
     def forward(self, x: Tensor):
-        pass
+        tp = TensorProperties(
+            view=False, offset=0, numel=x.numel, shape=x.shape,
+            ndim=x.ndim, stride=x.stride, contig=True, metadata={"created_by": "Exp", "ops": "UnaryOps"},
+        )
+        out = Tensor(
+            Dispatcher.dispatch(x=x, ops=UnaryOps.EXP),
+            device=x.device, dtype=x.dtype, properties=tp,
+        )
+        
+        if get_graph():
+            graph.add_edge(child=out, parents=(x,))
+
+        return out
     
     def backward(self):
         pass

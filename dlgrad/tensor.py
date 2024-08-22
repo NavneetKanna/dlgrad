@@ -418,6 +418,12 @@ class Tensor:
 
         return Sum().forward(self)
 
+    @staticmethod
+    def exp(self):
+        from dlgrad.ops import Exp
+
+        return Exp().forward(self)
+
     # ***** BinaryOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
