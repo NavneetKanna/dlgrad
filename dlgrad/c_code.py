@@ -235,11 +235,12 @@ class C:
         #include <stdio.h>
         #include <stdlib.h>
 
-        {dtype} sum({dtype} *a, int len) {{
-            {dtype} sum = 0.0f;
+        {dtype} *sum({dtype} *a, int len) {{
+            // so that when converting to np, things are simple
+            {dtype} *sum = malloc(sizeof({dtype}));
             
             for (int i=0; i<len; i++) {{
-                sum += a[i];
+                sum[0] += a[i];
             }}
 
             return sum;
