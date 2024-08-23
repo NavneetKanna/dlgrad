@@ -66,8 +66,9 @@ class Tensor:
     def numpy(self) -> np.ndarray:
         if not isinstance(self.data, Buffer):
             pass
-        elif self.numel == 1 and not self.view:
-            return self.data.buffer
+        # elif self.numel == 1 and not self.view:
+        #     print(self.data.buffer, type(self.data.buffer))
+        #     return self.data.buffer.contents
         else:
             sd = ctypes.addressof(self.data.buffer.contents) + self.offset * ctypes.sizeof(ctypes.c_float)
             ptr = (ctypes.c_float * self.numel).from_address(sd)
@@ -82,7 +83,6 @@ class Tensor:
     def cleanup(self):
         Buffer.free(self.data.buffer)
 
-    # TODO: broken, fix and write test
     def __getitem__(self, indices):
         # TODO: all int, slices
         # NOTE: dlgrad is NCHW

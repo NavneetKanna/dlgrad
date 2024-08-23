@@ -78,7 +78,7 @@ class CPU:
             prg = C.sum(c_dtype)
             sum_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
             sum_dll.sum.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
-            sum_dll.sum.restype = ctypes.c_float
+            sum_dll.sum.restype = ctypes.POINTER(ctypes.c_float)
             data = sum_dll.sum(x.data.buffer, x.numel)
 
         if data is None:
