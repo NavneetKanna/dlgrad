@@ -40,3 +40,11 @@ a.grad.numpy()
 b.grad.numpy()
 
 ```
+
+## Testing
+
+To run all the tests, run the command from the root dir
+
+```bash
+python3 -m unittest discover test
+```
