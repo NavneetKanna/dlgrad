@@ -66,8 +66,8 @@ class Tensor:
     def numpy(self) -> np.ndarray:
         if not isinstance(self.data, Buffer):
             pass
-        # elif self.numel == 1:
-        #     return self.data.buffer.contents
+        elif self.numel == 1 and not self.view:
+            return self.data.buffer
         else:
             sd = ctypes.addressof(self.data.buffer.contents) + self.offset * ctypes.sizeof(ctypes.c_float)
             ptr = (ctypes.c_float * self.numel).from_address(sd)
@@ -82,7 +82,6 @@ class Tensor:
     def cleanup(self):
         Buffer.free(self.data.buffer)
 
-    # TODO: its complex, refactor later
     # TODO: broken, fix and write test
     def __getitem__(self, indices):
         # TODO: all int, slices
@@ -90,17 +89,12 @@ class Tensor:
 
         if isinstance(indices, int):
             if indices > self.shape[0]:
-                raise IndexError(f"index {indices} > {self.shape[0]} of {self.shape}")
+                raise IndexError(f"index {indices} is out of bounds with {self.shape[0]}")
 
             offset = calculate_nchw_offset(h=indices, H=self.stride[0])
             tp = TensorProperties(
-                view=True,
-                offset=self.offset+offset,
-                numel=prod(self.shape[1:]),
-                shape=self.shape[1:],
-                ndim=len(self.shape[1:]),
-                stride=self.stride[1:],
-                contig=True,
+                view=True, offset=self.offset+offset, numel=prod(self.shape[1:]), shape=self.shape[1:],
+                ndim=len(self.shape[1:]), stride=self.stride[1:], contig=True
             )
             return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
 
