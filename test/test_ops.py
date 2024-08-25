@@ -71,5 +71,10 @@ class TestOps(unittest.TestCase):
         dl_out = Tensor.exp(self.x)
         np.testing.assert_equal(dl_out.numpy(), np.exp(self.x.numpy()))
 
+    def test_max(self):
+        dl_out = Tensor.max(self.x)
+        np.testing.assert_equal(dl_out.numpy(), np.max(self.x.numpy()))
+
+
 if __name__ == "__main__":
     unittest.main()

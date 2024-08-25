@@ -280,6 +280,22 @@ class CPU:
         return Buffer(data, temp_file)
 
     @staticmethod
+    def _max(x: Tensor) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(x.dtype)
+        prg = C.max(c_dtype)
+        name = get_shared_lib_name("max")
+        max_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+
+        max_dll.max.argtypes = (ctypes.POINTER(ctypes.c_float), ctypes.c_int)
+        max_dll.max.restype = ctypes.POINTER(ctypes.c_float)
+        data = max_dll.max(x.data.buffer, x.numel)
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
+
+    @staticmethod
     def _exp(x: Tensor) -> Buffer:
         c_dtype = dtypes.get_c_dtype(x.dtype)
         prg = C.exp(c_dtype)
@@ -311,9 +327,11 @@ class CPU:
 
         return dll, temp_file
 
+    # TODO: is or == ?
     @staticmethod
     def interface(op, x: Optional[Tensor] = None, y: Optional[Tensor] = None, **kwargs) -> Buffer:
         axis = kwargs.get("axis", None)
+        func = kwargs.get("func", None)
 
         if isinstance(op, BinaryOps):
             if op == BinaryOps.ADD:
@@ -331,7 +349,10 @@ class CPU:
             if op == UnaryOps.TRANSPOSE:
                 return CPU._transpose(x, x.dtype)
             if op == UnaryOps.MAX:
-                return CPU._relu(x)
+                if func == "max":
+                    return CPU._max(x)
+                elif func == "relu":
+                    return CPU._relu(x)
             if op == UnaryOps.EXP:
                 return CPU._exp(x)
 
