@@ -38,10 +38,6 @@ class Device(Enum):
 class ShapeError(Exception): ...
 
 
-class BroadcastHelper:
-    out_len = 0
-
-
 def calculate_sum_axis(shape1: tuple, shape2: tuple) -> int:
     if shape1[0] == shape2[0]:
         return 1
