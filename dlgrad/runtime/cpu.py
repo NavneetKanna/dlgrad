@@ -10,7 +10,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.c_code import C
 from dlgrad.dtype import dtypes
 from dlgrad.helpers import (BinaryOps, BroadcastHelper, BufferOps, UnaryOps,
-                            get_shared_lib_name, get_temp_loc)
+                            get_shared_lib_name, get_temp_loc, calculate_add_axis, calculate_numel, get_broadcast_shape)
 
 if TYPE_CHECKING:
     from dlgrad.tensor import Tensor
@@ -21,12 +21,17 @@ class CPU:
     dlls: dict[ctypes.CDLL] = {}
     
     @staticmethod
-    def _add(x: Tensor, y: Tensor, axis: int, dtype: dtypes) -> Buffer:
+    def _add(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         c_dtype = dtypes.get_c_dtype(dtype)
+        axis = -2 if x.numel == 1 or y.numel == 1 else calculate_add_axis(x.shape, y.shape)
+        if axis is None:
+            # TODO: Raise error
+            print(f"add not compatiable with shapes {x.shape} / {y.shape}")
         name = get_shared_lib_name(f"add_axis{axis}", c_dtype, x.device.name)
+        out_len = calculate_numel(get_broadcast_shape(x, y))
 
         if axis == 0:
-            prg = C.add_axis0(c_dtype, out_len=BroadcastHelper.out_len)
+            prg = C.add_axis0(c_dtype, out_len)
             add_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
             add_dll.add_with_broadcasting.argtypes = [
                 ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
@@ -35,7 +40,7 @@ class CPU:
             add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
             data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel, x.shape[1])
         elif axis == 1:
-            prg = C.add_axis1(c_dtype, out_len=BroadcastHelper.out_len)
+            prg = C.add_axis1(c_dtype, out_len)
             add_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
             add_dll.add_with_broadcasting.argtypes = [
                 ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
@@ -43,12 +48,18 @@ class CPU:
             ]
             add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
             data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel)
-        else:
-            prg = C.add(c_dtype, out_len=BroadcastHelper.out_len)
+        elif axis == -1:
+            prg = C.add_m1(c_dtype, out_len)
             add_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
-            add_dll.add.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
-            add_dll.add.restype = ctypes.POINTER(ctypes.c_float)
-            data = add_dll.add(x.data.buffer, y.data.buffer)
+            add_dll.add_m1.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+            add_dll.add_m1.restype = ctypes.POINTER(ctypes.c_float)
+            data = add_dll.add_m1(x.data.buffer, y.data.buffer)
+        else:
+            prg = C.add_m2(c_dtype, out_len)
+            add_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+            add_dll.add_m2.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+            add_dll.add_m2.restype = ctypes.POINTER(ctypes.c_float)
+            data = add_dll.add_m2(x.data.buffer, y.data.buffer)
 
         if data is None:
             # TODO: create a new error
@@ -56,6 +67,54 @@ class CPU:
 
         return Buffer(data, temp_file)
     
+    @staticmethod
+    def _div(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(dtype)
+        axis = -2 if x.numel == 1 or y.numel == 1 else calculate_add_axis(x.shape, y.shape)
+        print(f"axis {axis}")
+        print(x.shape, y.shape)
+        name = get_shared_lib_name(f"div_axis{axis}", c_dtype, x.device.name)
+
+        if axis is None:
+            # TODO: Raise error
+            print(f"div not compatiable with shapes {x.shape} / {y.shape}")
+
+        if axis == 0:
+            prg = C.div_axis0(c_dtype, out_len=BroadcastHelper.out_len)
+            div_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+            div_dll.div_with_broadcasting.argtypes = [
+                ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int, ctypes.c_int, ctypes.c_int
+            ]
+            div_dll.div_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
+            data = div_dll.div_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel, x.shape[1])
+        elif axis == 1:
+            prg = C.div_axis1(c_dtype, out_len=BroadcastHelper.out_len)
+            div_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+            div_dll.div_with_broadcasting.argtypes = [
+                ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int, ctypes.c_int
+            ]
+            div_dll.div_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
+            data = div_dll.div_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel)
+        elif axis == -1:
+            prg = C.div_m1(c_dtype, out_len=BroadcastHelper.out_len)
+            div_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+            div_dll.div_m1.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+            div_dll.div_m1.restype = ctypes.POINTER(ctypes.c_float)
+            data = div_dll.div_m1(x.data.buffer, y.data.buffer)
+        else:
+            prg = C.div_m2(c_dtype, out_len=BroadcastHelper.out_len)
+            div_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+            div_dll.div_m2.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+            div_dll.div_m2.restype = ctypes.POINTER(ctypes.c_float)
+            data = div_dll.div_m2(x.data.buffer, y.data.buffer)
+
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
     @staticmethod
     def _sum(x: Tensor, axis: int, dtype: dtypes) -> Buffer:
         c_dtype = dtypes.get_c_dtype(dtype)
@@ -212,7 +271,9 @@ class CPU:
 
         if isinstance(op, BinaryOps):
             if op == BinaryOps.ADD:
-                return CPU._add(x, y, axis, x.dtype)
+                return CPU._add(x, y, x.dtype)
+            if op == BinaryOps.DIV:
+                return CPU._div(x, y, x.dtype)
             if op == BinaryOps.MATMUL:
                 return CPU._matmul(x, y, x.dtype)
 

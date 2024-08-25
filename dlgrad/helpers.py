@@ -14,6 +14,7 @@ def set_graph(val):
 
 class BinaryOps(Enum):
     ADD = auto()
+    DIV = auto()
     MATMUL = auto()
 
 
@@ -47,11 +48,39 @@ def calculate_sum_axis(shape1: tuple, shape2: tuple) -> int:
     return 0
 
 def calculate_add_axis(shape1: tuple, shape2: tuple) -> int:
+    if not shape1 or not shape2:
+        return -2
     if shape1 == shape2:
         return -1
     if shape1[0] == shape2[0]:
         return 0
-    return 1
+    if shape1[-1] == shape2[-1]:
+        return 1
+    return None
+
+def get_broadcast_shape(x: "Tensor", y: "Tensor"): # noqa: F821 # type: ignore
+        shape1 = x.shape
+        shape2 = y.shape
+
+        if x.ndim > 2 or y.ndim > 2 and shape1 != shape2:
+            print("dlgrad does not support broadcasting for dims greater than 2")
+
+        output_shape = []
+
+        shape1 = shape1[::-1]
+        shape2 = shape2[::-1]
+
+        for i in range(max(len(shape1), len(shape2))):
+            dim1 = shape1[i] if i < len(shape1) else 1
+            dim2 = shape2[i] if i < len(shape2) else 1
+            if dim1 == 1 or dim2 == 1 or dim1 == dim2:
+                output_shape.append(max(dim1, dim2))
+            else:
+                # TODO: Add error here
+                print("Shapes are not compatible for broadcasting")
+
+        return tuple(output_shape[::-1])
+
 
 def calculate_numel(shape: tuple):
     out_len = 1

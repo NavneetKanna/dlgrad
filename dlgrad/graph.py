@@ -63,7 +63,7 @@ class Graph:
                     p.properties.metadata["node_id"] = child.properties.metadata["node_id"]
 
     def save_graph(self):
-        print("Saving graph /tmp/file.dot")
+        print("Saving graph /tmp/graph.svg")
         write_dot(self.G, "/tmp/file.dot")
         os.system("dot -Tsvg /tmp/file.dot -o /tmp/graph.svg")
         print("Done")
