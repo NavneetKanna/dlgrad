@@ -108,9 +108,7 @@ class Tensor:
             warnings.warn("Currently BufferOps are only created on CPU.")
 
         if dtype != dtypes.float32:
-            warnings.warn(
-                "Currently dlgrad only supports float32, but more dtypes coming in future. Creating data with dtype=float32."
-            )
+            warnings.warn("Currently dlgrad only supports float32, but more dtypes coming in future. Creating data with dtype=float32.")
 
         if isinstance(shape[0], tuple):
             shape = shape[0]
@@ -137,7 +135,6 @@ class Tensor:
             device=device, dtype=dtype, properties=tp,
         )
 
-    # ***** BufferOps ****
     @staticmethod
     def ones(*shape, device: Optional[Device] = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
         if device != Device.CPU:
@@ -239,15 +236,21 @@ class Tensor:
     # ***** BinaryOps *****
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
-        from dlgrad.ops import Add, Broadcast
+        from dlgrad.ops import Add
 
-        # TODO: Check in broadcast ?
+        return Add().forward(x, y)
+
+    @staticmethod
+    def div(x: Tensor, y: Tensor) -> Tensor:
+        from dlgrad.ops import Div, Broadcast
+
+        # TODO: Check in Add ?
         if not x.shape == y.shape:
             out_shape = Broadcast().forward(x, y)
         else:
             out_shape = x.shape
 
-        return Add().forward(x, y, out_shape)
+        return Div().forward(x, y, out_shape)
 
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
@@ -300,6 +303,9 @@ class Tensor:
 
     def __add__(self, other):
         return Tensor.add(self, other)
+    
+    def __truediv__(self, other):
+        return Tensor.div(self, other)
 
     @property
     def shape(self):

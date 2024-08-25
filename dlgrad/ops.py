@@ -1,7 +1,7 @@
 from dlgrad import graph
 from dlgrad.dispatch import Dispatcher
-from dlgrad.helpers import (BinaryOps, BroadcastHelper, UnaryOps,
-                            calculate_add_axis, calculate_numel,
+from dlgrad.helpers import (BinaryOps, UnaryOps,
+                            get_broadcast_shape, calculate_numel,
                             calculate_stride, calculate_sum_axis, get_graph)
 from dlgrad.tensor import Tensor, TensorProperties
 
@@ -17,28 +17,10 @@ class Op:
 
 class Broadcast(Op):
     def forward(self, x: Tensor, y: Tensor) -> tuple:
-        shape1 = x.shape
-        shape2 = y.shape
+        if x.shape == y.shape:
+            return x.shape
 
-        if x.ndim > 2 or y.ndim > 2 and shape1 != shape2:
-            print("Dlgrad does not support broadcasting for dims greater than 2")
-
-        output_shape = []
-
-        shape1 = shape1[::-1]
-        shape2 = shape2[::-1]
-
-        for i in range(max(len(shape1), len(shape2))):
-            dim1 = shape1[i] if i < len(shape1) else 1
-            dim2 = shape2[i] if i < len(shape2) else 1
-            if dim1 == 1 or dim2 == 1 or dim1 == dim2:
-                output_shape.append(max(dim1, dim2))
-            else:
-                # TODO: Add error here
-                print("Shapes are not compatible for broadcasting")
-
-        out_shape = tuple(output_shape[::-1])
-        BroadcastHelper.out_len = calculate_numel(out_shape)
+        out_shape = get_broadcast_shape(x, y) 
 
         y._ctx = self
         self.out_shape = y.shape
@@ -75,18 +57,17 @@ class Broadcast(Op):
         self.y.grad = out
 
 class Add(Op):
-    def forward(self, x: Tensor, y: Tensor, out_shape: tuple) -> Tensor:
+    def forward(self, x: Tensor, y: Tensor) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
-        axis = calculate_add_axis(x.shape, y.shape)
-
+        out_shape = Broadcast().forward(x, y)
         tp = TensorProperties(
             view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape,
             ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True, 
             metadata={"created_by": "Add", "ops": "BinaryOps"}
         )
         out = Tensor(
-            Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD, axis=axis),
+            Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.ADD),
             device=x.device, dtype=x.dtype, properties=tp
         )
 
@@ -103,6 +84,33 @@ class Add(Op):
         self.x.grad = grad_output if self.x.grad is None else self.x.grad + grad_output
         self.y.grad = grad_output if self.y.grad is None else self.y.grad + grad_output
 
+class Div(Op):
+    def forward(self, x: Tensor, y: Tensor, out_shape: tuple) -> Tensor:
+        assert x.device == y.device, f"{x.device} and {y.device} does not match"
+
+        tp = TensorProperties(
+            view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape,
+            ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True, 
+            metadata={"created_by": "Div", "ops": "BinaryOps"}
+        )
+        out = Tensor(
+            Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.DIV),
+            device=x.device, dtype=x.dtype, properties=tp
+        )
+
+        out._ctx = self
+        self.parents = (x, y)
+        self.x, self.y = x, y
+
+        if get_graph():
+            graph.add_edge(child=out, parents=(x, y))
+
+        return out
+
+    def backward(self, grad_output):
+        pass
+
+# TODO: Accept axis arg
 class Sum(Op):
     def forward(self, x: Tensor):
         tp = TensorProperties(

@@ -18,6 +18,28 @@ class TestOps(unittest.TestCase):
         dl_out = self.x+y
         np_out = self.x.numpy() + y.numpy()
         np.testing.assert_equal(dl_out.numpy(), np_out)
+        y = Tensor.rand((2))
+        dl_out = self.x+y
+        np_out = self.x.numpy() + y.numpy()
+        np.testing.assert_equal(dl_out.numpy(), np_out)
+        y = Tensor.rand((2))
+        dl_out = self.x+y
+        np_out = self.x.numpy() + y.numpy()
+        np.testing.assert_equal(dl_out.numpy(), np_out)
+
+    # def test_div(self):
+    #     y = Tensor.rand((3, 2))
+    #     dl_out = self.x/y
+    #     np_out = self.x.numpy() / y.numpy()
+    #     np.testing.assert_equal(dl_out.numpy(), np_out)
+    #     y = Tensor.rand((2))
+    #     dl_out = self.x/y
+    #     np_out = self.x.numpy() / y.numpy()
+    #     np.testing.assert_equal(dl_out.numpy(), np_out)
+    #     y = Tensor.rand((2))
+    #     dl_out = self.x/y
+    #     np_out = self.x.numpy() / y.numpy()
+    #     np.testing.assert_equal(dl_out.numpy(), np_out)
 
     def test_transpose(self):
         y = Tensor.transpose(self.x)
