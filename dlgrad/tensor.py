@@ -245,6 +245,12 @@ class Tensor:
         from dlgrad.ops import Div
 
         return Div().forward(x, y)
+    
+    @staticmethod
+    def sub(x: Tensor, y: Tensor) -> Tensor:
+        from dlgrad.ops import Sub
+
+        return Sub().forward(x, y)
 
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
@@ -298,6 +304,9 @@ class Tensor:
     def __add__(self, other):
         return Tensor.add(self, other)
     
+    def __sub__(self, other):
+        return Tensor.sub(self, other)
+
     def __truediv__(self, other):
         return Tensor.div(self, other)
 

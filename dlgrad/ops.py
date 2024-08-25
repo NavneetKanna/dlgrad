@@ -109,6 +109,33 @@ class Div(Op):
     def backward(self, grad_output):
         pass
 
+class Sub(Op):
+    def forward(self, x: Tensor, y: Tensor) -> Tensor:
+        assert x.device == y.device, f"{x.device} and {y.device} does not match"
+
+        out_shape = Broadcast().forward(x, y)
+        tp = TensorProperties(
+            view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape,
+            ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True, 
+            metadata={"created_by": "Sub", "ops": "BinaryOps"}
+        )
+        out = Tensor(
+            Dispatcher.dispatch(x=x, y=y, ops=BinaryOps.SUB),
+            device=x.device, dtype=x.dtype, properties=tp
+        )
+
+        out._ctx = self
+        self.parents = (x, y)
+        self.x, self.y = x, y
+
+        if get_graph():
+            graph.add_edge(child=out, parents=(x, y))
+
+        return out
+
+    def backward(self, grad_output):
+        pass
+
 # TODO: Accept axis arg
 class Sum(Op):
     def forward(self, x: Tensor):

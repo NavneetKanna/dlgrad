@@ -66,7 +66,54 @@ class CPU:
             print("Error: could not allocate memory")
 
         return Buffer(data, temp_file)
-    
+
+    @staticmethod
+    def _sub(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(dtype)
+        axis = -2 if x.numel == 1 or y.numel == 1 else calculate_add_axis(x.shape, y.shape)
+        if axis is None:
+            # TODO: Raise error
+            print(f"subtraction not compatiable with shapes {x.shape} / {y.shape}")
+        name = get_shared_lib_name(f"sub_axis{axis}", c_dtype, x.device.name)
+        out_len = calculate_numel(get_broadcast_shape(x, y))
+
+        if axis == 0:
+            prg = C.sub_axis0(c_dtype, out_len)
+            sub_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+            sub_dll.sub_with_broadcasting.argtypes = [
+                ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int, ctypes.c_int, ctypes.c_int
+            ]
+            sub_dll.sub_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
+            data = sub_dll.sub_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel, x.shape[1])
+        elif axis == 1:
+            prg = C.sub_axis1(c_dtype, out_len)
+            sub_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+            sub_dll.sub_with_broadcasting.argtypes = [
+                ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int, ctypes.c_int
+            ]
+            sub_dll.sub_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
+            data = sub_dll.sub_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel)
+        elif axis == -1:
+            prg = C.sub_m1(c_dtype, out_len)
+            sub_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+            sub_dll.sub_m1.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+            sub_dll.sub_m1.restype = ctypes.POINTER(ctypes.c_float)
+            data = sub_dll.sub_m1(x.data.buffer, y.data.buffer)
+        else:
+            prg = C.sub_m2(c_dtype, out_len)
+            sub_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+            sub_dll.sub_m2.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+            sub_dll.sub_m2.restype = ctypes.POINTER(ctypes.c_float)
+            data = sub_dll.sub_m2(x.data.buffer, y.data.buffer)
+
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
+
     @staticmethod
     def _div(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         c_dtype = dtypes.get_c_dtype(dtype)
@@ -271,6 +318,8 @@ class CPU:
         if isinstance(op, BinaryOps):
             if op == BinaryOps.ADD:
                 return CPU._add(x, y, x.dtype)
+            if op == BinaryOps.SUB:
+                return CPU._sub(x, y, x.dtype)
             if op == BinaryOps.DIV:
                 return CPU._div(x, y, x.dtype)
             if op == BinaryOps.MATMUL:
