@@ -213,6 +213,11 @@ class Tensor:
 
         return Sum().forward(self)
 
+    def max(self):
+        from dlgrad.ops import Max
+
+        return Max().forward(self)
+
     @staticmethod
     def exp(self):
         from dlgrad.ops import Exp
@@ -226,8 +231,8 @@ class Tensor:
         return Relu().forward(x)
 
     @staticmethod
-    def softmax():
-        pass
+    def softmax(x: Tensor):
+        t = x - ...
 
     @staticmethod
     def log_softmax():

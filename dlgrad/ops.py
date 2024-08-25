@@ -82,6 +82,7 @@ class Add(Op):
         self.x.grad = grad_output if self.x.grad is None else self.x.grad + grad_output
         self.y.grad = grad_output if self.y.grad is None else self.y.grad + grad_output
 
+
 class Div(Op):
     def forward(self, x: Tensor, y: Tensor) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
@@ -109,6 +110,7 @@ class Div(Op):
     def backward(self, grad_output):
         pass
 
+
 class Sub(Op):
     def forward(self, x: Tensor, y: Tensor) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
@@ -135,6 +137,7 @@ class Sub(Op):
 
     def backward(self, grad_output):
         pass
+
 
 # TODO: Accept axis arg
 class Sum(Op):
@@ -165,6 +168,32 @@ class Sum(Op):
             else self.x.grad + Tensor.ones(self.x.shape)
         )
 
+
+# TODO: Accept axis arg
+class Max(Op):
+    def forward(self, x: Tensor):
+        tp = TensorProperties(
+            view=False, offset=0, numel=1, shape=(),
+            ndim=1, stride=(1,), contig=True, metadata={"created_by": "Max", "ops": "UnaryOps"},
+        )
+        out = Tensor(
+            Dispatcher.dispatch(x=x, ops=UnaryOps.MAX, func="max"),
+            device=x.device, dtype=x.dtype, properties=tp
+        )
+
+        if get_graph():
+            graph.add_edge(child=out, parents=(x,))
+
+        self.x = x
+        out._ctx = self
+        self.parents = (x,)
+
+        return out
+
+    def backward(self, grad_output):
+        pass
+        
+
 class Relu(Op):
     def forward(self, x: Tensor):
         tp = TensorProperties(
@@ -172,14 +201,15 @@ class Relu(Op):
             ndim=x.ndim, stride=x.stride, contig=True, metadata={"created_by": "Relu", "ops": "UnaryOps"},
         )
         out = Tensor(
-            Dispatcher.dispatch(x=x, ops=UnaryOps.MAX),
-            device=x.device, dtype=x.dtype, properties=tp,
+            Dispatcher.dispatch(x=x, ops=UnaryOps.MAX, func="relu"),
+            device=x.device, dtype=x.dtype, properties=tp
         )
         
         if get_graph():
             graph.add_edge(child=out, parents=(x,))
 
         return out
+
 
 class Exp(Op):
     def forward(self, x: Tensor):

@@ -2,6 +2,7 @@ class C:
     # TODO: Pass all args when compling itself ?
     # TODO: Should I create the output tensors in ctypes itself ?
     # TODO: Change the dtype in func
+    # TODO: Use ? op
     @staticmethod
     def random_buffer() -> str:
         prg = """
@@ -514,6 +515,31 @@ class C:
                     out[i] = a[i];
                 }}
             }}
+            
+            return out;
+        }}
+        """
+        return prg
+
+    @staticmethod
+    def max(dtype: str):
+        prg = f"""
+        #include <stdlib.h>
+
+        {dtype} *max({dtype} *a, int len) 
+        {{
+            {dtype} *out = malloc(sizeof({dtype}));
+            if (out == NULL)
+                return NULL;
+
+            {dtype} max = 0;
+            for (int i=0; i<len; i++) {{
+                if (a[i] > max) {{
+                    max = a[i];
+                }}
+            }}
+
+            out[0] = max;
             
             return out;
         }}
