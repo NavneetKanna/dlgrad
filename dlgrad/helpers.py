@@ -15,6 +15,7 @@ def set_graph(val):
 class BinaryOps(Enum):
     ADD = auto()
     DIV = auto()
+    SUB = auto()
     MATMUL = auto()
 
 
