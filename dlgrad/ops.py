@@ -31,9 +31,7 @@ class Broadcast(Op):
             view=None, offset=None, numel=None, shape=x.shape,
             ndim=None, stride=None, contig=None, metadata={"created_by": None, "ops": None},
         )
-        out = Tensor(
-            data=None, requires_grad=None, device=None, dtype=None, properties=tp
-        )
+        out = Tensor(data=None, requires_grad=None, device=None, dtype=None, properties=tp)
 
         if get_graph():
             graph.add_edge(child=out, parents=(y,))
@@ -85,9 +83,10 @@ class Add(Op):
         self.y.grad = grad_output if self.y.grad is None else self.y.grad + grad_output
 
 class Div(Op):
-    def forward(self, x: Tensor, y: Tensor, out_shape: tuple) -> Tensor:
+    def forward(self, x: Tensor, y: Tensor) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
+        out_shape = Broadcast().forward(x, y)
         tp = TensorProperties(
             view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape,
             ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True, 

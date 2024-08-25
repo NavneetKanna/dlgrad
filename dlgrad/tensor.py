@@ -242,15 +242,9 @@ class Tensor:
 
     @staticmethod
     def div(x: Tensor, y: Tensor) -> Tensor:
-        from dlgrad.ops import Div, Broadcast
+        from dlgrad.ops import Div
 
-        # TODO: Check in Add ?
-        if not x.shape == y.shape:
-            out_shape = Broadcast().forward(x, y)
-        else:
-            out_shape = x.shape
-
-        return Div().forward(x, y, out_shape)
+        return Div().forward(x, y)
 
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
