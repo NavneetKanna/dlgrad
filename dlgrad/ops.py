@@ -1,7 +1,7 @@
 from dlgrad import graph
 from dlgrad.dispatch import Dispatcher
 from dlgrad.helpers import (BinaryOps, UnaryOps,
-                            get_broadcast_shape, calculate_numel,
+                            get_broadcast_shape, calculate_numel, calculate_uops,
                             calculate_stride, calculate_sum_axis, get_graph)
 from dlgrad.tensor import Tensor, TensorProperties
 
@@ -86,7 +86,6 @@ class Add(Op):
 class Div(Op):
     def forward(self, x: Tensor, y: Tensor) -> Tensor:
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
-
         out_shape = Broadcast().forward(x, y)
         tp = TensorProperties(
             view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape,
@@ -141,13 +140,14 @@ class Sub(Op):
 
 # TODO: Accept axis arg
 class Sum(Op):
-    def forward(self, x: Tensor):
+    def forward(self, x: Tensor, axis=None, keepdim=False):
+        out_shape, numel, ndim, stride = calculate_uops(x.shape, axis, keepdim)
         tp = TensorProperties(
-            view=False, offset=0, numel=1, shape=(),
-            ndim=1, stride=(1,), contig=True, metadata={"created_by": "Sum", "ops": "UnaryOps"},
+            view=False, offset=0, numel=numel, shape=out_shape,
+            ndim=ndim, stride=stride, contig=True, metadata={"created_by": "Sum", "ops": "UnaryOps"},
         )
         out = Tensor(
-            Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, axis=-1),
+            Dispatcher.dispatch(x=x, ops=UnaryOps.SUM, axis=axis),
             device=x.device, dtype=x.dtype, properties=tp
         )
 
@@ -169,12 +169,12 @@ class Sum(Op):
         )
 
 
-# TODO: Accept axis arg
 class Max(Op):
-    def forward(self, x: Tensor):
+    def forward(self, x: Tensor, axis=None, keepdim=False):
+        out_shape, numel, ndim, stride = calculate_uops(x.shape, axis, keepdim)
         tp = TensorProperties(
-            view=False, offset=0, numel=1, shape=(),
-            ndim=1, stride=(1,), contig=True, metadata={"created_by": "Max", "ops": "UnaryOps"},
+            view=False, offset=0, numel=numel, shape=out_shape,
+            ndim=ndim, stride=stride, contig=True, metadata={"created_by": "Max", "ops": "UnaryOps"},
         )
         out = Tensor(
             Dispatcher.dispatch(x=x, ops=UnaryOps.MAX, func="max"),
