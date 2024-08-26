@@ -91,6 +91,17 @@ def prod(x):
         o *= i
     return o
 
+def calculate_uops(shape1, axis, keepdim=None):
+    # for unary ops
+    if axis is None:
+        return (), 1, 1, ()
+        
+    out_shape = shape1[:axis] + shape1[axis+1:] if not keepdim else shape1[:axis] + (1,) + shape1[axis+1:]
+    numel = calculate_numel(out_shape)
+    ndim = len(out_shape)
+    stride = calculate_stride(out_shape)
+    return out_shape, numel, ndim, stride
+
 def calculate_stride(shape: tuple):
     if len(shape) == 1:
         return [1]

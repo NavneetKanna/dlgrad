@@ -208,17 +208,16 @@ class Tensor:
             device=x.device, properties=tp,
         )
 
-    def sum(self):
+    def sum(self, axis=None, keepdim=False):
         from dlgrad.ops import Sum
 
-        return Sum().forward(self)
+        return Sum().forward(self, axis, keepdim)
 
     def max(self):
         from dlgrad.ops import Max
 
         return Max().forward(self)
 
-    @staticmethod
     def exp(self):
         from dlgrad.ops import Exp
 
@@ -231,8 +230,10 @@ class Tensor:
         return Relu().forward(x)
 
     @staticmethod
-    def softmax(x: Tensor):
-        t = x - ...
+    def softmax(x: Tensor, axis=1):
+        t = x - x.max()
+        u = t.exp()
+        return u / u.sum(axis, keepdim=True)
 
     @staticmethod
     def log_softmax():
