@@ -15,6 +15,7 @@ from dlgrad.helpers import (BinaryOps, BufferOps, Device, ShapeError, UnaryOps,
                             calculate_nchw_offset, calculate_stride, set_graph, prod)
 
 
+# TODO: change c code for max to handle higher dim
 class TensorProperties:
     def __init__(self, **kwargs) -> None:
         self.view: bool = kwargs["view"]
@@ -37,7 +38,7 @@ class Tensor:
     # __slots__ = "grad"
 
     def __init__(
-            self, data: Union[list, int, Buffer], requires_grad = True, device: Optional[Device] = Device.CPU, 
+            self, data: Union[list, int, Buffer], requires_grad = True, device: Optional[Device] = Device.CPU,
             dtype: Optional[dtypes] = dtypes.float32, properties: Optional[TensorProperties] = None,
     ):
         self.requires_grad = requires_grad
@@ -84,7 +85,7 @@ class Tensor:
         Buffer.free(self.data.buffer)
 
     def __getitem__(self, indices):
-        # TODO: all int, slices
+        # TODO: slices
         # NOTE: dlgrad is NCHW
 
         if isinstance(indices, int):
@@ -251,7 +252,7 @@ class Tensor:
         from dlgrad.ops import Div
 
         return Div().forward(x, y)
-    
+
     @staticmethod
     def sub(x: Tensor, y: Tensor) -> Tensor:
         from dlgrad.ops import Sub
@@ -309,7 +310,7 @@ class Tensor:
 
     def __add__(self, other):
         return Tensor.add(self, other)
-    
+
     def __sub__(self, other):
         return Tensor.sub(self, other)
 
