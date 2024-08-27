@@ -169,6 +169,30 @@ class Sum(Op):
         )
 
 
+class Log(Op):
+    def forward(self, x: Tensor):
+        tp = TensorProperties(
+            view=False, offset=0, numel=x.numel, shape=x.shape,
+            ndim=x.ndim, stride=x.stride, contig=True, metadata={"created_by": "Log", "ops": "UnaryOps"},
+        )
+        out = Tensor(
+            Dispatcher.dispatch(x=x, ops=UnaryOps.LOG),
+            device=x.device, dtype=x.dtype, properties=tp
+        )
+
+        if get_graph():
+            graph.add_edge(child=out, parents=(x,))
+
+        self.x = x
+        out._ctx = self
+        self.parents = (x,)
+
+        return out
+
+    def backward():
+        pass
+
+
 class Max(Op):
     def forward(self, x: Tensor, axis=None, keepdim=False):
         out_shape, numel, ndim, stride = calculate_uops(x.shape, axis, keepdim)

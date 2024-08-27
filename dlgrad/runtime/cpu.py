@@ -312,6 +312,22 @@ class CPU:
         return Buffer(data, temp_file)
     
     @staticmethod
+    def _log(x: Tensor) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(x.dtype)
+        prg = C.log(c_dtype)
+        name = get_shared_lib_name("log")
+        log_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+
+        log_dll.logg.argtypes = (ctypes.POINTER(ctypes.c_float), ctypes.c_int)
+        log_dll.logg.restype = ctypes.POINTER(ctypes.c_float)
+        data = log_dll.logg(x.data.buffer, x.numel)
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
+
+    @staticmethod
     def _compile_clang(name: str, prg: str) -> tuple[ctypes.CDLL, str]:
         with tempfile.NamedTemporaryFile(delete=False, dir=get_temp_loc(), prefix=name) as output_file:
             temp_file = str(output_file.name)
@@ -355,6 +371,8 @@ class CPU:
                     return CPU._relu(x)
             if op == UnaryOps.EXP:
                 return CPU._exp(x)
+            if op == UnaryOps.LOG:
+                return CPU._log(x)
 
         elif isinstance(op, BufferOps):
             if op == BufferOps.UNIFORM:
