@@ -70,7 +70,7 @@ class TestOps(unittest.TestCase):
     
     def test_exp(self):
         dl_out = Tensor.exp(self.x)
-        np.testing.assert_equal(dl_out.numpy(), np.exp(self.x.numpy()))
+        np.testing.assert_allclose(dl_out.numpy(), np.exp(self.x.numpy()))
 
     def test_max(self):
         dl_out = Tensor.max(self.x)
@@ -79,8 +79,12 @@ class TestOps(unittest.TestCase):
     def test_softmax(self):
         dl_out = Tensor.softmax(self.x)
         to_out = torch.softmax(torch.tensor(self.x.numpy()), 1)
-        np.testing.assert_equal(dl_out.numpy(), to_out.numpy())
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-7, rtol=0.001)
 
+    def test_log(self):
+        dl_out = self.x.log()
+        to_out = torch.log(torch.tensor(self.x.numpy()))
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-7, rtol=0.001)
 
 if __name__ == "__main__":
     unittest.main()

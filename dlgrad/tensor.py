@@ -224,6 +224,11 @@ class Tensor:
 
         return Exp().forward(self)
 
+    def log(self):
+        from dlgrad.ops import Log
+
+        return Log().forward(self)
+
     @staticmethod
     def relu(x: Tensor) -> Tensor:
         from dlgrad.ops import Relu
@@ -237,8 +242,10 @@ class Tensor:
         return u / u.sum(axis, keepdim=True)
 
     @staticmethod
-    def log_softmax():
-        pass
+    def log_softmax(x: Tensor, axis=1):
+        t = x - x.max()
+        u = t.exp()
+        return t - u.sum(axis, keepdim=True).log()
 
     # ***** BinaryOps *****
     @staticmethod

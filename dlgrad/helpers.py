@@ -24,6 +24,7 @@ class UnaryOps(Enum):
     SUM = auto()
     MAX = auto()
     EXP = auto()
+    LOG = auto()
 
 
 class BufferOps(Enum):

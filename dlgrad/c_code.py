@@ -545,3 +545,25 @@ class C:
         }}
         """
         return prg
+
+    @staticmethod
+    def log(dtype: str):
+        prg = f"""
+        #include <stdlib.h>
+        #include <math.h>
+
+        {dtype} *logg({dtype} *a, int len) 
+        {{
+            {dtype} *out = malloc(len * sizeof({dtype}));
+            if (out == NULL)
+                return NULL;
+
+            {dtype} max = 0;
+            for (int i=0; i<len; i++) {{
+                out[i] = logf(a[i]);
+            }}
+
+            return out;
+        }}
+        """
+        return prg
