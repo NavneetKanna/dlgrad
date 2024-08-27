@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 
 from dlgrad.tensor import Tensor
+import torch
 
 
 class TestOps(unittest.TestCase):
@@ -74,6 +75,11 @@ class TestOps(unittest.TestCase):
     def test_max(self):
         dl_out = Tensor.max(self.x)
         np.testing.assert_equal(dl_out.numpy(), np.max(self.x.numpy()))
+
+    def test_softmax(self):
+        dl_out = Tensor.softmax(self.x)
+        to_out = torch.softmax(torch.tensor(self.x.numpy()), 1)
+        np.testing.assert_equal(dl_out.numpy(), to_out.numpy())
 
 
 if __name__ == "__main__":
