@@ -237,6 +237,7 @@ class Tensor:
 
     @staticmethod
     def softmax(x: Tensor, axis=1):
+        # https://stackoverflow.com/questions/61567597/how-is-log-softmax-implemented-to-compute-its-value-and-gradient-with-better
         t = x - x.max()
         u = t.exp()
         return u / u.sum(axis, keepdim=True)
