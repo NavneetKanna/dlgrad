@@ -85,9 +85,13 @@ class Tensor:
         Buffer.free(self.data.buffer)
 
     def __getitem__(self, indices):
+        print(indices, type(indices))
+        return
+
         # TODO: slices
         # NOTE: dlgrad is NCHW
-
+        
+        # basic indexing 
         if isinstance(indices, int):
             if indices > self.shape[0]:
                 raise IndexError(f"index {indices} is out of bounds with {self.shape[0]}")
@@ -98,6 +102,20 @@ class Tensor:
                 ndim=len(self.shape[1:]), stride=self.stride[1:], contig=True
             )
             return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
+
+        # advance indexing
+        # if isinstance(indices, tuple):
+        #     if len(indices) > self.ndim:
+        #         # TODO: Raise error
+        #         print(f"Error: Too many indices {len(indices)} for dim {self.ndim}")
+
+        #     if len(indices) == 1:
+        #         print("do basic index")
+
+        #     for i in indices:
+        #         pass
+        #     for i in indices[0]:
+        #         pass
 
     # ***** BufferOps *****
     @staticmethod
@@ -288,7 +306,7 @@ class Tensor:
     @staticmethod
     def crossentropy_loss(logits: Tensor, targets: Tensor):
         # NLL(log(softmax(logits)), targets)
-        pass
+        Tensor.log_softmax(logits)
 
     def backward(self):
         set_graph(0)

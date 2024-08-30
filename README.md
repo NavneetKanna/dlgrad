@@ -27,17 +27,17 @@ from dlgrad.tensor import Tensor
 # Create tensors filled with random numbers from a uniform distribution
 a = Tensor.rand(2, 3)
 b = Tensor.rand(1, 3)
-# Since the tensors are c buffers, use numpy to print
-a.numpy()
-b.numpy()
+# Since the tensors are c buffers, convert to numpy to print
+print(a.numpy())
+print(b.numpy())
 
 c = a+b
 
 # Do a backward pass
 c.sum().backward()
 
-a.grad.numpy()
-b.grad.numpy()
+print(a.grad.numpy())
+print(b.grad.numpy())
 
 ```
 

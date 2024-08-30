@@ -91,5 +91,6 @@ class TestOps(unittest.TestCase):
         to_out = torch.log_softmax(torch.tensor(self.x.numpy()), 1)
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-7, rtol=0.001)
 
+
 if __name__ == "__main__":
     unittest.main()
