@@ -21,6 +21,10 @@ class CPU:
     dlls: dict[ctypes.CDLL] = {}
     
     @staticmethod
+    def _from_list() -> Buffer:
+        pass
+
+    @staticmethod
     def _add(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         c_dtype = dtypes.get_c_dtype(dtype)
         axis = -2 if x.numel == 1 or y.numel == 1 else calculate_add_axis(x.shape, y.shape)
@@ -379,5 +383,9 @@ class CPU:
                 return CPU._uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
             if op == BufferOps.ONES:
                 return CPU._ones(kwargs["out_len"])
+            if op == BufferOps.CUSTOM:
+                if func == "from_list":
+                    return CPU._from_list()
+
 
         raise ValueError(f"Unsupported operation: {op}")
