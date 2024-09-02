@@ -12,7 +12,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.dispatch import Dispatcher
 from dlgrad.dtype import dtypes
 from dlgrad.helpers import (BinaryOps, BufferOps, Device, ShapeError, UnaryOps,
-                            calculate_nchw_offset, calculate_stride, set_graph, prod)
+                            calculate_nchw_offset, calculate_stride, set_graph, prod, analyse_list)
 
 
 # TODO: change c code for max to handle higher dim
@@ -54,7 +54,17 @@ class Tensor:
 
         # TODO: Convert this to c array
         if isinstance(data, list):
-            self.data = data
+            out_len, out_shape, ndim = analyse_list(list)
+
+            tp = TensorProperties(
+                view=False, offset=0, numel=out_len, shape=out_shape,
+                ndim=ndim, stride=calculate_stride(out_shape), contig=True, metadata={"created_by": "", "ops": "BufferOps"},
+            )
+            self.data = Dispatcher.dispatch(ops=BufferOps.CUSTOM, out_len=out_len, device=device, func="from_list")
+            self.dtype = dtype
+            device=device
+            dtype=dtype
+            properties=tp
 
         if isinstance(data, Buffer):
             self.data = data
@@ -85,9 +95,6 @@ class Tensor:
         Buffer.free(self.data.buffer)
 
     def __getitem__(self, indices):
-        print(indices, type(indices))
-        return
-
         # TODO: slices
         # NOTE: dlgrad is NCHW
         
@@ -103,19 +110,8 @@ class Tensor:
             )
             return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
 
-        # advance indexing
-        # if isinstance(indices, tuple):
-        #     if len(indices) > self.ndim:
-        #         # TODO: Raise error
-        #         print(f"Error: Too many indices {len(indices)} for dim {self.ndim}")
-
-        #     if len(indices) == 1:
-        #         print("do basic index")
-
-        #     for i in indices:
-        #         pass
-        #     for i in indices[0]:
-        #         pass
+        if isinstance(indices, Tensor) and self.ndim == 1:
+                return Buffer.create_buf_from_idx(self, indices)
 
     # ***** BufferOps *****
     @staticmethod

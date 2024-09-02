@@ -1,5 +1,7 @@
 import os
 from enum import Enum, auto
+from itertools import chain
+
 
 GRAPH = os.getenv("GRAPH")
 
@@ -30,6 +32,7 @@ class UnaryOps(Enum):
 class BufferOps(Enum):
     UNIFORM = auto()
     ONES = auto()
+    CUSTOM = auto()
 
 
 class Device(Enum):
@@ -79,6 +82,38 @@ def get_broadcast_shape(x: "Tensor", y: "Tensor"): # noqa: F821 # type: ignore
 
         return tuple(output_shape[::-1])
 
+def flatten(x):
+    result = []
+    for item in x:
+        if isinstance(item, list):
+            result.extend(flatten(item))
+        else:
+            result.append(item)
+    return result
+
+def analyse_list(x: list):
+    out_shape = len(x)
+    ndim = 1
+    
+    if isinstance(x[0], list):
+        if not len(set(map(len, x))) == 1:
+            # TODO: raise error
+            print("all len should be equal")
+        # get dim
+        shape = []
+        lst = x
+        while isinstance(lst, list):
+            shape.append(len(lst))
+            lst = lst[0] if lst else []
+        out_shape = tuple(shape)
+        ndim = len(shape)
+        
+        x = flatten(x) # flatten into 1d
+    
+    print(x)
+    x = [float(i) for i in x] # does this help when converting to float in c ?
+
+    return prod(out_shape), out_shape, ndim
 
 def calculate_numel(shape: tuple):
     out_len = 1
@@ -87,10 +122,13 @@ def calculate_numel(shape: tuple):
     return out_len
 
 def prod(x):
-    o = 1
-    for i in x: 
-        o *= i
-    return o
+    if isinstance(x, tuple):
+        o = 1
+        for i in x: 
+            o *= i
+        return o
+    
+    return (x,)
 
 def calculate_uops(shape1, axis, keepdim=None):
     # for unary ops
