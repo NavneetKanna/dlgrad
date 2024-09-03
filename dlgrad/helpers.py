@@ -92,7 +92,7 @@ def flatten(x):
     return result
 
 def analyse_list(x: list):
-    out_shape = len(x)
+    out_shape = (len(x),)
     ndim = 1
     
     if isinstance(x[0], list):
@@ -128,7 +128,7 @@ def prod(x):
             o *= i
         return o
     
-    return (x,)
+    return x
 
 def calculate_uops(shape1, axis, keepdim=None):
     # for unary ops

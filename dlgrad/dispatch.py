@@ -18,7 +18,7 @@ class Dispatcher:
     @staticmethod
     # both the inputs can be None since BufferOps are also dispatched
     def dispatch(ops, x: Tensor = None, y: Tensor = None, **kwargs) -> Buffer:
-        device = x.device if x is not None else kwargs["device"]
+        device = x.device if x is not None else kwargs.get("device", Device.CPU)
         if device == Device.CPU:
             return Dispatcher._cpu_dispatch(ops, x, y, **kwargs)
         if device == Device.GPU:

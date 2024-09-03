@@ -52,26 +52,24 @@ class Tensor:
             self._len = 1
             self.dtype = dtype if dtype else dtypes.from_py(data)
 
-        # TODO: Convert this to c array
-        if isinstance(data, list):
-            out_len, out_shape, ndim = analyse_list(list)
+        elif isinstance(data, list):
+            out_len, out_shape, ndim = analyse_list(data)
 
             tp = TensorProperties(
                 view=False, offset=0, numel=out_len, shape=out_shape,
                 ndim=ndim, stride=calculate_stride(out_shape), contig=True, metadata={"created_by": "", "ops": "BufferOps"},
             )
-            self.data = Dispatcher.dispatch(ops=BufferOps.CUSTOM, out_len=out_len, device=device, func="from_list")
+            self.data = Dispatcher.dispatch(ops=BufferOps.CUSTOM, li=data, device=device, func="from_list")
             self.dtype = dtype
-            device=device
-            dtype=dtype
-            properties=tp
+            self.device = device
+            self.properties=tp
 
-        if isinstance(data, Buffer):
+        elif isinstance(data, Buffer):
             self.data = data
             self.dtype = dtype
 
         # TODO: A better way to write this, a queue ?
-        if (not properties.view) and isinstance(data, Buffer) and properties.numel != 1:
+        if (not self.properties.view) and isinstance(self.data, Buffer) and self.properties.numel != 1 and not isinstance(data, list):
             atexit.register(self.cleanup)
 
     def numpy(self) -> np.ndarray:
