@@ -10,19 +10,29 @@ from dlgrad.buffer import Buffer
 from dlgrad.c_code import C
 from dlgrad.dtype import dtypes
 from dlgrad.helpers import (BinaryOps, BufferOps, UnaryOps,
-                            get_shared_lib_name, get_temp_loc, calculate_add_axis, calculate_numel, get_broadcast_shape)
+                            get_shared_lib_name, get_temp_loc, calculate_add_axis, calculate_numel, get_broadcast_shape, flatten)
 
 if TYPE_CHECKING:
     from dlgrad.tensor import Tensor
 
 
 # TODO: is it dll or sha_lib ?
+# TODO: Compile with len ? instead of giving it dynamically ?
+# TODO: Am i saving to dict ?
 class CPU:
     dlls: dict[ctypes.CDLL] = {}
     
     @staticmethod
-    def _from_list() -> Buffer:
-        pass
+    def _from_list(x: list) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(dtypes.from_py(type(x[0])), map_ctype=True)
+        x = flatten(x)
+        data = (c_dtype * len(x))(*x)
+
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data)
 
     @staticmethod
     def _add(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
@@ -246,6 +256,7 @@ class CPU:
         rand_dll.create_rand_buffer.argtypes = (ctypes.c_int, ctypes.c_float, ctypes.c_float)
         rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float)
         data = rand_dll.create_rand_buffer(length, low, high)
+        print(data, type(data))
         if data is None:
             # TODO: create a new error
             print("Error: could not allocate memory")
@@ -385,7 +396,7 @@ class CPU:
                 return CPU._ones(kwargs["out_len"])
             if op == BufferOps.CUSTOM:
                 if func == "from_list":
-                    return CPU._from_list()
+                    return CPU._from_list(kwargs["li"])
 
 
         raise ValueError(f"Unsupported operation: {op}")
