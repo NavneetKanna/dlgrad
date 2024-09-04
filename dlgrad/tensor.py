@@ -73,6 +73,8 @@ class Tensor:
             atexit.register(self.cleanup)
 
     def numpy(self) -> np.ndarray:
+        if isinstance(self.data.buffer, ctypes.Array):
+            return np.ctypeslib.as_array(self.data.buffer, shape=self.shape)
         if not isinstance(self.data, Buffer):
             pass
         # elif self.numel == 1 and not self.view:
@@ -108,8 +110,13 @@ class Tensor:
             )
             return Tensor(Buffer(self.data.buffer), device=self.device, properties=tp)
 
-        if isinstance(indices, Tensor) and self.ndim == 1:
-                return Buffer.create_buf_from_idx(self, indices)
+        # only for 2D Tensor
+        if isinstance(indices, Tensor) and self.ndim == 2:
+                tp = TensorProperties(
+                    view=False, offset=0, numel=indices.numel, shape=indices.shape,
+                    ndim=indices.ndim, stride=(1,), contig=True
+                )
+                return Tensor(Dispatcher.dispatch(ops=BufferOps.CUSTOM, x=self, y=indices, device=self.device, func="from_idx"), device=self.device, properties=tp)
 
     # ***** BufferOps *****
     @staticmethod
@@ -300,7 +307,7 @@ class Tensor:
     @staticmethod
     def crossentropy_loss(logits: Tensor, targets: Tensor):
         # NLL(log(softmax(logits)), targets)
-        Tensor.log_softmax(logits)
+        return Tensor.log_softmax(logits)[targets]
 
     def backward(self):
         set_graph(0)
