@@ -85,6 +85,26 @@ class C:
         return prg
 
     @staticmethod
+    def neg(dtype: str) -> str:
+        prg = f"""
+        #include <stdlib.h>
+
+        {dtype} *neg({dtype} *x, int len) 
+        {{
+            {dtype} *c = malloc(len * sizeof({dtype}));
+
+            for (int i=0; i<len; i++) {{
+                c[i] = -x[i];
+            }}
+
+            return c;
+        }}
+
+
+        """ 
+        return prg
+
+    @staticmethod
     def ones_buffer() -> str:
         prg = """
         #include <stdio.h>

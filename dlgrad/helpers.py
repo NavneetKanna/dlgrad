@@ -27,6 +27,7 @@ class UnaryOps(Enum):
     MAX = auto()
     EXP = auto()
     LOG = auto()
+    NEG = auto()
 
 
 class BufferOps(Enum):
@@ -110,7 +111,6 @@ def analyse_list(x: list):
         
         x = flatten(x) # flatten into 1d
     
-    print(x)
     x = [float(i) for i in x] # does this help when converting to float in c ?
 
     return prod(out_shape), out_shape, ndim
