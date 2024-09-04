@@ -67,6 +67,24 @@ class C:
         return prg
 
     @staticmethod
+    def create_arr_from_idx(dtype: str) -> str:
+        prg = f"""
+        #include <stdlib.h>
+        #include <stdio.h>
+
+        {dtype} *create_arr({dtype} *x, {dtype} *y, int rows, int cols)
+        {{
+            {dtype} *c = malloc(rows * sizeof({dtype}));
+            for(int i=0; i<rows; i++) {{
+                c[i] = x[(int)y[i] + (i*cols)];
+            }}
+
+            return c;
+        }}
+        """
+        return prg
+
+    @staticmethod
     def ones_buffer() -> str:
         prg = """
         #include <stdio.h>

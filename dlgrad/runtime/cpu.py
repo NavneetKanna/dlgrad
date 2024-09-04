@@ -35,6 +35,21 @@ class CPU:
         return Buffer(data)
 
     @staticmethod
+    def _from_idx(x: Tensor, y: Tensor) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(x.dtype)
+        name = get_shared_lib_name("from_idx", c_dtype, x.device.name)
+        prg = C.create_arr_from_idx(c_dtype)
+        fi_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+        fi_dll.create_arr.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int]
+        fi_dll.create_arr.restype = ctypes.POINTER(ctypes.c_float)
+        data = fi_dll.create_arr(x.data.buffer, y.data.buffer, x.shape[0], x.shape[1])
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
+
+    @staticmethod
     def _add(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         c_dtype = dtypes.get_c_dtype(dtype)
         axis = -2 if x.numel == 1 or y.numel == 1 else calculate_add_axis(x.shape, y.shape)
@@ -397,6 +412,7 @@ class CPU:
             if op == BufferOps.CUSTOM:
                 if func == "from_list":
                     return CPU._from_list(kwargs["li"])
-
+                if func == "from_idx":
+                    return CPU._from_idx(x, y)
 
         raise ValueError(f"Unsupported operation: {op}")
