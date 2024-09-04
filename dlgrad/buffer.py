@@ -18,16 +18,6 @@ class Buffer:
         if os.path.exists(self._temp_file_loc):
             os.remove(self._temp_file_loc)
 
-    def create_buf_from_list(x: list) -> Buffer:
-        if not len(set(map(len, x))) == 1:
-            # TODO: raise error
-            print("all len should be equal")
-
-        x = [*chain(*x)] # flatten into 1d
-
-    def create_buf_from_idx(x: "Tensor", y: "Tensor") -> Buffer: # noqa: F821 # type: ignore
-        pass
-
     @staticmethod
     def free(data) -> None:
         libc = ctypes.CDLL(None)  # Load the standard C library

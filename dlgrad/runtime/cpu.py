@@ -50,6 +50,22 @@ class CPU:
         return Buffer(data, temp_file)
 
     @staticmethod
+    def _neg(x: Tensor):
+        c_dtype = dtypes.get_c_dtype(x.dtype)
+        prg = C.neg(c_dtype)
+        name = get_shared_lib_name("neg")
+        neg_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+
+        neg_dll.neg.argtypes = (ctypes.POINTER(ctypes.c_float), ctypes.c_int)
+        neg_dll.neg.restype = ctypes.POINTER(ctypes.c_float)
+        data = neg_dll.neg(x.data.buffer, x.numel)
+        if data is None:
+            # TODO: create a new error
+            print("Error: could not allocate memory")
+
+        return Buffer(data, temp_file)
+
+    @staticmethod
     def _add(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         c_dtype = dtypes.get_c_dtype(dtype)
         axis = -2 if x.numel == 1 or y.numel == 1 else calculate_add_axis(x.shape, y.shape)
@@ -271,7 +287,6 @@ class CPU:
         rand_dll.create_rand_buffer.argtypes = (ctypes.c_int, ctypes.c_float, ctypes.c_float)
         rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float)
         data = rand_dll.create_rand_buffer(length, low, high)
-        print(data, type(data))
         if data is None:
             # TODO: create a new error
             print("Error: could not allocate memory")
@@ -403,6 +418,8 @@ class CPU:
                 return CPU._exp(x)
             if op == UnaryOps.LOG:
                 return CPU._log(x)
+            if op == UnaryOps.NEG:
+                return CPU._neg(x)
 
         elif isinstance(op, BufferOps):
             if op == BufferOps.UNIFORM:

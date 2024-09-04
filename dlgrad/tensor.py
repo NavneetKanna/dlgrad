@@ -216,6 +216,17 @@ class Tensor:
         )
 
     # ***** UnaryOps ****
+    @staticmethod
+    def neg(x: Tensor):
+        tp = TensorProperties(
+            view=False, offset=0, numel=x.numel, shape=x.shape,
+            ndim=x.ndim, stride=x.stride, contig=True
+        )
+        return Tensor(
+            Dispatcher.dispatch(ops=UnaryOps.NEG, x=x),
+            device=x.device, properties=tp,
+        )
+
     # TODO: What to do if i want to call x.transpose() ?
     @staticmethod
     def transpose(x: Tensor):
@@ -307,7 +318,7 @@ class Tensor:
     @staticmethod
     def crossentropy_loss(logits: Tensor, targets: Tensor):
         # NLL(log(softmax(logits)), targets)
-        return Tensor.log_softmax(logits)[targets]
+        return Tensor.sum(-Tensor.log_softmax(logits)[targets])
 
     def backward(self):
         set_graph(0)
@@ -343,6 +354,9 @@ class Tensor:
 
     def __truediv__(self, other):
         return Tensor.div(self, other)
+
+    def __neg__(self):
+        return Tensor.neg(self)
 
     @property
     def shape(self):
