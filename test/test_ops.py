@@ -5,9 +5,9 @@ sys.path.append(os.getcwd())
 import unittest
 
 import numpy as np
+import torch
 
 from dlgrad.tensor import Tensor
-import torch
 
 
 class TestOps(unittest.TestCase):

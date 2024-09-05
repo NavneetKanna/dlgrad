@@ -1,7 +1,6 @@
 import os
 from enum import Enum, auto
-from itertools import chain
-
+from typing import Optional
 
 GRAPH = os.getenv("GRAPH")
 
@@ -42,6 +41,7 @@ class Device(Enum):
 
 
 class ShapeError(Exception): ...
+class AllocationError(Exception): ...
 
 
 def calculate_sum_axis(shape1: tuple, shape2: tuple) -> int:
@@ -49,7 +49,7 @@ def calculate_sum_axis(shape1: tuple, shape2: tuple) -> int:
         return 1
     return 0
 
-def calculate_add_axis(shape1: tuple, shape2: tuple) -> int:
+def calculate_add_axis(shape1: tuple, shape2: tuple) -> Optional[int]:
     if not shape1 or not shape2:
         return -2
     if shape1 == shape2:

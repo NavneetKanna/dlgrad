@@ -9,8 +9,10 @@ from typing import TYPE_CHECKING, Optional
 from dlgrad.buffer import Buffer
 from dlgrad.c_code import C
 from dlgrad.dtype import dtypes
-from dlgrad.helpers import (BinaryOps, BufferOps, UnaryOps,
-                            get_shared_lib_name, get_temp_loc, calculate_add_axis, calculate_numel, get_broadcast_shape, flatten)
+from dlgrad.helpers import (BinaryOps, BufferOps, UnaryOps, AllocationError, 
+                            calculate_add_axis, calculate_numel, flatten,
+                            get_broadcast_shape, get_shared_lib_name,
+                            get_temp_loc)
 
 if TYPE_CHECKING:
     from dlgrad.tensor import Tensor
@@ -18,7 +20,6 @@ if TYPE_CHECKING:
 
 # TODO: is it dll or sha_lib ?
 # TODO: Compile with len ? instead of giving it dynamically ?
-# TODO: Am i saving to dict ?
 class CPU:
     dlls: dict[ctypes.CDLL] = {}
     
@@ -29,8 +30,7 @@ class CPU:
         data = (c_dtype * len(x))(*x)
 
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor from a list")
 
         return Buffer(data)
 
@@ -44,8 +44,7 @@ class CPU:
         fi_dll.create_arr.restype = ctypes.POINTER(ctypes.c_float)
         data = fi_dll.create_arr(x.data.buffer, y.data.buffer, x.shape[0], x.shape[1])
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor from advance indexing")
 
         return Buffer(data, temp_file)
 
@@ -60,8 +59,7 @@ class CPU:
         neg_dll.neg.restype = ctypes.POINTER(ctypes.c_float)
         data = neg_dll.neg(x.data.buffer, x.numel)
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for NEG op")
 
         return Buffer(data, temp_file)
 
@@ -70,8 +68,8 @@ class CPU:
         c_dtype = dtypes.get_c_dtype(dtype)
         axis = -2 if x.numel == 1 or y.numel == 1 else calculate_add_axis(x.shape, y.shape)
         if axis is None:
-            # TODO: Raise error
-            print(f"add not compatiable with shapes {x.shape} / {y.shape}")
+            ValueError(f"add not compatiable with shapes {x.shape} / {y.shape}")
+
         name = get_shared_lib_name(f"add_axis{axis}", c_dtype, x.device.name)
         out_len = calculate_numel(get_broadcast_shape(x, y))
 
@@ -107,8 +105,7 @@ class CPU:
             data = add_dll.add_m2(x.data.buffer, y.data.buffer)
 
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for ADD op")
 
         return Buffer(data, temp_file)
 
@@ -117,8 +114,8 @@ class CPU:
         c_dtype = dtypes.get_c_dtype(dtype)
         axis = -2 if x.numel == 1 or y.numel == 1 else calculate_add_axis(x.shape, y.shape)
         if axis is None:
-            # TODO: Raise error
-            print(f"subtraction not compatiable with shapes {x.shape} / {y.shape}")
+            ValueError(f"subtraction not compatiable with shapes {x.shape} / {y.shape}")
+
         name = get_shared_lib_name(f"sub_axis{axis}", c_dtype, x.device.name)
         out_len = calculate_numel(get_broadcast_shape(x, y))
 
@@ -154,8 +151,7 @@ class CPU:
             data = sub_dll.sub_m2(x.data.buffer, y.data.buffer)
 
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for SUB op")
 
         return Buffer(data, temp_file)
 
@@ -164,8 +160,8 @@ class CPU:
         c_dtype = dtypes.get_c_dtype(dtype)
         axis = -2 if x.numel == 1 or y.numel == 1 else calculate_add_axis(x.shape, y.shape)
         if axis is None:
-            # TODO: Raise error
-            print(f"div not compatiable with shapes {x.shape} / {y.shape}")
+            ValueError(f"div not compatiable with shapes {x.shape} / {y.shape}")
+
         name = get_shared_lib_name(f"div_axis{axis}", c_dtype, x.device.name)
         out_len = calculate_numel(get_broadcast_shape(x, y))
 
@@ -201,8 +197,7 @@ class CPU:
             data = div_dll.div_m2(x.data.buffer, y.data.buffer)
 
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for DIV op")
 
         return Buffer(data, temp_file)
 
@@ -232,8 +227,7 @@ class CPU:
             data = sum_dll.sum(x.data.buffer, x.numel)
 
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for SUM op")
 
         return Buffer(data, temp_file)
 
@@ -254,8 +248,7 @@ class CPU:
         matmul_dll.matmul.restype = ctypes.POINTER(ctypes.c_float)
         data = matmul_dll.matmul(x.data.buffer, y.data.buffer, x.shape[0], x.shape[1], y.shape[1])
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for MATMUL op")
 
         return Buffer(data, temp_file)
 
@@ -273,8 +266,7 @@ class CPU:
         transpose_dll.transpose.restype = ctypes.POINTER(ctypes.c_float)
         data = transpose_dll.transpose(x.data.buffer, x.shape[0], x.shape[1])
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for TRANSPOSE op")
 
         return Buffer(data, temp_file)
 
@@ -288,8 +280,7 @@ class CPU:
         rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float)
         data = rand_dll.create_rand_buffer(length, low, high)
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for UNIFORM op")
 
         return Buffer(data, temp_file)
 
@@ -303,8 +294,7 @@ class CPU:
         ones_dll.create_ones_buffer.restype = ctypes.POINTER(ctypes.c_float)
         data = ones_dll.create_ones_buffer(length)
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for ONES op")
 
         return Buffer(data, temp_file)
 
@@ -319,8 +309,7 @@ class CPU:
         relu_dll.relu.restype = ctypes.POINTER(ctypes.c_float)
         data = relu_dll.relu(x.data.buffer, x.numel)
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for MAX (RELU) op")
 
         return Buffer(data, temp_file)
 
@@ -335,8 +324,7 @@ class CPU:
         max_dll.max.restype = ctypes.POINTER(ctypes.c_float)
         data = max_dll.max(x.data.buffer, x.numel)
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for MAX op")
 
         return Buffer(data, temp_file)
 
@@ -351,8 +339,7 @@ class CPU:
         exp_dll.expp.restype = ctypes.POINTER(ctypes.c_float)
         data = exp_dll.expp(x.data.buffer, x.numel)
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for EXP op")
 
         return Buffer(data, temp_file)
     
@@ -367,8 +354,7 @@ class CPU:
         log_dll.logg.restype = ctypes.POINTER(ctypes.c_float)
         data = log_dll.logg(x.data.buffer, x.numel)
         if data is None:
-            # TODO: create a new error
-            print("Error: could not allocate memory")
+            AllocationError("Error: could not allocate memory when creating Tensor for LOG op")
 
         return Buffer(data, temp_file)
 
