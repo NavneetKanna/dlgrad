@@ -10,6 +10,7 @@ import torch
 from dlgrad.tensor import Tensor
 
 
+# TODO: Should i use only one framework to be consistent ?
 class TestOps(unittest.TestCase):
     def setUp(self):
         self.x = Tensor.rand((3, 2))
@@ -63,7 +64,17 @@ class TestOps(unittest.TestCase):
     def test_sum(self):
         dl_out = self.x.sum()
         np.testing.assert_equal(dl_out.numpy(), self.x.numpy().sum())
-        
+        dl_out = self.x.sum(axis=1)
+        np.testing.assert_equal(dl_out.numpy(), self.x.numpy().sum(axis=1))
+        dl_out = self.x.sum(axis=0)
+        np.testing.assert_equal(dl_out.numpy(), self.x.numpy().sum(axis=0))
+        dl_out = self.x.sum(keepdim=True)
+        np.testing.assert_equal(dl_out.numpy(), self.x.numpy().sum(keepdims=True))
+        dl_out = self.x.sum(axis=1, keepdim=True)
+        np.testing.assert_equal(dl_out.numpy(), self.x.numpy().sum(axis=1, keepdims=True))
+        dl_out = self.x.sum(axis=0, keepdim=True)
+        np.testing.assert_equal(dl_out.numpy(), self.x.numpy().sum(axis=0, keepdims=True))
+
     def test_relu(self):
         dl_out = Tensor.relu(self.x)
         np.testing.assert_equal(dl_out.numpy(), np.maximum(0, self.x.numpy()))
@@ -77,8 +88,11 @@ class TestOps(unittest.TestCase):
         np.testing.assert_equal(dl_out.numpy(), np.max(self.x.numpy()))
 
     def test_softmax(self):
-        dl_out = Tensor.softmax(self.x)
-        to_out = torch.softmax(torch.tensor(self.x.numpy()), 1)
+        dl_out = Tensor.softmax(self.x, axis=1)
+        to_out = torch.softmax(torch.tensor(self.x.numpy()), dim=1)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-7, rtol=0.001)
+        dl_out = Tensor.softmax(self.x, axis=0)
+        to_out = torch.softmax(torch.tensor(self.x.numpy()), dim=0)
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-7, rtol=0.001)
 
     def test_log(self):
@@ -90,6 +104,11 @@ class TestOps(unittest.TestCase):
         dl_out = Tensor.log_softmax(self.x)
         to_out = torch.log_softmax(torch.tensor(self.x.numpy()), 1)
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-7, rtol=0.001)
+
+    def test_neg(self):
+        dl_out = -self.x
+        to_out = -torch.tensor(self.x.numpy())
+        np.testing.assert_equal(dl_out.numpy(), to_out.numpy())
 
 
 if __name__ == "__main__":
