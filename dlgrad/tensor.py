@@ -12,7 +12,8 @@ from dlgrad.buffer import Buffer
 from dlgrad.dispatch import Dispatcher
 from dlgrad.dtype import dtypes
 from dlgrad.helpers import (BinaryOps, BufferOps, Device, ShapeError, UnaryOps,
-                            calculate_nchw_offset, calculate_stride, set_graph, prod, analyse_list)
+                            analyse_list, calculate_nchw_offset,
+                            calculate_stride, prod, set_graph)
 
 
 # TODO: change c code for max to handle higher dim
