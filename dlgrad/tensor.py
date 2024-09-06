@@ -5,6 +5,7 @@ import ctypes
 import math
 import warnings
 from typing import Optional, Union
+from collections import deque
 
 import numpy as np
 
@@ -16,7 +17,19 @@ from dlgrad.helpers import (BinaryOps, BufferOps, Device, ShapeError, UnaryOps,
                             calculate_stride, prod, set_graph)
 
 
-# TODO: change c code for max to handle higher dim
+class RegisterCleanUp:
+    free_tensor = deque()
+    
+    @staticmethod
+    def of(x):
+        RegisterCleanUp.free_tensor.append(x)
+
+    @staticmethod
+    def free():
+        while RegisterCleanUp.free_tensor:
+            Buffer.free(RegisterCleanUp.free_tensor.popleft())
+
+
 class TensorProperties:
     def __init__(self, **kwargs) -> None:
         self.view: bool = kwargs["view"]
@@ -36,7 +49,7 @@ class TensorProperties:
 
 
 class Tensor:
-    # __slots__ = "grad"
+    _registered = False
 
     def __init__(
             self, data: Union[list, int, Buffer], requires_grad = True, device: Optional[Device] = Device.CPU,
@@ -65,22 +78,24 @@ class Tensor:
             self.device = device
             self.properties=tp
 
+            RegisterCleanUp.of(self.data.buffer)
+
         elif isinstance(data, Buffer):
             self.data = data
             self.dtype = dtype
 
-        # TODO: A better way to write this, a queue ?
-        if (not self.properties.view) and isinstance(self.data, Buffer) and self.properties.numel != 1 and not isinstance(data, list):
+            if not self.properties.view:
+                RegisterCleanUp.of(self.data.buffer)
+
+        if not Tensor._registered:
             atexit.register(self.cleanup)
+            Tensor._registered = True
 
     def numpy(self) -> np.ndarray:
         if isinstance(self.data.buffer, ctypes.Array):
             return np.ctypeslib.as_array(self.data.buffer, shape=self.shape)
         if not isinstance(self.data, Buffer):
             pass
-        # elif self.numel == 1 and not self.view:
-        #     print(self.data.buffer, type(self.data.buffer))
-        #     return self.data.buffer.contents
         else:
             sd = ctypes.addressof(self.data.buffer.contents) + self.offset * ctypes.sizeof(ctypes.c_float)
             ptr = (ctypes.c_float * self.numel).from_address(sd)
@@ -91,9 +106,9 @@ class Tensor:
         # self@weight.T + bias
         return Tensor.add(Tensor.matmul(self, Tensor.transpose(weight)), bias)
 
-    # TODO: maybe do a check for data before calling free ?
-    def cleanup(self):
-        Buffer.free(self.data.buffer)
+    @staticmethod
+    def cleanup():
+        RegisterCleanUp.free()
 
     def __getitem__(self, indices):
         # TODO: slices
@@ -122,7 +137,7 @@ class Tensor:
     # ***** BufferOps *****
     @staticmethod
     def rand(
-        *shape, low=0.0, high=1.0,
+        *shape, low = 0.0, high = 1.0,
         device: Optional[Device] = Device.CPU, dtype: Optional[dtypes] = dtypes.float32,
     ) -> Tensor:
         if device != Device.CPU:
