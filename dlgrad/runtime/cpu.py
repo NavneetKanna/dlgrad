@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Optional
 from dlgrad.buffer import Buffer
 from dlgrad.c_code import C
 from dlgrad.dtype import dtypes
-from dlgrad.helpers import (BinaryOps, BufferOps, UnaryOps, AllocationError, 
+from dlgrad.helpers import (AllocationError, BinaryOps, BufferOps, UnaryOps,
                             calculate_add_axis, calculate_numel, flatten,
                             get_broadcast_shape, get_shared_lib_name,
                             get_temp_loc)

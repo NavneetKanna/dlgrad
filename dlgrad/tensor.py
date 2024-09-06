@@ -4,8 +4,8 @@ import atexit
 import ctypes
 import math
 import warnings
-from typing import Optional, Union
 from collections import deque
+from typing import Optional, Union
 
 import numpy as np
 
