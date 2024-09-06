@@ -130,7 +130,7 @@ def prod(x):
     
     return x
 
-def calculate_uops(shape1, axis, keepdim=None):
+def calculate_uops(shape1, axis=None, keepdim=None):
     # for unary ops
     if axis is None:
         return (), 1, 1, ()
