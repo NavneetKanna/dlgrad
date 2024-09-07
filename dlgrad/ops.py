@@ -33,7 +33,7 @@ class Broadcast(Op):
             # TODO: Fix this
             tp = TensorProperties(
                 view=None, offset=None, numel=None, shape=x.shape,
-                ndim=None, stride=None, contig=None, metadata={"created_by": None, "ops": None},
+                ndim=None, stride=None, contig=None, metadata={"created_by": "broadcast_graph", "ops": None},
             )
             out = Tensor(data=None, requires_grad=None, device=None, dtype=None, properties=tp)
             graph.add_edge(child=out, parents=(y,))
@@ -140,7 +140,6 @@ class Sub(Op):
         pass
 
 
-# TODO: Accept axis arg
 class Sum(Op):
     def forward(self, x: Tensor, axis=None, keepdim=False):
         out_shape, numel, ndim, stride = calculate_uops(x.shape, axis, keepdim)
@@ -163,7 +162,7 @@ class Sum(Op):
         return out
 
     def backward(self, grad_output):
-        # NOTE: backward only works for axis=-1:
+        # NOTE: backward only works for axis=None:
         self.x.grad = (
             Tensor.ones(self.x.shape)
             if self.x.grad is None

@@ -24,6 +24,7 @@ class RegisterCleanUp:
     def of(x):
         RegisterCleanUp.free_tensor.append(x)
 
+    # check if it has been freed already ?
     @staticmethod
     def free():
         while RegisterCleanUp.free_tensor:
@@ -78,13 +79,11 @@ class Tensor:
             self.device = device
             self.properties=tp
 
-            RegisterCleanUp.of(self.data.buffer)
-
         elif isinstance(data, Buffer):
             self.data = data
             self.dtype = dtype
 
-            if not self.properties.view:
+            if not self.properties.view and self.shape:
                 RegisterCleanUp.of(self.data.buffer)
 
         if not Tensor._registered:
@@ -111,7 +110,6 @@ class Tensor:
         RegisterCleanUp.free()
 
     def __getitem__(self, indices):
-        # TODO: slices
         # NOTE: dlgrad is NCHW
         
         # basic indexing 
@@ -128,11 +126,11 @@ class Tensor:
 
         # only for 2D Tensor
         if isinstance(indices, Tensor) and self.ndim == 2:
-                tp = TensorProperties(
-                    view=False, offset=0, numel=indices.numel, shape=indices.shape,
-                    ndim=indices.ndim, stride=(1,), contig=True
-                )
-                return Tensor(Dispatcher.dispatch(ops=BufferOps.CUSTOM, x=self, y=indices, device=self.device, func="from_idx"), device=self.device, properties=tp)
+            tp = TensorProperties(
+                view=False, offset=0, numel=indices.numel, shape=indices.shape,
+                ndim=indices.ndim, stride=(1,), contig=True
+            )
+            return Tensor(Dispatcher.dispatch(ops=BufferOps.CUSTOM, x=self, y=indices, device=self.device, func="from_idx"), device=self.device, properties=tp)
 
     # ***** BufferOps *****
     @staticmethod
@@ -352,6 +350,7 @@ class Tensor:
 
         build_topo(self)
 
+        print(topo)
         self.grad = 1.0
         for node in reversed(topo):
             # Since input nodes are there as well
