@@ -241,6 +241,18 @@ class Tensor:
             device=x.device, properties=tp,
         )
 
+    @staticmethod
+    def eq(x: Tensor, y: Tensor):
+        # TODO: Check if they can be compared
+        tp = TensorProperties(
+            view=False, offset=0, numel=x.numel, shape=x.shape,
+            ndim=x.ndim, stride=x.stride, contig=True
+        )
+        return Tensor(
+            Dispatcher.dispatch(ops=BinaryOps.EQ, x=x, y=y),
+            device=x.device, properties=tp,
+        )
+
     # TODO: What to do if i want to call x.transpose() ?
     @staticmethod
     def transpose(x: Tensor):
@@ -341,6 +353,7 @@ class Tensor:
         visited = set()
 
         def build_topo(v):
+            print(v)
             if v not in visited:
                 visited.add(v)
                 if v._ctx is not None:
@@ -372,6 +385,9 @@ class Tensor:
 
     def __neg__(self):
         return Tensor.neg(self)
+    
+    def __eq__(x, y):
+        return Tensor.eq(x, y)
 
     @property
     def shape(self):

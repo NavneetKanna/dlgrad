@@ -18,6 +18,7 @@ class BinaryOps(Enum):
     DIV = auto()
     SUB = auto()
     MATMUL = auto()
+    EQ = auto()
 
 
 class UnaryOps(Enum):
