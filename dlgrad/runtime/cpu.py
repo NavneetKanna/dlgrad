@@ -61,6 +61,8 @@ class CPU:
         if y.view:
             sd = ctypes.addressof(y.data.buffer.contents) + y.offset * ctypes.sizeof(ctypes.c_float)
             ptr = (ctypes.c_float * y.numel).from_address(sd)
+        else:
+            ptr = y.data.buffer
 
         data = eq_dll.eq(x.data.buffer, ptr, x.numel, y.numel)
 

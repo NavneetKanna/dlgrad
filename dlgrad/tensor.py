@@ -17,6 +17,7 @@ from dlgrad.helpers import (BinaryOps, BufferOps, Device, ShapeError, UnaryOps,
                             calculate_stride, prod, set_graph)
 
 
+# TODO: looks like there is some large file in git
 class RegisterCleanUp:
     free_tensor = deque()
     
@@ -353,7 +354,6 @@ class Tensor:
         visited = set()
 
         def build_topo(v):
-            print(v)
             if v not in visited:
                 visited.add(v)
                 if v._ctx is not None:
@@ -363,7 +363,6 @@ class Tensor:
 
         build_topo(self)
 
-        print(topo)
         self.grad = 1.0
         for node in reversed(topo):
             # Since input nodes are there as well
@@ -388,6 +387,9 @@ class Tensor:
     
     def __eq__(x, y):
         return Tensor.eq(x, y)
+
+    def __hash__(self):
+        return id(self)
 
     @property
     def shape(self):
