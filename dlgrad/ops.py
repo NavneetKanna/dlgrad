@@ -27,8 +27,6 @@ class Broadcast(Op):
         # self.parents = (x, y)
         self.x, self.y = x, y
 
-
-
         if get_graph():
             # TODO: Fix this
             tp = TensorProperties(
@@ -210,14 +208,20 @@ class Max(Op):
             graph.add_edge(child=out, parents=(x,))
 
         self.x = x
+        self.out = out
         out._ctx = self
         self.parents = (x,)
 
+        # print("x")
+        # print(x.numpy())
+        # print("max out")
+        # print(out.numpy())
         return out
 
     def backward(self, grad_output):
-        pass
-        
+        # NOTE: backward only works for axis=None:
+        self.x.grad = self.x == self.out
+
 
 class Relu(Op):
     def forward(self, x: Tensor):

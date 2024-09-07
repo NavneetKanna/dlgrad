@@ -49,6 +49,27 @@ class CPU:
         return Buffer(data, temp_file)
 
     @staticmethod
+    def _eq(x: Tensor, y: Tensor):
+        c_dtype = dtypes.get_c_dtype(x.dtype)
+        prg = C.eq(c_dtype)
+        name = get_shared_lib_name("eq")
+        eq_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+
+        eq_dll.eq.argtypes = (ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int)
+        eq_dll.eq.restype = ctypes.POINTER(ctypes.c_float)
+
+        if y.view:
+            sd = ctypes.addressof(y.data.buffer.contents) + y.offset * ctypes.sizeof(ctypes.c_float)
+            ptr = (ctypes.c_float * y.numel).from_address(sd)
+
+        data = eq_dll.eq(x.data.buffer, ptr, x.numel, y.numel)
+
+        if data is None:
+            AllocationError("Error: could not allocate memory when creating Tensor for NEG op")
+
+        return Buffer(data, temp_file)
+
+    @staticmethod
     def _neg(x: Tensor):
         c_dtype = dtypes.get_c_dtype(x.dtype)
         prg = C.neg(c_dtype)
@@ -389,6 +410,8 @@ class CPU:
                 return CPU._div(x, y, x.dtype)
             if op == BinaryOps.MATMUL:
                 return CPU._matmul(x, y, x.dtype)
+            if op == BinaryOps.EQ:
+                return CPU._eq(x, y)
 
         elif isinstance(op, UnaryOps):
             if op == UnaryOps.SUM:

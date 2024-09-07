@@ -85,6 +85,32 @@ class C:
         return prg
 
     @staticmethod
+    def eq(dtype: str) -> str:
+        prg = f"""
+        #include <stdlib.h>
+        #include <stdio.h>
+
+        {dtype} *eq({dtype} *x, {dtype} *y, int len_x, int len_y) 
+        {{
+            {dtype} *c = malloc(len_x * sizeof({dtype}));
+            
+            for (int i=0; i<len_x; i++) {{
+                printf(" %f == %f", x[i], y[i%len_y]);
+                if (x[i] == y[i%len_y])
+                    c[i] = 1.0;
+                else 
+                    c[i] = 0.0;
+            }}
+
+            for (int i=0; i<len_x; i++)
+                printf("%f ", c[i]);
+
+            return c;
+        }}
+        """ 
+        return prg
+
+    @staticmethod
     def neg(dtype: str) -> str:
         prg = f"""
         #include <stdlib.h>
@@ -99,8 +125,6 @@ class C:
 
             return c;
         }}
-
-
         """ 
         return prg
 
