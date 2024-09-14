@@ -348,7 +348,6 @@ class Tensor:
         from dlgrad.ops import CrossEntropy
 
         return CrossEntropy().forward(logits, targets)
-       
 
     def backward(self):
         set_graph(0)
@@ -359,15 +358,12 @@ class Tensor:
         def build_topo(v):
             if v not in visited:
                 visited.add(v)
-                # print(v)
                 if v._ctx is not None:
-                    # print(v._ctx.parents)
                     for i in v._ctx.parents:
                         build_topo(i)
                 topo.append(v)
 
         build_topo(self)
-        # print(topo)
 
         self.grad = 1.0
         for node in reversed(topo):
