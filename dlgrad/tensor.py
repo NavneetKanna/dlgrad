@@ -70,6 +70,7 @@ class Tensor:
 
         elif isinstance(data, list):
             out_len, out_shape, ndim = analyse_list(data)
+            # print(out_shape)
 
             tp = TensorProperties(
                 view=False, offset=0, numel=out_len, shape=out_shape,
@@ -93,7 +94,7 @@ class Tensor:
 
     def numpy(self) -> np.ndarray:
         if isinstance(self.data.buffer, ctypes.Array):
-            return np.ctypeslib.as_array(self.data.buffer, shape=self.shape)
+            return np.ctypeslib.as_array(self.data.buffer).reshape(self.shape)
         if not isinstance(self.data, Buffer):
             pass
         else:
@@ -344,8 +345,10 @@ class Tensor:
     # ***** Loss functions *****
     @staticmethod
     def crossentropy_loss(logits: Tensor, targets: Tensor):
-        # NLL(log(softmax(logits)), targets)
-        return Tensor.sum(-Tensor.log_softmax(logits)[targets])
+        from dlgrad.ops import CrossEntropy
+
+        return CrossEntropy().forward(logits, targets)
+       
 
     def backward(self):
         set_graph(0)
@@ -356,12 +359,15 @@ class Tensor:
         def build_topo(v):
             if v not in visited:
                 visited.add(v)
+                # print(v)
                 if v._ctx is not None:
+                    # print(v._ctx.parents)
                     for i in v._ctx.parents:
                         build_topo(i)
                 topo.append(v)
 
         build_topo(self)
+        # print(topo)
 
         self.grad = 1.0
         for node in reversed(topo):
@@ -377,7 +383,8 @@ class Tensor:
         return Tensor.add(self, other)
 
     def __sub__(self, other):
-        return Tensor.sub(self, other)
+        # return Tensor.sub(self, other)
+        return Tensor.add(self, -other)
 
     def __truediv__(self, other):
         return Tensor.div(self, other)

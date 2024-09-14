@@ -1,6 +1,6 @@
 from dlgrad import graph
 from dlgrad.dispatch import Dispatcher
-from dlgrad.helpers import (BinaryOps, UnaryOps, calculate_numel,
+from dlgrad.helpers import (BinaryOps, CustomOps, UnaryOps, calculate_numel,
                             calculate_stride, calculate_sum_axis,
                             calculate_uops, get_broadcast_shape, get_graph)
 from dlgrad.tensor import Tensor, TensorProperties
@@ -160,6 +160,7 @@ class Sum(Op):
         return out
 
     def backward(self, grad_output):
+        print("sum backward")
         # NOTE: backward only works for axis=None:
         self.x.grad = (
             Tensor.ones(self.x.shape)
@@ -188,8 +189,8 @@ class Log(Op):
 
         return out
 
-    def backward():
-        pass
+    def backward(self, grad_output):
+        self.x.grad = grad_output / self.x
 
 
 class Max(Op):
@@ -253,8 +254,42 @@ class Exp(Op):
         
         if get_graph():
             graph.add_edge(child=out, parents=(x,))
+        
+        self.x = x
+        out._ctx = self
+        self.parents = (x,)
 
         return out
     
-    def backward(self):
-        pass
+    def backward(self, grad_output):
+        self.x.grad = grad_output * self.x
+
+class CrossEntropy(Op):
+    def forward(self, logits: Tensor, targets: Tensor):
+        # NLL(log(softmax(logits)), targets)
+
+        # why not log_softmax here ?
+        t1 = Tensor.softmax(logits)
+        t2 = -t1.log()[targets]
+    
+        # if get_graph():
+        #     graph.add_edge(child=out, parents=(x,))
+        out = Tensor.sum(t2)
+
+        self.x = logits
+        self.t1 = t1
+        self.targets = targets
+        out._ctx = self
+        self.parents = (logits,)
+
+        return out
+    
+    def backward(self, grad_output):
+        tp = TensorProperties(
+            view=False, offset=0, numel=self.t1.numel, shape=self.t1.shape,
+            ndim=self.t1.ndim, stride=self.t1.stride, contig=True
+        )
+        self.x.grad = Tensor(
+            Dispatcher.dispatch(x=self.t1, y=self.targets, ops=CustomOps.CE_BACKWARD),
+            device=self.t1.device, dtype=self.t1.dtype, properties=tp
+        )
