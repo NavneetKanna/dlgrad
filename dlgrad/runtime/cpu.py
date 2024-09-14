@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING, Optional
 from dlgrad.buffer import Buffer
 from dlgrad.c_code import C
 from dlgrad.dtype import dtypes
-from dlgrad.helpers import (AllocationError, BinaryOps, BufferOps, UnaryOps,
-                            calculate_add_axis, calculate_numel, flatten,
-                            get_broadcast_shape, get_shared_lib_name,
+from dlgrad.helpers import (AllocationError, BinaryOps, BufferOps, CustomOps,
+                            UnaryOps, calculate_add_axis, calculate_numel,
+                            flatten, get_broadcast_shape, get_shared_lib_name,
                             get_temp_loc)
 
 if TYPE_CHECKING:
@@ -367,6 +367,21 @@ class CPU:
         return Buffer(data, temp_file)
     
     @staticmethod
+    def _ce_bacward(x: Tensor, targets: Tensor) -> Buffer:
+        c_dtype = dtypes.get_c_dtype(x.dtype)
+        prg = C.ce_backward(c_dtype)
+        name = get_shared_lib_name("ce_backward")
+        ce_backward_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+
+        ce_backward_dll.ce_backward.argtypes = (ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int, ctypes.c_int)
+        ce_backward_dll.ce_backward.restype = ctypes.POINTER(ctypes.c_float)
+        data = ce_backward_dll.ce_backward(x.data.buffer, targets.data.buffer, x.numel, x.shape[0], x.shape[1])
+        if data is None:
+            AllocationError("Error: could not allocate memory when creating Tensor for EXP op")
+
+        return Buffer(data, temp_file)
+
+    @staticmethod
     def _log(x: Tensor) -> Buffer:
         c_dtype = dtypes.get_c_dtype(x.dtype)
         prg = C.log(c_dtype)
@@ -442,5 +457,9 @@ class CPU:
                     return CPU._from_list(kwargs["li"])
                 if func == "from_idx":
                     return CPU._from_idx(x, y)
+        
+        elif isinstance(op, CustomOps):
+            if op == CustomOps.CE_BACKWARD:
+                return CPU._ce_bacward(x, y)
 
         raise ValueError(f"Unsupported operation: {op}")

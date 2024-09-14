@@ -35,6 +35,8 @@ class BufferOps(Enum):
     ONES = auto()
     CUSTOM = auto()
 
+class CustomOps(Enum):
+    CE_BACKWARD = auto()
 
 class Device(Enum):
     CPU = auto()

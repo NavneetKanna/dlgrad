@@ -624,3 +624,30 @@ class C:
         }}
         """
         return prg
+
+    @staticmethod
+    def ce_backward(dtype: str):
+        prg = f"""
+        #include <stdlib.h>
+        #include <stdio.h>
+
+        {dtype} *ce_backward({dtype} *x, {dtype} *target, int len, int rows, int cols) 
+        {{
+            {dtype} *out = malloc(len * sizeof({dtype}));
+            for(int i=0; i<rows; i++) {{
+                for(int j=0; j<cols; j++) {{
+                    if (j == target[i]) {{
+                        out[i*cols + j] = x[i*cols + j] - 1;
+                    }} else {{
+                        out[i*cols + j] = x[i*cols + j];
+                    }}
+                }}
+                
+            }}
+
+            return out;
+        }}
+
+        """
+
+        return prg
