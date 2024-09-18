@@ -1,7 +1,10 @@
 import os
 from enum import Enum, auto
 from typing import Optional
+import platform
 
+
+OSX = platform.system() == "Darwin"
 GRAPH = os.getenv("GRAPH")
 
 
@@ -181,3 +184,7 @@ def check_temp_file_exists(starts_with: str) -> str:
 def get_shared_lib_name(name: str, dtype: str = '', device: str = '') -> str:
     # TODO: Check if mac or linux
     return f"{get_temp_loc()}/{name}_{dtype}_{device}.dylib"
+
+
+CACHE_DIR = os.path.expanduser("~/Library/Caches") if OSX else os.path.expanduser("~/.cache")
+
