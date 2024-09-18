@@ -2,8 +2,8 @@ import math
 
 from dlgrad.tensor import Tensor
 
-import dlgrad.nn.metadata   # noqa: F401
-
+from dlgrad.nn import metadata   # noqa: F401
+from dlgrad.nn import optim
 
 class Linear:
     def __init__(self, inp_dim: int, out_dim: int) -> None:
