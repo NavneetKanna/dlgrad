@@ -17,10 +17,12 @@ class dtypes:
 
     @staticmethod
     def from_py(data):
-        return dtypes.float32 
-        # return dtypes.float32 if isinstance(data, float) else dtypes.int32
+        # return dtypes.float32 
+        return dtypes.float32 if isinstance(data, float) else dtypes.int32
 
     @staticmethod
     def get_c_dtype(dtype, map_ctype=False):
         if dtype == dtypes.float32:
             return ctypes.c_float if map_ctype else "float"
+        elif dtype == dtypes.int32:
+            return ctypes.c_int if map_ctype else "int"

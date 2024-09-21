@@ -67,6 +67,69 @@ class C:
         return prg
 
     @staticmethod
+    def int_random_buffer() -> str:
+        prg = """
+        #include <stdlib.h>
+        #include <time.h>
+        #include <inttypes.h>
+        #include <stdio.h>
+        #include <stdint.h>
+
+        /*
+         * This block of code generates random numbers
+         * from a uniform distribution on the interval [low, high).
+         * It uses xoroshiro64* (https://prng.di.unimi.it/xoroshiro64star.c).
+         */
+        static inline uint32_t rotl(const uint32_t x, int k) {
+            return (x << k) | (x >> (32 - k));
+        }
+
+        static uint32_t s[2];
+
+        uint32_t next(void) {
+            const uint32_t s0 = s[0];
+            uint32_t s1 = s[1];
+            const uint32_t result = s0 * 0x9E3779BB;
+
+            s1 ^= s0;
+            s[0] = rotl(s0, 26) ^ s1 ^ (s1 << 9); // a, b
+            s[1] = rotl(s1, 13); // c
+
+            return result;
+        }
+
+        int random_uniform(float a, float b) {
+            uint32_t rnd = next();
+            float normalized = rnd / (float)UINT32_MAX; // Normalize to [0, 1)
+            float new = (int) (b-a)*(normalized) + a; // transform to range (a, b)
+            return new; 
+        }
+
+        int *create_rand_buffer(int length, float low, float high) {
+            static int seeded = 0;
+            if (!seeded) {
+                s[0] = (uint32_t)time(NULL);
+                s[1] = (uint32_t)time(NULL) + 1;
+                seeded = 1;
+            }
+            // s[0] = (uint32_t)time(NULL);
+            // s[1] = (uint32_t)time(NULL) + 1; 
+
+            float *data = malloc(length * sizeof(float));
+            if (data == NULL)
+                return NULL;
+
+            for (int i=0; i<length; i++) {
+                float random_value = random_uniform(low, high);
+                data[i] = random_value;
+            }
+
+            return data;
+        }
+        """
+        return prg
+    
+    @staticmethod
     def create_arr_from_idx(dtype: str) -> str:
         prg = f"""
         #include <stdlib.h>

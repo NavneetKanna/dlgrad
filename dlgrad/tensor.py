@@ -143,8 +143,8 @@ class Tensor:
         if device != Device.CPU:
             warnings.warn("Currently BufferOps are only created on CPU.")
 
-        if dtype != dtypes.float32:
-            warnings.warn("Currently dlgrad only supports float32, but more dtypes coming in future. Creating data with dtype=float32.")
+        # if dtype != dtypes.float32:
+            # warnings.warn("Currently dlgrad only supports float32, but more dtypes coming in future. Creating data with dtype=float32.")
 
         if isinstance(shape[0], tuple):
             shape = shape[0]
@@ -167,10 +167,17 @@ class Tensor:
             ndim=len(shape), stride=calculate_stride(shape), contig=True, metadata={"created_by": "rand", "ops": "BufferOps"},
         )
         return Tensor(
-            Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high, device=device),
+            Dispatcher.dispatch(ops=BufferOps.UNIFORM, out_len=out_len, low=low, high=high, dtype=dtype, device=device),
             device=device, dtype=dtype, properties=tp,
         )
 
+    @staticmethod
+    def randint(
+        *shape, low = 0.0, high = 1.0,
+        device: Optional[Device] = Device.CPU, dtype: Optional[dtypes] = dtypes.int32
+    ) -> Tensor:
+        return Tensor.rand(shape, low, high, device=device, dtype=dtype)
+        
     @staticmethod
     def ones(*shape, device: Optional[Device] = Device.CPU, dtype: Optional[dtypes] = dtypes.float32) -> Tensor:
         if device != Device.CPU:
