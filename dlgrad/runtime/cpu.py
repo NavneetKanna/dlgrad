@@ -114,13 +114,13 @@ class CPU:
             ]
             add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
             data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel)
-        elif axis == -1:
+        elif axis == -1: # both shapes are equal
             prg = C.add_m1(c_dtype, out_len)
             add_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
             add_dll.add_m1.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
             add_dll.add_m1.restype = ctypes.POINTER(ctypes.c_float)
             data = add_dll.add_m1(x.data.buffer, y.data.buffer)
-        else:
+        else: # one operand is a scalar
             prg = C.add_m2(c_dtype, out_len)
             add_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
             add_dll.add_m2.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
@@ -294,18 +294,32 @@ class CPU:
         return Buffer(data, temp_file)
 
     @staticmethod
-    def _uniform(length: int, low=0.0, high=1.0) -> Buffer:
-        prg = C.random_buffer()
-        name = get_shared_lib_name("uniform")
-        rand_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+    def _uniform(length: int, low=0.0, high=1.0, dtype=dtypes.float32) -> Buffer:
+        if dtype == dtypes.float32:
+            prg = C.random_buffer()
+            name = get_shared_lib_name("uniform")
+            rand_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
 
-        rand_dll.create_rand_buffer.argtypes = (ctypes.c_int, ctypes.c_float, ctypes.c_float)
-        rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float)
-        data = rand_dll.create_rand_buffer(length, low, high)
-        if data is None:
-            AllocationError("Error: could not allocate memory when creating Tensor for UNIFORM op")
+            rand_dll.create_rand_buffer.argtypes = (ctypes.c_int, ctypes.c_float, ctypes.c_float)
+            rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_float)
+            data = rand_dll.create_rand_buffer(length, low, high)
+            if data is None:
+                AllocationError("Error: could not allocate memory when creating Tensor for UNIFORM op")
 
-        return Buffer(data, temp_file)
+            return Buffer(data, temp_file)
+        elif dtype == dtypes.int32:
+            prg = C.int_random_buffer()
+            name = get_shared_lib_name("uniform")
+            rand_dll, temp_file = CPU.dlls.get(name, CPU._compile_clang(name, prg))
+
+            rand_dll.create_rand_buffer.argtypes = (ctypes.c_int, ctypes.c_float, ctypes.c_float)
+            rand_dll.create_rand_buffer.restype = ctypes.POINTER(ctypes.c_int)
+            data = rand_dll.create_rand_buffer(length, low, high)
+            if data is None:
+                AllocationError("Error: could not allocate memory when creating Tensor for UNIFORM op")
+
+            return Buffer(data, temp_file)
+
 
     @staticmethod
     def _ones(length: int) -> Buffer:
@@ -449,7 +463,7 @@ class CPU:
 
         elif isinstance(op, BufferOps):
             if op == BufferOps.UNIFORM:
-                return CPU._uniform(kwargs["out_len"], kwargs["low"], kwargs["high"])
+                return CPU._uniform(kwargs["out_len"], kwargs["low"], kwargs["high"], kwargs["dtype"])
             if op == BufferOps.ONES:
                 return CPU._ones(kwargs["out_len"])
             if op == BufferOps.CUSTOM:

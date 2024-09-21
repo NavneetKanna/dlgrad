@@ -1,0 +1,1 @@
+from dlgrad.dataset.mnist import mnist # noqa: F401

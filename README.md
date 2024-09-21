@@ -16,6 +16,7 @@ You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Beh
 - [x] Loss functions
 - [x] Optimiser
 - [] MNIST dataset
+- [] Adding support for multidim tensors
 
 ## Examples
 
