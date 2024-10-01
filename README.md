@@ -13,7 +13,7 @@ Inspired by Andrej Karpathy's micrograd and George Hotz's tinygrad, dlgrad is my
 You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Behind-the-scenes.html) to learn more about how dlgrad operates.
 
 ## Things I'm Working On
-- [] Big change coming to dlgrad
+- [ ] Big change coming to dlgrad
 
 ## Examples
 
