@@ -59,6 +59,8 @@ class Add(Op):
         assert x.device == y.device, f"{x.device} and {y.device} does not match"
 
         out_shape = Broadcast().forward(x, y)
+        print("out shape ", out_shape)
+
         tp = TensorProperties(
             view=False, offset=0, numel=calculate_numel(out_shape), shape=out_shape,
             ndim=len(out_shape), stride=calculate_stride(out_shape) if out_shape else (), contig=True, 
