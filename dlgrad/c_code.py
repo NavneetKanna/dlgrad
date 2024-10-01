@@ -308,8 +308,9 @@ class C:
             for (int ptr_a = 0; ptr_a < len_a; ++ptr_a) {{
                 if (ptr_a % ncol == 0 && ptr_a != 0)
                     b_idx++;
-
+                printf("%d ", b_idx);
                 out[ptr_a] = x[ptr_a] + y[b_idx];
+                printf("%f ", out[ptr_a]);
             }}
 
             return out;

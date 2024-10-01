@@ -90,6 +90,7 @@ class CPU:
     def _add(x: Tensor, y: Tensor, dtype: dtypes) -> Buffer:
         c_dtype = dtypes.get_c_dtype(dtype)
         axis = -2 if x.numel == 1 or y.numel == 1 else calculate_add_axis(x.shape, y.shape)
+        print("axis ", axis)
         if axis is None:
             ValueError(f"add not compatiable with shapes {x.shape} / {y.shape}")
 
@@ -104,6 +105,7 @@ class CPU:
                 ctypes.c_int, ctypes.c_int, ctypes.c_int
             ]
             add_dll.add_with_broadcasting.restype = ctypes.POINTER(ctypes.c_float)
+            print("x.shape[1]", x.shape[1])
             data = add_dll.add_with_broadcasting(x.data.buffer, y.data.buffer, x.numel, y.numel, x.shape[1])
         elif axis == 1:
             prg = C.add_axis1(c_dtype, out_len)
