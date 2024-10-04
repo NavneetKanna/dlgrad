@@ -15,34 +15,15 @@ You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Beh
 ## Things I'm Working On
 - [ ] Big change coming to dlgrad
 
-## Examples
+##  History
 
-```python
-# Can call with GRAPH=1 to visualise the computational graph
- 
-from dlgrad.tensor import Tensor
+<details>
 
-# Create tensors filled with random numbers from a uniform distribution
-a = Tensor.rand(2, 3)
-b = Tensor.rand(1, 3)
-# Since the tensors are c buffers, convert to numpy to print
-print(a.numpy())
-print(b.numpy())
+<summary> A brief timeline of dlgrad </summary>
 
-c = a+b
+- I started this project in 2022 with the intention of learning the fundamentals of deep learning. The initial version worked perfectly fine but was just a numpy wrapper.
+- In early 2024, I revisted the project and realised that I didnt learn/do much since most of the heavy lifting was done by numpy and this bothered me.
+- Hence, I began to rewrite dlgrad, well, in a stupid way. 
+- Since, I didnt want to rely on numpy at all, I needed some way in creating the tensors. My genius idea was, let me write C code in python, compile them as a shared file and load them into python. 
 
-# Do a backward pass
-c.sum().backward()
-
-print(a.grad.numpy())
-print(b.grad.numpy())
-
-```
-
-## Testing
-
-To run all the tests, run the command from the root dir
-
-```bash
-python3 -m unittest discover test
-```
+</details>
