@@ -28,5 +28,6 @@ You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Beh
 - However, it was really difficult to manage creating tensors in C and using them in python. Since the tensors were C arrays, I had to ensure to clean them up, indexing, etc. And I spent around 8 months doing this. Yea 8 months !!!.
 - Things were only getting complicated as I sarted to add new ops, losses, etc, and at this point I became frustated at myself, saddend by the fact that I am not able to do this.
 - Then I was looking at [llm.c](https://github.com/karpathy/llm.c), and I wondered, why am I complicating things, why am I using python, why cant I just use C. Afterall I am not building a framework to compete with the existing ones, rather the goal was to understand the fundamentals of deep learning, which can be done in C also, as demonstrated by llm.c
+- Hence, now dlgrad is going to shift to C from python.
 
 </details>
