@@ -1,5 +1,6 @@
 from enum import Enum, auto
 
+Scalar = int | float
 
 class DType(Enum):
     FLOAT32 = auto()
