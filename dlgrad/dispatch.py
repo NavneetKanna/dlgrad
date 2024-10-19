@@ -1,27 +1,17 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Optional
-
-from dlgrad.buffer import Buffer
-from dlgrad.helpers import Device
-from dlgrad.runtime.cpu import CPU
-
-if TYPE_CHECKING:
-    from dlgrad.tensor import Tensor
+# from dlgrad.tensor import Tensor
 
 
 class Dispatcher:
-    @staticmethod
-    def _cpu_dispatch(op, x: Optional[Tensor] = None, y: Optional[Tensor] = None, **kwargs) -> Buffer:
-        return CPU.interface(op, x, y, **kwargs)
+    def __init__(self) -> None:
+        self._dispatch_table: dict = {}
 
-    @staticmethod
-    # both the inputs can be None since BufferOps are also dispatched
-    def dispatch(ops, x: Tensor = None, y: Tensor = None, **kwargs) -> Buffer:
-        device = x.device if x is not None else kwargs.get("device", Device.CPU)
-        if device == Device.CPU:
-            return Dispatcher._cpu_dispatch(ops, x, y, **kwargs)
-        if device == Device.GPU:
-            pass
-        else:
-            raise ValueError(f"Unsupported device: {device}")
+    def register(self, op, device):
+        def decorator(func):
+            self._dispatch_table[(op, device)] = func
+        return decorator
+
+    def dispatch(self, x, op, **kwargs):
+        device = kwargs["device"]
+        return self._dispatch_table[(op, device)](x)
+
+dispatcher = Dispatcher()
