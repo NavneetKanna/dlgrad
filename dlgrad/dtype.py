@@ -1,28 +1,13 @@
-# idea from tinygrad
-import ctypes
-from dataclasses import dataclass
+from enum import Enum, auto
 
+Scalar = int | float
 
-@dataclass
-class DType:
-    name: str
-
-    def __repr__(self) -> str:
-        return f"dlgrad.{self.name}"
-
-
-class dtypes:
-    float32 = DType("float32")
-    int32 = DType("int32")
+class DType(Enum):
+    FLOAT32 = auto()
 
     @staticmethod
-    def from_py(data):
-        # return dtypes.float32 
-        return dtypes.float32 if isinstance(data, float) else dtypes.int32
-
-    @staticmethod
-    def get_c_dtype(dtype, map_ctype=False):
-        if dtype == dtypes.float32:
-            return ctypes.c_float if map_ctype else "float"
-        elif dtype == dtypes.int32:
-            return ctypes.c_int if map_ctype else "int"
+    def from_str(d: str):
+        try:
+            return DType[d.upper()]
+        except KeyError:
+            print(f"Invalid dtype: {d}")
