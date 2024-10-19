@@ -1,9 +1,9 @@
-from dlgrad.dtype import Scalar
-from dlgrad.tensor import OP
-from dlgrad.dispatch import dispatcher
 from enum import Enum, auto
-from dlgrad.helpers import BufferOps
 
+from dlgrad.dispatch import dispatcher
+from dlgrad.dtype import Scalar
+from dlgrad.helpers import BufferOps
+from dlgrad.tensor import OP
 
 
 # ------------ Buffer Ops -----------
