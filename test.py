@@ -1,7 +1,7 @@
+import time
+
 from dlgrad.device import Device
 from dlgrad.tensor import Tensor
-
-import time
 
 s = time.perf_counter()
 a = Tensor(1)
