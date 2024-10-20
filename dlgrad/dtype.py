@@ -11,3 +11,7 @@ class DType(Enum):
             return DType[d.upper()]
         except KeyError:
             print(f"Invalid dtype: {d}")
+
+    @staticmethod
+    def get_c_dtype(d: Enum) -> str:
+        pass
