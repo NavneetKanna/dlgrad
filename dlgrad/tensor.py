@@ -49,3 +49,21 @@ class Tensor:
 
         if isinstance(data, get_args(Scalar)):
             self.data = Op.create_buffer_from_scalar(data, dtype=self.dtype, device=self.device)
+
+    def rand(
+            shape: tuple, 
+            device: str | Device | None = Device.CPU, 
+            dtype: str | DType | None = DType.FLOAT32
+        ) -> Tensor:
+        """
+        Creates a Tensor with the specified shape filled with random numbers from a 
+        uniform distribution on the interval [0, 1).
+
+        Parameters:
+            shape (tuple) : The desired shape
+            device (str | Device | None) : Default device is CPU
+            dtype (str | DType | None) : Default dtype is float32
+        
+        Returns:
+            Tensor : A Tensor filled with random numbers.
+        """
