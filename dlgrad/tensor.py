@@ -1,13 +1,17 @@
-from typing import get_args
+from __future__ import annotations
+from typing import get_args, Type
 
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
-from dlgrad.runtime import cpu  # noqa: F401
+from dlgrad.runtime import cpu # needed to register all the cpu runtime functions  # noqa: F401
 
 
 class OP:
     """
+    The superclass for all the ops implemented in the ops module.
+
+    The reason it is defined in the tensor module is to avoid circular imports.
     
     Thanks to tinygrad for the template, this is similar to the Function class.
     """
@@ -18,7 +22,13 @@ class OP:
     def backward(self, *args, **kwargs): raise RuntimeError(f"backward not implemented for {type(self)}")
 
     @classmethod
-    def execute(fxn):
+    def execute(fxn: Type[OP]):
+        """
+        The main method that is called to execute an op. 
+
+        This method takes a subclass as parameter and calls its forward method 
+        and creates a new tensor with the returned value.
+        """
         pass
 
 
