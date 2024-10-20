@@ -3,10 +3,13 @@ import time
 from dlgrad.device import Device
 from dlgrad.tensor import Tensor
 
-s = time.perf_counter()
+
+# a = Tensor.rand((2, 3))
+# s = time.perf_counter()
 a = Tensor(1)
-e = time.perf_counter()
-print(f"{e-s}s")
+print(a)
+# e = time.perf_counter()
+# print(f"{e-s}s")
 
 
 # import torch
