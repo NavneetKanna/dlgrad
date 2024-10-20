@@ -7,5 +7,6 @@ from dlgrad.tensor import OP
 
 
 # ------------ Buffer Ops -----------
+
 def create_buffer_from_scalar(x: Scalar, **kwargs):
     return dispatcher.dispatch(x, BufferOps.CREATE, **kwargs)
