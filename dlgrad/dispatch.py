@@ -1,6 +1,7 @@
 from enum import Enum
-from dlgrad.buffer import Buffer
 from typing import Any
+
+from dlgrad.buffer import Buffer
 
 
 class Dispatcher:

@@ -3,8 +3,8 @@ from cffi import FFI
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
-from dlgrad.helpers import BufferOps
 from dlgrad.dtype import Scalar
+from dlgrad.helpers import BufferOps
 
 
 class CPU:
