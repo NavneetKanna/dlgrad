@@ -41,7 +41,7 @@ class Dispatcher:
             **kwargs (dict) : Any additional args.
         
         Returns:
-            Buffer -> Returns a Buffer object.
+            Buffer -> A Buffer object.
         """
         return self._dispatch_table[(op, device)](x, **kwargs)
 

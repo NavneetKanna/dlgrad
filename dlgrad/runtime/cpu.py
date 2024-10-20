@@ -3,8 +3,9 @@ from cffi import FFI
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
-from dlgrad.dtype import Scalar
+from dlgrad.dtype import Scalar, DType
 from dlgrad.helpers import BufferOps
+import random
 
 
 class CPU:
@@ -21,4 +22,9 @@ class CPU:
     @staticmethod
     @dispatcher.register(BufferOps.CREATE, Device.CPU)
     def create_buffer_from_scalar(x: Scalar) -> Buffer:
-        return Buffer(CPU.ffi.new(f"{type(x)} [1]", [x]))
+        return Buffer(CPU.ffi.new(f"{DType.get_c_dtype((x))} [1]", [x]))
+
+    @staticmethod
+    @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
+    def uniform(shape: tuple, **kwargs) -> Buffer:
+        pass
