@@ -9,10 +9,9 @@ from dlgrad.dtype import Scalar
 
 class CPU:
     """
-    The main CPU runtime class which handles the logic of calling the compiled
-    C source files.
+    Main CPU runtime class which handles the logic of calling the compiled C source files.
 
-    cffi is used to interact with the C code.
+    This class uses CFFI (C Foreign Function Interface) to interact with C code.
     """
     ffi = FFI()
 
