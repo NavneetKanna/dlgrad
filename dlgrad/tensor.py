@@ -1,10 +1,12 @@
 from __future__ import annotations
-from typing import get_args, Type
+
+from typing import Type, get_args
 
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
-from dlgrad.runtime import cpu # needed to register all the cpu runtime functions  # noqa: F401
+from dlgrad.runtime import \
+    cpu  # needed to register all the cpu runtime functions  # noqa: F401
 
 
 class OP:
@@ -32,7 +34,7 @@ class OP:
         pass
 
 
-import dlgrad.ops as Op  # noqa: E402
+import dlgrad.ops as Op  # since Op module imports OP class, it is placed after the defination  # noqa: E402
 
 
 class Tensor:
