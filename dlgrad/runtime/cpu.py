@@ -6,6 +6,7 @@ from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import Scalar, DType
 from dlgrad.helpers import BufferOps, prod_
 import random
+import _uni 
 
 
 class CPU:
@@ -28,9 +29,7 @@ class CPU:
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
     def uniform(shape: tuple, **kwargs) -> Buffer:
         numel = prod_(shape)
-        arr = CPU.ffi.new(f"float [{numel}]")
-        for i in range(numel):
-            arr[i] = random.uniform(0, 1)
+        arr = _uni.lib.uni(numel)
 
         return Buffer(arr)
         

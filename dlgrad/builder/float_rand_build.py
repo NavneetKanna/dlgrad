@@ -1,10 +1,8 @@
 from cffi import FFI
-from pathlib import Path
 from dlgrad.helpers import root_dir
 
 
 ffi = FFI()
-
 
 ffi.cdef("float *uni(int numel); void free_uni(float* ptr);")
 ffi.set_source("_uni", f"""

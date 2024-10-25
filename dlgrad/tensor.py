@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Type, get_args, Any
+from typing import Type, get_args
 
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
 from dlgrad.runtime import \
     cpu  # needed to register all the cpu runtime functions  # noqa: F401
+from dlgrad.helpers import ffi
 
 
 class OP:
@@ -97,7 +98,15 @@ class Tensor:
         if dtype is not DType.FLOAT32:
             raise NotImplementedError("rand is implemented only for float32")
 
-        return Op.uniform(shape, device=device, dtype=dtype, **kwargs)
+        return Tensor(
+            data = Op.uniform(shape, device=device, dtype=dtype, **kwargs), 
+            device=device, 
+            dtype=dtype, 
+            requires_grad=kwargs.get("requires_grad")
+        )
+    
+    def numpy(self, data: Tensor):
+        pass
     
     def __repr__(self) -> str:
         return f"Tensor<dtype: {self.dtype} device: {self.device}>"
