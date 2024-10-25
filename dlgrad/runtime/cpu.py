@@ -4,7 +4,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import Scalar, DType
-from dlgrad.helpers import BufferOps
+from dlgrad.helpers import BufferOps, prod_
 import random
 
 
@@ -27,4 +27,10 @@ class CPU:
     @staticmethod
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
     def uniform(shape: tuple, **kwargs) -> Buffer:
-        pass
+        numel = prod_(shape)
+        arr = CPU.ffi.new(f"float [{numel}]")
+        for i in range(numel):
+            arr[i] = random.uniform(0, 1)
+
+        return Buffer(arr)
+        
