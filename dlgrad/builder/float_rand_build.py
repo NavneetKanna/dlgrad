@@ -1,5 +1,4 @@
 from cffi import FFI
-import os 
 from pathlib import Path
 
 
@@ -9,7 +8,7 @@ dir_path = f"{Path(__file__).parent.parent}/src/c"
 
 ffi.cdef("float *uni(int numel); void free_uni(float* ptr);")
 ffi.set_source("_uni", f"""
-    #include {dir_path}/float_rand.h"
+    #include "{dir_path}/float_rand.h"
     #include "{dir_path}/pcg_basic.h"
 """, 
 sources=[f'{dir_path}/float_rand.c', f"{dir_path}/pcg_basic.c"],
