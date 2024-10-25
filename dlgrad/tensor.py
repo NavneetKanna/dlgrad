@@ -72,6 +72,8 @@ class Tensor:
         if isinstance(data, get_args(Scalar)):
             self.dtype = DType.get_dtype_from_py(data)
             self.data = Op.create_buffer_from_scalar(data, dtype=self.dtype, device=self.device)
+        elif isinstance(data, Buffer):
+            self.data = data
 
     def rand(
             shape: tuple, 
