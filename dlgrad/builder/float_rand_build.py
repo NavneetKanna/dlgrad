@@ -1,6 +1,8 @@
 from cffi import FFI
-from dlgrad.helpers import root_dir
+import os 
 
+
+root_dir = os.path.dirname(os.path.abspath(__file__ + "/.."))
 
 ffi = FFI()
 
