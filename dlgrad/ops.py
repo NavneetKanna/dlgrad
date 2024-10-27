@@ -1,9 +1,8 @@
+from dlgrad.buffer import Buffer
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import Scalar
 from dlgrad.helpers import BufferOps
 from dlgrad.tensor import OP
-from dlgrad.buffer import Buffer
-
 
 # ------------ Buffer Ops -----------
 

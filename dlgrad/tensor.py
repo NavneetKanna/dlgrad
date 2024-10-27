@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Type, get_args
 
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
+from dlgrad.helpers import prod_
 from dlgrad.runtime import \
     cpu  # needed to register all the cpu runtime functions  # noqa: F401
-from dataclasses import dataclass
-from dlgrad.helpers import prod_
 
 
 class OP:
@@ -57,6 +57,7 @@ class OP:
 
 
 import dlgrad.ops as Op  # since Op module imports OP class, it is placed after the defination  # noqa: E402
+
 
 @dataclass
 class TensorMetadata:

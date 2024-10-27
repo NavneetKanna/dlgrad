@@ -1,12 +1,13 @@
+import random
+
+import _uni
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
-from dlgrad.dtype import Scalar, DType
+from dlgrad.dtype import DType, Scalar
 from dlgrad.helpers import BufferOps, prod_
-import random
-import _uni 
 
 
 class CPU:

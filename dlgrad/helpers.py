@@ -1,8 +1,8 @@
 from enum import Enum, auto
 from math import prod
 from typing import Iterable
-from cffi import FFI
 
+from cffi import FFI
 
 ffi  = FFI()
 

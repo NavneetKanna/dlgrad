@@ -1,6 +1,6 @@
-from cffi import FFI
-import os 
+import os
 
+from cffi import FFI
 
 root_dir = os.path.dirname(os.path.abspath(__file__ + "/.."))
 
