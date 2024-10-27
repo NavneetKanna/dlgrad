@@ -1,6 +1,4 @@
-import random
-
-import _uni
+import _uniform   # type: ignore
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
@@ -30,7 +28,7 @@ class CPU:
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
     def uniform(shape: tuple, **kwargs) -> Buffer:
         numel = prod_(shape)
-        arr = _uni.lib.uni(numel)
+        arr = _uniform.lib.uniform(numel)
 
         return Buffer(arr)
         
