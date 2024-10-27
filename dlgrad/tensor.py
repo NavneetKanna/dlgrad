@@ -7,7 +7,8 @@ from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
 from dlgrad.runtime import \
     cpu  # needed to register all the cpu runtime functions  # noqa: F401
-from dlgrad.helpers import ffi
+from dataclasses import dataclass
+from dlgrad.helpers import prod_
 
 
 class OP:
@@ -57,17 +58,22 @@ class OP:
 
 import dlgrad.ops as Op  # since Op module imports OP class, it is placed after the defination  # noqa: E402
 
+@dataclass
+class TensorMetadata:
+    shape: tuple
+    numel: int
 
 class Tensor:
     def __init__(
             self, data: Scalar | Buffer, device: str | Device | None = None,
-            dtype: str | DType | None = None, requires_grad: bool = False
+            dtype: str | DType | None = None, requires_grad: bool = False, metadata: TensorMetadata = None
     ) -> None:
         self.device: Device = device if isinstance(device, Device) else Device.from_str(device) if isinstance(device, str) else Device.CPU
         self.dtype: DType = dtype if isinstance(dtype, DType) else DType.from_str(dtype) if isinstance(dtype, str) else DType.FLOAT32
         self.requires_grad: bool = requires_grad
         self._ctx: OP = None # used by autograd engine
         self.grad = None
+        self.metadata = metadata
 
         if isinstance(data, get_args(Scalar)):
             self.dtype = DType.get_dtype_from_py(data)
@@ -104,7 +110,8 @@ class Tensor:
             data = Op.uniform(shape, device=device, dtype=dtype, **kwargs), 
             device=device, 
             dtype=dtype, 
-            requires_grad=kwargs.get("requires_grad")
+            requires_grad=kwargs.get("requires_grad"),
+            metadata=TensorMetadata(shape, prod_(shape))
         )
     
     def numpy(self, data: Tensor):
@@ -112,3 +119,12 @@ class Tensor:
     
     def __repr__(self) -> str:
         return f"Tensor<dtype: {self.dtype} device: {self.device}>"
+
+    @property
+    def numel(self):
+        return self.metadata.numel
+
+    @property
+    def shape(self):
+        return self.metadata.shape
+    
