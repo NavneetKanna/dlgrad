@@ -7,7 +7,7 @@
 
 pcg32_random_t rng;
 
-float *uni(int numel) {
+float *uniform(int numel) {
     float *out = malloc(numel * sizeof(float));
 
     pcg32_srandom_r(&rng, time(NULL), (intptr_t)&rng);
@@ -21,6 +21,6 @@ float *uni(int numel) {
     return out;
 }
 
-void free_uni(float* ptr) {
+void free_uniform(float* ptr) {
     free(ptr);
 }
