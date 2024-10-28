@@ -1,1 +1,1 @@
-# from dlgrad.tensor import Tensor  # noqa: F401
+from dlgrad.tensor import Tensor  # noqa: F401

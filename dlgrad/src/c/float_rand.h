@@ -2,6 +2,6 @@
 #define UNI_H
 
 float *uniform(int numel);
-void free_uni(float* ptr);
+void free_uniform(float* ptr);
 
 #endif

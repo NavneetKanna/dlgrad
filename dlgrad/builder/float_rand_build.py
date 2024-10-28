@@ -13,7 +13,7 @@ ffi.set_source("_uniform", f"""
 """, 
 sources=[f'{root_dir}/src/c/float_rand.c', f"{root_dir}/src/c/pcg_basic.c"],
 libraries=["m"],
-extra_compile_args=["-O3"])
+extra_compile_args=["-O2", "-march=native"])
 
 if __name__ == "__main__":
-    ffi.compile()
+    ffi.compile(verbose=True)
