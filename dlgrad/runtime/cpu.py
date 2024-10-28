@@ -30,5 +30,5 @@ class CPU:
         numel = prod_(shape)
         arr = _uniform.lib.uniform(numel)
 
-        return Buffer(arr)
+        return Buffer(CPU.ffi.gc(arr, _uniform.lib.free))
         
