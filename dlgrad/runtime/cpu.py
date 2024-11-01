@@ -5,7 +5,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import BufferOps, prod_
+from dlgrad.helpers import BufferOps, BinaryOps, prod_, get_broadcast_shape
 
 
 class CPU:
@@ -31,4 +31,10 @@ class CPU:
         arr = _uniform.lib.uniform(numel)
 
         return Buffer(CPU.ffi.gc(arr, _uniform.lib.free_uniform))
+    
+    @staticmethod
+    @dispatcher.register(BinaryOps.ADD, Device.CPU)
+    def add(x, y):
+        out_shape = get_broadcast_shape(x.metadata.shape, y.metadata.shape)
+        pass
         

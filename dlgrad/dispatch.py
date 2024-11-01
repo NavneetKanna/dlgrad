@@ -30,7 +30,7 @@ class Dispatcher:
             self._dispatch_table[(op, device)] = func
         return decorator
 
-    def dispatch(self, x: Any, op: Enum, device: Enum, **kwargs) -> Buffer:
+    def dispatch(self, op: Enum, device: Enum, x: Any, y: Any = None, **kwargs) -> Buffer:
         """
         Calls the function registered in the dispatch table based on the op and device.
 
@@ -41,7 +41,7 @@ class Dispatcher:
             **kwargs (dict) : Any additional args.
         
         Returns:
-            Buffer -> A Buffer object.
+            Buffer: A Buffer object.
         """
         return self._dispatch_table[(op, device)](x, **kwargs)
 

@@ -6,7 +6,7 @@ from typing import Type, get_args
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import prod_
+from dlgrad.helpers import prod_, get_broadcast_shape
 from dlgrad.runtime import \
     cpu  # needed to register all the cpu runtime functions  # noqa: F401
 
@@ -52,11 +52,14 @@ class OP:
         ten.requires_grad  = ctx.requires_grad
         ten.dtype = kwargs.get("dtype", data[0].dtype)
         ten.device = kwargs.get("device", data[0].device)
+        ten._ctx = ctx if ctx.requires_grad else None 
+        ten.metadata.shape = ...
+        ten.metadata.numel = ... 
 
         return ten
 
 
-import dlgrad.ops as Op  # since Op module imports OP class, it is placed after the defination  # noqa: E402
+import dlgrad.ops as Op  # since ops module imports OP class, it is placed after the defination  # noqa: E402
 
 
 @dataclass
@@ -66,8 +69,8 @@ class TensorMetadata:
 
 class Tensor:
     def __init__(
-            self, data: Scalar | Buffer, device: str | Device | None = None,
-            dtype: str | DType | None = None, requires_grad: bool = False, metadata: TensorMetadata = None
+        self, data: Scalar | Buffer, device: str | Device | None = None,
+        dtype: str | DType | None = None, requires_grad: bool = False, metadata: TensorMetadata = None
     ) -> None:
         self.device: Device = device if isinstance(device, Device) else Device.from_str(device) if isinstance(device, str) else Device.CPU
         self.dtype: DType = dtype if isinstance(dtype, DType) else DType.from_str(dtype) if isinstance(dtype, str) else DType.FLOAT32
@@ -82,12 +85,13 @@ class Tensor:
         elif isinstance(data, Buffer):
             self.data = data
 
+    @staticmethod
     def rand(
-            shape: tuple, 
-            device: str | Device | None = Device.CPU, 
-            dtype: str | DType | None = DType.FLOAT32,
-            **kwargs
-        ) -> Tensor:
+        shape: tuple, 
+        device: str | Device | None = Device.CPU, 
+        dtype: str | DType | None = DType.FLOAT32,
+        **kwargs
+    ) -> Tensor:
         """
         Creates a Tensor with the specified shape filled with random numbers from a 
         uniform distribution on the interval [0, 1).
@@ -99,7 +103,7 @@ class Tensor:
             **kwargs (dict) : Any additional keyword args.
         
         Returns:
-            Tensor : A Tensor filled with random numbers.
+            Tensor: A Tensor filled with random numbers.
         """
         if isinstance(dtype, str):
             dtype = DType.from_str(dtype)
@@ -108,7 +112,7 @@ class Tensor:
             raise NotImplementedError("rand is implemented only for float32")
 
         return Tensor(
-            data = Op.uniform(shape, device=device, dtype=dtype, **kwargs), 
+            data=Op.uniform(shape, device=device, dtype=dtype, **kwargs), 
             device=device, 
             dtype=dtype, 
             requires_grad=kwargs.get("requires_grad"),
@@ -118,6 +122,10 @@ class Tensor:
     def numpy(self, data: Tensor):
         pass
     
+    @staticmethod
+    def add(x: Tensor, y: Tensor | Scalar) -> Tensor:
+        return Op.Add.execute(x, y)
+
     def __repr__(self) -> str:
         return f"Tensor<dtype: {self.dtype} device: {self.device}>"
 
