@@ -14,15 +14,13 @@ def run(shapes: list[tuple], func):
 
     np.testing.assert_allclose(func(dla, dlb).numpy(), func(toa, tob).numpy(), atol=1e-6, rtol=1e-3)
     
-
-class TestOps():
-    def test_add_same_shape(self):
-        sh1 = (2, 3)
-        sh2 = (2, 3)
-        run([sh1, sh2], lambda x, y: x+y)
-        sh1 = (100, 100)
-        sh2 = (100, 100)
-        run([sh1, sh2], lambda x, y: x+y)
-        sh1 = (78, 91)
-        sh2 = (78, 91)
-        run([sh1, sh2], lambda x, y: x+y)
+def test_add_same_shape():
+    sh1 = (2, 3)
+    sh2 = (2, 3)
+    run([sh1, sh2], lambda x, y: x+y)
+    sh1 = (100, 100)
+    sh2 = (100, 100)
+    run([sh1, sh2], lambda x, y: x+y)
+    sh1 = (78, 91)
+    sh2 = (78, 91)
+    run([sh1, sh2], lambda x, y: x+y)
