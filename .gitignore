@@ -6,6 +6,8 @@ a.out
 *.ipynb
 *.svg
 *.dot
+*.html
+*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

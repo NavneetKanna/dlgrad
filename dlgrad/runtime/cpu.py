@@ -37,21 +37,8 @@ class CPU:
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x, y):
         y_broad_shape, y_broad_stride = get_y_broadcast_ss(x.metadata.shape, y.metadata.shape, y.metadata.stride)
-        
-        x_shape_ptr = CPU.ffi.new("int[]", len(x.metadata.shape))
-        for i, value in enumerate(x.metadata.shape):
-            x_shape_ptr[i] = value
-        y_shape_ptr = CPU.ffi.new("int[]", len(y_broad_shape))
-        for i, value in enumerate(x.metadata.shape):
-            y_shape_ptr[i] = value
-        x_stride_ptr = CPU.ffi.new("int[]", len(x.metadata.stride))
-        for i, value in enumerate(x.metadata.stride):
-            x_stride_ptr[i] = value
-        y_stride_ptr = CPU.ffi.new("int[]", len(y_broad_stride))
-        for i, value in enumerate(x.metadata.stride):
-            y_stride_ptr[i] = value
-
-        arr = _add.lib.add(x.data.ptr, y.data.ptr, x.metadata.numel, x_shape_ptr, y_shape_ptr, x_stride_ptr, y_stride_ptr, x.metadata.ndim)
+       
+        arr = _add.lib.add(x.data.ptr, y.data.ptr, x.metadata.numel, x.metadata.shape, y_broad_shape, x.metadata.stride, y_broad_stride, x.metadata.ndim)
 
         return Buffer(CPU.ffi.gc(arr, _add.lib.free_add))
         
