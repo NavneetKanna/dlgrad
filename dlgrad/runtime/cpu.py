@@ -1,11 +1,12 @@
 import _uniform   # type: ignore
+import _add # type: ignore
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import BufferOps, BinaryOps, prod_, get_y_broadcast_shape
+from dlgrad.helpers import BufferOps, BinaryOps, prod_, get_y_broadcast_ss
 
 
 class CPU:
@@ -35,6 +36,20 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x, y):
-        y_broad_shape = get_y_broadcast_shape(x.metadata.shape, y.metadata.shape)
-        pass
+        y_broad_shape, y_broad_stride = get_y_broadcast_ss(x.metadata.shape, y.metadata.shape, y.metadata.stride)
+        
+        x_shape_ptr = CPU.ffi.new("int[]", len(x.metadata.shape))
+        for i, value in enumerate(x.metadata.shape):
+            x_shape_ptr[i] = value
+        y_shape_ptr = CPU.ffi.new("int[]", len(y_broad_shape))
+        for i, value in enumerate(x.metadata.shape):
+            y_shape_ptr[i] = value
+        x_stride_ptr = CPU.ffi.new("int[]", len(x.metadata.stride))
+        for i, value in enumerate(x.metadata.stride):
+            x_stride_ptr[i] = value
+        y_stride_ptr = CPU.ffi.new("int[]", len(y_broad_stride))
+        for i, value in enumerate(x.metadata.stride):
+            y_stride_ptr[i] = value
+
+        _add(x.data.ptr, y.data.ptr, x.metadata.numel, x_shape_ptr, y_shape_ptr, x_stride_ptr, y_stride_ptr, x.metadata.ndim)
         
