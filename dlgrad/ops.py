@@ -12,6 +12,9 @@ def create_buffer_from_scalar(x: Scalar, **kwargs) -> Buffer:
 def uniform(shape: tuple, **kwargs) -> Buffer:
     return dispatcher.dispatch(op=BufferOps.UNIFORM, device=kwargs.pop("device"), x=shape, **kwargs)
 
+def arange(shape: tuple, **kwargs) -> Buffer:
+    return dispatcher.dispatch(op=BufferOps.ARANGE, device=kwargs.pop("device"), x=shape, **kwargs)
+
 # ------------ Binary Ops -----------
 
 class Add(OP):

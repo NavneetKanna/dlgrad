@@ -6,7 +6,7 @@ from typing import Type, get_args
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import prod_, calculate_stride
+from dlgrad.helpers import prod_, calculate_stride, ffi
 from dlgrad.runtime import \
     cpu  # needed to register all the cpu runtime functions  # noqa: F401
 
@@ -124,8 +124,10 @@ class Tensor:
             metadata=TensorMetadata(shape, prod_(shape), calculate_stride(shape), len(shape))
         )
     
-    def numpy(self, data: Tensor):
-        pass
+    def numpy(self: Tensor):
+        import numpy as np
+
+        return np.frombuffer(ffi.buffer(self.data.ptr, self.numel*ffi.sizeof("float")), count=-1, dtype=np.float32).reshape(self.shape)
     
     @staticmethod
     def add(x: Tensor, y: Tensor | Scalar) -> Tensor:

@@ -2,11 +2,15 @@ from enum import Enum, auto
 from math import prod
 from typing import Iterable
 import itertools
+from cffi import FFI
+
+ffi = FFI()
 
 
 class BufferOps(Enum):
     CREATE = auto()
     UNIFORM = auto()
+    ARANGE = auto()
 
 class BinaryOps(Enum):
     ADD = auto()
