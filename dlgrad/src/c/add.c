@@ -3,6 +3,8 @@
 #include "add.h"
 
 
+// TODO: Optimise
+
 int get_y_idx_3d(int dim1, int dim2, int dim3, int *yshape, int *ystride) {
     int idx = 0;
 
