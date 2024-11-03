@@ -22,7 +22,7 @@ class CPU:
     
     @staticmethod
     @dispatcher.register(BufferOps.CREATE, Device.CPU)
-    def create_buffer_from_scalar(x: Scalar) -> Buffer:
+    def create_buffer_from_scalar(x: Scalar, **kwargs) -> Buffer:
         return Buffer(CPU.ffi.new(f"{DType.get_c_dtype((x))} [1]", [x]))
 
     @staticmethod
@@ -51,5 +51,7 @@ class CPU:
         for i, value in enumerate(x.metadata.stride):
             y_stride_ptr[i] = value
 
-        _add(x.data.ptr, y.data.ptr, x.metadata.numel, x_shape_ptr, y_shape_ptr, x_stride_ptr, y_stride_ptr, x.metadata.ndim)
+        arr = _add(x.data.ptr, y.data.ptr, x.metadata.numel, x_shape_ptr, y_shape_ptr, x_stride_ptr, y_stride_ptr, x.metadata.ndim)
+
+        return Buffer(CPU.ffi.gc(arr, _add.lib.free_add))
         

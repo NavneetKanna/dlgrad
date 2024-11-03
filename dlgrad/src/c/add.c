@@ -78,3 +78,7 @@ float *add(float *x, float *y, int numel, int *xshape, int *yshape, int *xstride
         break;
     }
 }
+
+void free_add(float* ptr) {
+    free(ptr);
+}
