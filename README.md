@@ -11,7 +11,9 @@ You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Beh
 ## Things I'm Working On
 - [x] Big change coming to dlgrad
 - [ ] Adding new ops
-- [ ] Broadcasting
+- [x] Broadcasting
+- [ ] Writing tests
+
 
 ##  History
 
