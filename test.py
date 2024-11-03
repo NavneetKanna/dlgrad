@@ -1,5 +1,7 @@
 import time
+
 from dlgrad.tensor import Tensor
+
 # import torch
 # from tinygrad import tensor
 

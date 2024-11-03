@@ -6,7 +6,7 @@ from typing import Type, get_args
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import prod_, calculate_stride, ffi
+from dlgrad.helpers import calculate_stride, ffi, prod_
 from dlgrad.runtime import \
     cpu  # needed to register all the cpu runtime functions  # noqa: F401
 

@@ -1,10 +1,13 @@
 import unittest
-from dlgrad import Tensor
-import torch
+
 import numpy as np
+import torch
+
+from dlgrad import Tensor
 
 
-# TODO: Not an efficient way, need dlgrad to support creating Tensor from np, see tinygrad
+# TODO: Not an efficient way
+# Thanks to tinygrad for the template
 def run(shapes: list[tuple], func):
     dla = Tensor.rand(shapes[0])
     dlb = Tensor.rand(shapes[1])

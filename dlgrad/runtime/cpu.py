@@ -1,12 +1,12 @@
-import _uniform   # type: ignore
-import _add # type: ignore
+import _add  # type: ignore
+import _uniform  # type: ignore
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import BufferOps, BinaryOps, prod_, get_y_broadcast_ss
+from dlgrad.helpers import BinaryOps, BufferOps, get_y_broadcast_ss, prod_
 
 
 class CPU:
