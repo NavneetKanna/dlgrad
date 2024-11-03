@@ -16,6 +16,9 @@ def uniform(shape: tuple, **kwargs) -> Buffer:
 
 class Add(OP):
     def forward(self, x, y) -> Buffer:
+        if y.ndim > x.ndim:
+            x, y = y, x
+
         return dispatcher.dispatch(op=BinaryOps.ADD, device=x.device, x=x, y=y)
      
     def backward(self, *args, **kwargs):

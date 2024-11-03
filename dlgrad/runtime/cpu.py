@@ -51,7 +51,7 @@ class CPU:
         for i, value in enumerate(x.metadata.stride):
             y_stride_ptr[i] = value
 
-        arr = _add(x.data.ptr, y.data.ptr, x.metadata.numel, x_shape_ptr, y_shape_ptr, x_stride_ptr, y_stride_ptr, x.metadata.ndim)
+        arr = _add.lib.add(x.data.ptr, y.data.ptr, x.metadata.numel, x_shape_ptr, y_shape_ptr, x_stride_ptr, y_stride_ptr, x.metadata.ndim)
 
         return Buffer(CPU.ffi.gc(arr, _add.lib.free_add))
         

@@ -43,6 +43,10 @@ class Dispatcher:
         Returns:
             Buffer: A Buffer object.
         """
-        return self._dispatch_table[(op, device)](x, y, **kwargs)
+        args = [x]
+        if y is not None:
+            args.append(y)
+
+        return self._dispatch_table[(op, device)](*args, **kwargs)
 
 dispatcher = Dispatcher()

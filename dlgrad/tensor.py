@@ -48,13 +48,15 @@ class OP:
         """
         ctx = fxn(*data)
         ten = Tensor.__new__(Tensor)
-        ten.data = ctx.forward(data) 
+        ten.data = ctx.forward(*data) 
         ten.requires_grad  = ctx.requires_grad
         ten.dtype = kwargs.get("dtype", data[0].dtype)
         ten.device = kwargs.get("device", data[0].device)
         ten._ctx = ctx if ctx.requires_grad else None 
-        ten.metadata.shape = ...
-        ten.metadata.numel = ... 
+        if data[0].ndim >= data[1].ndim:
+            ten.metadata = TensorMetadata(data[0].shape, data[0].numel, data[0].stride, data[0].ndim)
+        else:
+            ten.metadata = TensorMetadata(data[1].shape, data[1].numel, data[1].stride, data[1].ndim)
 
         return ten
 
@@ -140,3 +142,13 @@ class Tensor:
     def shape(self):
         return self.metadata.shape
     
+    @property
+    def stride(self):
+        return self.metadata.stride
+    
+    @property
+    def ndim(self):
+        return self.metadata.ndim
+
+    def __add__(self, other):
+        return Tensor.add(self, other)
