@@ -1,4 +1,4 @@
-# import time
+import time
 from dlgrad.tensor import Tensor
 # import torch
 # from tinygrad import tensor
@@ -6,13 +6,19 @@ from dlgrad.tensor import Tensor
 s1 = (2, 3)
 s2 = (2, 3)
 
-a = Tensor.rand(s1)
-b = Tensor.rand(s2)
+for i in range(10):
+    s = time.perf_counter()
+    a = Tensor.rand(s1)
+    e = time.perf_counter()
+    print(f"{e-s:f}s")
+    # print(a.numpy())
+
+# b = Tensor.rand(s2)
 
 # s = time.perf_counter()
 # c = a+b
-print(a.numpy())
-print(b.numpy())
+    # print(a.numpy())
+    # print(b.numpy())
 # print(c.numpy())
 
 # e = time.perf_counter()
