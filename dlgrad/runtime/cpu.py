@@ -5,7 +5,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import BufferOps, BinaryOps, prod_, get_broadcast_shape
+from dlgrad.helpers import BufferOps, BinaryOps, prod_, get_y_broadcast_shape
 
 
 class CPU:
@@ -35,6 +35,6 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x, y):
-        out_shape = get_broadcast_shape(x.metadata.shape, y.metadata.shape)
+        y_broad_shape = get_y_broadcast_shape(x.metadata.shape, y.metadata.shape)
         pass
         

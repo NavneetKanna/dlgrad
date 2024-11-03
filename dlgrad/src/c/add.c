@@ -26,7 +26,8 @@ float *add_3d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstr
     for (int i=0; i<xshape[0]; i++) {
         for (int j=0; j<xshape[1]; j++) {
             for (int k=0; k<xshape[2]; k++) {
-                out[i*xstride[0] + j*xstride[1] + k*xstride[2]] = x[i*xstride[0] + j*xstride[1] + k*xstride[2]] + get_y_idx_3d(i, j, k, yshape, ystride);
+                int offset = i*xstride[0] + j*xstride[1] + k*xstride[2];
+                out[offset] = x[offset] + get_y_idx_3d(i, j, k, yshape, ystride);
             }
         }
     }
@@ -53,7 +54,8 @@ float *add_2d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstr
 
     for (int i=0; i<xshape[0]; i++) {
         for (int j=0; j<xshape[1]; j++) {
-            out[i*xstride[0] + j*xstride[1]] = x[i*xstride[0] + j*xstride[1]] + get_y_idx_2d(i, j, yshape, ystride);
+            int offset = i*xstride[0] + j*xstride[1]; 
+            out[offset] = x[offset] + get_y_idx_2d(i, j, yshape, ystride);
         }
     }
 

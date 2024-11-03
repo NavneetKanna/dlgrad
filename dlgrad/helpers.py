@@ -3,10 +3,6 @@ from math import prod
 from typing import Iterable
 import itertools
 
-from cffi import FFI
-
-ffi  = FFI()
-
 
 class BufferOps(Enum):
     CREATE = auto()
@@ -18,24 +14,29 @@ class BinaryOps(Enum):
 def prod_(x: Iterable) -> int:
     return prod(x)
 
-def get_broadcast_shape(shape1: tuple, shape2: tuple):
+def get_y_broadcast_shape(x_shape: tuple, y_shape: tuple) -> tuple:
     """
-    Compute the broadcast shape given two shapes.
+    Compute the broadcast shape of y Tensor. Pad with 1's until the dimensions match.
+    It is assumed that x is the higher dimension Tensor or the shape y has to be broadcasted to.
 
     Parameters:
-        shape1 (tuple): The first shape.
-        shape2 (tuple): The second shape.
+        shape1 (tuple): The x Tensor shape.
+        shape2 (tuple): The y Tensor shape.
 
     Returns:
-        tuple: The broadcast shape.
+        tuple: The y Tensor's broadcasted shape.
 
     Raises:
         AssertionError: If the shapes are incompatible.
     """
-    out_shape = []
-    for i, j in itertools.zip_longest(reversed(shape1), reversed(shape2)):
-        if i is not None and j is not None and i != j:
+    y_broad_shape = []
+    for i, j in itertools.zip_longest(reversed(x_shape), reversed(y_shape)):
+        if i is not None and j is not None and i != j and i != 1 and j != 1:
             raise AssertionError(f"{i} and {j} dim does not match")
-        out_shape.append(i if i is not None else j)
 
-    return tuple(reversed(out_shape))
+        if i == j:
+            y_broad_shape.append(i)
+        elif j is None or j == 1:
+            y_broad_shape.append(1)
+
+    return tuple(reversed(y_broad_shape))
