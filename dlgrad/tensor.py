@@ -74,7 +74,7 @@ class TensorMetadata:
 
 class Tensor:
     def __init__(
-        self, data: Scalar | Buffer, device: str | Device | None = None,
+        self, data: Scalar | Buffer | 'np.ndarray', device: str | Device | None = None,  # noqa: F821 # type: ignore
         dtype: str | DType | None = None, requires_grad: bool = False, metadata: TensorMetadata = None
     ) -> None:
         self.device: Device = device if isinstance(device, Device) else Device.from_str(device) if isinstance(device, str) else Device.CPU
@@ -87,15 +87,16 @@ class Tensor:
         if isinstance(data, get_args(Scalar)):
             self.dtype = DType.get_dtype_from_py(data)
             self.data = Op.create_buffer_from_scalar(data, dtype=self.dtype, device=self.device)
+        elif str(type(data)) == "<class 'numpy.ndarray'>":
+            self.data = Buffer(ffi.from_buffer(cdecl="float *[]", python_buffer=data, require_writable=False))
+            self.metadata = TensorMetadata(data.shape, prod_(data.shape), data.strides, data.ndim)
         elif isinstance(data, Buffer):
             self.data = data
 
     @staticmethod
     def rand(
-        shape: tuple, 
-        device: str | Device | None = Device.CPU, 
-        dtype: str | DType | None = DType.FLOAT32,
-        **kwargs
+        shape: tuple, device: str | Device | None = Device.CPU, 
+        dtype: str | DType | None = DType.FLOAT32, **kwargs
     ) -> Tensor:
         """
         Creates a Tensor with the specified shape filled with random numbers from a 
