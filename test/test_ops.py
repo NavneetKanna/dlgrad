@@ -4,15 +4,13 @@ import torch
 from dlgrad import Tensor
 
 
-# TODO: Not an efficient way
 # Thanks to tinygrad for the template
 def run(shapes: list[tuple], func):
-    dla = Tensor.rand(shapes[0])
-    dlb = Tensor.rand(shapes[1])
-    toa = torch.tensor(dla.numpy())
-    tob = torch.tensor(dlb.numpy())
+    np_data = [np.random.uniform(size=sh).astype(np.float32) for sh in shapes]
+    dlgrad_data = [Tensor(data) for data in np_data]
+    torch_data = [torch.tensor(data) for data in np_data]
 
-    np.testing.assert_allclose(func(dla, dlb).numpy(), func(toa, tob).numpy(), atol=1e-6, rtol=1e-3)
+    np.testing.assert_allclose(func(*dlgrad_data).numpy(), func(*torch_data).numpy(), atol=1e-6, rtol=1e-3)
     
 def test_add_same_shape():
     sh1 = (2, 3)

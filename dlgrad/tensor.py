@@ -88,8 +88,11 @@ class Tensor:
             self.dtype = DType.get_dtype_from_py(data)
             self.data = Op.create_buffer_from_scalar(data, dtype=self.dtype, device=self.device)
         elif str(type(data)) == "<class 'numpy.ndarray'>":
-            self.data = Buffer(ffi.from_buffer(cdecl="float *[]", python_buffer=data, require_writable=False))
-            self.metadata = TensorMetadata(data.shape, prod_(data.shape), data.strides, data.ndim)
+            if str(data.dtype) != "float32":
+                raise ValueError("dlgrad only supports float32 dtype")
+
+            self.data = Buffer(ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False))
+            self.metadata = TensorMetadata(data.shape, prod_(data.shape), calculate_stride(data.shape), data.ndim)
         elif isinstance(data, Buffer):
             self.data = data
 
