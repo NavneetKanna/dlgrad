@@ -1,14 +1,14 @@
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from dlgrad import Tensor
 
 from dlgrad.buffer import Buffer
+from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import Scalar
 from dlgrad.helpers import BinaryOps, BufferOps
 from dlgrad.tensor import OP
-from dlgrad.device import Device
-
 
 # ------------ Buffer Ops -----------
 

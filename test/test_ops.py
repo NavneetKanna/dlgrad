@@ -4,7 +4,6 @@ import torch
 
 from dlgrad import Tensor
 
-
 # TODO: Tets NaN's
 
 # Thanks to tinygrad for the template
