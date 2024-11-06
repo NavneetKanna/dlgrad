@@ -30,6 +30,29 @@ class OP:
     def forward(self, *args, **kwargs): raise NotImplementedError(f"forward not implemented for {type(self)}")
     def backward(self, *args, **kwargs): raise RuntimeError(f"backward not implemented for {type(self)}")
 
+    @staticmethod
+    def _get_metadata(data: tuple[Tensor]) -> TensorMetadata:
+        """
+        Helper method to determine the metadata for the resulting tensor.
+
+        Parameters:
+            data (Tuple[Tensor]): A tuple of input Tensors.
+
+        Returns:
+            TensorMetadata: Metadata for the resulting tensor.
+        """
+        if len(data) > 1:
+            tensor = data[0] if data[0].ndim >= data[1].ndim else data[1]
+        else:
+            tensor = data[0]
+        
+        return TensorMetadata(
+            shape=tensor.shape,
+            numel=tensor.numel,
+            stride=tensor.stride,
+            ndim=tensor.ndim
+        )
+
     @classmethod
     def execute(fxn: Type[OP], *data: Tensor, **kwargs) -> Tensor:
         """
@@ -47,18 +70,15 @@ class OP:
             Tensor: A Tensor which is the output of the op.
         """
         ctx = fxn(*data)
-        ten = Tensor.__new__(Tensor)
-        ten.data = ctx.forward(*data) 
-        ten.requires_grad  = ctx.requires_grad
-        ten.dtype = kwargs.get("dtype", data[0].dtype)
-        ten.device = kwargs.get("device", data[0].device)
-        ten._ctx = ctx if ctx.requires_grad else None 
-        if data[0].ndim >= data[1].ndim:
-            ten.metadata = TensorMetadata(data[0].shape, data[0].numel, data[0].stride, data[0].ndim)
-        else:
-            ten.metadata = TensorMetadata(data[1].shape, data[1].numel, data[1].stride, data[1].ndim)
+        tensor = Tensor.__new__(Tensor)
+        tensor.data = ctx.forward(*data) 
+        tensor.requires_grad  = ctx.requires_grad
+        tensor.dtype = kwargs.get("dtype", data[0].dtype)
+        tensor.device = kwargs.get("device", data[0].device)
+        tensor._ctx = ctx if ctx.requires_grad else None 
+        tensor.metadata = OP._get_metadata(data)
 
-        return ten
+        return tensor
 
 
 import dlgrad.ops as Op  # since ops module imports OP class, it is placed after the defination  # noqa: E402
