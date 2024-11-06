@@ -44,3 +44,13 @@ def test_add_diff_shape(shapes):
 ])
 def test_sub_same_shape(shapes):
     run(shapes, lambda x, y: x-y)
+
+@pytest.mark.parametrize("shapes", [
+    [(2, 3), (1, 3)],
+    [(2, 3), (2, 1)],
+    [(4, 3, 2), (3, 2)],
+    [(4, 3, 2), (1, 2)],
+    [(4, 3, 2), (3, 1)],
+])
+def test_sub_diff_shape(shapes):
+    run(shapes, lambda x, y: x-y)
