@@ -1,24 +1,27 @@
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from dlgrad import Tensor
+
 from dlgrad.buffer import Buffer
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import Scalar
 from dlgrad.helpers import BinaryOps, BufferOps
 from dlgrad.tensor import OP
+from dlgrad.device import Device
+
 
 # ------------ Buffer Ops -----------
 
-def create_buffer_from_scalar(x: Scalar, **kwargs) -> Buffer:
-    return dispatcher.dispatch(op=BufferOps.CREATE, device=kwargs.pop("device"), x=x, **kwargs)
+def create_buffer_from_scalar(x: Scalar, device: Device) -> Buffer:
+    return dispatcher.dispatch(op=BufferOps.CREATE, device=device, x=x)
 
-def uniform(shape: tuple, **kwargs) -> Buffer:
-    return dispatcher.dispatch(op=BufferOps.UNIFORM, device=kwargs.pop("device"), x=shape, **kwargs)
-
-def arange(shape: tuple, **kwargs) -> Buffer:
-    return dispatcher.dispatch(op=BufferOps.ARANGE, device=kwargs.pop("device"), x=shape, **kwargs)
+def uniform(shape: tuple, device: Device) -> Buffer:
+    return dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, x=shape)
 
 # ------------ Binary Ops -----------
 
 class Add(OP):
-    def forward(self, x, y) -> Buffer:
+    def forward(self, x: 'Tensor', y: 'Tensor') -> Buffer:
         if y.ndim > x.ndim:
             x, y = y, x
 
@@ -28,5 +31,5 @@ class Add(OP):
         pass
 
 class Neg(OP):
-    def forward(self, x) -> Buffer:
+    def forward(self, x: 'Tensor') -> Buffer:
         return dispatcher.dispatch(op=BinaryOps.NEG, device=x.device, x=x)

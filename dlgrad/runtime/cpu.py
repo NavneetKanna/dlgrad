@@ -23,12 +23,12 @@ class CPU:
     
     @staticmethod
     @dispatcher.register(BufferOps.CREATE, Device.CPU)
-    def create_buffer_from_scalar(x: Scalar, **kwargs) -> Buffer:
+    def create_buffer_from_scalar(x: Scalar) -> Buffer:
         return Buffer(CPU.ffi.new(f"{DType.get_c_dtype((x))} [1]", [x]))
 
     @staticmethod
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
-    def uniform(shape: tuple, **kwargs) -> Buffer:
+    def uniform(shape: tuple) -> Buffer:
         numel = prod_(shape)
         arr = _uniform.lib.uniform(numel)
 

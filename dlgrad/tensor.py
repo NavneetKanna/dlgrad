@@ -141,7 +141,7 @@ class Tensor:
             raise NotImplementedError("rand is implemented only for float32")
 
         return Tensor(
-            data=Op.uniform(shape, device=device, dtype=dtype, **kwargs), 
+            data=Op.uniform(shape, device=device, dtype=dtype), 
             device=device, 
             dtype=dtype, 
             requires_grad=kwargs.get("requires_grad"),
@@ -154,11 +154,11 @@ class Tensor:
         return np.frombuffer(ffi.buffer(self.data.ptr, self.numel*ffi.sizeof("float")), count=-1, dtype=np.float32).reshape(self.shape)
     
     @staticmethod
-    def add(x: Tensor, y: Tensor | Scalar) -> Tensor:
+    def add(x: Tensor, y: Tensor) -> Tensor:
         return Op.Add.execute(x, y)
 
     @staticmethod
-    def sub(x: Tensor, y: Tensor | Scalar) -> Tensor:
+    def sub(x: Tensor, y: Tensor) -> Tensor:
         return Op.Add.execute(x, -y)
 
     @staticmethod
