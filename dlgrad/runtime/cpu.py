@@ -42,3 +42,7 @@ class CPU:
 
         return Buffer(CPU.ffi.gc(arr, _add.lib.free_add))
         
+    @staticmethod
+    @dispatcher.register(BinaryOps.NEG, Device.CPU)
+    def neg(x):
+        pass

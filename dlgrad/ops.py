@@ -24,5 +24,9 @@ class Add(OP):
 
         return dispatcher.dispatch(op=BinaryOps.ADD, device=x.device, x=x, y=y)
      
-    def backward(self, *args, **kwargs):
-        return super().backward(*args, **kwargs)
+    def backward(self):
+        pass
+
+class Neg(OP):
+    def forward(self, x) -> Buffer:
+        return dispatcher.dispatch(op=BinaryOps.NEG, device=x.device, x=x)
