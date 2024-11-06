@@ -1,5 +1,6 @@
 import _add  # type: ignore
 import _uniform  # type: ignore
+import _neg  # type: ignore
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
@@ -45,4 +46,6 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.NEG, Device.CPU)
     def neg(x):
-        pass
+        arr = _neg.lib.neg(x.data.ptr, x.numel)
+
+        return Buffer(CPU.ffi.gc(arr, _neg.lib.free_neg))
