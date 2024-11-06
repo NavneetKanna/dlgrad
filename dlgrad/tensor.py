@@ -137,6 +137,10 @@ class Tensor:
     def add(x: Tensor, y: Tensor | Scalar) -> Tensor:
         return Op.Add.execute(x, y)
 
+    @staticmethod
+    def sub(x: Tensor, y: Tensor | Scalar) -> Tensor:
+        return Op.Add.execute(x, -y)
+
     def __repr__(self) -> str:
         return f"Tensor<dtype: {self.dtype} device: {self.device}>"
 
@@ -158,3 +162,6 @@ class Tensor:
 
     def __add__(self, other):
         return Tensor.add(self, other)
+
+    def __sub__(self, other):
+        return Tensor.sub(self, other)

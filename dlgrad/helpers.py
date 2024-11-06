@@ -25,8 +25,8 @@ def get_y_broadcast_ss(x_shape: tuple, y_shape: tuple, ystride: tuple) -> tuple:
     It is assumed that x is the higher dimension Tensor or the shape y has to be broadcasted to.
 
     Parameters:
-        x_shape(tuple): The x Tensor shape.
-        y_shape (tuple): The y Tensor shape.
+        x_shape  (tuple): The x Tensor shape.
+        y_shape  (tuple): The y Tensor shape.
         y_stride (tuple): The y Tebsir stride.
 
     Returns:
@@ -45,6 +45,8 @@ def get_y_broadcast_ss(x_shape: tuple, y_shape: tuple, ystride: tuple) -> tuple:
             y_broad_shape.append(i)
         elif j is None or j == 1:
             y_broad_shape.append(1)
+        
+        if j is None:
             ystride.append(1)
 
     return tuple(reversed(y_broad_shape)), tuple(reversed(ystride))
