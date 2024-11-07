@@ -16,6 +16,7 @@ class BufferOps(Enum):
 class BinaryOps(Enum):
     ADD = auto()
     NEG = auto()
+    MATMUL = auto()
 
 def prod_(x: Iterable) -> int:
     return prod(x)

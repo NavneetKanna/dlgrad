@@ -1,6 +1,8 @@
 import _add  # type: ignore
 import _neg  # type: ignore
 import _uniform  # type: ignore
+import _matmul # type: ignore
+
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
@@ -49,3 +51,10 @@ class CPU:
         arr = _neg.lib.neg(x.data.ptr, x.numel)
 
         return Buffer(CPU.ffi.gc(arr, _neg.lib.free_neg))
+
+    @staticmethod
+    @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
+    def matmul(x, y):
+        arr = _matmul.lib.matmul(x.data.ptr, y.data.ptr, x.shape[0], y.shape[1], y.shape[0])
+
+        return Buffer(CPU.ffi.gc(arr, _matmul.lib.free_matmul))

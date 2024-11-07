@@ -33,3 +33,13 @@ class Add(OP):
 class Neg(OP):
     def forward(self, x: 'Tensor') -> Buffer:
         return dispatcher.dispatch(op=BinaryOps.NEG, device=x.device, x=x)
+    
+    def backward(self):
+        pass
+
+class MatMul(OP):
+    def forward(self, x: 'Tensor', y: 'Tensor'):
+        return dispatcher.dispatch(op=BinaryOps.MATMUL, device=x.device, x=x, y=y)
+
+    def backward(self):
+        pass

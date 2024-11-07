@@ -141,7 +141,7 @@ class Tensor:
             raise NotImplementedError("rand is implemented only for float32")
 
         return Tensor(
-            data=Op.uniform(shape, device=device, dtype=dtype), 
+            data=Op.uniform(shape, device=device), 
             device=device, 
             dtype=dtype, 
             requires_grad=kwargs.get("requires_grad"),
@@ -164,6 +164,10 @@ class Tensor:
     @staticmethod
     def neg(x: Tensor) -> Tensor:
         return Op.Neg.execute(x)
+
+    @staticmethod
+    def matmul(x: Tensor, y: Tensor) -> Tensor:
+        return Op.MatMul.execute(x, y)
 
     def __repr__(self) -> str:
         return f"Tensor<dtype: {self.dtype} device: {self.device}>"
@@ -192,3 +196,6 @@ class Tensor:
 
     def __neg__(self):
         return Tensor.neg(self)
+
+    def __matmul__(self, other):
+        return Tensor.matmul(self, other)

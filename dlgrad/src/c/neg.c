@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "neg.h"
 
 
 float *neg(float *x, int numel) {
