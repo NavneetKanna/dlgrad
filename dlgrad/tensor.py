@@ -31,7 +31,7 @@ class OP:
     def backward(self, *args, **kwargs): raise RuntimeError(f"backward not implemented for {type(self)}")
 
     @staticmethod
-    def _get_metadata(data: tuple[Tensor]) -> TensorMetadata:
+    def _get_metadata(data: tuple[Tensor], fxn: Type[OP]) -> TensorMetadata:
         """
         Helper method to determine the metadata for the resulting tensor.
 
@@ -41,16 +41,29 @@ class OP:
         Returns:
             TensorMetadata: Metadata for the resulting tensor.
         """
-        if len(data) > 1:
-            tensor = data[0] if data[0].ndim >= data[1].ndim else data[1]
-        else:
+        if fxn == Op.MatMul:
+            shape = (data[0].shape[0], data[1].shape[-1])
+            numel = prod_(shape)
+            stride = calculate_stride(shape)
+            ndim = 2
+        elif fxn == Op.Neg:
             tensor = data[0]
+            shape = tensor.shape
+            numel = tensor.numel
+            stride = tensor.stride
+            ndim = tensor.ndim
+        else: # 2 tensors
+            tensor = data[0] if data[0].ndim >= data[1].ndim else data[1]
+            shape = tensor.shape
+            numel = tensor.numel
+            stride = tensor.stride
+            ndim = tensor.ndim
         
         return TensorMetadata(
-            shape=tensor.shape,
-            numel=tensor.numel,
-            stride=tensor.stride,
-            ndim=tensor.ndim
+            shape=shape,
+            numel=numel,
+            stride=stride,
+            ndim=ndim
         )
 
     @classmethod
@@ -76,7 +89,7 @@ class OP:
         tensor.dtype = kwargs.get("dtype", data[0].dtype)
         tensor.device = kwargs.get("device", data[0].device)
         tensor._ctx = ctx if ctx.requires_grad else None 
-        tensor.metadata = OP._get_metadata(data)
+        tensor.metadata = OP._get_metadata(data, fxn)
 
         return tensor
 
@@ -167,6 +180,9 @@ class Tensor:
 
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
+        if x.shape[-1] != y.shape[0] and x.ndim != 2 and y.ndim != 2:
+            raise ValueError("Either the Tensors shape dont match or is not 2D")
+
         return Op.MatMul.execute(x, y)
 
     def __repr__(self) -> str:

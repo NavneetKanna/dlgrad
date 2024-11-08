@@ -53,3 +53,13 @@ def test_sub_same_shape(shapes):
 ])
 def test_sub_diff_shape(shapes):
     run(shapes, lambda x, y: x-y)
+
+@pytest.mark.parametrize("shapes", [
+    [(2, 3), (3, 2)],
+    # [(100, 100), (100, 100)],
+    # [(78, 91), (78, 91)],
+    # [(4, 3, 2), (4, 3, 2)],
+    # [(87, 3, 10), (87, 3, 10)],
+])
+def test_matmul(shapes):
+    run(shapes, lambda x, y: x@y)

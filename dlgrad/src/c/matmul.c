@@ -9,7 +9,7 @@ float *matmul(float *x, float *y, int x_rows, int y_cols, int y_rows) {
     for (int i=0; i<x_rows; i++) {
         for (int j=0; j<y_cols; j++) {
             for (int k=0; k<y_rows; k++) {
-                out[i*y_cols + j] += x[i*y_rows + k] + y[k*y_cols + j];
+                out[i*y_cols + j] += x[i*y_rows + k] * y[k*y_cols + j];
             }
         }
     }
