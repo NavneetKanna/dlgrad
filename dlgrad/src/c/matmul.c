@@ -5,6 +5,9 @@
 // TODO: Naive solution, will optimise later
 float *matmul(float *x, float *y, int x_rows, int y_cols, int y_rows) {
     float *out = malloc(x_rows*y_cols*sizeof(float));
+    for (int i = 0; i < x_rows * y_cols; i++) {
+        out[i] = 0.0f;
+    }
 
     for (int i=0; i<x_rows; i++) {
         for (int j=0; j<y_cols; j++) {
