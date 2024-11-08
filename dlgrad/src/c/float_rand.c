@@ -10,7 +10,7 @@
 
 pcg32_random_t rng;
 
-float *uniform(int numel) {
+float *uniform(int numel, float low, float high) {
     int fd = open("/dev/random", O_RDONLY);
     if (fd < 0) {
         return NULL;
@@ -31,7 +31,11 @@ float *uniform(int numel) {
     for (int i= 0; i < numel; i++) {
         double d = ldexp(pcg32_random_r(&rng), -32);
         float f = (float) d;
-        out[i] = f;
+        if (low == 0.0f && high == 1.0f) {
+            out[i] = f;
+        } else {
+            out[i] = low + (high - low) * f;
+        }
     }
 
     return out;

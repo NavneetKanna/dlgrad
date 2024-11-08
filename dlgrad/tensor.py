@@ -158,7 +158,7 @@ class Tensor:
             raise NotImplementedError("rand is implemented only for float32")
 
         return Tensor(
-            data=Op.uniform(shape, device=device), 
+            data=Op.uniform(shape, device=device, low=low, high=high), 
             device=device, 
             dtype=dtype, 
             requires_grad=kwargs.get("requires_grad"),

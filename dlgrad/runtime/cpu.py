@@ -30,9 +30,9 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
-    def uniform(shape: tuple) -> Buffer:
+    def uniform(shape: tuple, low: float, high: float) -> Buffer:
         numel = prod_(shape)
-        arr = _uniform.lib.uniform(numel)
+        arr = _uniform.lib.uniform(numel, low, high)
 
         return Buffer(CPU.ffi.gc(arr, _uniform.lib.free_uniform))
     
