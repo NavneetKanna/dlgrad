@@ -137,7 +137,7 @@ class Tensor:
     @staticmethod
     def uniform(shape: tuple, device: str|Device|None = Device.CPU, 
                 dtype: str|DType|None = DType.FLOAT32, low: float = 0.0, 
-                high: float = 0.0, **kwargs) -> Tensor:
+                high: float = 1.0, **kwargs) -> Tensor:
         """
         Creates a Tensor with the specified shape filled with random numbers from a 
         uniform distribution on the interval [low, high).
@@ -208,8 +208,17 @@ class Tensor:
 
         return Op.MatMul.execute(x, y)
 
+    @staticmethod
+    def transpose(x: Tensor) -> Tensor:
+        assert x.ndim == 2, "Only 2D Tensors can be transposed"
+
+        x.metadata.shape = x.shape[::-1]
+        x.metadata.stride = x.stride[::-1]
+
+        return x
+
     def linear(self, weight: Tensor, bias: Tensor|None) -> Tensor:
-        pass
+        return self@weight.T + bias if bias else self@weight.T
 
     def __repr__(self) -> str:
         return f"Tensor<dtype: {self.dtype} device: {self.device}>"
@@ -229,6 +238,10 @@ class Tensor:
     @property
     def ndim(self):
         return self.metadata.ndim
+
+    @property
+    def T(self):
+        return Tensor.transpose(self)
 
     def __add__(self, other):
         return Tensor.add(self, other)

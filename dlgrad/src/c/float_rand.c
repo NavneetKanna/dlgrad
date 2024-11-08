@@ -31,13 +31,13 @@ float *uniform(int numel, float low, float high) {
     for (int i= 0; i < numel; i++) {
         double d = ldexp(pcg32_random_r(&rng), -32);
         float f = (float) d;
+
         if (low == 0.0f && high == 1.0f) {
             out[i] = f;
         } else {
             out[i] = low + (high - low) * f;
         }
     }
-
     return out;
 }
 
