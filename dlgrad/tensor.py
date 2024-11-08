@@ -208,6 +208,9 @@ class Tensor:
 
         return Op.MatMul.execute(x, y)
 
+    def linear(self, weight: Tensor, bias: Tensor|None) -> Tensor:
+        pass
+
     def __repr__(self) -> str:
         return f"Tensor<dtype: {self.dtype} device: {self.device}>"
 
