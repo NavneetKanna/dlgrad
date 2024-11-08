@@ -129,14 +129,18 @@ class Tensor:
         elif isinstance(data, Buffer):
             self.data = data
 
+    def numpy(self: Tensor):
+        import numpy as np
+
+        return np.frombuffer(ffi.buffer(self.data.ptr, self.numel*ffi.sizeof("float")), count=-1, dtype=np.float32).reshape(self.shape)
+
     @staticmethod
-    def rand(
-        shape: tuple, device: str | Device | None = Device.CPU, 
-        dtype: str | DType | None = DType.FLOAT32, **kwargs
-    ) -> Tensor:
+    def uniform(shape: tuple, device: str|Device|None = Device.CPU, 
+                dtype: str|DType|None = DType.FLOAT32, low: float = 0.0, 
+                high: float = 0.0, **kwargs) -> Tensor:
         """
         Creates a Tensor with the specified shape filled with random numbers from a 
-        uniform distribution on the interval [0, 1).
+        uniform distribution on the interval [low, high).
 
         Parameters:
             shape (tuple) : The desired shape
@@ -160,12 +164,31 @@ class Tensor:
             requires_grad=kwargs.get("requires_grad"),
             metadata=TensorMetadata(shape, prod_(shape), calculate_stride(shape), len(shape))
         )
-    
-    def numpy(self: Tensor):
-        import numpy as np
 
-        return np.frombuffer(ffi.buffer(self.data.ptr, self.numel*ffi.sizeof("float")), count=-1, dtype=np.float32).reshape(self.shape)
-    
+    @staticmethod
+    def rand(shape: tuple, device: str|Device|None = Device.CPU, 
+             dtype: str|DType|None = DType.FLOAT32, **kwargs) -> Tensor:
+        """
+        Creates a Tensor with the specified shape filled with random numbers from a 
+        uniform distribution on the interval [0, 1).
+
+        Parameters:
+            shape (tuple) : The desired shape
+            device (str | Device | None) : Default device is CPU
+            dtype (str | DType | None) : Default dtype is float32
+            **kwargs (dict) : Any additional keyword args.
+        
+        Returns:
+            Tensor: A Tensor filled with random numbers.
+        """
+        if isinstance(dtype, str):
+            dtype = DType.from_str(dtype)
+
+        if dtype is not DType.FLOAT32:
+            raise NotImplementedError("rand is implemented only for float32")
+
+        return Tensor.uniform(shape, device, dtype, **kwargs)
+
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
         return Op.Add.execute(x, y)

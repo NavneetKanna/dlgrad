@@ -6,7 +6,7 @@ Scalar = int | float
 
 class DType(Enum):
     FLOAT32 = auto()
-    INT32 = auto()
+    # INT32 = auto()
 
     @staticmethod
     def from_str(d: str):
