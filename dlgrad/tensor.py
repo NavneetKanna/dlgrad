@@ -129,6 +129,7 @@ class Tensor:
         elif isinstance(data, Buffer):
             self.data = data
 
+    # TODO: Does not work for transpose
     def numpy(self: Tensor):
         import numpy as np
 
@@ -208,14 +209,18 @@ class Tensor:
 
         return Op.MatMul.execute(x, y)
 
+    # TODO: Return a new Tensor
     @staticmethod
     def transpose(x: Tensor) -> Tensor:
         assert x.ndim == 2, "Only 2D Tensors can be transposed"
 
-        x.metadata.shape = x.shape[::-1]
-        x.metadata.stride = x.stride[::-1]
-
-        return x
+        return Tensor(
+            data=x.data, 
+            device=x.device, 
+            dtype=x.dtype, 
+            requires_grad=x.requires_grad,
+            metadata=TensorMetadata(x.shape[::-1], x.numel, x.stride[::-1], x.ndim)
+        )
 
     def linear(self, weight: Tensor, bias: Tensor|None) -> Tensor:
         return self@weight.T + bias if bias else self@weight.T

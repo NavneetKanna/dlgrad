@@ -6,7 +6,7 @@ root_dir = os.path.dirname(os.path.abspath(__file__ + "/.."))
 
 ffi = FFI()
 
-ffi.cdef("float *matmul(float *x, float *y, int x_rows, int y_cols, int y_rows); void free_matmul(float* ptr);")
+ffi.cdef("float *matmul(float *x, float *y, int x_rows, int y_cols, int y_rows, int *ystride, int *xstride); void free_matmul(float* ptr);")
 ffi.set_source("_matmul", f"""
     #include "{root_dir}/src/c/matmul.h"
 """, 

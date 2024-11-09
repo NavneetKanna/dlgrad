@@ -61,3 +61,7 @@ def test_sub_diff_shape(shapes):
 ])
 def test_matmul(shapes):
     run(shapes, lambda x, y: x@y)
+
+def test_transpose():
+    pass
+    

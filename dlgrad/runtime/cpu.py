@@ -55,6 +55,10 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
     def matmul(x, y):
-        arr = _matmul.lib.matmul(x.data.ptr, y.data.ptr, x.shape[0], y.shape[1], y.shape[0])
+        print(x.shape)
+        print(y.shape)
+        print(y.stride)
+
+        arr = _matmul.lib.matmul(x.data.ptr, y.data.ptr, x.shape[0], y.shape[1], y.shape[0], y.stride, x.stride)
 
         return Buffer(CPU.ffi.gc(arr, _matmul.lib.free_matmul))
