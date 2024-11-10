@@ -9,7 +9,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import BinaryOps, BufferOps, get_y_broadcast_ss, prod_
+from dlgrad.helpers import BinaryOps, BufferOps, prod_
 
 
 class CPU:
@@ -37,12 +37,9 @@ class CPU:
         return Buffer(CPU.ffi.gc(arr, _uniform.lib.free_uniform))
     
     # TODO: ndim does not check which is bigger Tensor
-    # no need of padding shapes and strides with 1
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x, y):
-        # y_broad_shape, y_broad_stride = get_y_broadcast_ss(x.metadata.shape, y.metadata.shape, y.metadata.stride)
-
         if len(x.shape) == 2:
             arr = _add.lib.add_2d(x.data.ptr, y.data.ptr, x.numel, x.shape, y.shape, x.stride, y.stride)
         elif len(x.shape) == 3:
