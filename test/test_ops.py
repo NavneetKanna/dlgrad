@@ -62,6 +62,16 @@ def test_sub_diff_shape(shapes):
 def test_matmul(shapes):
     run(shapes, lambda x, y: x@y)
 
-def test_transpose():
-    pass
+@pytest.mark.parametrize("shapes", [
+    [(2, 3), (2, 3)],
+    [(78, 91), (66, 91)],
+])
+def test_transpose_diff_tensors(shapes):
+    run(shapes, lambda x, y: x@y.T)
     
+@pytest.mark.parametrize("shapes", [
+    [(2, 3)],
+    [(78, 91)],
+])
+def test_transpose_same_tensors(shapes):
+    run(shapes, lambda x: x@x.T)

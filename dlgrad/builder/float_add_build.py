@@ -8,8 +8,8 @@ ffi = FFI()
 
 ffi.cdef(
     "float *add_2d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstride, int *ystride); \
-    float *add_3d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len); \
-        void free_add(float* ptr);")
+        float *add_3d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len); \
+            void free_add(float* ptr);")
 ffi.set_source("_add", f"""
     #include "{root_dir}/src/c/add.h"
 """, 

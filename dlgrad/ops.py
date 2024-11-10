@@ -7,7 +7,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import Scalar
-from dlgrad.helpers import BinaryOps, BufferOps, check_broadcast
+from dlgrad.helpers import BinaryOps, BufferOps, check_broadcast, get_brodcast_tensor
 from dlgrad.tensor import OP
 
 # ------------ Buffer Ops -----------
@@ -22,8 +22,8 @@ def uniform(shape: tuple, device: Device, **kwargs) -> Buffer:
 
 class Add(OP):
     def forward(self, x: 'Tensor', y: 'Tensor') -> Buffer:
-        if y.ndim > x.ndim:
-            x, y = y, x
+        x, y = get_brodcast_tensor(x, y)
+
         if check_broadcast(x.shape, y.shape):
             return dispatcher.dispatch(op=BinaryOps.ADD, device=x.device, x=x, y=y)
      

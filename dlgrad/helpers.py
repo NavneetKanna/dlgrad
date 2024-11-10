@@ -42,6 +42,20 @@ def check_broadcast(x_shape: tuple, y_shape: tuple) -> bool:
 
     return True
 
+def get_brodcast_tensor(x: 'Tensor', y: 'Tensor') -> tuple['Tensor']: # type: ignore  # noqa: F821
+    if len(x.shape) > len(y.shape):
+        return x, y
+    elif len(x.shape) < len(y.shape):
+        return y, x
+    else:
+        for dim_x, dim_y in zip(x.shape, y.shape):
+            if dim_x > dim_y:
+                return x, y
+            elif dim_x < dim_y:
+                return y, x
+
+        return x, y
+    
 def calculate_stride(shape: tuple) -> tuple:
     stride = []
     stride_value = 1
