@@ -6,7 +6,7 @@ from typing import Type, get_args
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import calculate_stride, ffi, prod_
+from dlgrad.helpers import calculate_stride, ffi, prod_, get_brodcast_tensor
 from dlgrad.runtime import \
     cpu  # needed to register all the cpu runtime functions  # noqa: F401
 
@@ -19,8 +19,8 @@ class OP:
     Thanks to tinygrad for the template, this is similar to the Function class.
 
     Attribute:
-        parents (tuple) : A tuple containing the parents of the op.
-        requires_grad (bool) : A bool to indicate whether the output Tensor should be used in backward pass.
+        parents (tuple): A tuple containing the parents of the op.
+        requires_grad (bool): A bool to indicate whether the output Tensor should be used in backward pass.
     """
     def __init__(self, *data: Tensor) -> None:
         self.parents: tuple = data
@@ -53,7 +53,8 @@ class OP:
             stride = tensor.stride
             ndim = tensor.ndim
         else: # 2 tensors
-            tensor = data[0] if data[0].ndim >= data[1].ndim else data[1]
+            # tensor = data[0] if data[0].ndim >= data[1].ndim else data[1]
+            tensor = get_brodcast_tensor(data[0], data[1])[0]
             shape = tensor.shape
             numel = tensor.numel
             stride = tensor.stride
@@ -226,7 +227,7 @@ class Tensor:
         return self@weight.T + bias if bias else self@weight.T
 
     def __repr__(self) -> str:
-        return f"Tensor<dtype: {self.dtype} device: {self.device}>"
+        return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}>"
 
     @property
     def numel(self):

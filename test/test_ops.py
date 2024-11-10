@@ -35,6 +35,16 @@ def test_add_diff_shape(shapes):
     run(shapes, lambda x, y: x+y)
 
 @pytest.mark.parametrize("shapes", [
+    [(1, 3), (2, 3)],
+    [(2, 1), (2, 3)],
+    [(3, 2), (4, 3, 2)],
+    [(1, 2), (4, 3, 2)],
+    [(3, 1), (4, 3, 2)],
+])
+def test_add_diff_shape_reverse(shapes):
+    run(shapes, lambda x, y: x+y)
+
+@pytest.mark.parametrize("shapes", [
     [(2, 3), (2, 3)],
     [(100, 100), (100, 100)],
     [(78, 91), (78, 91)],
@@ -55,6 +65,16 @@ def test_sub_diff_shape(shapes):
     run(shapes, lambda x, y: x-y)
 
 @pytest.mark.parametrize("shapes", [
+    [(1, 3), (2, 3)],
+    [(2, 1), (2, 3)],
+    [(3, 2), (4, 3, 2)],
+    [(1, 2), (4, 3, 2)],
+    [(3, 1), (4, 3, 2)],
+])
+def test_sub_diff_shape_reverse(shapes):
+    run(shapes, lambda x, y: x-y)
+
+@pytest.mark.parametrize("shapes", [
     [(2, 3), (3, 2)],
     [(100, 100), (100, 100)],
     [(78, 91), (91, 10)],
@@ -69,6 +89,12 @@ def test_matmul(shapes):
 def test_transpose_diff_tensors(shapes):
     run(shapes, lambda x, y: x@y.T)
     
+@pytest.mark.parametrize("shapes", [
+    [(66, 91), (66, 78)],
+])
+def test_transpose_diff_tensors_reverse(shapes):
+    run(shapes, lambda x, y: x.T@y)
+
 @pytest.mark.parametrize("shapes", [
     [(2, 3)],
     [(78, 91)],
