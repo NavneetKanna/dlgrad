@@ -16,7 +16,7 @@ from dlgrad.tensor import OP
 def create_buffer_from_scalar(x: Scalar, device: Device) -> Buffer:
     return dispatcher.dispatch(op=BufferOps.CREATE, device=device, x=x)
 
-def uniform(shape: tuple, device: Device, **kwargs) -> Buffer:
+def uniform(shape: tuple|tuple, device: Device, **kwargs) -> Buffer:
     return dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, x=shape, **kwargs)
 
 # ------------ Binary Ops -----------

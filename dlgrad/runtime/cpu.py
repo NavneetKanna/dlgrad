@@ -29,18 +29,17 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
-    def uniform(shape: tuple, low: float, high: float) -> Buffer:
-        numel = prod_(shape)
+    def uniform(shape: tuple|int, low: float, high: float) -> Buffer:
+        numel = prod_(shape) if isinstance(shape, tuple) else shape
         arr = _uniform.lib.uniform(numel, low, high)
 
         return Buffer(CPU.ffi.gc(arr, _uniform.lib.free_uniform))
     
-    # TODO: ndim does not check which is bigger Tensor
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x, y):
         if len(x.shape) == 2:
-            arr = _add.lib.add_2d(x.data.ptr, y.data.ptr, x.numel, x.shape, y.shape, x.stride, y.stride)
+            arr = _add.lib.add_2d(x.data.ptr, y.data.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape))
         elif len(x.shape) == 3:
             arr = _add.lib.add_3d(x.data.ptr, y.data.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape))
 

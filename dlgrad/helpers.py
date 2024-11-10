@@ -56,7 +56,10 @@ def get_brodcast_tensor(x: 'Tensor', y: 'Tensor') -> tuple['Tensor']: # type: ig
 
         return x, y
     
-def calculate_stride(shape: tuple) -> tuple:
+def calculate_stride(shape: tuple|int) -> tuple:
+    if isinstance(shape, int):
+        return (1,)
+
     stride = []
     stride_value = 1
     for dim in reversed(shape):

@@ -136,7 +136,7 @@ class Tensor:
         return np.frombuffer(ffi.buffer(self.data.ptr, self.numel*ffi.sizeof("float")), count=-1, dtype=np.float32).reshape(self.shape)
 
     @staticmethod
-    def uniform(shape: tuple, device: str|Device|None = Device.CPU, 
+    def uniform(shape: tuple|int, device: str|Device|None = Device.CPU, 
                 dtype: str|DType|None = DType.FLOAT32, low: float = 0.0, 
                 high: float = 1.0, **kwargs) -> Tensor:
         """
@@ -156,18 +156,20 @@ class Tensor:
             dtype = DType.from_str(dtype)
 
         if dtype is not DType.FLOAT32:
-            raise NotImplementedError("rand is implemented only for float32")
+            raise NotImplementedError("dlgrad only float32")
 
         return Tensor(
             data=Op.uniform(shape, device=device, low=low, high=high), 
             device=device, 
             dtype=dtype, 
             requires_grad=kwargs.get("requires_grad"),
-            metadata=TensorMetadata(shape, prod_(shape), calculate_stride(shape), len(shape))
+            metadata=TensorMetadata(shape if isinstance(shape, tuple) else (shape,), 
+                                    prod_(shape) if isinstance(shape, tuple) else shape, 
+                                    calculate_stride(shape), len(shape) if isinstance(shape, tuple) else 1)
         )
 
     @staticmethod
-    def rand(shape: tuple, device: str|Device|None = Device.CPU, 
+    def rand(shape: tuple|int, device: str|Device|None = Device.CPU, 
              dtype: str|DType|None = DType.FLOAT32, **kwargs) -> Tensor:
         """
         Creates a Tensor with the specified shape filled with random numbers from a 
@@ -186,7 +188,7 @@ class Tensor:
             dtype = DType.from_str(dtype)
 
         if dtype is not DType.FLOAT32:
-            raise NotImplementedError("rand is implemented only for float32")
+            raise NotImplementedError("dlgrad supports only float32")
 
         return Tensor.uniform(shape, device, dtype, **kwargs)
 
@@ -209,7 +211,6 @@ class Tensor:
 
         return Op.MatMul.execute(x, y)
 
-    # TODO: Return a new Tensor
     @staticmethod
     def transpose(x: Tensor) -> Tensor:
         assert x.ndim == 2, "Only 2D Tensors can be transposed"
@@ -226,7 +227,7 @@ class Tensor:
         return self@weight.T + bias if bias else self@weight.T
 
     def __repr__(self) -> str:
-        return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}>"
+        return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"
 
     @property
     def numel(self):

@@ -45,6 +45,22 @@ def test_add_diff_shape_reverse(shapes):
     run(shapes, lambda x, y: x+y)
 
 @pytest.mark.parametrize("shapes", [
+    [(2, 3), (3)],
+    [(2, 3), (1)],
+    [(4, 3, 2), (2)]
+])
+def add_with_scalar(shapes):
+    run(shapes, lambda x, y: x+y)
+
+@pytest.mark.parametrize("shapes", [
+    [(3), (2, 3)],
+    [(1), (2, 3)],
+    [(2), (4, 3, 2)]
+])
+def add_with_scalar_reversed(shapes):
+    run(shapes, lambda x, y: x+y)
+
+@pytest.mark.parametrize("shapes", [
     [(2, 3), (2, 3)],
     [(100, 100), (100, 100)],
     [(78, 91), (78, 91)],
@@ -73,6 +89,22 @@ def test_sub_diff_shape(shapes):
 ])
 def test_sub_diff_shape_reverse(shapes):
     run(shapes, lambda x, y: x-y)
+
+@pytest.mark.parametrize("shapes", [
+    [(2, 3), (3)],
+    [(2, 3), (1)],
+    [(4, 3, 2), (2)]
+])
+def sub_with_scalar(shapes):
+    run(shapes, lambda x, y: x+y)
+
+@pytest.mark.parametrize("shapes", [
+    [(3), (2, 3)],
+    [(1), (2, 3)],
+    [(2), (4, 3, 2)]
+])
+def sub_with_scalar_reversed(shapes):
+    run(shapes, lambda x, y: x+y)
 
 @pytest.mark.parametrize("shapes", [
     [(2, 3), (3, 2)],
