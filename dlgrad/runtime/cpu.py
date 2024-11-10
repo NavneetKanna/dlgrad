@@ -36,12 +36,17 @@ class CPU:
 
         return Buffer(CPU.ffi.gc(arr, _uniform.lib.free_uniform))
     
+    # TODO: ndim does not check which is bigger Tensor
+    # no need of padding shapes and strides with 1
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x, y):
-        y_broad_shape, y_broad_stride = get_y_broadcast_ss(x.metadata.shape, y.metadata.shape, y.metadata.stride)
+        # y_broad_shape, y_broad_stride = get_y_broadcast_ss(x.metadata.shape, y.metadata.shape, y.metadata.stride)
 
-        arr = _add.lib.add(x.data.ptr, y.data.ptr, x.metadata.numel, x.metadata.shape, y_broad_shape, x.metadata.stride, y_broad_stride, x.metadata.ndim)
+        if len(x.shape) == 2:
+            arr = _add.lib.add_2d(x.data.ptr, y.data.ptr, x.numel, x.shape, y.shape, x.stride, y.stride)
+        elif len(x.shape) == 3:
+            arr = _add.lib.add_3d(x.data.ptr, y.data.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape))
 
         return Buffer(CPU.ffi.gc(arr, _add.lib.free_add))
         
@@ -55,10 +60,6 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
     def matmul(x, y):
-        print(x.shape)
-        print(y.shape)
-        print(y.stride)
-
         arr = _matmul.lib.matmul(x.data.ptr, y.data.ptr, x.shape[0], y.shape[1], y.shape[0], y.stride, x.stride)
 
         return Buffer(CPU.ffi.gc(arr, _matmul.lib.free_matmul))
