@@ -14,6 +14,13 @@ You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Beh
 - [x] Broadcasting
 - [ ] Writing tests
 
+## Tests
+
+To run the tests, pytest is required
+
+```bash
+python3 -m pytest test/
+```
 
 ##  History
 

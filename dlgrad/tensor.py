@@ -53,7 +53,6 @@ class OP:
             stride = tensor.stride
             ndim = tensor.ndim
         else: # 2 tensors
-            # tensor = data[0] if data[0].ndim >= data[1].ndim else data[1]
             tensor = get_brodcast_tensor(data[0], data[1])[0]
             shape = tensor.shape
             numel = tensor.numel
