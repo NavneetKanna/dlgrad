@@ -1,8 +1,7 @@
 import _add  # type: ignore
+import _matmul  # type: ignore
 import _neg  # type: ignore
 import _uniform  # type: ignore
-import _matmul # type: ignore
-
 from cffi import FFI
 
 from dlgrad.buffer import Buffer

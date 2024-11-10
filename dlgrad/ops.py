@@ -7,7 +7,8 @@ from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import Scalar
-from dlgrad.helpers import BinaryOps, BufferOps, check_broadcast, get_brodcast_tensor
+from dlgrad.helpers import (BinaryOps, BufferOps, check_broadcast,
+                            get_brodcast_tensor)
 from dlgrad.tensor import OP
 
 # ------------ Buffer Ops -----------
