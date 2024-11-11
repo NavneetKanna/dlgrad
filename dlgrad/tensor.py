@@ -157,6 +157,8 @@ class Tensor:
 
         if dtype is not DType.FLOAT32:
             raise NotImplementedError("dlgrad only float32")
+        if not isinstance(shape, tuple):
+            raise ValueError("shape must be a tuple")
 
         return Tensor(
             data=Op.uniform(shape, device=device, low=low, high=high), 
@@ -189,6 +191,8 @@ class Tensor:
 
         if dtype is not DType.FLOAT32:
             raise NotImplementedError("dlgrad supports only float32")
+        if not isinstance(shape, tuple):
+            raise ValueError("shape must be a tuple")
 
         return Tensor.uniform(shape, device, dtype, **kwargs)
 
