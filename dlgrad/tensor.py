@@ -129,11 +129,14 @@ class Tensor:
         elif isinstance(data, Buffer):
             self.data = data
 
-    # TODO: Does not work for transpose
     def numpy(self: Tensor):
         import numpy as np
 
-        return np.frombuffer(ffi.buffer(self.data.ptr, self.numel*ffi.sizeof("float")), count=-1, dtype=np.float32).reshape(self.shape)
+        data = np.frombuffer(ffi.buffer(self.data.ptr, self.numel*ffi.sizeof("float")), count=-1, dtype=np.float32)
+        
+        t = np.lib.stride_tricks.as_strided(data, self.shape, tuple(stride*DType.get_n_bytes(self.dtype) for stride in self.stride))
+
+        return t
 
     @staticmethod
     def uniform(shape: tuple|int, device: str|Device|None = Device.CPU, 

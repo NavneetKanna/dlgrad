@@ -6,14 +6,13 @@ Scalar = int | float
 
 class DType(Enum):
     FLOAT32 = auto()
-    # INT32 = auto()
-
+    
     @staticmethod
     def from_str(d: str):
         try:
             return DType[d.upper()]
         except KeyError:
-            print(f"Invalid dtype: {d}")
+            raise ValueError(f"Invalid dtype: {d}")
 
     @staticmethod
     def get_dtype_from_py(d: Scalar) -> DType:
@@ -24,7 +23,13 @@ class DType(Enum):
     
     @staticmethod
     def get_c_dtype(d: Scalar) -> str:
-        if isinstance(d, int):
-            return "int"
-        elif isinstance(d, float):
+        if isinstance(d, float):
             return "float"
+
+    @classmethod
+    def _get_n_bytes(cls):
+        return {cls.FLOAT32: 4}
+    
+    @staticmethod
+    def get_n_bytes(d: DType) -> int:
+        return DType._get_n_bytes()[d]
