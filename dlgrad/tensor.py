@@ -75,7 +75,7 @@ class OP:
         Then it returns a Tensor with the returned data and attributes.
 
         Parameters:
-            fix (Type[OP]) : One of the Op's class defined in the ops module.
+            fxn (Type[OP]) : One of the Op's class defined in the ops module.
             data (tuple(Tensor)) : A tuple of Tensors, which are the parents of the op.
             **kwargs (dict) : Any additional keyword args.
 
@@ -89,6 +89,7 @@ class OP:
         tensor.dtype = kwargs.get("dtype", data[0].dtype)
         tensor.device = kwargs.get("device", data[0].device)
         tensor._ctx = ctx if ctx.requires_grad else None 
+        tensor.grad = None
         tensor.metadata = OP._get_metadata(data, fxn)
 
         return tensor
@@ -232,6 +233,25 @@ class Tensor:
 
     def linear(self, weight: Tensor, bias: Tensor|None) -> Tensor:
         return self@weight.T + bias if bias else self@weight.T
+
+    def backward(self):
+        topo = []
+        visited = set()
+
+        def _topo_sort(node):
+            if node not in visited:
+                visited.add(node)
+                ctx = getattr(node, "_ctx", None) # requires_grad might be false
+                if ctx:
+                    for i in node._ctx.parents:
+                        _topo_sort(i)
+                topo.append(node)
+        
+        _topo_sort(self)
+
+        print("topo", topo)
+        for node in reversed(topo):
+            node._ctx.backward(node.grad)
 
     def __repr__(self) -> str:
         return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"
