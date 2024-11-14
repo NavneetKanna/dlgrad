@@ -16,10 +16,10 @@ class DType(Enum):
 
     @staticmethod
     def get_dtype_from_py(d: Scalar) -> DType:
-        if isinstance(d, int):
-            return DType.INT32
-        elif isinstance(d, float):
+        if isinstance(d, float):
             return DType.FLOAT32
+        else:
+            raise ValueError("dlgrad only supports float32 dtype")
     
     @staticmethod
     def get_c_dtype(d: Scalar) -> str:

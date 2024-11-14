@@ -120,7 +120,8 @@ class Tensor:
 
         if isinstance(data, get_args(Scalar)):
             self.dtype = DType.get_dtype_from_py(data)
-            self.data = Op.create_buffer_from_scalar(data, dtype=self.dtype, device=self.device)
+            self.data = data
+            self.metadata = TensorMetadata(tuple(), 1, (), 0)
         elif str(type(data)) == "<class 'numpy.ndarray'>":
             if str(data.dtype) != "float32":
                 raise ValueError("dlgrad only supports float32 dtype")
@@ -234,7 +235,6 @@ class Tensor:
     def sum(self):
         pass
 
-    @staticmethod
     def linear(self, weight: Tensor, bias: Tensor|None) -> Tensor:
         return self@weight.T + bias if bias else self@weight.T
 
