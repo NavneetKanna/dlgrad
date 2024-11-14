@@ -8,6 +8,9 @@ from cffi import FFI
 ffi = FFI()
 
 
+class UnaryOps(Enum):
+    SUM = auto()
+
 class BufferOps(Enum):
     CREATE = auto()
     UNIFORM = auto()

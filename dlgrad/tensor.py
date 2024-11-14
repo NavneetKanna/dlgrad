@@ -24,8 +24,8 @@ class OP:
     """
     def __init__(self, *data: Tensor) -> None:
         self.parents: tuple = data
-        req_grad = [i.requires_grad for i in data]
-        self.requires_grad = True if any(req_grad) else False
+        self.req_grad = [i.requires_grad for i in data]
+        self.requires_grad = True if any(self.req_grad) else False
     
     def forward(self, *args, **kwargs): raise NotImplementedError(f"forward not implemented for {type(self)}")
     def backward(self, *args, **kwargs): raise RuntimeError(f"backward not implemented for {type(self)}")
@@ -231,13 +231,20 @@ class Tensor:
             metadata=TensorMetadata(x.shape[::-1], x.numel, x.stride[::-1], x.ndim)
         )
 
+    def sum(self):
+        pass
+
+    @staticmethod
     def linear(self, weight: Tensor, bias: Tensor|None) -> Tensor:
         return self@weight.T + bias if bias else self@weight.T
 
     def backward(self):
+        assert self.shape == tuple(), "backward must be called on a scalar Tensor"
+
         topo = []
         visited = set()
 
+        # leaf tensors are not included
         def _topo_sort(node):
             if node not in visited:
                 visited.add(node)
@@ -245,13 +252,16 @@ class Tensor:
                 if ctx:
                     for i in node._ctx.parents:
                         _topo_sort(i)
-                topo.append(node)
+                    topo.append(node)
         
         _topo_sort(self)
 
-        print("topo", topo)
         for node in reversed(topo):
-            node._ctx.backward(node.grad)
+            grads = node._ctx.backward(node.grad)
+            for p, g in zip(node._ctx.parents, grads):
+                if p.requires_grad:
+                    assert g.shape == p.shape, f"Tensor shape and grad shape must match {p.shape}, {g.shape}"
+                    p.grad = g
 
     def __repr__(self) -> str:
         return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"
