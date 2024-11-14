@@ -2,13 +2,14 @@ import _add  # type: ignore
 import _matmul  # type: ignore
 import _neg  # type: ignore
 import _uniform  # type: ignore
+import _sum # type: ignore
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import BinaryOps, BufferOps, prod_
+from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, prod_
 
 
 class CPU:
@@ -38,8 +39,11 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x, y):
+        if not (y_stride := y.stride): # for scalar
+            y_stride = [0]
+
         if len(x.shape) == 2:
-            arr = _add.lib.add_2d(x.data.ptr, y.data.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape))
+            arr = _add.lib.add_2d(x.data.ptr, y.data.ptr, x.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape))
         elif len(x.shape) == 3:
             arr = _add.lib.add_3d(x.data.ptr, y.data.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape))
 
@@ -54,7 +58,14 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
-    def matmul(x, y):
+    def matmul(x, y) -> Buffer:
         arr = _matmul.lib.matmul(x.data.ptr, y.data.ptr, x.shape[0], y.shape[1], y.shape[0], y.stride, x.stride)
 
         return Buffer(CPU.ffi.gc(arr, _matmul.lib.free_matmul))
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.SUM, Device.CPU)
+    def sum(x) -> Buffer:
+        arr = _sum.lib.sum(x.data.ptr, x.numel)
+
+        return Buffer(CPU.ffi.gc(arr, _sum.lib.free_sum))

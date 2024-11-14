@@ -13,7 +13,9 @@ float *add_3d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstr
                 int x_offset = i*xstride[0] + j*xstride[1] + k*xstride[2];
                 int y_offset;
 
-                if (yshape[0] == 1 || yshape_len == 1){ // row Tensor or ndim=1 
+                if (yshape_len == 0) { // scalar
+                    y_offset = 0;
+                } else if (yshape[0] == 1 || yshape_len == 1){ // row Tensor or ndim=1 
                     y_offset = k*ystride[1];
                 } else if (yshape[1] == 1) { // column Tensor
                     y_offset = j*ystride[0];
@@ -41,7 +43,9 @@ float *add_2d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstr
             int x_offset = i*xstride[0] + j*xstride[1];
             int y_offset = 0; 
             
-            if (yshape[0] == 1 || yshape_len == 1) { // row Tensor or ndim=1
+            if (yshape_len == 0) { // scalar
+                y_offset = 0;
+            } else if (yshape[0] == 1 || yshape_len == 1) { // row Tensor or ndim=1
                 y_offset = j*ystride[1];
             } else if (yshape[1] == 1) { // column Tensor
                 y_offset = i*ystride[0];

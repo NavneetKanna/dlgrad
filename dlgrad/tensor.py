@@ -52,6 +52,12 @@ class OP:
             numel = tensor.numel
             stride = tensor.stride
             ndim = tensor.ndim
+        elif fxn == Op.Sum:
+            tensor = data[0]
+            shape = tuple()
+            numel = 1
+            stride = tuple()
+            ndim = 1
         else: # 2 tensors
             tensor = get_brodcast_tensor(data[0], data[1])[0]
             shape = tensor.shape
@@ -120,7 +126,7 @@ class Tensor:
 
         if isinstance(data, get_args(Scalar)):
             self.dtype = DType.get_dtype_from_py(data)
-            self.data = data
+            self.data = Op.create_buffer_from_scalar(data, self.device)
             self.metadata = TensorMetadata(tuple(), 1, (), 0)
         elif str(type(data)) == "<class 'numpy.ndarray'>":
             if str(data.dtype) != "float32":
@@ -233,7 +239,7 @@ class Tensor:
         )
 
     def sum(self):
-        pass
+        return Op.Sum.execute(self)
 
     def linear(self, weight: Tensor, bias: Tensor|None) -> Tensor:
         return self@weight.T + bias if bias else self@weight.T
