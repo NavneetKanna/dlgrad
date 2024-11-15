@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 
-Scalar = int | float
+Scalar = float
 
 class DType(Enum):
     FLOAT32 = auto()

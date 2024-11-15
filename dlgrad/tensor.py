@@ -176,9 +176,7 @@ class Tensor:
             device=device, 
             dtype=dtype, 
             requires_grad=kwargs.get("requires_grad"),
-            metadata=TensorMetadata(shape if isinstance(shape, tuple) else (shape,), 
-                                    prod_(shape) if isinstance(shape, tuple) else shape, 
-                                    calculate_stride(shape), len(shape) if isinstance(shape, tuple) else 1)
+            metadata=TensorMetadata(shape, prod_(shape), calculate_stride(shape), len(shape))
         )
 
     @staticmethod
@@ -208,12 +206,18 @@ class Tensor:
         return Tensor.uniform(shape, device, dtype, **kwargs)
 
     @staticmethod
-    def full(shape: tuple, fill_value: Scalar) -> Tensor:
-        pass
+    def full(shape: tuple, fill_value: Scalar, device: Device = Device.CPU, dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
+        return Tensor(
+            data=Op.full(shape, fill_value=fill_value, device=device), 
+            device=device, 
+            dtype=dtype, 
+            requires_grad=kwargs.get("requires_grad"),
+            metadata=TensorMetadata(shape, prod_(shape), calculate_stride(shape), len(shape))
+        )
 
     @staticmethod
-    def ones_like(shape: tuple) -> Tensor:
-        return Tensor.full(shape, 1.0)
+    def ones_like(shape: tuple, device: Device = Device.CPU, dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
+        return Tensor.full(shape, 1.0, device, dtype, **kwargs)
 
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:

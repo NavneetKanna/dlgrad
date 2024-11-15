@@ -1,9 +1,5 @@
-# from dlgrad import Tensor
+from dlgrad import Tensor
 
-def foo(*args, **kwargs):
-    print(*args, args)
-    # print(**kwargs)
-    print(kwargs)
+a = Tensor.ones_like((2, 3))
 
-
-foo(x=2, y=0)
+print(a.numpy())

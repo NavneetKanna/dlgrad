@@ -3,6 +3,7 @@ import _matmul  # type: ignore
 import _neg  # type: ignore
 import _uniform  # type: ignore
 import _sum # type: ignore
+import _full # type: ignore
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
@@ -40,7 +41,9 @@ class CPU:
     @staticmethod
     @dispatcher.register(BufferOps.FULL, Device.CPU)
     def full(shape: tuple, fill_value: Scalar) -> Buffer:
-        pass
+        arr = _full.lib.full(prod_(shape), fill_value)
+
+        return Buffer(CPU.ffi.gc(arr, _full.lib.free_full))
 
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
