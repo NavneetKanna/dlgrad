@@ -4,7 +4,8 @@ import torch
 
 from dlgrad import Tensor
 
-# TODO: Tets NaN's
+# TODO: Test NaN's
+# TOOD: Test Tensor(Scalar)
 
 # Thanks to tinygrad for the template
 def run(shapes: list[tuple], func):

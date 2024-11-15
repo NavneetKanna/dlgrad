@@ -16,14 +16,18 @@ from dlgrad.tensor import OP
 def create_buffer_from_scalar(x: Scalar, device: Device) -> Buffer:
     return dispatcher.dispatch(op=BufferOps.CREATE, device=device, x=x)
 
-def uniform(shape: tuple|tuple, device: Device, **kwargs) -> Buffer:
-    return dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, x=shape, **kwargs)
+def uniform(shape: tuple, device: Device, **kwargs) -> Buffer:
+    return dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, shape=shape, **kwargs)
+
+def full(shape: tuple, fill_value: Scalar, device: Device) -> Buffer:
+    return dispatcher.dispatch(op=BufferOps.FULL, device=device, shape=shape, fill_value=fill_value)
 
 
 # ------------ Unary Ops -----------
 
 class Sum(OP):
     def forward(self, x: 'Tensor')-> Buffer:
+        self.inp_shape = x.shape
         return dispatcher.dispatch(op=UnaryOps.SUM, device=x.device, x=x)
     
     def backward(self, upstream_grad: 'Tensor'):

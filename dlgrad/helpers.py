@@ -15,6 +15,7 @@ class BufferOps(Enum):
     CREATE = auto()
     UNIFORM = auto()
     ARANGE = auto()
+    FULL = auto()
 
 class BinaryOps(Enum):
     ADD = auto()

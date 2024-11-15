@@ -147,7 +147,7 @@ class Tensor:
         return t
 
     @staticmethod
-    def uniform(shape: tuple|int, device: str|Device|None = Device.CPU, 
+    def uniform(shape: tuple, device: str|Device|None = Device.CPU, 
                 dtype: str|DType|None = DType.FLOAT32, low: float = 0.0, 
                 high: float = 1.0, **kwargs) -> Tensor:
         """
@@ -182,7 +182,7 @@ class Tensor:
         )
 
     @staticmethod
-    def rand(shape: tuple|int, device: str|Device|None = Device.CPU, 
+    def rand(shape: tuple, device: str|Device|None = Device.CPU, 
              dtype: str|DType|None = DType.FLOAT32, **kwargs) -> Tensor:
         """
         Creates a Tensor with the specified shape filled with random numbers from a 
@@ -206,6 +206,14 @@ class Tensor:
             raise ValueError("shape must be a tuple")
 
         return Tensor.uniform(shape, device, dtype, **kwargs)
+
+    @staticmethod
+    def full(shape: tuple, fill_value: Scalar) -> Tensor:
+        pass
+
+    @staticmethod
+    def ones_like(shape: tuple) -> Tensor:
+        return Tensor.full(shape, 1.0)
 
     @staticmethod
     def add(x: Tensor, y: Tensor) -> Tensor:
@@ -261,6 +269,8 @@ class Tensor:
                     topo.append(node)
         
         _topo_sort(self)
+
+        self.grad = Tensor(1.0)
 
         for node in reversed(topo):
             grads = node._ctx.backward(node.grad)

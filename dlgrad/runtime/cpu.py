@@ -30,12 +30,18 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
-    def uniform(shape: tuple|int, low: float, high: float) -> Buffer:
-        numel = prod_(shape) if isinstance(shape, tuple) else shape
+    def uniform(shape: tuple, low: float, high: float) -> Buffer:
+        # numel = prod_(shape) if isinstance(shape, tuple) else shape
+        numel = prod_(shape)
         arr = _uniform.lib.uniform(numel, low, high)
 
         return Buffer(CPU.ffi.gc(arr, _uniform.lib.free_uniform))
     
+    @staticmethod
+    @dispatcher.register(BufferOps.FULL, Device.CPU)
+    def full(shape: tuple, fill_value: Scalar) -> Buffer:
+        pass
+
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x, y):
