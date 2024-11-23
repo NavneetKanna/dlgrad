@@ -23,7 +23,7 @@ class BinaryOps(Enum):
     MATMUL = auto()
 
 def prod_(x: Iterable) -> int:
-    return prod(x)
+    return prod(x) if x else tuple()
 
 def check_broadcast(x_shape: tuple, y_shape: tuple) -> bool:
     """
@@ -61,6 +61,9 @@ def get_brodcast_tensor(x: 'Tensor', y: 'Tensor') -> tuple['Tensor']: # type: ig
         return x, y
     
 def calculate_stride(shape: tuple|int) -> tuple:
+    if not shape:
+        return tuple()
+
     if isinstance(shape, int):
         return (1,)
 

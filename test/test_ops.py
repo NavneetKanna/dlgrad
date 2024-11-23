@@ -5,7 +5,7 @@ import torch
 from dlgrad import Tensor
 
 # TODO: Test NaN's
-# TOOD: Test Tensor(Scalar)
+# TODO: Test Tensor(Scalar)
 # TODO: Test ones like
 
 # Thanks to tinygrad for the template

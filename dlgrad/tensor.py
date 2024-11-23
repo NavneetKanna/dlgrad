@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Type, get_args
 
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import calculate_stride, ffi, get_brodcast_tensor, prod_
+from dlgrad.helpers import ffi
 from dlgrad.runtime import \
     cpu  # needed to register all the cpu runtime functions  # noqa: F401
 
@@ -29,48 +28,6 @@ class OP:
     
     def forward(self, *args, **kwargs): raise NotImplementedError(f"forward not implemented for {type(self)}")
     def backward(self, *args, **kwargs): raise RuntimeError(f"backward not implemented for {type(self)}")
-
-    @staticmethod
-    def _get_metadata(data: tuple[Tensor], fxn: Type[OP]) -> TensorMetadata:
-        """
-        Helper method to determine the metadata for the resulting tensor.
-
-        Parameters:
-            data (Tuple[Tensor]): A tuple of input Tensors.
-
-        Returns:
-            TensorMetadata: Metadata for the resulting tensor.
-        """
-        if fxn == Op.MatMul:
-            shape = (data[0].shape[0], data[1].shape[-1])
-            numel = prod_(shape)
-            stride = calculate_stride(shape)
-            ndim = 2
-        elif fxn == Op.Neg:
-            tensor = data[0]
-            shape = tensor.shape
-            numel = tensor.numel
-            stride = tensor.stride
-            ndim = tensor.ndim
-        elif fxn == Op.Sum:
-            tensor = data[0]
-            shape = tuple()
-            numel = 1
-            stride = tuple()
-            ndim = 1
-        else: # 2 tensors
-            tensor = get_brodcast_tensor(data[0], data[1])[0]
-            shape = tensor.shape
-            numel = tensor.numel
-            stride = tensor.stride
-            ndim = tensor.ndim
-        
-        return TensorMetadata(
-            shape=shape,
-            numel=numel,
-            stride=stride,
-            ndim=ndim
-        )
 
     @classmethod
     def execute(fxn: Type[OP], *data: Tensor, **kwargs) -> Tensor:
@@ -96,7 +53,6 @@ class OP:
         tensor.device = kwargs.get("device", data[0].device)
         tensor._ctx = ctx if ctx.requires_grad else None 
         tensor.grad = None
-        tensor.metadata = OP._get_metadata(data, fxn)
 
         return tensor
 
@@ -104,37 +60,27 @@ class OP:
 import dlgrad.ops as Op  # since ops module imports OP class, it is placed after the defination  # noqa: E402
 
 
-@dataclass
-class TensorMetadata:
-    shape: tuple
-    numel: int
-    stride: tuple
-    ndim: int
-
-
-class Tensor:
+class Tensor(Buffer):
     def __init__(
         self, data: Scalar | Buffer | 'np.ndarray', device: str | Device | None = None,  # noqa: F821 # type: ignore
-        dtype: str | DType | None = None, requires_grad: bool = False, metadata: TensorMetadata = None
+        dtype: str | DType | None = None, requires_grad: bool = False
     ) -> None:
         self.device: Device = device if isinstance(device, Device) else Device.from_str(device) if isinstance(device, str) else Device.CPU
         self.dtype: DType = dtype if isinstance(dtype, DType) else DType.from_str(dtype) if isinstance(dtype, str) else DType.FLOAT32
         self.requires_grad: bool = requires_grad
         self._ctx: OP = None # used by autograd engine
         self.grad = None
-        self.metadata = metadata
 
         if isinstance(data, get_args(Scalar)):
             self.dtype = DType.get_dtype_from_py(data)
             self.data = Op.create_buffer_from_scalar(data, self.device)
-            self.metadata = TensorMetadata(tuple(), 1, (), 0)
         elif str(type(data)) == "<class 'numpy.ndarray'>":
             if str(data.dtype) != "float32":
                 raise ValueError("dlgrad only supports float32 dtype")
-
             self.data = Buffer(ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False))
-            self.metadata = TensorMetadata(data.shape, prod_(data.shape), calculate_stride(data.shape), data.ndim)
-        elif isinstance(data, Buffer):
+            # self.metadata = TensorMetadata(data.shape, prod_(data.shape), calculate_stride(data.shape), data.ndim)
+
+        if isinstance(data, Buffer):
             self.data = data
 
     def numpy(self: Tensor):
@@ -167,7 +113,7 @@ class Tensor:
             dtype = DType.from_str(dtype)
 
         if dtype is not DType.FLOAT32:
-            raise NotImplementedError("dlgrad only float32")
+            raise NotImplementedError("dlgrad only supports float32")
         if not isinstance(shape, tuple):
             raise ValueError("shape must be a tuple")
 
@@ -176,7 +122,6 @@ class Tensor:
             device=device, 
             dtype=dtype, 
             requires_grad=kwargs.get("requires_grad"),
-            metadata=TensorMetadata(shape, prod_(shape), calculate_stride(shape), len(shape))
         )
 
     @staticmethod
@@ -212,7 +157,6 @@ class Tensor:
             device=device, 
             dtype=dtype, 
             requires_grad=kwargs.get("requires_grad"),
-            metadata=TensorMetadata(shape, prod_(shape), calculate_stride(shape), len(shape))
         )
 
     @staticmethod
@@ -247,7 +191,6 @@ class Tensor:
             device=x.device, 
             dtype=x.dtype, 
             requires_grad=x.requires_grad,
-            metadata=TensorMetadata(x.shape[::-1], x.numel, x.stride[::-1], x.ndim)
         )
 
     def sum(self):
@@ -276,31 +219,21 @@ class Tensor:
 
         self.grad = Tensor(1.0)
 
+        # TODO: del _ctx 
         for node in reversed(topo):
             grads = node._ctx.backward(node.grad)
+            print(type(grads))
+            exit()
+            grads = [Tensor(g, device=self.device, requires_grad=False) for g in grads]
             for p, g in zip(node._ctx.parents, grads):
-                if p.requires_grad:
+                # ideally, all nodes in the topo list have requires grad is True (see the topo sort function above)
+                # but this is just an extra verification step
+                if p.requires_grad: 
                     assert g.shape == p.shape, f"Tensor shape and grad shape must match {p.shape}, {g.shape}"
-                    p.grad = g
+                    p.grad = g if p.grad is None else p.grad + g
 
     def __repr__(self) -> str:
         return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"
-
-    @property
-    def numel(self):
-        return self.metadata.numel
-
-    @property
-    def shape(self):
-        return self.metadata.shape
-    
-    @property
-    def stride(self):
-        return self.metadata.stride
-    
-    @property
-    def ndim(self):
-        return self.metadata.ndim
 
     @property
     def T(self):
