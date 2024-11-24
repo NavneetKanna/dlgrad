@@ -60,21 +60,21 @@ class CPU:
         
     @staticmethod
     @dispatcher.register(BinaryOps.NEG, Device.CPU)
-    def neg(x):
+    def neg(x: Buffer) -> Buffer:
         arr = _neg.lib.neg(x.ptr, x.numel)
 
         return Buffer(CPU.ffi.gc(arr, _neg.lib.free_neg), x.shape, device=Device.CPU)
 
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
-    def matmul(x, y) -> Buffer:
+    def matmul(x: Buffer, y: Buffer) -> Buffer:
         arr = _matmul.lib.matmul(x.ptr, y.ptr, x.shape[0], y.shape[1], y.shape[0], y.stride, x.stride)
 
         return Buffer(CPU.ffi.gc(arr, _matmul.lib.free_matmul), (x.shape[0], y.shape[1]), device=Device.CPU)
 
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
-    def sum(x) -> Buffer:
+    def sum(x: Buffer) -> Buffer:
         arr = _sum.lib.sum(x.ptr, x.numel)
 
         return Buffer(CPU.ffi.gc(arr, _sum.lib.free_sum), tuple(), device=Device.CPU, ndim=1)
@@ -82,5 +82,5 @@ class CPU:
     # TODO: Check if x is del, then even the transposed is del
     @staticmethod
     @dispatcher.register(UnaryOps.TRANSPOSE, Device.CPU)
-    def transpose(x) -> Buffer:
+    def transpose(x: Buffer) -> Buffer:
         return Buffer(x.ptr, x.shape[::-1], stride=x.stride[::-1], device=Device.CPU)
