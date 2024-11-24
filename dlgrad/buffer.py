@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from dlgrad.helpers import prod_, calculate_stride
+
 from dlgrad.device import Device
+from dlgrad.helpers import calculate_stride, prod_
 
 
 @dataclass

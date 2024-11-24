@@ -1,8 +1,7 @@
-from dlgrad import Tensor
-from dlgrad import nn
 import numpy as np
 import torch
 
+from dlgrad import Tensor, nn
 
 
 def test_linear():

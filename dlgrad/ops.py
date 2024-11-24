@@ -8,7 +8,6 @@ from dlgrad.helpers import (BinaryOps, BufferOps, UnaryOps, check_broadcast,
                             get_brodcast_tensor)
 from dlgrad.tensor import OP
 
-
 # ------------ Buffer Ops -----------
 
 def create_buffer_from_scalar(x: Scalar, device: Device) -> Buffer:
