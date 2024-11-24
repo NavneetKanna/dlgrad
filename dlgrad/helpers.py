@@ -10,6 +10,7 @@ ffi = FFI()
 
 class UnaryOps(Enum):
     SUM = auto()
+    TRANSPOSE = auto()
 
 class BufferOps(Enum):
     CREATE = auto()
@@ -46,7 +47,7 @@ def check_broadcast(x_shape: tuple, y_shape: tuple) -> bool:
 
     return True
 
-def get_brodcast_tensor(x: 'Tensor', y: 'Tensor') -> tuple['Tensor']: # type: ignore  # noqa: F821
+def get_brodcast_tensor(x, y):
     if len(x.shape) > len(y.shape):
         return x, y
     elif len(x.shape) < len(y.shape):

@@ -1,7 +1,4 @@
-from typing import TYPE_CHECKING, Optional
-
-# if TYPE_CHECKING:
-from dlgrad import Tensor
+from typing import Optional
 
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
@@ -25,6 +22,9 @@ def full(shape: tuple, fill_value: Scalar, device: Device) -> Buffer:
 
 
 # ------------ Unary Ops -----------
+
+def transpose(x: Buffer):
+    return dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=x.device, x=x)
 
 class Sum(OP):
     def forward(self, x: Buffer)-> Buffer:

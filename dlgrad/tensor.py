@@ -47,7 +47,7 @@ class OP:
         """
         ctx = fxn(*data)
         tensor = Tensor.__new__(Tensor)
-        tensor.data = ctx.forward(*data) 
+        tensor.data = ctx.forward(*[d.data for d in data])
         tensor.requires_grad  = ctx.requires_grad
         tensor.dtype = kwargs.get("dtype", data[0].dtype)
         tensor.device = kwargs.get("device", data[0].device)
@@ -62,7 +62,7 @@ import dlgrad.ops as Op  # since ops module imports OP class, it is placed after
 
 class Tensor(Buffer):
     def __init__(
-        self, data: Scalar | Buffer | 'np.ndarray', device: str | Device | None = None,  # noqa: F821 # type: ignore
+        self, data: Scalar | Buffer | 'np.ndarray', device: str | Device | None = Device.CPU,  # noqa: F821 # type: ignore
         dtype: str | DType | None = None, requires_grad: bool = False
     ) -> None:
         self.device: Device = device if isinstance(device, Device) else Device.from_str(device) if isinstance(device, str) else Device.CPU
@@ -77,18 +77,16 @@ class Tensor(Buffer):
         elif str(type(data)) == "<class 'numpy.ndarray'>":
             if str(data.dtype) != "float32":
                 raise ValueError("dlgrad only supports float32 dtype")
-            self.data = Buffer(ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False))
-            # self.metadata = TensorMetadata(data.shape, prod_(data.shape), calculate_stride(data.shape), data.ndim)
-
-        if isinstance(data, Buffer):
+            self.data = Buffer(ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False), data.shape, device, ndim=data.ndim)
+        elif isinstance(data, Buffer):
             self.data = data
 
     def numpy(self: Tensor):
         import numpy as np
 
-        data = np.frombuffer(ffi.buffer(self.data.ptr, self.numel*ffi.sizeof("float")), count=-1, dtype=np.float32)
+        data = np.frombuffer(ffi.buffer(self.data.ptr, self.data.numel*ffi.sizeof("float")), count=-1, dtype=np.float32)
         
-        t = np.lib.stride_tricks.as_strided(data, self.shape, tuple(stride*DType.get_n_bytes(self.dtype) for stride in self.stride))
+        t = np.lib.stride_tricks.as_strided(data, self.data.shape, tuple(stride*DType.get_n_bytes(self.dtype) for stride in self.data.stride))
 
         return t
 
@@ -177,17 +175,19 @@ class Tensor(Buffer):
 
     @staticmethod
     def matmul(x: Tensor, y: Tensor) -> Tensor:
-        if x.shape[-1] != y.shape[0] and x.ndim != 2 and y.ndim != 2:
+        if x.data.shape[-1] != y.data.shape[0] and x.data.ndim != 2 and y.data.ndim != 2:
             raise ValueError("Either the Tensors shape dont match or is not 2D")
 
         return Op.MatMul.execute(x, y)
 
     @staticmethod
     def transpose(x: Tensor) -> Tensor:
-        assert x.ndim == 2, "Only 2D Tensors can be transposed"
+        assert x.data.ndim == 2, "Only 2D Tensors can be transposed"
 
+        # x.data.shape = x.data.shape[::-1]
+        # x.data.stride = x.data.stride[::-1]
         return Tensor(
-            data=x.data, 
+            data=Op.transpose(x.data), 
             device=x.device, 
             dtype=x.dtype, 
             requires_grad=x.requires_grad,
@@ -222,8 +222,6 @@ class Tensor(Buffer):
         # TODO: del _ctx 
         for node in reversed(topo):
             grads = node._ctx.backward(node.grad)
-            print(type(grads))
-            exit()
             grads = [Tensor(g, device=self.device, requires_grad=False) for g in grads]
             for p, g in zip(node._ctx.parents, grads):
                 # ideally, all nodes in the topo list have requires grad is True (see the topo sort function above)

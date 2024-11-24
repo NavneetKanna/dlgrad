@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from dlgrad.helpers import prod_, calculate_stride
+from dlgrad.device import Device
 
 
 @dataclass
@@ -11,9 +12,10 @@ class BufferMetadata:
 
 
 class Buffer:
-    def __init__(self, data, shape: tuple, **kwargs) -> None:
+    def __init__(self, data, shape: tuple, device: Device, **kwargs) -> None:
         self.ptr = data # ptr to the array
-        self.metadata = BufferMetadata(shape, prod_(shape), calculate_stride(shape), kwargs.get("ndim", len(shape)))
+        self.metadata = BufferMetadata(shape, prod_(shape), kwargs.get("stride", calculate_stride(shape)), kwargs.get("ndim", len(shape)))
+        self.device = device
 
     @property
     def numel(self):
