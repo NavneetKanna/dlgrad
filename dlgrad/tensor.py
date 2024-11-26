@@ -73,7 +73,7 @@ class Tensor(Buffer):
 
         if isinstance(data, get_args(Scalar)):
             self.dtype = DType.get_dtype_from_py(data)
-            self.data = Op.create_buffer_from_scalar(data, self.device)
+            self.data = Buffer.create_buffer_from_scalar(data, self.device)
         elif str(type(data)) == "<class 'numpy.ndarray'>":
             if str(data.dtype) != "float32":
                 raise ValueError("dlgrad only supports float32 dtype")
@@ -184,8 +184,6 @@ class Tensor(Buffer):
     def transpose(x: Tensor) -> Tensor:
         assert x.data.ndim == 2, "Only 2D Tensors can be transposed"
 
-        # x.data.shape = x.data.shape[::-1]
-        # x.data.stride = x.data.stride[::-1]
         return Tensor(
             data=Op.transpose(x.data), 
             device=x.device, 

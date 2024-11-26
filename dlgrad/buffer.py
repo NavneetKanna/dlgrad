@@ -5,6 +5,8 @@ from dlgrad.helpers import calculate_stride, prod_
 
 from dlgrad.dispatch import dispatcher
 from dlgrad.helpers import (BinaryOps, BufferOps, UnaryOps)
+from dlgrad.dtype import Scalar
+
 
 @dataclass
 class BufferMetadata:
@@ -33,6 +35,10 @@ class Buffer:
     def transopose(self):
         return Buffer(self.ptr, self.shape[::-1], self.device, stride=self.stride[::-1])
     
+    @staticmethod
+    def create_buffer_from_scalar(x: Scalar, device: Device):
+        return Buffer(dispatcher.dispatch(op=BufferOps.CREATE, device=device, x=x), tuple(), device, ndim=0)
+
     def __add__(self, other):
         return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other), self.shape, self.device)
 

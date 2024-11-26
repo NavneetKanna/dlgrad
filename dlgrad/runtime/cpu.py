@@ -22,13 +22,10 @@ class CPU:
     """
     ffi = FFI()
 
-    def __init__(self) -> None:
-        pass
-    
     @staticmethod
     @dispatcher.register(BufferOps.CREATE, Device.CPU)
-    def create_buffer_from_scalar(x: Scalar) -> Buffer:
-        return Buffer(CPU.ffi.new(f"{DType.get_c_dtype((x))} [1]", [x]), tuple(), device=Device.CPU, ndim=0)
+    def create_buffer_from_scalar(x: Scalar) -> CDataPtr:
+        return CPU.ffi.new(f"{DType.get_c_dtype((x))} [1]", [x])
 
     @staticmethod
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
