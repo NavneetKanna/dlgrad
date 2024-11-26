@@ -37,10 +37,10 @@ class CPU:
     
     @staticmethod
     @dispatcher.register(BufferOps.FULL, Device.CPU)
-    def full(shape: tuple, fill_value: Scalar) -> Buffer:
+    def full(shape: tuple, fill_value: Scalar) -> CDataPtr:
         arr = _full.lib.full(prod_(shape), fill_value)
 
-        return Buffer(CPU.ffi.gc(arr, _full.lib.free_full), shape, device=Device.CPU)
+        return CPU.ffi.gc(arr, _full.lib.free_full)
 
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)

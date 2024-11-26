@@ -1,17 +1,8 @@
 from typing import Optional
 
 from dlgrad.buffer import Buffer
-from dlgrad.device import Device
-from dlgrad.dispatch import dispatcher
-from dlgrad.dtype import Scalar
-from dlgrad.helpers import (BinaryOps, BufferOps, UnaryOps, check_broadcast,
-                            get_brodcast_tensor)
+from dlgrad.helpers import check_broadcast, get_brodcast_tensor
 from dlgrad.tensor import OP
-
-# ------------ Buffer Ops -----------
-
-def full(shape: tuple, fill_value: Scalar, device: Device) -> Buffer:
-    return dispatcher.dispatch(op=BufferOps.FULL, device=device, shape=shape, fill_value=fill_value)
 
 
 # ------------ Unary Ops -----------

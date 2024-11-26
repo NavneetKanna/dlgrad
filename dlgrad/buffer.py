@@ -43,6 +43,10 @@ class Buffer:
     def uniform(shape: tuple, device: Device, **kwargs):
         return Buffer(dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, shape=shape, **kwargs), shape, device)
 
+    @staticmethod
+    def full(shape: tuple, fill_value: Scalar, device: Device):
+        return Buffer(dispatcher.dispatch(op=BufferOps.FULL, device=device, shape=shape, fill_value=fill_value), shape, device)
+
     def __add__(self, other):
         return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other), self.shape, self.device)
 
