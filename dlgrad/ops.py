@@ -41,7 +41,8 @@ class Add(OP):
         x, y = get_brodcast_tensor(x, y)
 
         if check_broadcast(x.shape, y.shape):
-            return dispatcher.dispatch(op=BinaryOps.ADD, device=x.device, x=x, y=y)
+            return x+y
+            # return dispatcher.dispatch(op=BinaryOps.ADD, device=x.device, x=x, y=y)
      
     def backward(self, upstream_grad: Buffer) -> tuple[Optional[Buffer], Optional[Buffer]]:
         return upstream_grad if self.req_grad[0] else None, upstream_grad if self.req_grad[1] else None

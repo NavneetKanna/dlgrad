@@ -8,6 +8,10 @@ a.out
 *.dot
 *.html
 *.json
+*.ruff_cache/
+*.zed/
+
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -41,3 +45,4 @@ pip-delete-this-directory.txt
 .cache
 nosetests.xml
 coverage.xml
+*.pytest_cache/

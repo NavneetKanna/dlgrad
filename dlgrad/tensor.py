@@ -221,7 +221,7 @@ class Tensor(Buffer):
 
         # TODO: del _ctx 
         for node in reversed(topo):
-            grads = node._ctx.backward(node.grad)
+            grads = node._ctx.backward(node.grad.data)
             grads = [Tensor(g, device=self.device, requires_grad=False) for g in grads]
             for p, g in zip(node._ctx.parents, grads):
                 # ideally, all nodes in the topo list have requires grad is True (see the topo sort function above)

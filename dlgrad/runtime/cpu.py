@@ -9,10 +9,11 @@ from cffi import FFI
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
-from dlgrad.dtype import DType, Scalar
+from dlgrad.dtype import DType, Scalar, CDataPtr
 from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, prod_
 
 
+# TODO: Calling ffi.gc() twice one after the other leads to error, find alternative
 class CPU:
     """
     Main CPU runtime class which handles the logic of calling the compiled C source files.
@@ -47,7 +48,7 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
-    def add(x: Buffer, y: Buffer):
+    def add(x: Buffer, y: Buffer) -> CDataPtr:
         if not (y_stride := y.stride): # for scalar
             y_stride = [0]
 
@@ -56,7 +57,7 @@ class CPU:
         elif len(x.shape) == 3:
             arr = _add.lib.add_3d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape))
 
-        return Buffer(CPU.ffi.gc(arr, _add.lib.free_add), x.shape, device=Device.CPU)
+        return CPU.ffi.gc(arr, _add.lib.free_add)
         
     @staticmethod
     @dispatcher.register(BinaryOps.NEG, Device.CPU)
