@@ -23,7 +23,7 @@ def full(shape: tuple, fill_value: Scalar, device: Device) -> Buffer:
 # ------------ Unary Ops -----------
 
 def transpose(x: Buffer):
-    return dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=x.device, x=x)
+    return x.transopose()
 
 class Sum(OP):
     def forward(self, x: Buffer)-> Buffer:

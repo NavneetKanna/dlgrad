@@ -79,9 +79,3 @@ class CPU:
         arr = _sum.lib.sum(x.ptr, x.numel)
 
         return CPU.ffi.gc(arr, _sum.lib.free_sum)
-
-    # TODO: Check if x is del, then even the transposed is del
-    @staticmethod
-    @dispatcher.register(UnaryOps.TRANSPOSE, Device.CPU)
-    def transpose(x: Buffer) -> Buffer:
-        return Buffer(x.ptr, x.shape[::-1], stride=x.stride[::-1], device=Device.CPU)

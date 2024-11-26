@@ -29,6 +29,10 @@ class Buffer:
     def matmul(self, other):
         return Buffer(dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other), (self.shape[0], other.shape[1]), self.device)
     
+    # TODO: Check if x is del, then even the transposed is del
+    def transopose(self):
+        return Buffer(self.ptr, self.shape[::-1], self.device, stride=self.stride[::-1])
+    
     def __add__(self, other):
         return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other), self.shape, self.device)
 
