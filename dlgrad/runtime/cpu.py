@@ -68,10 +68,10 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
-    def matmul(x: Buffer, y: Buffer) -> Buffer:
+    def matmul(x: Buffer, y: Buffer) -> CDataPtr:
         arr = _matmul.lib.matmul(x.ptr, y.ptr, x.shape[0], y.shape[1], y.shape[0], y.stride, x.stride)
 
-        return Buffer(CPU.ffi.gc(arr, _matmul.lib.free_matmul), (x.shape[0], y.shape[1]), device=Device.CPU)
+        return CPU.ffi.gc(arr, _matmul.lib.free_matmul)
 
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.CPU)

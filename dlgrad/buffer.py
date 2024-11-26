@@ -4,8 +4,7 @@ from dlgrad.device import Device
 from dlgrad.helpers import calculate_stride, prod_
 
 from dlgrad.dispatch import dispatcher
-from dlgrad.helpers import (BinaryOps, BufferOps, UnaryOps, check_broadcast,
-                            get_brodcast_tensor)
+from dlgrad.helpers import (BinaryOps, BufferOps, UnaryOps)
 
 @dataclass
 class BufferMetadata:
@@ -26,6 +25,9 @@ class Buffer:
 
     def sum(self):
         return Buffer(dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self), tuple(), self.device, ndim=1)
+    
+    def matmul(self, other):
+        return Buffer(dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other), (self.shape[0], other.shape[1]), self.device)
     
     def __add__(self, other):
         return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other), self.shape, self.device)

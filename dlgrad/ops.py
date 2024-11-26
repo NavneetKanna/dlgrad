@@ -55,7 +55,7 @@ class Neg(OP):
 
 class MatMul(OP):
     def forward(self, x: Buffer, y: Buffer):
-        return dispatcher.dispatch(op=BinaryOps.MATMUL, device=x.device, x=x, y=y)
+        return x.matmul(y)
 
     def backward(self):
         pass
