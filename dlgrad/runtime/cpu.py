@@ -75,10 +75,10 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
-    def sum(x: Buffer) -> Buffer:
+    def sum(x: Buffer) -> CDataPtr:
         arr = _sum.lib.sum(x.ptr, x.numel)
 
-        return Buffer(CPU.ffi.gc(arr, _sum.lib.free_sum), tuple(), device=Device.CPU, ndim=1)
+        return CPU.ffi.gc(arr, _sum.lib.free_sum)
 
     # TODO: Check if x is del, then even the transposed is del
     @staticmethod

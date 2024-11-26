@@ -24,6 +24,9 @@ class Buffer:
     def neg(self):
         return Buffer(dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self), self.shape, self.device)
 
+    def sum(self):
+        return Buffer(dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self), tuple(), self.device, ndim=1)
+    
     def __add__(self, other):
         return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other), self.shape, self.device)
 

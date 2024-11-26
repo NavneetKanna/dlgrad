@@ -28,7 +28,7 @@ def transpose(x: Buffer):
 class Sum(OP):
     def forward(self, x: Buffer)-> Buffer:
         self.inp_shape = x.shape
-        return dispatcher.dispatch(op=UnaryOps.SUM, device=x.device, x=x)
+        return x.sum()
     
     def backward(self, upstream_grad: Buffer) -> Buffer:
         return dispatcher.dispatch(op=BufferOps.FULL, shape=self.inp_shape, fill_value=1.0) # * upstream_grad
