@@ -29,12 +29,11 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
-    def uniform(shape: tuple, low: float, high: float) -> Buffer:
-        # numel = prod_(shape) if isinstance(shape, tuple) else shape
+    def uniform(shape: tuple, low: float, high: float) -> CDataPtr:
         numel = prod_(shape)
         arr = _uniform.lib.uniform(numel, low, high)
 
-        return Buffer(CPU.ffi.gc(arr, _uniform.lib.free_uniform), shape, device=Device.CPU)
+        return CPU.ffi.gc(arr, _uniform.lib.free_uniform)
     
     @staticmethod
     @dispatcher.register(BufferOps.FULL, Device.CPU)

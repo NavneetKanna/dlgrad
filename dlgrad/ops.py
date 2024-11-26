@@ -10,9 +10,6 @@ from dlgrad.tensor import OP
 
 # ------------ Buffer Ops -----------
 
-def uniform(shape: tuple, device: Device, **kwargs) -> Buffer:
-    return dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, shape=shape, **kwargs)
-
 def full(shape: tuple, fill_value: Scalar, device: Device) -> Buffer:
     return dispatcher.dispatch(op=BufferOps.FULL, device=device, shape=shape, fill_value=fill_value)
 
@@ -28,7 +25,8 @@ class Sum(OP):
         return x.sum()
     
     def backward(self, upstream_grad: Buffer) -> Buffer:
-        return dispatcher.dispatch(op=BufferOps.FULL, shape=self.inp_shape, fill_value=1.0) # * upstream_grad
+        pass
+        # return dispatcher.dispatch(op=BufferOps.FULL, shape=self.inp_shape, fill_value=1.0) # * upstream_grad
 
 
 # ------------ Binary Ops -----------

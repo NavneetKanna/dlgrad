@@ -39,6 +39,10 @@ class Buffer:
     def create_buffer_from_scalar(x: Scalar, device: Device):
         return Buffer(dispatcher.dispatch(op=BufferOps.CREATE, device=device, x=x), tuple(), device, ndim=0)
 
+    @staticmethod
+    def uniform(shape: tuple, device: Device, **kwargs):
+        return Buffer(dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, shape=shape, **kwargs), shape, device)
+
     def __add__(self, other):
         return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other), self.shape, self.device)
 
