@@ -116,7 +116,7 @@ class Tensor(Buffer):
             raise ValueError("shape must be a tuple")
 
         return Tensor(
-            data=Op.uniform(shape, device=device, low=low, high=high), 
+            data=Buffer.uniform(shape, device=device, low=low, high=high), 
             device=device, 
             dtype=dtype, 
             requires_grad=kwargs.get("requires_grad"),
@@ -151,7 +151,7 @@ class Tensor(Buffer):
     @staticmethod
     def full(shape: tuple, fill_value: Scalar, device: Device = Device.CPU, dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
         return Tensor(
-            data=Op.full(shape, fill_value=fill_value, device=device), 
+            data=Buffer.full(shape, fill_value=fill_value, device=device), 
             device=device, 
             dtype=dtype, 
             requires_grad=kwargs.get("requires_grad"),
