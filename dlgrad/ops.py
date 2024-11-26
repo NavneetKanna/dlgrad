@@ -8,7 +8,7 @@ from dlgrad.tensor import OP
 # ------------ Unary Ops -----------
 
 def transpose(x: Buffer):
-    return x.transopose()
+    return x.transpose()
 
 class Sum(OP):
     def forward(self, x: Buffer)-> Buffer:
