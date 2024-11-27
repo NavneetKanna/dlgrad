@@ -9,7 +9,7 @@ from cffi import FFI
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
-from dlgrad.dtype import DType, Scalar, CDataPtr
+from dlgrad.dtype import CDataPtr, DType, Scalar
 from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, prod_
 
 

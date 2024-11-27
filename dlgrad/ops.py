@@ -4,7 +4,6 @@ from dlgrad.buffer import Buffer
 from dlgrad.helpers import check_broadcast, get_brodcast_tensor
 from dlgrad.tensor import OP
 
-
 # ------------ Unary Ops -----------
 
 def transpose(x: Buffer):

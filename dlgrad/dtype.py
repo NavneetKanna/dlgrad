@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from enum import Enum, auto
 from typing import NewType
-from cffi import FFI
 
+from cffi import FFI
 
 CDataPtr = NewType("CDataPtr", FFI.CData)
 Scalar = float
