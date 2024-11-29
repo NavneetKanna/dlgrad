@@ -60,7 +60,7 @@ class OP:
 import dlgrad.ops as Op  # since ops module imports OP class, it is placed after the defination  # noqa: E402
 
 
-class Tensor(Buffer):
+class Tensor:
     def __init__(
         self, data: Scalar | Buffer | 'np.ndarray', device: str | Device | None = Device.CPU,  # noqa: F821 # type: ignore
         dtype: str | DType | None = None, requires_grad: bool = False
@@ -246,3 +246,19 @@ class Tensor(Buffer):
 
     def __matmul__(self, other):
         return Tensor.matmul(self, other)
+
+    @property
+    def numel(self):
+        return self.data.numel
+
+    @property
+    def shape(self):
+        return self.data.shape
+    
+    @property
+    def stride(self):
+        return self.data.stride
+    
+    @property
+    def ndim(self):
+        return self.data.ndim
