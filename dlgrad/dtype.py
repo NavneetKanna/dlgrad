@@ -5,7 +5,7 @@ from typing import NewType
 
 from cffi import FFI
 
-CDataPtr = NewType("CDataPtr", FFI.CData)
+CDataPtr = NewType("CDataPtr", FFI().CData)
 Scalar = float
 
 class DType(Enum):

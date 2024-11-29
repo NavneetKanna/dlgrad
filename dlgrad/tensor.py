@@ -200,11 +200,11 @@ class Tensor(Buffer):
     def backward(self):
         assert self.shape == tuple(), "backward must be called on a scalar Tensor"
 
-        topo = []
+        topo: list[Tensor] = []
         visited = set()
 
         # leaf tensors are not included
-        def _topo_sort(node):
+        def _topo_sort(node: Tensor):
             if node not in visited:
                 visited.add(node)
                 ctx = getattr(node, "_ctx", None) # requires_grad might be false
