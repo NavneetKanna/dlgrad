@@ -14,6 +14,10 @@ def run(shapes: list[tuple], func):
     dlgrad_data = [Tensor(data) for data in np_data]
     torch_data = [torch.tensor(data) for data in np_data]
 
+    res1 = func(*dlgrad_data).numpy()
+    print(res1)
+    res2 = func(*torch_data).numpy()
+    print(res2)
     np.testing.assert_allclose(func(*dlgrad_data).numpy(), func(*torch_data).numpy(), atol=1e-6, rtol=1e-3)
     
 @pytest.mark.parametrize("shapes", [
@@ -98,7 +102,7 @@ def test_sub_diff_shape_reverse(shapes):
     [(4, 3, 2), (2)]
 ])
 def sub_with_scalar(shapes):
-    run(shapes, lambda x, y: x+y)
+    run(shapes, lambda x, y: x-y)
 
 @pytest.mark.parametrize("shapes", [
     [(3), (2, 3)],
@@ -106,7 +110,7 @@ def sub_with_scalar(shapes):
     [(2), (4, 3, 2)]
 ])
 def sub_with_scalar_reversed(shapes):
-    run(shapes, lambda x, y: x+y)
+    run(shapes, lambda x, y: x-y)
 
 @pytest.mark.parametrize("shapes", [
     [(2, 3), (3, 2)],

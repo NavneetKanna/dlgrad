@@ -4,6 +4,7 @@ import _matmul  # type: ignore
 import _neg  # type: ignore
 import _sum  # type: ignore
 import _uniform  # type: ignore
+import _arithmetic # type: ignore
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
@@ -49,12 +50,29 @@ class CPU:
             y_stride = [0]
 
         if len(x.shape) == 2:
-            arr = _add.lib.add_2d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape))
+            # arr = _add.lib.add_2d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape))
+            arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape), 0)
         elif len(x.shape) == 3:
-            arr = _add.lib.add_3d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape))
+            # arr = _add.lib.add_3d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape))
+            arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape), 0)
 
-        return CPU.ffi.gc(arr, _add.lib.free_add)
+        return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
         
+    @staticmethod
+    @dispatcher.register(BinaryOps.SUB, Device.CPU)
+    def sub(x: Buffer, y: Buffer) -> CDataPtr:
+        if not (y_stride := y.stride): # for scalar
+            y_stride = [0]
+
+        if len(x.shape) == 2:
+            # arr = _add.lib.add_2d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape))
+            arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape), 1)
+        elif len(x.shape) == 3:
+            # arr = _add.lib.add_3d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape))
+            arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape), 1)
+
+        return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
+
     @staticmethod
     @dispatcher.register(BinaryOps.NEG, Device.CPU)
     def neg(x: Buffer) -> CDataPtr:

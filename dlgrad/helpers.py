@@ -20,6 +20,7 @@ class BufferOps(Enum):
 
 class BinaryOps(Enum):
     ADD = auto()
+    SUB = auto()
     NEG = auto()
     MATMUL = auto()
 

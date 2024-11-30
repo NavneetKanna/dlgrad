@@ -51,6 +51,9 @@ class Buffer:
     def __add__(self, other) -> Buffer:
         return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other), self.shape, self.device)
 
+    def __sub__(self, other) -> Buffer:
+        return Buffer(dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other), self.shape, self.device)
+    
     @property
     def numel(self):
         return self.metadata.numel

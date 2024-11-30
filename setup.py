@@ -11,6 +11,7 @@ setup(
     cffi_modules=[
         'dlgrad/builder/float_rand_build.py:ffi', 
         'dlgrad/builder/float_add_build.py:ffi', 
+        'dlgrad/builder/float_arithmetic_build.py:ffi', 
         'dlgrad/builder/float_neg_build.py:ffi',
         'dlgrad/builder/float_matmul_build.py:ffi',
         'dlgrad/builder/float_sum_build.py:ffi',

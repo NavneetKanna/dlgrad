@@ -1,10 +1,10 @@
 #include <stdlib.h>
-#include "add.h"
+#include "arithmetic.h"
 
 
 // Assumptions: x is the "bigger" Tensor
 
-float *add_3d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len) {
+float *op_3d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len, int op) {
     float *out = malloc(numel * sizeof(float));
 
     for (int i=0; i<xshape[0]; i++) {
@@ -27,7 +27,20 @@ float *add_3d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstr
                     y_offset = i*ystride[0] + j*ystride[1] + k*ystride[2];
                 }
 
-                out[x_offset] = x[x_offset] + y[y_offset];
+                switch(op) {
+                    case 0: // Add
+                        out[x_offset] = x[x_offset] + y[y_offset];
+                        break;
+                    case 1: // Subtract
+                        out[x_offset] = x[x_offset] - y[y_offset];
+                        break;
+                    case 2: // Multiply
+                        out[x_offset] = x[x_offset] * y[y_offset];
+                        break;
+                    case 3: // Divide
+                        out[x_offset] = x[x_offset] / y[y_offset];
+                        break;
+                }
             }
         }
     }
@@ -35,7 +48,7 @@ float *add_3d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstr
     return out;
 }
 
-float *add_2d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len) {
+float *op_2d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len, int op) {
     float *out = malloc(numel * sizeof(float));
 
     for (int i=0; i<xshape[0]; i++) {
@@ -53,13 +66,26 @@ float *add_2d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstr
                 y_offset = i*ystride[0] + j*ystride[1]; 
             }
 
-            out[x_offset] = x[x_offset] + y[y_offset];
+            switch(op) {
+                case 0: // Add
+                    out[x_offset] = x[x_offset] + y[y_offset];
+                    break;
+                case 1: // Subtract
+                    out[x_offset] = x[x_offset] - y[y_offset];
+                    break;
+                case 2: // Multiply
+                    out[x_offset] = x[x_offset] * y[y_offset];
+                    break;
+                case 3: // Divide
+                    out[x_offset] = x[x_offset] / y[y_offset];
+                    break;
+            }
         }
     }
 
     return out;
 }
 
-void free_add(float* ptr) {
+void free_op(float* ptr) {
     free(ptr);
 }
