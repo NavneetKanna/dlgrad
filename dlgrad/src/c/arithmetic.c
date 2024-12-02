@@ -5,8 +5,6 @@
 
 
 
-// Assumptions: x is the "bigger" Tensor
-
 float *op_3d(float *x, float *y, int xnumel, int ynumel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len, int op) {
     float *out;
     if (xnumel > ynumel || xnumel == ynumel) {
@@ -69,45 +67,30 @@ float *op_3d(float *x, float *y, int xnumel, int ynumel, int *xshape, int *yshap
 }
 
 float *op_2d(float *x, float *y, int xnumel, int ynumel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len, int op) {
-    float *out;
-    if (xnumel > ynumel || xnumel == ynumel) {
-        out = malloc(xnumel * sizeof(float));
-    } else {
-        out = malloc(ynumel * sizeof(float));
-    }
-
+    float out_size = (xnumel >= ynumel) ? xnumel : ynumel;
+    float *out = malloc(out_size * sizeof(float));
+   
     for (int i=0; i<xshape[0]; i++) {
         for (int j=0; j<xshape[1]; j++) {
             int x_offset = i*xstride[0] + j*xstride[1];
             int y_offset = 0; 
 
-            if (yshape_len == 0) { // scalar
+            if (yshape_len == 0) {                          // scalar
                 y_offset = 0;
             } else if (yshape[0] == 1 || yshape_len == 1) { // row Tensor or ndim=1
                 y_offset = j*ystride[1];
-            } else if (yshape[1] == 1) { // column Tensor
+            } else if (yshape[1] == 1) {                    // column Tensor
                 y_offset = i*ystride[0];
-            } else { // 2D Tensor
+            } else {                                        // 2D Tensor
                 y_offset = i*ystride[0] + j*ystride[1]; 
             }
 
             switch(op) {
                 case 0: // Add
-                    if (xnumel > ynumel || xnumel == ynumel) {
-                        out[x_offset] = x[x_offset] + y[y_offset];
-                        break;
-                    } else {
-                        out[x_offset] = y[x_offset] + x[y_offset];
-                        break;
-                    }
+                    out[x_offset] = (xnumel >= ynumel) ? x[x_offset] + y[y_offset] : y[x_offset] + x[y_offset];
+                    break;
                 case 1: // Subtract
-                    if (xnumel > ynumel || xnumel == ynumel) {
-                            out[x_offset] = x[x_offset] - y[y_offset];
-                            break;
-                    } else {
-                        out[x_offset] = x[y_offset] - y[x_offset];
-                        break;
-                    }
+                    out[x_offset] = (xnumel >= ynumel) ? x[x_offset] - y[y_offset] : x[y_offset] - y[x_offset];
                     break;
                 case 2: // Multiply
                     out[x_offset] = x[x_offset] * y[y_offset];

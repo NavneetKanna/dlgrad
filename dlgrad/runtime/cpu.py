@@ -46,7 +46,7 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x: Buffer, y: Buffer) -> CDataPtr:
-        if x.numel > y.numel or y.numel == x.numel:
+        if x.numel >= y.numel:
             if not (y_stride := y.stride): # for scalar
                 y_stride = [0]
             if len(x.shape) == 2:
@@ -66,7 +66,7 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
     def sub(x: Buffer, y: Buffer) -> CDataPtr:
-        if x.numel > y.numel or y.numel == x.numel:
+        if x.numel >= y.numel:
             if not (y_stride := y.stride): # for scalar
                 y_stride = [0]
             if len(x.shape) == 2:
