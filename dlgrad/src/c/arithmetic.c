@@ -1,11 +1,19 @@
 #include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include "arithmetic.h"
+
 
 
 // Assumptions: x is the "bigger" Tensor
 
-float *op_3d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len, int op) {
-    float *out = malloc(numel * sizeof(float));
+float *op_3d(float *x, float *y, int xnumel, int ynumel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len, int op) {
+    float *out;
+    if (xnumel > ynumel || xnumel == ynumel) {
+        out = malloc(xnumel * sizeof(float));
+    } else {
+        out = malloc(ynumel * sizeof(float));
+    }
 
     for (int i=0; i<xshape[0]; i++) {
         for (int j=0; j<xshape[1]; j++) {
@@ -29,10 +37,22 @@ float *op_3d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstri
 
                 switch(op) {
                     case 0: // Add
-                        out[x_offset] = x[x_offset] + y[y_offset];
+                        if (xnumel > ynumel || xnumel == ynumel) {
+                            out[x_offset] = x[x_offset] + y[y_offset];
+                            break;
+                        } else {
+                            out[x_offset] = x[y_offset] + y[x_offset];
+                            break;
+                        }
                         break;
                     case 1: // Subtract
-                        out[x_offset] = x[x_offset] - y[y_offset];
+                        if (xnumel > ynumel || xnumel == ynumel) {
+                            out[x_offset] = x[x_offset] - y[y_offset];
+                            break;
+                        } else {
+                            out[x_offset] = x[y_offset] - y[x_offset];
+                            break;
+                        }
                         break;
                     case 2: // Multiply
                         out[x_offset] = x[x_offset] * y[y_offset];
@@ -48,14 +68,19 @@ float *op_3d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstri
     return out;
 }
 
-float *op_2d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len, int op) {
-    float *out = malloc(numel * sizeof(float));
+float *op_2d(float *x, float *y, int xnumel, int ynumel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len, int op) {
+    float *out;
+    if (xnumel > ynumel || xnumel == ynumel) {
+        out = malloc(xnumel * sizeof(float));
+    } else {
+        out = malloc(ynumel * sizeof(float));
+    }
 
     for (int i=0; i<xshape[0]; i++) {
         for (int j=0; j<xshape[1]; j++) {
             int x_offset = i*xstride[0] + j*xstride[1];
             int y_offset = 0; 
-            
+
             if (yshape_len == 0) { // scalar
                 y_offset = 0;
             } else if (yshape[0] == 1 || yshape_len == 1) { // row Tensor or ndim=1
@@ -68,10 +93,21 @@ float *op_2d(float *x, float *y, int numel, int *xshape, int *yshape, int *xstri
 
             switch(op) {
                 case 0: // Add
-                    out[x_offset] = x[x_offset] + y[y_offset];
-                    break;
+                    if (xnumel > ynumel || xnumel == ynumel) {
+                        out[x_offset] = x[x_offset] + y[y_offset];
+                        break;
+                    } else {
+                        out[x_offset] = y[x_offset] + x[y_offset];
+                        break;
+                    }
                 case 1: // Subtract
-                    out[x_offset] = x[x_offset] - y[y_offset];
+                    if (xnumel > ynumel || xnumel == ynumel) {
+                            out[x_offset] = x[x_offset] - y[y_offset];
+                            break;
+                    } else {
+                        out[x_offset] = x[y_offset] - y[x_offset];
+                        break;
+                    }
                     break;
                 case 2: // Multiply
                     out[x_offset] = x[x_offset] * y[y_offset];

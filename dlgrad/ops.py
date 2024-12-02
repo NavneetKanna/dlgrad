@@ -23,7 +23,7 @@ class Sum(OP):
 
 class Add(OP):
     def forward(self, x: Buffer, y: Buffer) -> Buffer:
-        x, y = get_brodcast_tensor(x, y)
+        # x, y = get_brodcast_tensor(x, y)
 
         if check_broadcast(x.shape, y.shape):
             return x+y
@@ -33,10 +33,7 @@ class Add(OP):
 
 class Sub(OP):
     def forward(self, x: Buffer, y: Buffer) -> Buffer:
-        x, y = get_brodcast_tensor(x, y)
-
-        print(x.shape)
-        print(y.shape)
+        # x, y = get_brodcast_tensor(x, y)
 
         if check_broadcast(x.shape, y.shape):
             return x-y

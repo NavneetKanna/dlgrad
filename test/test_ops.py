@@ -15,8 +15,10 @@ def run(shapes: list[tuple], func):
     torch_data = [torch.tensor(data) for data in np_data]
 
     res1 = func(*dlgrad_data).numpy()
+    print("res1")
     print(res1)
     res2 = func(*torch_data).numpy()
+    print("res2")
     print(res2)
     np.testing.assert_allclose(func(*dlgrad_data).numpy(), func(*torch_data).numpy(), atol=1e-6, rtol=1e-3)
     

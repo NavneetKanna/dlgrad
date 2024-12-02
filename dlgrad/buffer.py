@@ -49,10 +49,21 @@ class Buffer:
         return Buffer(dispatcher.dispatch(op=BufferOps.FULL, device=device, shape=shape, fill_value=fill_value), shape, device)
 
     def __add__(self, other) -> Buffer:
-        return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other), self.shape, self.device)
+        print(self.shape, other.shape)
+        print(self.numel, other.numel)
+        if self.numel > other.numel or self.numel == other.numel:
+            return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other), self.shape, self.device)
+        else:
+            return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other), other.shape, self.device)
+
 
     def __sub__(self, other) -> Buffer:
-        return Buffer(dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other), self.shape, self.device)
+        print("in buffer")
+        print(self.numel, other.numel)
+        if self.numel > other.numel or self.numel == other.numel:
+            return Buffer(dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other), self.shape, self.device)
+        else:
+            return Buffer(dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other), other.shape, self.device)
     
     @property
     def numel(self):

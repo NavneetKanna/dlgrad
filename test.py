@@ -24,4 +24,5 @@ print((da-db).numpy())
 
 ta = torch.tensor(a)
 tb = torch.tensor(b)
+print((ta-tb).stride())
 print(ta-tb)

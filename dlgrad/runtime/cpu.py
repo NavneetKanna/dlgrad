@@ -46,30 +46,40 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x: Buffer, y: Buffer) -> CDataPtr:
-        if not (y_stride := y.stride): # for scalar
-            y_stride = [0]
-
-        if len(x.shape) == 2:
-            # arr = _add.lib.add_2d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape))
-            arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape), 0)
-        elif len(x.shape) == 3:
-            # arr = _add.lib.add_3d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape))
-            arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape), 0)
+        if x.numel > y.numel or y.numel == x.numel:
+            if not (y_stride := y.stride): # for scalar
+                y_stride = [0]
+            if len(x.shape) == 2:
+                arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.numel, y.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape), 0)
+            elif len(x.shape) == 3:
+                arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.numel, y.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape), 0)
+        else:
+            if not (y_stride := x.stride): # for scalar
+                y_stride = [0]
+            if len(y.shape) == 2:
+                arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.numel, y.numel, y.shape, x.shape, y.stride, y_stride, len(x.shape), 0)
+            elif len(y.shape) == 3:
+                arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.numel, y.numel, y.shape, x.shape, y.stride, y_stride, len(x.shape), 0)
 
         return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
         
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
     def sub(x: Buffer, y: Buffer) -> CDataPtr:
-        if not (y_stride := y.stride): # for scalar
-            y_stride = [0]
-
-        if len(x.shape) == 2:
-            # arr = _add.lib.add_2d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape))
-            arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape), 1)
-        elif len(x.shape) == 3:
-            # arr = _add.lib.add_3d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape))
-            arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape), 1)
+        if x.numel > y.numel or y.numel == x.numel:
+            if not (y_stride := y.stride): # for scalar
+                y_stride = [0]
+            if len(x.shape) == 2:
+                arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.numel, y.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape), 1)
+            elif len(x.shape) == 3:
+                arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.numel, y.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape), 1)
+        else:
+            if not (y_stride := x.stride): # for scalar
+                y_stride = [0]
+            if len(y.shape) == 2:
+                arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.numel, y.numel, y.shape, x.shape, y.stride, y_stride, len(x.shape), 1)
+            elif len(y.shape) == 3:
+                arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.numel, y.numel, y.shape, x.shape, y.stride, y_stride, len(x.shape), 1)
 
         return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
 
