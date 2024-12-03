@@ -8,21 +8,27 @@ float *op_3d(float *x, float *y, int xnumel, int ynumel, int *xshape, int *yshap
     float out_size = (xnumel >= ynumel) ? xnumel : ynumel;
     float *out = malloc(out_size * sizeof(float));
 
+    int y_scalar = (yshape_len == 0);
+    int y_row_or_1d = (yshape[0] == 1 || yshape_len == 1);
+    int y_col = (yshape[1] == 1);
+    int y_2d = (yshape_len == 2);
+    int y_3d_dim1 = (yshape_len == 3 && yshape[0] == 1);
+
     for (int i=0; i<xshape[0]; i++) {
         for (int j=0; j<xshape[1]; j++) {
             for (int k=0; k<xshape[2]; k++) {
                 int x_offset = i*xstride[0] + j*xstride[1] + k*xstride[2];
                 int y_offset;
 
-                if (yshape_len == 0) {                          // scalar
+                if (y_scalar) {                                 // scalar
                     y_offset = 0;
-                } else if (yshape[0] == 1 || yshape_len == 1){  // row Tensor or ndim=1 
+                } else if (y_row_or_1d){                        // row Tensor or ndim=1 
                     y_offset = k*ystride[1];
-                } else if (yshape[1] == 1) {                    // column Tensor
+                } else if (y_col) {                             // column Tensor
                     y_offset = j*ystride[0];
-                } else if (yshape_len == 2) {                   // 2D Tensor
+                } else if (y_2d) {                              // 2D Tensor
                     y_offset = j*ystride[0] + k*ystride[1]; 
-                } else if (yshape_len == 3 && yshape[0] == 1) { // 3D Tensor with first dim = 1
+                } else if (y_3d_dim1) {                         // 3D Tensor with first dim = 1
                     y_offset = j*ystride[0] + k*ystride[1];
                 } else {                                        // 3D Tensor
                     y_offset = i*ystride[0] + j*ystride[1] + k*ystride[2];
@@ -53,18 +59,22 @@ float *op_2d(float *x, float *y, int xnumel, int ynumel, int *xshape, int *yshap
     float out_size = (xnumel >= ynumel) ? xnumel : ynumel;
     float *out = malloc(out_size * sizeof(float));
    
+    int y_scalar = (yshape_len == 0);
+    int y_row_or_1d = (yshape[0] == 1 || yshape_len == 1);
+    int y_col = (yshape[1] == 1);
+
     for (int i=0; i<xshape[0]; i++) {
         for (int j=0; j<xshape[1]; j++) {
             int x_offset = i*xstride[0] + j*xstride[1];
             int y_offset = 0; 
 
-            if (yshape_len == 0) {                          // scalar
+            if (y_scalar) {                 // scalar
                 y_offset = 0;
-            } else if (yshape[0] == 1 || yshape_len == 1) { // row Tensor or ndim=1
+            } else if (y_row_or_1d) {       // row Tensor or ndim=1
                 y_offset = j*ystride[1];
-            } else if (yshape[1] == 1) {                    // column Tensor
+            } else if (y_col) {             // column Tensor
                 y_offset = i*ystride[0];
-            } else {                                        // 2D Tensor
+            } else {                        // 2D Tensor
                 y_offset = i*ystride[0] + j*ystride[1]; 
             }
 
