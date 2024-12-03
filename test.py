@@ -12,17 +12,17 @@ import torch
 
 import numpy as np
 
-a = np.random.uniform(size=(1, 3)).astype(np.float32)
-b = np.random.uniform(size=(2, 3)).astype(np.float32)
+a = np.random.uniform(size=(3, 2)).astype(np.float32)
+b = np.random.uniform(size=(4, 3, 2)).astype(np.float32)
 print(a)
 print(b)
 
 da = Tensor(a)
 db = Tensor(b)
 
-print((da-db).numpy())
+print((da+db).numpy())
 
 ta = torch.tensor(a)
 tb = torch.tensor(b)
-print((ta-tb).stride())
-print(ta-tb)
+print((ta+tb).stride())
+print(ta+tb)

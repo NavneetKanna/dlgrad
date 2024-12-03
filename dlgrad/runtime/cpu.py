@@ -1,4 +1,3 @@
-import _add  # type: ignore
 import _full  # type: ignore
 import _matmul  # type: ignore
 import _neg  # type: ignore
@@ -47,19 +46,30 @@ class CPU:
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x: Buffer, y: Buffer) -> CDataPtr:
         if x.numel >= y.numel:
-            if not (y_stride := y.stride): # for scalar
-                y_stride = [0]
-            if len(x.shape) == 2:
-                arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.numel, y.numel, x.shape, y.shape, x.stride, y_stride, len(y.shape), 0)
-            elif len(x.shape) == 3:
-                arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.numel, y.numel, x.shape, y.shape, x.stride, y.stride, len(y.shape), 0)
-        else:
-            if not (y_stride := x.stride): # for scalar
-                y_stride = [0]
-            if len(y.shape) == 2:
-                arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.numel, y.numel, y.shape, x.shape, y.stride, y_stride, len(x.shape), 0)
-            elif len(y.shape) == 3:
-                arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.numel, y.numel, y.shape, x.shape, y.stride, y_stride, len(x.shape), 0)
+            main_buf, other_buf = x.ptr, y.ptr
+            main_numel, other_numel = x.numel, y.numel
+            main_stride, other_stride = x.stride, y.stride or [0] # for scalar
+            main_shape, other_shape = x.shape, y.shape
+            other_shape_len = len(y.shape)
+        elif x.numel < y.numel:
+            main_buf, other_buf = x.ptr, y.ptr
+            main_numel, other_numel = x.numel, y.numel
+            main_stride, other_stride = y.stride, x.stride or [0] # for scalar
+            main_shape, other_shape = y.shape, x.shape
+            other_shape_len = len(x.shape)
+
+        if len(main_shape) == 2:
+            arr = _arithmetic.lib.op_2d(main_buf, other_buf, 
+                                        main_numel, other_numel, 
+                                        main_shape, other_shape, 
+                                        main_stride, other_stride, 
+                                        other_shape_len, 0)
+        elif len(main_shape) == 3:
+            arr = _arithmetic.lib.op_3d(main_buf, other_buf, 
+                                        main_numel, other_numel, 
+                                        main_shape, other_shape, 
+                                        main_stride, other_stride, 
+                                        other_shape_len, 0)
 
         return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
         
