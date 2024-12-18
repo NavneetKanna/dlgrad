@@ -22,17 +22,12 @@ float *sum_3d_dim1(float *arr, int numel, int *shape, int *strides) {
     for(int i=0; i<shape[0]; i+=strides[0]) {
         for (int j=0; j<shape[2]; j++) { // cols
             float sum = 0.0;
-            for(int k=i; k<shape[1]; k+=strides[1]) { // rows
-                sum += k;
-
+            for(int k=i; k<(i+=strides[0]); k+=strides[1]) { // rows
+                sum += arr[k];
             }
-    
-            
-
-
+            out[i] = sum;
         }
     }
-
 }
 
 
