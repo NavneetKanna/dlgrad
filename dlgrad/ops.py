@@ -29,6 +29,12 @@ class Add(OP):
             return x+y
      
     def backward(self, upstream_grad: Buffer) -> tuple[Optional[Buffer], Optional[Buffer]]:
+        if self.req_grad[0]:
+            if upstream_grad.shape == self.parents[0].shape:
+                pass
+            else:
+                pass
+
         return upstream_grad if self.req_grad[0] else None, upstream_grad if self.req_grad[1] else None
 
 class Sub(OP):
