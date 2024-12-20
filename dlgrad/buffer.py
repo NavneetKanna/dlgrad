@@ -27,8 +27,18 @@ class Buffer:
         return Buffer(dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self), self.shape, self.device)
 
     def sum(self, dim: int) -> Buffer:
-        if dim == 0:
-            return Buffer(dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim), (self.shape[1],self.shape[2]), self.device, ndim=2)
+        out_shape = tuple()
+        ndim = 0
+        if self.ndim == 3:
+            ndim = 2
+            if dim == 0:
+                out_shape = (self.shape[1], self.shape[2])
+            elif dim == 1:
+                out_shape = (self.shape[0], self.shape[2])
+            elif dim == 2:
+                out_shape = (self.shape[0], self.shape[1])
+        
+        return Buffer(dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim, numel=prod_(out_shape)), out_shape, self.device, ndim=ndim)
     
     def matmul(self, other) -> Buffer:
         return Buffer(dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other), (self.shape[0], other.shape[1]), self.device)
