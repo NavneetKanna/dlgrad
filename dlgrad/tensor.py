@@ -47,7 +47,7 @@ class OP:
         """
         ctx = fxn(*data)
         tensor = Tensor.__new__(Tensor)
-        tensor.data = ctx.forward(*[d.data for d in data])
+        tensor.data = ctx.forward(*[d.data for d in data], **kwargs)
         tensor.requires_grad  = ctx.requires_grad
         tensor.dtype = kwargs.get("dtype", data[0].dtype)
         tensor.device = kwargs.get("device", data[0].device)
@@ -195,8 +195,8 @@ class Tensor:
             requires_grad=x.requires_grad,
         )
 
-    def sum(self):
-        return Op.Sum.execute(self)
+    def sum(self, dim=0):
+        return Op.Sum.execute(self, dim=dim)
 
     def linear(self, weight: Tensor, bias: Tensor|None) -> Tensor:
         return self@weight.T + bias if bias else self@weight.T

@@ -10,9 +10,9 @@ def transpose(x: Buffer):
     return x.transpose()
 
 class Sum(OP):
-    def forward(self, x: Buffer)-> Buffer:
+    def forward(self, x: Buffer, dim: int)-> Buffer:
         self.inp_shape = x.shape
-        return x.sum()
+        return x.sum(dim=dim)
     
     def backward(self, upstream_grad: Buffer) -> Buffer:
         pass

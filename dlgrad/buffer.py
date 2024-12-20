@@ -26,8 +26,9 @@ class Buffer:
     def neg(self) -> Buffer:
         return Buffer(dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self), self.shape, self.device)
 
-    def sum(self) -> Buffer:
-        return Buffer(dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self), tuple(), self.device, ndim=1)
+    def sum(self, dim: int) -> Buffer:
+        if dim == 0:
+            return Buffer(dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim), (self.shape[1],self.shape[2]), self.device, ndim=2)
     
     def matmul(self, other) -> Buffer:
         return Buffer(dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other), (self.shape[0], other.shape[1]), self.device)
