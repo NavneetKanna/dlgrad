@@ -16,7 +16,7 @@ float *sum_3d_dim0(float *arr, int numel, int *shape, int *strides) {
         }
     }
 
-    
+    return out;
 }
 
 float *sum_3d_dim1(float *arr, int numel, int *shape, int *strides) {
@@ -32,6 +32,8 @@ float *sum_3d_dim1(float *arr, int numel, int *shape, int *strides) {
             idx += 1;
         }
     }
+
+    return out;
 }
 
 float *sum_3d_dim2(float *arr, int numel, int *shape, int *strides) {
@@ -47,6 +49,8 @@ float *sum_3d_dim2(float *arr, int numel, int *shape, int *strides) {
             idx += 1;
         }
     }
+
+    return out;
 }
 
 
