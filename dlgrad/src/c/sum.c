@@ -2,8 +2,19 @@
 #include "sum.h"
 
 
-float *sum_3d_dim0(float *arr, int numel, int dim0, int dim1, int dim2, int *strides) {
+float *sum_3d_dim0(float *arr, int numel, int *shape, int *strides) {
     float *out = malloc(sizeof(float)*numel);
+    int idx = 0;
+    for (int i=0; i<shape[1]; i++) { // rows
+        for (int j=0; j<shape[2]; j++) { // cols
+            float sum = 0.0;
+            for (int k=j; k<shape[0]; k+=strides[0]) {
+                sum += arr[k];
+            }
+            out[idx] = sum;
+            idx += 1;
+        }
+    }
 
     
 }
