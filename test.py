@@ -1,16 +1,33 @@
 from dlgrad.tensor import Tensor
+import time
 
-a = Tensor.rand((4, 3, 2), requires_grad=True)
+sh = (4, 3, 2)
+dim = 2
+a = Tensor.rand(sh, requires_grad=True)
 
-b = a.sum(dim=1)
+s = time.perf_counter()
+b = a.sum(dim)
+e = time.perf_counter()
+print(f"{e-s:.4f}s")
 # print(a.numpy())
 # print()
 print(b.numpy())
+print("--")
 
 import torch
-
-ta = torch.tensor(a.numpy())
-
-tb = ta.sum(dim=1)
+torch.set_num_threads(1)
+ta = torch.tensor(a.numpy(), device="cpu")
+s = time.perf_counter()
+tb = ta.sum(dim=dim)
+e = time.perf_counter()
+print(f"{e-s:.4f}s")
 
 print(tb)
+
+# import tinygrad.tensor as ti
+
+# ta = ti.Tensor(a.numpy(), device="clang")
+# s = time.perf_counter()
+# tb = ta.sum(axis=dim).realize()
+# e = time.perf_counter()
+# print(f"{e-s:.4f}s")

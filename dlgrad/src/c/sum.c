@@ -10,11 +10,10 @@ float *sum_3d_dim0(float *arr, int numel, int *shape, int *strides) {
     for (int i=0; i<shape[1]; i++) { // rows
         for (int j=0; j<shape[2]; j++) { // cols
             float sum = 0.0;
-            for (int k=i*strides[1]+j; k<numel*shape[0]; k+=strides[0]) {
-                sum += arr[k];
+            for (int k = 0; k < shape[0]; k++) {
+                sum += arr[k * strides[0] + i * strides[1] + j * strides[2]];
             }
-            out[idx] = sum;
-            idx += 1;
+            out[idx++] = sum;
         }
     }
 
@@ -24,6 +23,7 @@ float *sum_3d_dim0(float *arr, int numel, int *shape, int *strides) {
 float *sum_3d_dim1(float *arr, int numel, int *shape, int *strides) {
     float *out = malloc(sizeof(float)*numel);
     int idx = 0;
+
     for(int i=0; i<shape[0]*strides[0]; i+=strides[0]) {
         for (int j=0; j<shape[2]; j++) { // cols
             float sum = 0.0;
@@ -41,14 +41,14 @@ float *sum_3d_dim1(float *arr, int numel, int *shape, int *strides) {
 float *sum_3d_dim2(float *arr, int numel, int *shape, int *strides) {
     float *out = malloc(sizeof(float)*numel);
     int idx = 0;
-    for(int i=0; i<shape[0]; i+=strides[0]) {
-        for (int j=0; j<shape[1]; j++) { // rows
+    
+    for (int i = 0; i < shape[0]; i++) {
+        for (int j = 0; j < shape[1]; j++) { // rows
             float sum = 0.0;
-            for (int k=0; k<shape[2]; k++) { // cols
-                sum += arr[k+i];
+            for (int k = 0; k < shape[2]; k++) { // cols
+                sum += arr[i * strides[0] + j * strides[1] + k * strides[2]];
             }
-            out[idx] = sum;
-            idx += 1;
+            out[idx++] = sum;
         }
     }
 
