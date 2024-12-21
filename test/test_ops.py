@@ -14,12 +14,6 @@ def run(shapes: list[tuple], func):
     dlgrad_data = [Tensor(data) for data in np_data]
     torch_data = [torch.tensor(data) for data in np_data]
 
-    res1 = func(*dlgrad_data).numpy()
-    print("res1")
-    print(res1)
-    res2 = func(*torch_data).numpy()
-    print("res2")
-    print(res2)
     np.testing.assert_allclose(func(*dlgrad_data).numpy(), func(*torch_data).numpy(), atol=1e-6, rtol=1e-3)
     
 @pytest.mark.parametrize("shapes", [
@@ -141,3 +135,25 @@ def test_transpose_diff_tensors_reverse(shapes):
 ])
 def test_transpose_same_tensors(shapes):
     run(shapes, lambda x: x@x.T)
+
+@pytest.mark.parametrize("shapes", [
+    [(4, 3, 2)],
+    [(20, 40, 30)],
+])
+def test_sum_3d(shapes):
+    for sh in shapes:
+        np_data = np.random.uniform(size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data)
+        torch_data = torch.tensor(np_data)
+
+        dl_out = dlgrad_data.sum(dim=0)
+        to_out = torch_data.sum(dim=0)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+        dl_out = dlgrad_data.sum(dim=1)
+        to_out = torch_data.sum(dim=1)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+        dl_out = dlgrad_data.sum(dim=2)
+        to_out = torch_data.sum(dim=2)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
