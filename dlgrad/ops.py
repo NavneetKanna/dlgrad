@@ -18,26 +18,17 @@ class Sum(OP):
     def backward(self, upstream_grad: Buffer) -> Buffer:
         print("sum backward called")
         return (Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device),)
-        # return dispatcher.dispatch(op=BufferOps.FULL, shape=self.inp_shape, fill_value=1.0) # * upstream_grad
 
 
 # ------------ Binary Ops -----------
 
 class Add(OP):
     def forward(self, x: Buffer, y: Buffer) -> Buffer:
-        # x, y = get_brodcast_tensor(x, y)
-
         if check_broadcast(x.shape, y.shape):
             return x+y
      
     def backward(self, upstream_grad: Buffer) -> tuple[Optional[Buffer], Optional[Buffer]]:
         print("add backward called")
-        # if self.req_grad[0]:
-        #     if upstream_grad.shape == self.parents[0].shape:
-        #         pass
-        #     else:
-        #         pass
-
         return upstream_grad if self.req_grad[0] else None, upstream_grad if self.req_grad[1] else None
 
 class Sub(OP):

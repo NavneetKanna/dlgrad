@@ -211,7 +211,7 @@ class Tensor:
         def _topo_sort(node: Tensor):
             if node not in visited:
                 visited.add(node)
-                ctx = getattr(node, "_ctx", None) # requires_grad might be false
+                ctx = getattr(node, "_ctx", None)
                 if ctx:
                     for i in node._ctx.parents:
                         _topo_sort(i)
@@ -225,13 +225,12 @@ class Tensor:
 
         # TODO: del _ctx 
         for node in reversed(topo):
-            grads: Buffer = node._ctx.backward(node.grad.data)
-            grads: list[Tensor] = [Tensor(g, device=self.device, requires_grad=False) for g in grads]
-            for p, g in zip(node._ctx.parents, grads):
-                # ideally, all nodes in the topo list have requires grad is True (see the topo sort function above)
-                # but this is just an extra verification step
+            upstream_grads: tuple[Buffer] = node._ctx.backward(node.grad.data)
+            upstream_grads: list[Tensor] = [Tensor(g, device=self.device, requires_grad=False) for g in upstream_grads]
+            for p, g in zip(node._ctx.parents, upstream_grads):
                 if p.requires_grad: 
                     assert g.shape == p.shape, f"Tensor shape and grad shape must match {p.shape}, {g.shape}"
+                    print("setting p.grad", p)
                     p.grad = g if p.grad is None else p.grad + g
 
     def __repr__(self) -> str:
