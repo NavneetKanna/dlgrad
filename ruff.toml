@@ -1,0 +1,14 @@
+[lint]
+
+select = [
+  "F",  # Pyflakes
+  "E",
+  "W",
+  "C90",
+  "I",
+]
+
+ignore = ["W191"]
+exclude = [
+    "test/"
+]
