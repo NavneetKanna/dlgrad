@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Type, get_args
+from typing import Type
 
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
@@ -230,7 +230,6 @@ class Tensor:
             for p, g in zip(node._ctx.parents, upstream_grads):
                 if p.requires_grad: 
                     assert g.shape == p.shape, f"Tensor shape and grad shape must match {p.shape}, {g.shape}"
-                    print("setting p.grad", p)
                     p.grad = g if p.grad is None else p.grad + g
 
     def __repr__(self) -> str:

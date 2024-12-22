@@ -1,7 +1,7 @@
 from typing import Optional
 
 from dlgrad.buffer import Buffer
-from dlgrad.helpers import check_broadcast 
+from dlgrad.helpers import check_broadcast
 from dlgrad.tensor import OP
 
 # ------------ Unary Ops -----------
