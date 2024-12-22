@@ -48,7 +48,7 @@ class OP:
         ctx = fxn(*data)
         tensor = Tensor.__new__(Tensor)
         tensor.data = ctx.forward(*[d.data for d in data], **kwargs)
-        tensor.requires_grad  = ctx.requires_grad
+        tensor.requires_grad = ctx.requires_grad
         tensor.dtype = kwargs.get("dtype", data[0].dtype)
         tensor.device = kwargs.get("device", data[0].device)
         tensor._ctx = ctx if ctx.requires_grad else None 
@@ -71,7 +71,7 @@ class Tensor:
         self._ctx: OP = None # used by autograd engine
         self.grad = None
 
-        if isinstance(data, get_args(Scalar)):
+        if isinstance(data, Scalar):
             self.dtype = DType.get_dtype_from_py(data)
             self.data = Buffer.create_buffer_from_scalar(data, self.device)
         elif str(type(data)) == "<class 'numpy.ndarray'>":
@@ -195,7 +195,7 @@ class Tensor:
             requires_grad=x.requires_grad,
         )
 
-    def sum(self, dim=0):
+    def sum(self, dim=None):
         return Op.Sum.execute(self, dim=dim)
 
     def linear(self, weight: Tensor, bias: Tensor|None) -> Tensor:
@@ -219,12 +219,14 @@ class Tensor:
         
         _topo_sort(self)
 
+        print("topo", topo)
+
         self.grad = Tensor(1.0)
 
         # TODO: del _ctx 
         for node in reversed(topo):
-            grads = node._ctx.backward(node.grad.data)
-            grads = [Tensor(g, device=self.device, requires_grad=False) for g in grads]
+            grads: Buffer = node._ctx.backward(node.grad.data)
+            grads: list[Tensor] = [Tensor(g, device=self.device, requires_grad=False) for g in grads]
             for p, g in zip(node._ctx.parents, grads):
                 # ideally, all nodes in the topo list have requires grad is True (see the topo sort function above)
                 # but this is just an extra verification step

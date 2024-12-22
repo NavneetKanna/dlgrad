@@ -120,7 +120,7 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
-    def sum(x: Buffer, dim: int, numel: int) -> CDataPtr:
+    def sum(x: Buffer, dim: int | None, numel: int) -> CDataPtr:
         if x.ndim == 3:
             if dim == 0:
                 arr = _sum.lib.sum_3d_dim0(x.ptr, numel, x.shape, x.stride)
@@ -128,8 +128,7 @@ class CPU:
                 arr = _sum.lib.sum_3d_dim1(x.ptr, numel, x.shape, x.stride)
             if dim == 2:
                 arr = _sum.lib.sum_3d_dim2(x.ptr, numel, x.shape, x.stride)
-
-
-        # arr = _sum.lib.sum(x.ptr, x.numel)
+            if not dim:
+                arr = _sum.lib.sum(x.ptr, prod_(x.shape))
 
         return CPU.ffi.gc(arr, _sum.lib.free_sum)

@@ -26,7 +26,7 @@ class Buffer:
     def neg(self) -> Buffer:
         return Buffer(dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self), self.shape, self.device)
 
-    def sum(self, dim: int) -> Buffer:
+    def sum(self, dim: int | None) -> Buffer:
         out_shape = tuple()
         ndim = 0
         if self.ndim == 3:
@@ -37,6 +37,8 @@ class Buffer:
                 out_shape = (self.shape[0], self.shape[2])
             elif dim == 2:
                 out_shape = (self.shape[0], self.shape[1])
+            else:
+                out_shape = tuple()
         
         return Buffer(dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim, numel=prod_(out_shape)), out_shape, self.device, ndim=ndim)
     

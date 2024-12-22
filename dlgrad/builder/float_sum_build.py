@@ -15,7 +15,7 @@ ffi.set_source("_sum", f"""
 """, 
 sources=[f'{root_dir}/src/c/sum.c'],
 libraries=["m"],
-extra_compile_args=["-O2", "-march=native"])
+extra_compile_args=["-O3", "-march=native"])
 
 if __name__ == "__main__":
     ffi.compile(verbose=True)

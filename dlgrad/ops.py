@@ -10,12 +10,14 @@ def transpose(x: Buffer):
     return x.transpose()
 
 class Sum(OP):
-    def forward(self, x: Buffer, dim: int)-> Buffer:
+    def forward(self, x: Buffer, dim: int | None)-> Buffer:
         self.inp_shape = x.shape
+        self.device = x.device
         return x.sum(dim=dim)
     
     def backward(self, upstream_grad: Buffer) -> Buffer:
-        pass
+        print("sum backward called")
+        return (Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device),)
         # return dispatcher.dispatch(op=BufferOps.FULL, shape=self.inp_shape, fill_value=1.0) # * upstream_grad
 
 
@@ -29,11 +31,12 @@ class Add(OP):
             return x+y
      
     def backward(self, upstream_grad: Buffer) -> tuple[Optional[Buffer], Optional[Buffer]]:
-        if self.req_grad[0]:
-            if upstream_grad.shape == self.parents[0].shape:
-                pass
-            else:
-                pass
+        print("add backward called")
+        # if self.req_grad[0]:
+        #     if upstream_grad.shape == self.parents[0].shape:
+        #         pass
+        #     else:
+        #         pass
 
         return upstream_grad if self.req_grad[0] else None, upstream_grad if self.req_grad[1] else None
 
