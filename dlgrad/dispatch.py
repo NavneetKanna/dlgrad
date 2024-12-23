@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from enum import Enum
 
 from dlgrad.dtype import CDataPtr
@@ -15,7 +16,7 @@ class Dispatcher:
     def __init__(self) -> None:
         self._dispatch_table: dict = {}
 
-    def register(self, op: Enum, device: Enum):
+    def register(self, op: Enum, device: Enum) -> Callable:  # noqa: ANN201
         """
         Registers a function for a specific operation and device.
 
@@ -25,7 +26,7 @@ class Dispatcher:
             op (Enum) : Any of the op enums defined in the helper module.
             device (Enum) : Any of the device enums defined in the device module.
         """
-        def decorator(func):
+        def decorator(func: Callable):  # noqa: ANN202
             self._dispatch_table[(op, device)] = func
         return decorator
 
@@ -35,10 +36,10 @@ class Dispatcher:
 
         Parameters:
             x (Any) : Data to be passed to the function.
-            op (Enum) : Any of the op enums defined in the helper module. 
+            op (Enum) : Any of the op enums defined in the helper module.
             device (Enum) : Any of the device enums defined in the device module.
             **kwargs (dict) : Any additional args.
-        
+
         Returns:
             Buffer: A Buffer object.
         """

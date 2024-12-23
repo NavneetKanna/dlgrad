@@ -12,7 +12,7 @@ ffi.cdef(
             void free_op(float* ptr);")
 ffi.set_source("_arithmetic", f"""
     #include "{root_dir}/src/c/arithmetic.h"
-""", 
+""",
 sources=[f'{root_dir}/src/c/arithmetic.c'],
 libraries=["m"],
 extra_compile_args=["-O3", "-march=native"])

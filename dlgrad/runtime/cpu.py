@@ -25,7 +25,7 @@ class CPU:
     @staticmethod
     @dispatcher.register(BufferOps.CREATE, Device.CPU)
     def create_buffer_from_scalar(x: Scalar) -> CDataPtr:
-        return CPU.ffi.new(f"{DType.get_c_dtype((x))} [1]", [x])
+        return CPU.ffi.new(f"{DType.get_c_dtype(x)} [1]", [x])
 
     @staticmethod
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
@@ -34,7 +34,7 @@ class CPU:
         arr = _uniform.lib.uniform(numel, low, high)
 
         return CPU.ffi.gc(arr, _uniform.lib.free_uniform)
-    
+
     @staticmethod
     @dispatcher.register(BufferOps.FULL, Device.CPU)
     def full(shape: tuple, fill_value: Scalar) -> CDataPtr:
@@ -59,20 +59,20 @@ class CPU:
             other_shape_len = len(x.shape)
 
         if len(main_shape) == 2:
-            arr = _arithmetic.lib.op_2d(main_buf, other_buf, 
-                                        main_numel, other_numel, 
-                                        main_shape, other_shape, 
-                                        main_stride, other_stride, 
+            arr = _arithmetic.lib.op_2d(main_buf, other_buf,
+                                        main_numel, other_numel,
+                                        main_shape, other_shape,
+                                        main_stride, other_stride,
                                         other_shape_len, 0)
         elif len(main_shape) == 3:
-            arr = _arithmetic.lib.op_3d(main_buf, other_buf, 
-                                        main_numel, other_numel, 
-                                        main_shape, other_shape, 
-                                        main_stride, other_stride, 
+            arr = _arithmetic.lib.op_3d(main_buf, other_buf,
+                                        main_numel, other_numel,
+                                        main_shape, other_shape,
+                                        main_stride, other_stride,
                                         other_shape_len, 0)
 
         return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
-        
+
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
     def sub(x: Buffer, y: Buffer) -> CDataPtr:
@@ -90,16 +90,16 @@ class CPU:
             other_shape_len = len(x.shape)
 
         if len(main_shape) == 2:
-            arr = _arithmetic.lib.op_2d(main_buf, other_buf, 
-                                        main_numel, other_numel, 
-                                        main_shape, other_shape, 
-                                        main_stride, other_stride, 
+            arr = _arithmetic.lib.op_2d(main_buf, other_buf,
+                                        main_numel, other_numel,
+                                        main_shape, other_shape,
+                                        main_stride, other_stride,
                                         other_shape_len, 1)
         elif len(main_shape) == 3:
-            arr = _arithmetic.lib.op_3d(main_buf, other_buf, 
-                                        main_numel, other_numel, 
-                                        main_shape, other_shape, 
-                                        main_stride, other_stride, 
+            arr = _arithmetic.lib.op_3d(main_buf, other_buf,
+                                        main_numel, other_numel,
+                                        main_shape, other_shape,
+                                        main_stride, other_stride,
                                         other_shape_len, 1)
 
         return CPU.ffi.gc(arr, _arithmetic.lib.free_op)

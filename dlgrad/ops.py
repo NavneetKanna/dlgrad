@@ -1,4 +1,3 @@
-from typing import Optional
 
 from dlgrad.buffer import Buffer
 from dlgrad.helpers import check_broadcast
@@ -6,7 +5,7 @@ from dlgrad.tensor import OP
 
 # ------------ Unary Ops -----------
 
-def transpose(x: Buffer):
+def transpose(x: Buffer) -> Buffer:
     return x.transpose()
 
 class Sum(OP):
@@ -14,7 +13,7 @@ class Sum(OP):
         self.inp_shape = x.shape
         self.device = x.device
         return x.sum(dim=dim)
-    
+
     def backward(self, upstream_grad: Buffer) -> Buffer:
         print("sum backward called")
         return (Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device),)
@@ -26,8 +25,8 @@ class Add(OP):
     def forward(self, x: Buffer, y: Buffer) -> Buffer:
         if check_broadcast(x.shape, y.shape):
             return x+y
-     
-    def backward(self, upstream_grad: Buffer) -> tuple[Optional[Buffer], Optional[Buffer]]:
+
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
         print("add backward called")
         return upstream_grad if self.req_grad[0] else None, upstream_grad if self.req_grad[1] else None
 
@@ -37,27 +36,27 @@ class Sub(OP):
 
         if check_broadcast(x.shape, y.shape):
             return x-y
-     
-    def backward(self, upstream_grad: Buffer) -> tuple[Optional[Buffer], Optional[Buffer]]:
+
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
         return ...
 
 class Mul(OP):
-    def forward(self):
+    def forward(self):  # noqa: ANN201
         return ...
-    
-    def backward(self):
+
+    def backward(self):  # noqa: ANN201
         return ...
 
 class Neg(OP):
     def forward(self, x: Buffer) -> Buffer:
         return x.neg()
-    
-    def backward(self):
+
+    def backward(self):  # noqa: ANN201
         pass
 
 class MatMul(OP):
-    def forward(self, x: Buffer, y: Buffer):
+    def forward(self, x: Buffer, y: Buffer) -> Buffer:
         return x.matmul(y)
 
-    def backward(self):
+    def backward(self):  # noqa: ANN201
         pass

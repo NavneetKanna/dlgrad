@@ -1,7 +1,7 @@
 import itertools
+from collections.abc import Iterable
 from enum import Enum, auto
 from math import prod
-from typing import Iterable
 
 from cffi import FFI
 
@@ -37,7 +37,7 @@ def check_broadcast(x_shape: tuple, y_shape: tuple) -> bool:
         y_shape (tuple): The y Tensor shape.
 
     Returns:
-        bool: True if they are broadcastable. 
+        bool: True if they are broadcastable.
 
     Raises:
         AssertionError: If the shapes are not broadcastable.
@@ -48,7 +48,7 @@ def check_broadcast(x_shape: tuple, y_shape: tuple) -> bool:
 
     return True
 
-def get_brodcast_tensor(x, y):
+def get_brodcast_tensor(x, y):  # noqa: ANN001, ANN201
     if len(x.shape) > len(y.shape):
         return x, y
     elif len(x.shape) < len(y.shape):
@@ -61,7 +61,7 @@ def get_brodcast_tensor(x, y):
                 return y, x
 
         return x, y
-    
+
 def calculate_stride(shape: tuple|int) -> tuple:
     if not shape:
         return tuple()

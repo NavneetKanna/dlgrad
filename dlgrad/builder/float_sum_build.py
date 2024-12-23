@@ -12,7 +12,7 @@ ffi.cdef("float *sum(float *x, int numel); void free_sum(float *ptr); \
          float *sum_3d_dim2(float *arr, int numel, int *shape, int *strides);")
 ffi.set_source("_sum", f"""
     #include "{root_dir}/src/c/sum.h"
-""", 
+""",
 sources=[f'{root_dir}/src/c/sum.c'],
 libraries=["m"],
 extra_compile_args=["-O3", "-march=native"])

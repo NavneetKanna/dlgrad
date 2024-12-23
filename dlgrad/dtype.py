@@ -10,9 +10,9 @@ Scalar = float
 
 class DType(Enum):
     FLOAT32 = auto()
-    
+
     @staticmethod
-    def from_str(d: str):
+    def from_str(d: str) -> str:
         try:
             return DType[d.upper()]
         except KeyError:
@@ -24,16 +24,16 @@ class DType(Enum):
             return DType.FLOAT32
         else:
             raise ValueError("dlgrad only supports float32 dtype")
-    
+
     @staticmethod
     def get_c_dtype(d: Scalar) -> str:
         if isinstance(d, float):
             return "float"
 
     @classmethod
-    def _get_n_bytes(cls):
+    def _get_n_bytes(cls) -> dict:
         return {cls.FLOAT32: 4}
-    
+
     @staticmethod
     def get_n_bytes(d: DType) -> int:
         return DType._get_n_bytes()[d]

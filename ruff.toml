@@ -1,14 +1,41 @@
-[lint]
+target-version = "py310"
 
+[lint]
 select = [
   "F",  # Pyflakes
   "E",
   "W",
   "C90",
   "I",
+  "N",
+  "UP",
+  "ANN"
 ]
+ignore = ["W191", "E501", "ANN002", "ANN003", "UP037"]
+extend-safe-fixes = ["W293", "W291"]
+fixable = ["ALL"]
 
-ignore = ["W191"]
 exclude = [
-    "test/"
+    "test/test_nn.py",
+    "test/test_ops.py",
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "venv",
 ]

@@ -15,7 +15,7 @@ def run(shapes: list[tuple], func):
     torch_data = [torch.tensor(data) for data in np_data]
 
     np.testing.assert_allclose(func(*dlgrad_data).numpy(), func(*torch_data).numpy(), atol=1e-6, rtol=1e-3)
-    
+
 @pytest.mark.parametrize("shapes", [
     [(2, 3), (2, 3)],
     [(100, 100), (100, 100)],
@@ -122,7 +122,7 @@ def test_matmul(shapes):
 ])
 def test_transpose_diff_tensors(shapes):
     run(shapes, lambda x, y: x@y.T)
-    
+
 @pytest.mark.parametrize("shapes", [
     [(66, 91), (66, 78)],
 ])
