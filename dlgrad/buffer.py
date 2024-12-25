@@ -45,9 +45,9 @@ class Buffer:
         elif self.ndim == 2:
             ndim = 1
             if dim == 0:
-                out_shape = (self.shape[1])
+                out_shape = (self.shape[1],)
             elif dim ==1:
-                out_shape = (self.shape[0])
+                out_shape = (self.shape[0],)
             elif isinstance(dim, tuple):
                 for i in dim:
                     self = self.sum(dim=i)
@@ -55,6 +55,7 @@ class Buffer:
             else:
                 out_shape = ()
 
+        print(out_shape, prod_(out_shape), ndim, dim)
         return Buffer(dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim, numel=prod_(out_shape)), out_shape, self.device, ndim=ndim)
 
     def matmul(self, other: Buffer) -> Buffer:

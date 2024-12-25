@@ -66,7 +66,6 @@ float *sum_2d_dim0(float *arr, int numel, int *shape, int *strides) {
         }
         out[idx++] = sum;
     }
-    
     return out;
 }
 
@@ -77,7 +76,7 @@ float *sum_2d_dim1(float *arr, int numel, int *shape, int *strides) {
     for (int i=0; i<shape[0]; i++) { // rows
         float sum = 0.0;
         for (int j=0; j<shape[1]; j++) { // cols
-            sum += arr[j];
+            sum += arr[i*strides[0] + j];
         }
         out[idx++] = sum;
     }
