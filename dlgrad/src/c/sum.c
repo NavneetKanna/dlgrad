@@ -70,6 +70,21 @@ float *sum_2d_dim0(float *arr, int numel, int *shape, int *strides) {
     return out;
 }
 
+float *sum_2d_dim1(float *arr, int numel, int *shape, int *strides) {
+    float *out = malloc(sizeof(float)*numel);
+    int idx = 0;
+
+    for (int i=0; i<shape[0]; i++) { // rows
+        float sum = 0.0;
+        for (int j=0; j<shape[1]; j++) { // cols
+            sum += arr[j];
+        }
+        out[idx++] = sum;
+    }
+    
+    return out;
+}
+
 float *sum(float *x, int numel) {
     float *out = malloc(1 * sizeof(float));
 
