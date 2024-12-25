@@ -123,5 +123,12 @@ class CPU:
                 arr = _sum.lib.sum_3d_dim2(x.ptr, numel, x.shape, x.stride)
             if not dim:
                 arr = _sum.lib.sum(x.ptr, prod_(x.shape))
+        if x.ndim == 2:
+            if dim == 0:
+                arr = _sum.lib.sum_2d_dim0(x.ptr, numel, x.shape, x.stride)
+            if dim == 1:
+                arr = _sum.lib.sum_2d_dim1(x.ptr, numel, x.shape, x.stride)
+            if not dim:
+                arr = _sum.lib.sum(x.ptr, prod_(x.shape))
 
         return CPU.ffi.gc(arr, _sum.lib.free_sum)
