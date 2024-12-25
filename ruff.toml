@@ -18,6 +18,7 @@ fixable = ["ALL"]
 exclude = [
     "test/test_nn.py",
     "test/test_ops.py",
+    "test.py",
     ".bzr",
     ".direnv",
     ".eggs",

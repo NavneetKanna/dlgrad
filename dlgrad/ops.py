@@ -1,6 +1,6 @@
 
 from dlgrad.buffer import Buffer
-from dlgrad.helpers import check_broadcast, get_sum_over_dims
+from dlgrad.helpers import check_broadcast, resolve_ndim
 from dlgrad.tensor import OP
 
 # ------------ Unary Ops -----------
@@ -28,19 +28,25 @@ class Add(OP):
         if check_broadcast(x.shape, y.shape):
             return x+y
 
-    def match_inp_shape(self, inp_shape: tuple, upstream_grad: Buffer) -> Buffer:
-        dims = get_sum_over_dims(inp_shape=inp_shape, grad_shape=upstream_grad.shape)
-        if not dims:
+    def match_inp_shape(self, inp: Buffer, upstream_grad: Buffer) -> Buffer:
+        inp_shape = inp.shape
+        ndim = resolve_ndim(inp_shape=inp_shape, grad_shape=upstream_grad.shape)
+        if not ndim:
             return upstream_grad
 
-        for i in dims:
-            upstream_grad = upstream_grad.sum(dim=i)
+        for _ in range(ndim):
+            upstream_grad = upstream_grad.sum(dim=0)
+
+        if upstream_grad.shape != inp_shape:
+            upstream_grad.metadata.shape = inp_shape
+            upstream_grad.metadata.stride = inp.stride
+            upstream_grad.metadata.numel = inp.numel
 
         return upstream_grad
 
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
         print("add backward called")
-        return self.match_inp_shape(inp_shape=self.x.shape, upstream_grad=upstream_grad) if self.req_grad[0] else None, self.match_inp_shape(inp_shape=self.y.shape, upstream_grad=upstream_grad) if self.req_grad[1] else None
+        return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad) if self.req_grad[0] else None, self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad) if self.req_grad[1] else None
 
 class Sub(OP):
     def forward(self, x: Buffer, y: Buffer) -> Buffer:

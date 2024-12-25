@@ -76,20 +76,20 @@ def calculate_stride(shape: tuple|int) -> tuple:
 
     return tuple(reversed(stride))
 
-def get_sum_over_dims(inp_shape: tuple, grad_shape: tuple) -> tuple:
+def resolve_ndim(inp_shape: tuple, grad_shape: tuple) -> int:
     if not check_broadcast(x_shape=inp_shape, y_shape=grad_shape):
         raise AssertionError(f"Cannot reduce grad of shape {grad_shape} to the input shape {inp_shape}")
 
     if inp_shape == grad_shape:
-        return tuple()
+        return 0
 
-    dims = list()
+    ndim = 0
     dim = len(max(inp_shape, grad_shape)) - 1
     for i, j in itertools.zip_longest(reversed(inp_shape), reversed(grad_shape)):
         dim -= 1
         if i != j:
-            dims.append(dim)
+            ndim += 1
 
-    return tuple(reversed(dims))
+    return ndim
 
 
