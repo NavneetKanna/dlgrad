@@ -45,18 +45,11 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x: Buffer, y: Buffer) -> CDataPtr:
-        if x.numel >= y.numel:
-            main_buf, other_buf = x.ptr, y.ptr
-            main_numel, other_numel = x.numel, y.numel
-            main_stride, other_stride = x.stride, y.stride or [0] # for scalar
-            main_shape, other_shape = x.shape, y.shape
-            other_shape_len = len(y.shape)
-        elif x.numel < y.numel:
-            main_buf, other_buf = x.ptr, y.ptr
-            main_numel, other_numel = x.numel, y.numel
-            main_stride, other_stride = y.stride, x.stride or [0] # for scalar
-            main_shape, other_shape = y.shape, x.shape
-            other_shape_len = len(x.shape)
+        main_buf, other_buf = x.ptr, y.ptr
+        main_numel, other_numel = x.numel, y.numel
+        main_stride, other_stride = x.stride, y.stride or [0] # for scalar
+        main_shape, other_shape = x.shape, y.shape
+        other_shape_len = len(y.shape)
 
         if len(main_shape) == 2:
             arr = _arithmetic.lib.op_2d(main_buf, other_buf,

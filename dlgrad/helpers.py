@@ -29,8 +29,7 @@ def prod_(x: Iterable) -> int:
 
 def check_broadcast(x_shape: tuple, y_shape: tuple) -> bool:
     """
-    Check if y_shape is broadcastable to x_shape.
-    It is assumed that x is the higher dimension Tensor.
+    Check if shapes are broadcastable.
 
     Parameters:
         x_shape (tuple): The x Tensor shape.
@@ -76,3 +75,21 @@ def calculate_stride(shape: tuple|int) -> tuple:
         stride_value *= dim
 
     return tuple(reversed(stride))
+
+def get_sum_over_dims(inp_shape: tuple, grad_shape: tuple) -> tuple:
+    if not check_broadcast(x_shape=inp_shape, y_shape=grad_shape):
+        raise AssertionError(f"Cannot reduce grad of shape {grad_shape} to the input shape {inp_shape}")
+
+    if inp_shape == grad_shape:
+        return tuple()
+
+    dims = list()
+    dim = len(max(inp_shape, grad_shape)) - 1
+    for i, j in itertools.zip_longest(reversed(inp_shape), reversed(grad_shape)):
+        dim -= 1
+        if i != j:
+            dims.append(dim)
+
+    return tuple(reversed(dims))
+
+

@@ -36,6 +36,10 @@ class Buffer:
                 out_shape = (self.shape[0], self.shape[2])
             elif dim == 2:
                 out_shape = (self.shape[0], self.shape[1])
+            elif isinstance(dim, tuple):
+                for i in dim:
+                    self = self.sum(dim=i)
+                return self
             else:
                 out_shape = tuple()
 
@@ -61,10 +65,10 @@ class Buffer:
         return Buffer(dispatcher.dispatch(op=BufferOps.FULL, device=device, shape=shape, fill_value=fill_value), shape, device)
 
     def __add__(self, other: Buffer) -> Buffer:
-        if self.numel > other.numel or self.numel == other.numel:
+        if self.numel >= other.numel:
             return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other), self.shape, self.device)
         else:
-            return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other), other.shape, self.device)
+            return Buffer(dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=other, y=self), other.shape, self.device)
 
     def __sub__(self, other: Buffer) -> Buffer:
         if self.numel > other.numel or self.numel == other.numel:
