@@ -12,7 +12,7 @@ python3 -m pip install git+https://github.com/NavneetKanna/dlgrad
 
 ## Internals
 
-You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Behind-the-scenes.html) to learn more about how dlgrad operates.
+You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Behind-the-scenes.html), where I document my journey of building dlgrad, sharing insights and explaining some of the ideas/algorithms.
 
 ## Example
 
