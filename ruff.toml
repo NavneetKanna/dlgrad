@@ -38,7 +38,7 @@ select = [
   "ANN"
 ]
 ignore = ["W191",  "ANN002", "ANN003", "UP037", "E101"]
-extend-safe-fixes = ["W293", "W291"]
+extend-safe-fixes = ["W293", "W291", "E501"]
 fixable = ["ALL"]
 
 [format]
