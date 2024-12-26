@@ -8,6 +8,23 @@ Inspired by Andrej Karpathy's micrograd and George Hotz's tinygrad, dlgrad is my
 
 You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Behind-the-scenes.html) to learn more about how dlgrad operates.
 
+## Example
+
+```python
+from dlgrad.tensor import Tensor
+
+a = Tensor.rand((2, 3), requires_grad=True)
+b = Tensor.rand((1, 3), requires_grad=True)
+
+c = a + b
+
+c.sum().backward()
+
+print(a.grad.numpy())
+print(b.grad.numpy())
+
+```
+
 ## Things I'm Working On
 - [x] Big change coming to dlgrad
 - [ ] Adding new ops
