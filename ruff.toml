@@ -1,20 +1,3 @@
-target-version = "py310"
-
-[lint]
-select = [
-  "F",  # Pyflakes
-  "E",
-  "W",
-  "C90",
-  "I",
-  "N",
-  "UP",
-  "ANN"
-]
-ignore = ["W191", "E501", "ANN002", "ANN003", "UP037"]
-extend-safe-fixes = ["W293", "W291"]
-fixable = ["ALL"]
-
 exclude = [
     "test/test_nn.py",
     "test/test_ops.py",
@@ -40,3 +23,28 @@ exclude = [
     "dist",
     "venv",
 ]
+
+target-version = "py310"
+
+[lint]
+select = [
+  "F",  # Pyflakes
+  "E",
+  "W",
+  "C90",
+  "I",
+  "N",
+  "UP",
+  "ANN"
+]
+ignore = ["W191", "E501", "ANN002", "ANN003", "UP037", "E101"]
+extend-safe-fixes = ["W293", "W291"]
+fixable = ["ALL"]
+
+[format]
+quote-style = "double"
+indent-style = "tab"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = false
+
