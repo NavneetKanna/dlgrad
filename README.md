@@ -26,10 +26,7 @@ print(b.grad.numpy())
 ```
 
 ## Things I'm Working On
-- [x] Big change coming to dlgrad
-- [ ] Adding new ops
-- [x] Broadcasting
-- [ ] Writing tests
+- [ ] Adding backward functions to ops
 
 ## Tests
 
