@@ -43,7 +43,7 @@ def check_broadcast(x_shape: tuple, y_shape: tuple) -> bool:
     """
     for i, j in itertools.zip_longest(reversed(x_shape), reversed(y_shape)):
         if i is not None and j is not None and i != j and i != 1 and j != 1:
-            raise AssertionError(f"Cannot broadcast {y_shape} to {x_shape}, the dimensions {i} and {j} dont match")
+            raise AssertionError(f"Cannot broadcast {y_shape} to {x_shape}, the dimensions {i} and {j} dont match")  # noqa: E501
 
     return True
 
@@ -78,7 +78,7 @@ def calculate_stride(shape: tuple|int) -> tuple:
 
 def resolve_ndim(inp_shape: tuple, grad_shape: tuple) -> int:
     if not check_broadcast(x_shape=inp_shape, y_shape=grad_shape):
-        raise AssertionError(f"Cannot reduce grad of shape {grad_shape} to the input shape {inp_shape}")
+        raise AssertionError(f"Cannot reduce grad of shape {grad_shape} to the input shape {inp_shape}")  # noqa: E501
 
     if inp_shape == grad_shape:
         return 0

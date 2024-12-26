@@ -40,11 +40,3 @@ select = [
 ignore = ["W191",  "ANN002", "ANN003", "UP037", "E101"]
 extend-safe-fixes = ["W293", "W291", "E501"]
 fixable = ["ALL"]
-
-[format]
-quote-style = "double"
-indent-style = "tab"
-skip-magic-trailing-comma = false
-line-ending = "auto"
-docstring-code-format = false
-

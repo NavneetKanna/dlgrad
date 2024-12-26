@@ -19,7 +19,7 @@ class OP:
 	Attribute:
 	    parents (tuple): A tuple containing the parents of the op.
 	    requires_grad (bool): A bool to indicate whether the output Tensor should be used in backward pass.
-	"""
+	"""  # noqa: E501
 
 	def __init__(self, *data: Tensor) -> None:
 		self.parents: tuple = data
@@ -76,7 +76,7 @@ class OP:
 		return tensor
 
 
-import dlgrad.ops as ops  # since ops module imports OP class, it is placed after the defination  # noqa: E402
+import dlgrad.ops as ops  # since ops module imports OP class, it is placed after the defination  # noqa: E402, E501
 
 
 class Tensor:
@@ -313,7 +313,7 @@ class Tensor:
 					p.grad = g if p.grad is None else p.grad + g
 
 	def __repr__(self) -> str:
-		return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"
+		return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"  # noqa: E501
 
 	@property
 	def T(self) -> Tensor:  # noqa: N802

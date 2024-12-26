@@ -12,7 +12,7 @@ class Dispatcher:
 
     Attributes:
         _dispatch_table (dict): A dictionary that maps a tuple of op and device to functions.
-    """
+    """  # noqa: E501
     def __init__(self) -> None:
         self._dispatch_table: dict = {}
 
