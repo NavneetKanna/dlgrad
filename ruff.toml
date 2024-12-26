@@ -35,8 +35,7 @@ select = [
   "I",
   "N",
   "UP",
-  "ANN",
-  "E501",
+  "ANN"
 ]
 ignore = ["W191",  "ANN002", "ANN003", "UP037", "E101"]
 extend-safe-fixes = ["W293", "W291"]
