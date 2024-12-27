@@ -68,3 +68,10 @@ class MatMul(OP):
 
 	def backward(self):  # noqa: ANN201
 		pass
+
+class Relu(OP):
+	def forward(self, x: Buffer) -> Buffer:
+		pass
+
+	def backward(self) -> Buffer:
+		pass

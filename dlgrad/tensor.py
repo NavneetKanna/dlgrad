@@ -273,6 +273,9 @@ class Tensor:
 	def sum(self, dim: int | None = None) -> Tensor:
 		return ops.Sum.execute(self, dim=dim)
 
+	def relu(self) -> Tensor:
+		ops.Relu.execute(self)
+
 	def linear(self, weight: Tensor, bias: Tensor | None) -> Tensor:
 		return self @ weight.T + bias if bias else self @ weight.T
 

@@ -87,38 +87,24 @@ class Buffer:
     @staticmethod
     def full(shape: tuple, fill_value: Scalar, device: Device) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=BufferOps.FULL, device=device,
-                                     shape=shape, fill_value=fill_value),
-            shape=shape, device=device
-        )
+            data=dispatcher.dispatch(op=BufferOps.FULL, device=device, shape=shape, fill_value=fill_value),
+            shape=shape, device=device)
 
     def __add__(self, other: Buffer) -> Buffer:
         if self.numel >= other.numel:
-            return Buffer(
-                data=dispatcher.dispatch(op=BinaryOps.ADD, device=self.device,
-                                         x=self, y=other),
-                shape=self.shape, device=self.device
-            )
+            return Buffer(data=dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other),
+                          shape=self.shape, device=self.device)
         else:
-            return Buffer(
-                data=dispatcher.dispatch(op=BinaryOps.ADD, device=self.device,
-                                         x=other, y=self),
-                shape=other.shape, device=self.device
-            )
+            return Buffer(data=dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=other, y=self),
+                          shape=other.shape, device=self.device)
 
     def __sub__(self, other: Buffer) -> Buffer:
         if self.numel > other.numel or self.numel == other.numel:
-            return Buffer(
-                data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device,
-                                    x=self, y=other),
-                shape=self.shape, device=self.device
-            )
+            return Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other),
+                          shape=self.shape, device=self.device)
         else:
-            return Buffer(
-                data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device,
-                                    x=self, y=other),
-                shape=other.shape, device=self.device
-            )
+            return Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device,x=self, y=other),
+                          shape=other.shape, device=self.device)
 
     @property
     def numel(self) -> int:
