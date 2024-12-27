@@ -11,6 +11,7 @@ ffi = FFI()
 class UnaryOps(Enum):
     SUM = auto()
     TRANSPOSE = auto()
+    RELU = auto()
 
 class BufferOps(Enum):
     CREATE = auto()

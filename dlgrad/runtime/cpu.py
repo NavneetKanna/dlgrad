@@ -1,3 +1,4 @@
+import _af  # type: ignore
 import _arithmetic  # type: ignore
 import _full  # type: ignore
 import _matmul  # type: ignore
@@ -132,3 +133,9 @@ class CPU:
                 arr = _sum.lib.sum(x.ptr, prod_(x.shape))
 
         return CPU.ffi.gc(arr, _sum.lib.free_sum)
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.RELU, Device.CPU)
+    def relu(x: Buffer, numel: int) -> CDataPtr:
+        arr = _af.lib.relu(x.ptr, numel)
+        return CPU.ffi.gc(arr, _af.lib.free_af)

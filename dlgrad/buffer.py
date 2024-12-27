@@ -25,10 +25,8 @@ class Buffer:
         self.device = device
 
     def neg(self) -> Buffer:
-        return Buffer(
-            data=dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self),
-            shape=self.shape, device=self.device
-        )
+        return Buffer(data=dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self),
+                      shape=self.shape, device=self.device)
 
     def sum(self, dim: int | None) -> Buffer:  # noqa: C901
         out_shape = tuple()
@@ -55,15 +53,12 @@ class Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device,
                                      x=self, dim=dim, numel=prod_(out_shape)),
-            shape=out_shape, device=self.device, ndim=ndim
-        )
+            shape=out_shape, device=self.device, ndim=ndim)
 
     def matmul(self, other: Buffer) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device,
-                                     x=self, y=other),
-            shape=(self.shape[0], other.shape[1]), device=self.device
-        )
+            data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other),
+            shape=(self.shape[0], other.shape[1]), device=self.device)
 
     # TODO: Check if x is del, then even the transposed is del
     def transpose(self) -> Buffer:
@@ -71,24 +66,25 @@ class Buffer:
 
     @staticmethod
     def create_buffer_from_scalar(x: Scalar, device: Device) -> Buffer:
-        return Buffer(
-            dispatcher.dispatch(op=BufferOps.CREATE, device=device, x=x),
-            shape=tuple(), device=device, ndim=0
-        )
+        return Buffer(dispatcher.dispatch(op=BufferOps.CREATE, device=device, x=x),
+                      shape=tuple(), device=device, ndim=0)
 
     @staticmethod
     def uniform(shape: tuple, device: Device, **kwargs) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=BufferOps.UNIFORM, device=device,
-                                     shape=shape, **kwargs),
-            shape=shape, device=device
-        )
+            data=dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, shape=shape, **kwargs),
+            shape=shape, device=device)
 
     @staticmethod
     def full(shape: tuple, fill_value: Scalar, device: Device) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BufferOps.FULL, device=device, shape=shape, fill_value=fill_value),
             shape=shape, device=device)
+
+    def relu(self) -> Buffer:
+        return Buffer(
+            data=dispatcher.dispatch(op=UnaryOps.RELU, device=self.device, x=self, numel=self.numel),
+            shape=self.shape, device=self.device)
 
     def __add__(self, other: Buffer) -> Buffer:
         if self.numel >= other.numel:

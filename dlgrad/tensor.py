@@ -209,27 +209,14 @@ class Tensor:
 		return Tensor.uniform(shape, device, dtype, **kwargs)
 
 	@staticmethod
-	def full(
-		shape: tuple,
-		fill_value: Scalar,
-		device: Device = Device.CPU,
-		dtype: DType = DType.FLOAT32,
-		**kwargs,
-	) -> Tensor:
-		return Tensor(
-			data=Buffer.full(shape, fill_value=fill_value, device=device),
-			device=device,
-			dtype=dtype,
-			requires_grad=kwargs.get("requires_grad"),
-		)
+	def full(shape: tuple, fill_value: Scalar, device: Device = Device.CPU,
+			 dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
+		return Tensor(data=Buffer.full(shape, fill_value=fill_value, device=device), device=device,
+				dtype=dtype, requires_grad=kwargs.get("requires_grad"))
 
 	@staticmethod
-	def ones_like(
-		shape: tuple,
-		device: Device = Device.CPU,
-		dtype: DType = DType.FLOAT32,
-		**kwargs,
-	) -> Tensor:
+	def ones_like(shape: tuple, device: Device = Device.CPU,
+			      dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
 		return Tensor.full(shape, 1.0, device, dtype, **kwargs)
 
 	@staticmethod
@@ -274,7 +261,7 @@ class Tensor:
 		return ops.Sum.execute(self, dim=dim)
 
 	def relu(self) -> Tensor:
-		ops.Relu.execute(self)
+		return ops.Relu.execute(self)
 
 	def linear(self, weight: Tensor, bias: Tensor | None) -> Tensor:
 		return self @ weight.T + bias if bias else self @ weight.T

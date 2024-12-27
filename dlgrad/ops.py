@@ -71,7 +71,7 @@ class MatMul(OP):
 
 class Relu(OP):
 	def forward(self, x: Buffer) -> Buffer:
-		pass
+		return x.relu()
 
 	def backward(self) -> Buffer:
 		pass
