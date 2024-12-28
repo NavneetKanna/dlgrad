@@ -24,6 +24,7 @@ class BinaryOps(Enum):
     SUB = auto()
     NEG = auto()
     MATMUL = auto()
+    GT = auto() # >
 
 def prod_(x: Iterable) -> int:
     return prod(x) if x else tuple()

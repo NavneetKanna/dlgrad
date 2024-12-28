@@ -99,11 +99,12 @@ class Buffer:
             return Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other),
                           shape=self.shape, device=self.device)
         else:
-            return Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device,x=self, y=other),
+            return Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other),
                           shape=other.shape, device=self.device)
 
     def __gt__(self, other: Buffer | int | float) -> Buffer:
-        return Buffer(data=..., shape=self.shape, device=self.device)
+        return Buffer(data=dispatcher.dispatch(op=BinaryOps.GT, device=self.device, x=self, y=other),
+                      shape=self.shape, device=self.device)
 
     @property
     def numel(self) -> int:

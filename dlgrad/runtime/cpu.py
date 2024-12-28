@@ -139,3 +139,8 @@ class CPU:
     def relu(x: Buffer, numel: int) -> CDataPtr:
         arr = _af.lib.relu(x.ptr, numel)
         return CPU.ffi.gc(arr, _af.lib.free_af)
+
+    @staticmethod
+    @dispatcher.register(BinaryOps.GT, Device.CPU)
+    def gt(x: Buffer, y: int | float) -> CDataPtr:
+        pass
