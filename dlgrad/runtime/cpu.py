@@ -1,5 +1,6 @@
 import _af  # type: ignore
 import _arithmetic  # type: ignore
+import _cmp  # type: ignore
 import _full  # type: ignore
 import _matmul  # type: ignore
 import _neg  # type: ignore
@@ -143,4 +144,9 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.GT, Device.CPU)
     def gt(x: Buffer, y: int | float) -> CDataPtr:
-        pass
+        if isinstance(y, int):
+            y = float(y)
+
+        arr = _cmp.lib.gt_with_scalar(x.ptr, y, x.numel)
+
+        return CPU.ffi.gc(arr, _cmp.lib.free_cmp)
