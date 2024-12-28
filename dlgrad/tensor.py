@@ -79,27 +79,18 @@ class OP:
 import dlgrad.ops as ops  # since ops module imports OP class, it is placed after the defination  # noqa: E402, E501
 
 
+# TODO: I am setting device here as well as in Buffer, fix this
 class Tensor:
-	def __init__(
-		self,
-		data: Scalar | Buffer | "np.ndarray",  # type: ignore  # noqa: F821
-		device: str | Device | None = Device.CPU,  # noqa: F821 # type: ignore
-		dtype: str | DType | None = None,
-		requires_grad: bool = False,
-	) -> None:
+	def __init__(self, data: Scalar | Buffer | "np.ndarray",  # type: ignore  # noqa: F821
+				 device: str | Device | None = Device.CPU, dtype: str | DType | None = None,
+			 	 requires_grad: bool = False) -> None:
 		self.device: Device = (
-			device
-			if isinstance(device, Device)
-			else Device.from_str(device)
-			if isinstance(device, str)
-			else Device.CPU
+			device if isinstance(device, Device)
+			else Device.from_str(device) if isinstance(device, str) else Device.CPU
 		)
 		self.dtype: DType = (
-			dtype
-			if isinstance(dtype, DType)
-			else DType.from_str(dtype)
-			if isinstance(dtype, str)
-			else DType.FLOAT32
+			dtype if isinstance(dtype, DType)
+			else DType.from_str(dtype) if isinstance(dtype, str) else DType.FLOAT32
 		)
 		self.requires_grad: bool = requires_grad
 		self._ctx: OP = None  # used by autograd engine
@@ -142,14 +133,9 @@ class Tensor:
 		return t
 
 	@staticmethod
-	def uniform(
-		shape: tuple,
-		device: str | Device | None = Device.CPU,
-		dtype: str | DType | None = DType.FLOAT32,
-		low: float = 0.0,
-		high: float = 1.0,
-		**kwargs,
-	) -> Tensor:
+	def uniform(shape: tuple, device: str | Device | None = Device.CPU,
+				dtype: str | DType | None = DType.FLOAT32, low: float = 0.0,
+				high: float = 1.0, **kwargs) -> Tensor:
 		"""
 		Creates a Tensor with the specified shape filled with random numbers from a
 		uniform distribution on the interval [low, high).
@@ -179,12 +165,8 @@ class Tensor:
 		)
 
 	@staticmethod
-	def rand(
-		shape: tuple,
-		device: str | Device | None = Device.CPU,
-		dtype: str | DType | None = DType.FLOAT32,
-		**kwargs,
-	) -> Tensor:
+	def rand(shape: tuple, device: str | Device | None = Device.CPU,
+		     dtype: str | DType | None = DType.FLOAT32, **kwargs) -> Tensor:
 		"""
 		Creates a Tensor with the specified shape filled with random numbers from a
 		uniform distribution on the interval [0, 1).
@@ -284,22 +266,20 @@ class Tensor:
 
 		_topo_sort(self)
 
-		print("topo", topo)
-
 		self.grad = Tensor(1.0)
 
 		# TODO: del _ctx
 		for node in reversed(topo):
+			if node.grad is None:
+				raise RuntimeError(f"Tensor {node} has no grad")
+
 			upstream_grads: tuple[Buffer] = node._ctx.backward(node.grad.data)
 			upstream_grads: list[Tensor] = [
-				Tensor(g, device=self.device, requires_grad=False)
-				for g in upstream_grads
+				Tensor(g, device=self.device, requires_grad=False) for g in upstream_grads
 			]
 			for p, g in zip(node._ctx.parents, upstream_grads):
 				if p.requires_grad:
-					assert (
-						g.shape == p.shape
-					), f"Tensor shape and grad shape must match {p.shape}, {g.shape}"
+					assert (g.shape == p.shape), f"Tensor shape and grad shape must match {p.shape}, {g.shape}"  # noqa: E501
 					p.grad = g if p.grad is None else p.grad + g
 
 	def __repr__(self) -> str:
@@ -308,6 +288,9 @@ class Tensor:
 	@property
 	def T(self) -> Tensor:  # noqa: N802
 		return Tensor.transpose(self)
+
+	def __gt__(self, other: int | float) -> Tensor:
+		return Tensor(data=self.data>other, device=self.device, dtype=self.dtype)
 
 	def __add__(self, other: Tensor) -> Tensor:
 		return Tensor.add(self, other)

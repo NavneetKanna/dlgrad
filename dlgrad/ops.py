@@ -30,11 +30,8 @@ class Add(OP):
 			return x + y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		return self.match_inp_shape(
-			inp=self.x, upstream_grad=upstream_grad
-		) if self.req_grad[0] else None, self.match_inp_shape(
-			inp=self.y, upstream_grad=upstream_grad
-		) if self.req_grad[1] else None
+		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad) if self.req_grad[0] else None, \
+		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad) if self.req_grad[1] else None
 
 
 class Sub(OP):
