@@ -102,7 +102,7 @@ class Buffer:
             return Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other),
                           shape=other.shape, device=self.device)
 
-    def __gt__(self, other: Buffer | int | float) -> Buffer:
+    def __gt__(self, other: int | float) -> Buffer:
         return Buffer(data=dispatcher.dispatch(op=BinaryOps.GT, device=self.device, x=self, y=other),
                       shape=self.shape, device=self.device)
 

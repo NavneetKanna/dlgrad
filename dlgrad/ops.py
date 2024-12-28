@@ -68,7 +68,8 @@ class MatMul(OP):
 
 class Relu(OP):
 	def forward(self, x: Buffer) -> Buffer:
-		return x.relu()
+		self.out = x.relu()
+		return self.out
 
-	def backward(self) -> Buffer:
-		pass
+	def backward(self, upstream_grad: Buffer) -> Buffer:
+		return (self.out>0.0) * upstream_grad
