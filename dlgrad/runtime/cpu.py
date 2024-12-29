@@ -69,6 +69,11 @@ class CPU:
         return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
 
     @staticmethod
+    @dispatcher.register(BinaryOps.MUL, Device.CPU)
+    def mul(x: Buffer, y: Buffer) -> CDataPtr:
+        pass
+
+    @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
     def sub(x: Buffer, y: Buffer) -> CDataPtr:
         if x.numel >= y.numel:
