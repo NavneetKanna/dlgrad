@@ -16,6 +16,7 @@ class BufferMetadata:
     ndim: int
 
 
+# TODO: Check all conds such as is shapes are compatible etc here
 class Buffer:
     def __init__(self, data: CDataPtr, shape: tuple, device: Device, **kwargs) -> None:
         self.ptr = data # ptr to the array
@@ -104,6 +105,10 @@ class Buffer:
 
     def __gt__(self, other: int | float) -> Buffer:
         return Buffer(data=dispatcher.dispatch(op=BinaryOps.GT, device=self.device, x=self, y=other),
+                      shape=self.shape, device=self.device)
+
+    def __mul__(self, other: Buffer) -> Buffer:
+        return Buffer(data=dispatcher.dispatch(op=BinaryOps.MUL, device=self.device, x=self, y=other),
                       shape=self.shape, device=self.device)
 
     @property

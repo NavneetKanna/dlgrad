@@ -44,8 +44,8 @@ class Sub(OP):
 
 
 class Mul(OP):
-	def forward(self):  # noqa: ANN201
-		return ...
+	def forward(self, x: Buffer, y: Buffer) -> Buffer:
+		return x*y
 
 	def backward(self):  # noqa: ANN201
 		return ...

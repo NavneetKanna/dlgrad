@@ -206,12 +206,12 @@ class Tensor:
 		return ops.Add.execute(x, y)
 
 	@staticmethod
-	def sub(x: Tensor, y: Tensor) -> Tensor:
-		return ops.Sub.execute(x, y)
-
-	@staticmethod
 	def mul(x: Tensor, y: Tensor) -> Tensor:
 		return ops.Mul.execute(x, y)
+
+	@staticmethod
+	def sub(x: Tensor, y: Tensor) -> Tensor:
+		return ops.Sub.execute(x, y)
 
 	@staticmethod
 	def neg(x: Tensor) -> Tensor:
@@ -294,6 +294,9 @@ class Tensor:
 
 	def __add__(self, other: Tensor) -> Tensor:
 		return Tensor.add(self, other)
+
+	def __mul__(self, other: Tensor) -> Tensor:
+		return Tensor.mul(self, other)
 
 	def __sub__(self, other: Tensor) -> Tensor:
 		return Tensor.sub(self, other)
