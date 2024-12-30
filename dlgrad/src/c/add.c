@@ -2,7 +2,7 @@
 #include "add.h"
 
 
-float *add_2d_scalar(float *x, float *y, int xnumel) 
+float *add_with_scalar(float *x, float *y, int xnumel) 
 {
     float *out = malloc(sizeof(float) * xnumel);
 
@@ -13,7 +13,7 @@ float *add_2d_scalar(float *x, float *y, int xnumel)
     return out;
 } 
 
-float *add_2d_dim1(float *x, float *y, int xnumel, int ncols)
+float *add_with_dim1(float *x, float *y, int xnumel, int ncols)
 {
     float *out = malloc(sizeof(float) * xnumel);
 
@@ -52,4 +52,10 @@ float *add_2d(float *x, float *y, int xnumel)
         out[i] = x[i] + y[i];
     
     return out;
+}
+
+float *add_3d_dim1(float *x, float *y, int xnumel)
+{
+    float *out = malloc(sizeof(float) * xnumel);
+
 }
