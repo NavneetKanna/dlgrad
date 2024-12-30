@@ -29,14 +29,20 @@ float *add_with_dim1(float *x, float *y, int xnumel, int ncols)
     return out;
 }
 
-float *add_2d_dim2(float *x, float *y, int xnumel, int ncols)
+float *add_with_dim2(float *x, float *y, int xnumel, int ncols, int nrows)
 {
     float *out = malloc(sizeof(float) * xnumel);
 
     int y_idx = 0;
+    int n_rows_c = 0;
     for (int i=0; i<xnumel; i++) {
-        if (i!=0 && i%ncols==0)
+        if (i!=0 && i%ncols==0) {
             y_idx += 1; // At the start of new row, increment y_idx by 1
+            n_rows_c += 1;
+        }
+
+        if (n_rows_c % nrows == 0)
+            y_idx = 0; // For 3d case, at the start of new dim0, set y_idx to 0
         
         out[i] = x[i] + y[y_idx];
     }
@@ -44,7 +50,7 @@ float *add_2d_dim2(float *x, float *y, int xnumel, int ncols)
     return out;
 }
 
-float *add_2d(float *x, float *y, int xnumel)
+float *add(float *x, float *y, int xnumel)
 {
     float *out = malloc(sizeof(float) * xnumel);
 
