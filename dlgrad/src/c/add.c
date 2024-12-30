@@ -60,8 +60,18 @@ float *add(float *x, float *y, int xnumel)
     return out;
 }
 
-float *add_3d_dim1(float *x, float *y, int xnumel)
+float *add_3d_with_2d(float *x, float *y, int xnumel, int ynumel)
 {
     float *out = malloc(sizeof(float) * xnumel);
+    
+    int y_idx = 0;
+    for (int i=0; i<xnumel; i++) {
+        if (i!=0 && i%ynumel==0)
+            y_idx = 0;
+        
+        out[i] = x[i] + y[y_idx];
+        y_idx += 1;
+    }
 
+    return out;
 }
