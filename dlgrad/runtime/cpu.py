@@ -1,3 +1,4 @@
+import _add  # type: ignore
 import _af  # type: ignore
 import _arithmetic  # type: ignore
 import _cmp  # type: ignore
@@ -13,10 +14,6 @@ from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, DType, Scalar
 from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, prod_
-
-
-def call_add_func(x: Buffer, y: Buffer) -> None:
-    pass
 
 
 # TODO: Calling ffi.gc() twice one after the other leads to error, find alternative
@@ -51,24 +48,37 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x: Buffer, y: Buffer) -> CDataPtr:
-        main_buf, other_buf = x.ptr, y.ptr
-        main_numel, other_numel = x.numel, y.numel
-        main_stride, other_stride = x.stride, y.stride or [0] # for scalar
-        main_shape, other_shape = x.shape, y.shape
-        other_shape_len = len(y.shape)
+        # main_buf, other_buf = x.ptr, y.ptr
+        # main_numel, other_numel = x.numel, y.numel
+        # main_stride, other_stride = x.stride, y.stride or [0] # for scalar
+        # main_shape, other_shape = x.shape, y.shape
+        # other_shape_len = len(y.shape)
 
-        if len(main_shape) == 2:
-            arr = _arithmetic.lib.op_2d(main_buf, other_buf,
-                                        main_numel, other_numel,
-                                        main_shape, other_shape,
-                                        main_stride, other_stride,
-                                        other_shape_len, 0)
-        elif len(main_shape) == 3:
-            arr = _arithmetic.lib.op_3d(main_buf, other_buf,
-                                        main_numel, other_numel,
-                                        main_shape, other_shape,
-                                        main_stride, other_stride,
-                                        other_shape_len, 0)
+        if y.shape[0] == 1 and x.shape[1:] == y.shape[1:]:
+            arr = _add.lib.add_3d_with_2d(x.ptr, y.ptr, x.numel, y.numel)
+        elif x.shape[0] == y.shape[0] and x.shape[2] == y.shape[2] and y.shape[1] == 1:
+            arr = _add.lib.add_with_dim1_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1]*x.shape[2], x.shape[2])  # noqa: E501
+        elif x.shape[0] == y.shape[0] and x.shape[1] == y.shape[1] and y.shape[2] == 1:
+            arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[2])
+        elif y.shape[0] == 1 and y.shape[1] == 1 and x.shape[2] == y.shape[2]:
+            arr = _add.lib.add_with_dim1(x.ptr, y.ptr, x.numel, x.shape[2])
+        elif y.shape[0] == 1 and y.shape[2] == 1 and x.shape[1] == y.shape[1]:
+            arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[2])
+        elif x.shape[0] == y.shape[0] and y.shape[1] == 1 and y.shape[1] == 1:
+            arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1]*x.shape[2])
+
+        # if len(main_shape) == 2:
+        #     arr = _arithmetic.lib.op_2d(main_buf, other_buf,
+        #                                 main_numel, other_numel,
+        #                                 main_shape, other_shape,
+        #                                 main_stride, other_stride,
+        #                                 other_shape_len, 0)
+        # elif len(main_shape) == 3:
+        #     arr = _arithmetic.lib.op_3d(main_buf, other_buf,
+        #                                 main_numel, other_numel,
+        #                                 main_shape, other_shape,
+        #                                 main_stride, other_stride,
+        #                                 other_shape_len, 0)
 
         return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
 

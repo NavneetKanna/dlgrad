@@ -16,7 +16,7 @@
 
 import torch
 import math
-
+                    
 def foo(shape1, shape2):
     a = torch.arange(math.prod(shape1)).reshape(shape1)
     b = torch.arange(math.prod(shape2)).reshape(shape2)
