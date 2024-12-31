@@ -96,3 +96,7 @@ float *add_with_dim1_with_dim0(float *x, float *y, int xnumel, int ynumel, int a
 
     return out;
 }
+
+void free_add(float *ptr) {
+    free(ptr);
+}
