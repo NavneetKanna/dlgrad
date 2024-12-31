@@ -15,6 +15,10 @@ from dlgrad.dtype import CDataPtr, DType, Scalar
 from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, prod_
 
 
+def call_add_func(x: Buffer, y: Buffer) -> None:
+    pass
+
+
 # TODO: Calling ffi.gc() twice one after the other leads to error, find alternative
 class CPU:
     """

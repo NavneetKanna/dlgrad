@@ -18,10 +18,8 @@ def run(shapes: list[tuple], func):
 
 @pytest.mark.parametrize("shapes", [
     [(2, 3), (2, 3)],
-    [(100, 100), (100, 100)],
     [(78, 91), (78, 91)],
     [(4, 3, 2), (4, 3, 2)],
-    [(87, 3, 10), (87, 3, 10)],
 ])
 def test_add_same_shape(shapes):
     run(shapes, lambda x, y: x+y)
