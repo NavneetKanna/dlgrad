@@ -31,6 +31,6 @@ def foo(shape1, shape2):
     print(c)
 
 
-s1 = (2, 3, 4)
-s2 = (2, 1, 1)
+s1 = (2, 3)
+s2 = (2, 1)
 foo(s1, s2)

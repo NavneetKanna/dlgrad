@@ -47,39 +47,26 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
-    def add(x: Buffer, y: Buffer) -> CDataPtr:
-        # main_buf, other_buf = x.ptr, y.ptr
-        # main_numel, other_numel = x.numel, y.numel
-        # main_stride, other_stride = x.stride, y.stride or [0] # for scalar
-        # main_shape, other_shape = x.shape, y.shape
-        # other_shape_len = len(y.shape)
-
-        if y.shape[0] == 1 and x.shape[1:] == y.shape[1:]:
-            arr = _add.lib.add_3d_with_2d(x.ptr, y.ptr, x.numel, y.numel)
-        elif x.shape[0] == y.shape[0] and x.shape[2] == y.shape[2] and y.shape[1] == 1:
-            arr = _add.lib.add_with_dim1_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1]*x.shape[2], x.shape[2])  # noqa: E501
-        elif x.shape[0] == y.shape[0] and x.shape[1] == y.shape[1] and y.shape[2] == 1:
-            arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[2])
-        elif y.shape[0] == 1 and y.shape[1] == 1 and x.shape[2] == y.shape[2]:
-            arr = _add.lib.add_with_dim1(x.ptr, y.ptr, x.numel, x.shape[2])
-        elif y.shape[0] == 1 and y.shape[2] == 1 and x.shape[1] == y.shape[1]:
-            arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[2])
-        elif x.shape[0] == y.shape[0] and y.shape[1] == 1 and y.shape[1] == 1:
-            arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1]*x.shape[2])
-
-        # if len(main_shape) == 2:
-        #     arr = _arithmetic.lib.op_2d(main_buf, other_buf,
-        #                                 main_numel, other_numel,
-        #                                 main_shape, other_shape,
-        #                                 main_stride, other_stride,
-        #                                 other_shape_len, 0)
-        # elif len(main_shape) == 3:
-        #     arr = _arithmetic.lib.op_3d(main_buf, other_buf,
-        #                                 main_numel, other_numel,
-        #                                 main_shape, other_shape,
-        #                                 main_stride, other_stride,
-        #                                 other_shape_len, 0)
-
+    def add(x: Buffer, y: Buffer) -> CDataPtr:  # noqa: C901
+        # 3D
+        if x.ndim == 3:
+            if y.shape[0] == 1 and x.shape[1:] == y.shape[1:]:
+                arr = _add.lib.add_3d_with_2d(x.ptr, y.ptr, x.numel, y.numel)
+            elif x.shape[0] == y.shape[0] and x.shape[2] == y.shape[2] and y.shape[1] == 1:
+                arr = _add.lib.add_with_dim1_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1]*x.shape[2], x.shape[2])  # noqa: E501
+            elif x.shape[0] == y.shape[0] and x.shape[1] == y.shape[1] and y.shape[2] == 1:
+                arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[2])
+            elif y.shape[0] == 1 and y.shape[1] == 1 and x.shape[2] == y.shape[2]:
+                arr = _add.lib.add_with_dim1(x.ptr, y.ptr, x.numel, x.shape[2])
+            elif y.shape[0] == 1 and y.shape[2] == 1 and x.shape[1] == y.shape[1]:
+                arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[2])
+            elif x.shape[0] == y.shape[0] and y.shape[1] == 1 and y.shape[1] == 1:
+                arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1]*x.shape[2])
+        elif x.ndim == 2:
+            if x.shape[1] == y.shape[1] and y.shape[0] == 1:
+                arr = _add.lib.add_with_dim1(x.ptr, y.ptr, x.numel, x.shape[1])
+            elif x.shape[0] == y.shape[0] and y.shape[1] == 1:
+                arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1])
         return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
 
     @staticmethod
@@ -169,3 +156,32 @@ class CPU:
         arr = _cmp.lib.gt_with_scalar(x.ptr, y, x.numel)
 
         return CPU.ffi.gc(arr, _cmp.lib.free_cmp)
+
+"""
+
+    (2, 3, 4) + (1, 3, 4)
+    (2, 3, 4) + (2, 1, 4)
+    (2, 3, 4) + (2, 3, 1)
+    (2, 3, 4) + (1, 1, 4)
+    (2, 3, 4) + (1, 3, 1)
+    (2, 3, 4) + (2, 1, 1)
+    (2, 3, 4) + (1, 1, 1)
+    (m, n, p) + (1, n, p)
+    (m, n, p) + (m, 1, p)
+    (m, n, p) + (m, n, 1)
+    (m, n, p) + (1, 1, p)
+    (m, n, p) + (1, n, 1)
+    (m, n, p) + (m, 1, 1)
+    (m, n, p) + (1, 1, 1)
+
+
+
+    (2, 3) + (1, 3)
+    (2, 3) + (2, 1)
+    (2, 3) + (1, 1)
+    (m, n) + (1, n)
+    (m, n) + (m, 1)
+    (m, n) + (1, 1)
+
+
+"""

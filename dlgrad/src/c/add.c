@@ -38,15 +38,10 @@ float *add_with_dim0(float *x, float *y, int xnumel, int ynumel, int at)
     for (int i=0; i<xnumel; i++) {
         if (i!=0 && i%at==0) {
             y_idx += 1; // At every 'at', increment y_idx by 1
-            // printf("incrementing yidx %d i %d at %d\n", y_idx, i, at);
         }
 
         if (y_idx >= ynumel) 
             y_idx = 0;
-        
-        // printf("yidx %d\n", y_idx);
-        // if (n_rows_c % nrows == 0)
-            // y_idx = 0; // For 3d case, at the start of new dim0, set y_idx to 0
         
         out[i] = x[i] + y[y_idx];
     }
@@ -90,15 +85,11 @@ float *add_with_dim1_with_dim0(float *x, float *y, int xnumel, int ynumel, int a
         if (i!=0 && i%at==0) {
             start += ncols;
             y_idx = start;
-            // printf("start %d yidx %d\n", start, y_idx);
         }
         
         if (i!=0 && i%ncols==0) {
             y_idx = start;
-            // printf("yidx2 %d\n", y_idx);
         }
-        
-        // printf("y_idx %d\n", y_idx);
         
         out[i] = x[i] + y[y_idx];
         y_idx += 1;
