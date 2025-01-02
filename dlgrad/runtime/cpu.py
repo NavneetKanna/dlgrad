@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import _add  # type: ignore
 import _af  # type: ignore
 import _arithmetic  # type: ignore
@@ -15,6 +17,26 @@ from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, DType, Scalar
 from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, prod_
 
+
+def _get_add_func(x: Buffer, y: Buffer) -> Callable:
+    sh = tuple([s1 if s1 == s2 else 1 for s1, s2 in zip(x.shape, y.shape)])
+    shape_map = {
+        (1, x.shape[1], x.shape[2]): lambda a, b: _add.lib.add_3d_with_2d(a, b, x.numel, y.numel),
+        (x.shape[0], 1, x.shape[2]): lambda a, b: _add.lib.add_with_dim1_with_dim0(a, b, x.numel, y.numel, x.shape[1]*x.shape[2], x.shape[2]),  # noqa: E501
+        (x.shape[0], x.shape[1], 1): lambda a, b: _add.lib.add_with_dim0(a, b, x.numel, y.numel, x.shape[2]),
+        (1, 1, x.shape[2]): lambda a, b: _add.lib.add_with_dim1(a, b, x.numel, x.shape[2]),
+        (1, x.shape[1], 1): lambda a, b: _add.lib.add_with_dim0(a, b, x.numel, y.numel, x.shape[2]),
+        (x.shape[0], 1, 1): lambda a, b: _add.lib.add_with_dim0(a, b, x.numel, y.numel, x.shape[1]*x.shape[2]),  # noqa: E501
+        (1, 1, 1): lambda a, b: _add.lib.add_with_scalar(a, b, x.numel),
+        (x.shape): lambda a, b: _add.lib.add(a, b, x.numel),
+        (1, x.shape[1]): lambda a, b: _add.lib.add_with_dim1(a, b, x.numel, x.shape[1]),
+        (x.shape[0], 1): lambda a, b: _add.lib.add_with_dim0(a, b, x.numel, y.numel, x.shape[1]),
+        (1, 1): lambda a, b: _add.lib.add_with_scalar(a, b, x.numel),
+        # (x.shape): lambda a, b: _add.lib.add(a, b, x.numel),
+    }
+
+    exit()
+    return shape_map[sh]
 
 # TODO: Calling ffi.gc() twice one after the other leads to error, find alternative
 class CPU:
@@ -48,45 +70,47 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x: Buffer, y: Buffer) -> CDataPtr:  # noqa: C901
-        # 3D
-        if x.ndim == 3:
-            # (m, n, p) + (1, n, p)
-            if y.shape[0] == 1 and x.shape[1:] == y.shape[1:]:
-                arr = _add.lib.add_3d_with_2d(x.ptr, y.ptr, x.numel, y.numel)
-            # (m, n, p) + (m, 1, p)
-            elif x.shape[0] == y.shape[0] and x.shape[2] == y.shape[2] and y.shape[1] == 1:
-                arr = _add.lib.add_with_dim1_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1]*x.shape[2], x.shape[2])  # noqa: E501
-            # (m, n, p) + (m, n, 1)
-            elif x.shape[0] == y.shape[0] and x.shape[1] == y.shape[1] and y.shape[2] == 1:
-                arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[2])
-            # (m, n, p) + (1, 1, p)
-            elif y.shape[0] == 1 and y.shape[1] == 1 and x.shape[2] == y.shape[2]:
-                arr = _add.lib.add_with_dim1(x.ptr, y.ptr, x.numel, x.shape[2])
-            # (m, n, p) + (1, n, 1)
-            elif y.shape[0] == 1 and y.shape[2] == 1 and x.shape[1] == y.shape[1]:
-                arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[2])
-            # (m, n, p) + (m, 1, 1)
-            elif x.shape[0] == y.shape[0] and y.shape[1] == 1 and y.shape[2] == 1:
-                arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1]*x.shape[2])
-            # (m, n, p) + (1, 1, 1)
-            elif y.shape[0] == 1 and y.shape[1] == 1 and y.shape[2] == 1:
-                arr = _add.lib.add_with_scalar(x.ptr, y.ptr, x.numel)
-            # (m, n, p) + (m, n, p)
-            elif x.shape == y.shape:
-                arr = _add.lib.add(x.ptr, y.ptr, x.numel)
-        elif x.ndim == 2:
-            # (m, n) + (1, n)
-            if x.shape[1] == y.shape[1] and y.shape[0] == 1:
-                arr = _add.lib.add_with_dim1(x.ptr, y.ptr, x.numel, x.shape[1])
-            # (m, n) + (m, 1)
-            elif x.shape[0] == y.shape[0] and y.shape[1] == 1:
-                arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1])
-            # (m, n) + (1, 1)
-            elif y.shape[0] == 1 and y.shape[1] == 1:
-                arr = _add.lib.add_with_scalar(x.ptr, y.ptr, x.numel)
-            # (m, n) + (m, n)
-            elif x.shape == y.shape:
-                arr = _add.lib.add(x.ptr, y.ptr, x.numel)
+        arr = _get_add_func(x=x, y=y)(x.ptr, y.ptr)
+        # # 3D
+        # if x.ndim == 3:
+        #     # (m, n, p) + (1, n, p)
+        #     if y.shape[0] == 1 and x.shape[1:] == y.shape[1:]:
+        #         arr = _add.lib.add_3d_with_2d(x.ptr, y.ptr, x.numel, y.numel)
+        #     # (m, n, p) + (m, 1, p)
+        #     elif x.shape[0] == y.shape[0] and x.shape[2] == y.shape[2] and y.shape[1] == 1:
+        #         arr = _add.lib.add_with_dim1_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1]*x.shape[2], x.shape[2])  # noqa: E501
+        #     # (m, n, p) + (m, n, 1)
+        #     elif x.shape[0] == y.shape[0] and x.shape[1] == y.shape[1] and y.shape[2] == 1:
+        #         arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[2])
+        #     # (m, n, p) + (1, 1, p)
+        #     elif y.shape[0] == 1 and y.shape[1] == 1 and x.shape[2] == y.shape[2]:
+        #         arr = _add.lib.add_with_dim1(x.ptr, y.ptr, x.numel, x.shape[2])
+        #     # (m, n, p) + (1, n, 1)
+        #     elif y.shape[0] == 1 and y.shape[2] == 1 and x.shape[1] == y.shape[1]:
+        #         arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[2])
+        #     # (m, n, p) + (m, 1, 1)
+        #     elif x.shape[0] == y.shape[0] and y.shape[1] == 1 and y.shape[2] == 1:
+        #         arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1]*x.shape[2])
+        #     # (m, n, p) + (1, 1, 1)
+        #     elif y.shape[0] == 1 and y.shape[1] == 1 and y.shape[2] == 1:
+        #         arr = _add.lib.add_with_scalar(x.ptr, y.ptr, x.numel)
+        #     # (m, n, p) + (m, n, p)
+        #     elif x.shape == y.shape:
+        #         arr = _add.lib.add(x.ptr, y.ptr, x.numel)
+        # elif x.ndim == 2:
+        #     # (m, n) + (1, n)
+        #     if x.shape[1] == y.shape[1] and y.shape[0] == 1:
+        #         arr = _add.lib.add_with_dim1(x.ptr, y.ptr, x.numel, x.shape[1])
+        #     # (m, n) + (m, 1)
+        #     elif x.shape[0] == y.shape[0] and y.shape[1] == 1:
+        #         arr = _add.lib.add_with_dim0(x.ptr, y.ptr, x.numel, y.numel, x.shape[1])
+        #     # (m, n) + (1, 1)
+        #     elif y.shape[0] == 1 and y.shape[1] == 1:
+        #         arr = _add.lib.add_with_scalar(x.ptr, y.ptr, x.numel)
+        #     # (m, n) + (m, n)
+        #     elif x.shape == y.shape:
+        #         arr = _add.lib.add(x.ptr, y.ptr, x.numel)
+
         return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
 
     @staticmethod
