@@ -100,7 +100,7 @@ class Buffer:
             return Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other),
                           shape=self.shape, device=self.device)
         else:
-            tmp = Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other),
+            tmp = Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=other, y=self),
                          shape=other.shape, device=self.device)
             tmp = Buffer(data=dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=tmp),
                          shape=tmp.shape, device=tmp.device)
