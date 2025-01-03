@@ -72,7 +72,7 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
-    def add(x: Buffer, y: Buffer) -> CDataPtr:  # noqa: C901
+    def add(x: Buffer, y: Buffer) -> CDataPtr:
         arr = _get_add_func(x=x, y=y)(x.ptr, y.ptr)
 
         return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
