@@ -96,12 +96,15 @@ class Buffer:
                           shape=other.shape, device=self.device)
 
     def __sub__(self, other: Buffer) -> Buffer:
-        if self.numel > other.numel or self.numel == other.numel:
+        if self.numel >= other.numel:
             return Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other),
                           shape=self.shape, device=self.device)
         else:
-            return Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other),
-                          shape=other.shape, device=self.device)
+            tmp = Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other),
+                         shape=other.shape, device=self.device)
+            tmp = Buffer(data=dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=tmp),
+                         shape=tmp.shape, device=tmp.device)
+            return tmp
 
     def __gt__(self, other: int | float) -> Buffer:
         return Buffer(data=dispatcher.dispatch(op=BinaryOps.GT, device=self.device, x=self, y=other),
