@@ -16,39 +16,22 @@ def run(shapes: list[tuple], func):
 
     np.testing.assert_allclose(func(*dlgrad_data).numpy(), func(*torch_data).numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes", [
-    # [(2, 3, 4), (1, 3, 4)],
-    # [(2, 3, 4), (2, 1, 4)],
-    # [(2, 3, 4), (2, 3, 1)],
-    # [(2, 3, 4), (1, 1, 4)],
-    # [(2, 3, 4), (1, 3, 1)],
-    # [(2, 3, 4), (2, 1, 1)],
-    # [(2, 3, 4), (1, 1, 1)],
-    # [(2, 3, 4), (2, 3, 4)],
-    [(2, 3), (1, 3)],
-    # [(2, 3), (2, 1)],
-    # [(2, 3), (1, 1)],
-    # [(2, 3), (2, 3)]
-])
-def testt(shapes):
-    run(shapes, lambda x, y: x+y)
 
 @pytest.mark.parametrize("shapes", [
-    [(2, 3), (2, 3)],
-    [(78, 91), (78, 91)],
-    [(4, 3, 2), (4, 3, 2)],
-])
-def test_add_same_shape(shapes):
-    run(shapes, lambda x, y: x+y)
-
-@pytest.mark.parametrize("shapes", [
+    [(2, 3, 4), (1, 3, 4)],
+    [(2, 3, 4), (2, 1, 4)],
+    [(2, 3, 4), (2, 3, 1)],
+    [(2, 3, 4), (1, 1, 4)],
+    [(2, 3, 4), (1, 3, 1)],
+    [(2, 3, 4), (2, 1, 1)],
+    [(2, 3, 4), (1, 1, 1)],
+    [(2, 3, 4), (2, 3, 4)],
     [(2, 3), (1, 3)],
     [(2, 3), (2, 1)],
-    [(4, 3, 2), (3, 2)],
-    [(4, 3, 2), (1, 2)],
-    [(4, 3, 2), (3, 1)],
+    [(2, 3), (1, 1)],
+    [(2, 3), (2, 3)]
 ])
-def test_add_diff_shape(shapes):
+def test_add(shapes):
     run(shapes, lambda x, y: x+y)
 
 @pytest.mark.parametrize("shapes", [
@@ -59,22 +42,6 @@ def test_add_diff_shape(shapes):
     [(3, 1), (4, 3, 2)],
 ])
 def test_add_diff_shape_reverse(shapes):
-    run(shapes, lambda x, y: x+y)
-
-@pytest.mark.parametrize("shapes", [
-    [(2, 3), (3)],
-    [(2, 3), (1)],
-    [(4, 3, 2), (2)]
-])
-def add_with_scalar(shapes):
-    run(shapes, lambda x, y: x+y)
-
-@pytest.mark.parametrize("shapes", [
-    [(3), (2, 3)],
-    [(1), (2, 3)],
-    [(2), (4, 3, 2)]
-])
-def add_with_scalar_reversed(shapes):
     run(shapes, lambda x, y: x+y)
 
 @pytest.mark.parametrize("shapes", [
