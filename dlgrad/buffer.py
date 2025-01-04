@@ -25,9 +25,9 @@ class Buffer:
                                        kwargs.get("ndim", len(shape)))
         self.device = device
 
-    def neg(self) -> Buffer:
-        return Buffer(data=dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self),
-                      shape=self.shape, device=self.device)
+    # def neg(self) -> Buffer:
+    #     return Buffer(data=dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self),
+    #                   shape=self.shape, device=self.device)
 
     def sum(self, dim: int | None) -> Buffer:  # noqa: C901
         out_shape = tuple()
@@ -116,6 +116,10 @@ class Buffer:
 
     def __gt__(self, other: int | float) -> Buffer:
         return Buffer(data=dispatcher.dispatch(op=BinaryOps.GT, device=self.device, x=self, y=other),
+                      shape=self.shape, device=self.device)
+
+    def __neg__(self) -> Buffer:
+        return Buffer(data=dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self),
                       shape=self.shape, device=self.device)
 
     @property
