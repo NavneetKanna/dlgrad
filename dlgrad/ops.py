@@ -79,4 +79,4 @@ class Relu(OP):
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> Buffer:
-		return (self.out>0.0) * upstream_grad
+		return ((self.out>0.0) * upstream_grad,)
