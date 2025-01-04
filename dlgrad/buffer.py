@@ -106,12 +106,16 @@ class Buffer:
                          shape=tmp.shape, device=tmp.device)
             return tmp
 
+    def __mul__(self, other: Buffer) -> Buffer:
+        if self.numel >= other.numel:
+            return Buffer(data=dispatcher.dispatch(op=BinaryOps.MUL, device=self.device, x=self, y=other),
+                          shape=self.shape, device=self.device)
+        else:
+            return Buffer(data=dispatcher.dispatch(op=BinaryOps.MUL, device=self.device, x=other, y=self),
+                          shape=other.shape, device=self.device)
+
     def __gt__(self, other: int | float) -> Buffer:
         return Buffer(data=dispatcher.dispatch(op=BinaryOps.GT, device=self.device, x=self, y=other),
-                      shape=self.shape, device=self.device)
-
-    def __mul__(self, other: Buffer) -> Buffer:
-        return Buffer(data=dispatcher.dispatch(op=BinaryOps.MUL, device=self.device, x=self, y=other),
                       shape=self.shape, device=self.device)
 
     @property

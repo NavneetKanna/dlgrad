@@ -45,7 +45,8 @@ class Sub(OP):
 
 class Mul(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
-		return x*y
+		if check_broadcast(x.shape, y.shape):
+			return x*y
 
 	def backward(self):  # noqa: ANN201
 		return ...

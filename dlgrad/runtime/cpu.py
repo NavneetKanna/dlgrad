@@ -5,6 +5,7 @@ import _af  # type: ignore
 import _cmp  # type: ignore
 import _full  # type: ignore
 import _matmul  # type: ignore
+import _mul  # type: ignore
 import _neg  # type: ignore
 import _sub  # type: ignore
 import _sum  # type: ignore
@@ -43,8 +44,7 @@ def _get_add_func(x: Buffer, y: Buffer) -> Callable:
 
 def _get_sub_func(x: Buffer, y: Buffer) -> Callable:
     sh = tuple(s1 if s1 == s2 else 1 for s1, s2 in zip(x.shape, y.shape))
-    print(sh)
-    print(x.numel, x.shape[1])
+
     if x.ndim == 3:
         shape_map = {
             (1, x.shape[1], x.shape[2]): lambda a, b: _sub.lib.sub_3d_with_2d(a, b, x.numel, y.numel),
@@ -62,6 +62,30 @@ def _get_sub_func(x: Buffer, y: Buffer) -> Callable:
             (1, x.shape[1]): lambda a, b: _sub.lib.sub_with_dim1(a, b, x.numel, x.shape[1]),
             (x.shape[0], 1): lambda a, b: _sub.lib.sub_with_dim0(a, b, x.numel, y.numel, x.shape[1]),
             (1, 1): lambda a, b: _sub.lib.sub_with_scalar(a, b, x.numel),
+        }
+
+    return shape_map[sh]
+
+def _get_mul_func(x: Buffer, y: Buffer) -> Callable:
+    sh = tuple(s1 if s1 == s2 else 1 for s1, s2 in zip(x.shape, y.shape))
+
+    if x.ndim == 3:
+        shape_map = {
+            (1, x.shape[1], x.shape[2]): lambda a, b: _mul.lib.mul_3d_with_2d(a, b, x.numel, y.numel),
+            (x.shape[0], 1, x.shape[2]): lambda a, b: _mul.lib.mul_with_dim1_with_dim0(a, b, x.numel, y.numel, x.shape[1]*x.shape[2], x.shape[2]),  # noqa: E501
+            (x.shape[0], x.shape[1], 1): lambda a, b: _mul.lib.mul_with_dim0(a, b, x.numel, y.numel, x.shape[2]),  # noqa: E501
+            (1, 1, x.shape[2]): lambda a, b: _mul.lib.mul_with_dim1(a, b, x.numel, x.shape[2]),
+            (1, x.shape[1], 1): lambda a, b: _mul.lib.mul_with_dim0(a, b, x.numel, y.numel, x.shape[2]),
+            (x.shape[0], 1, 1): lambda a, b: _mul.lib.mul_with_dim0(a, b, x.numel, y.numel, x.shape[1]*x.shape[2]),  # noqa: E501
+            (1, 1, 1): lambda a, b: _mul.lib.mul_with_scalar(a, b, x.numel),
+            (x.shape): lambda a, b: _mul.lib.mul(a, b, x.numel),
+        }
+    elif x.ndim == 2:
+        shape_map = {
+            (x.shape): lambda a, b: _mul.lib.mul(a, b, x.numel),
+            (1, x.shape[1]): lambda a, b: _mul.lib.mul_with_dim1(a, b, x.numel, x.shape[1]),
+            (x.shape[0], 1): lambda a, b: _mul.lib.mul_with_dim0(a, b, x.numel, y.numel, x.shape[1]),
+            (1, 1): lambda a, b: _mul.lib.mul_with_scalar(a, b, x.numel),
         }
 
     return shape_map[sh]
@@ -103,16 +127,18 @@ class CPU:
         return CPU.ffi.gc(arr, _add.lib.free_add)
 
     @staticmethod
-    @dispatcher.register(BinaryOps.MUL, Device.CPU)
-    def mul(x: Buffer, y: Buffer) -> CDataPtr:
-        pass
-
-    @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
     def sub(x: Buffer, y: Buffer) -> CDataPtr:
         arr = _get_sub_func(x=x, y=y)(x.ptr, y.ptr)
 
         return CPU.ffi.gc(arr, _sub.lib.free_sub)
+
+    @staticmethod
+    @dispatcher.register(BinaryOps.MUL, Device.CPU)
+    def mul(x: Buffer, y: Buffer) -> CDataPtr:
+        arr = _get_mul_func(x=x, y=y)(x.ptr, y.ptr)
+
+        return CPU.ffi.gc(arr, _mul.lib.free_mul)
 
     @staticmethod
     @dispatcher.register(BinaryOps.NEG, Device.CPU)
