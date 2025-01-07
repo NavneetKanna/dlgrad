@@ -1,104 +1,107 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include "arithmetic.h"
 
+#define ADD 0
+#define MUL 1
+#define SUB 2
 
 
-float *op_3d(float *x, float *y, int xnumel, int ynumel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len, int op) {
-    float out_size = (xnumel >= ynumel) ? xnumel : ynumel;
-    float *out = malloc(out_size * sizeof(float));
+float *add_with_scalar(float *x, float *y, int xnumel) 
+{
+    float *out = malloc(sizeof(float) * xnumel);
 
-    int y_scalar = (yshape_len == 0);
-    int y_row_or_1d = (yshape[0] == 1 || yshape_len == 1);
-    int y_col = (yshape[1] == 1);
-    int y_2d = (yshape_len == 2);
-    int y_3d_dim1 = (yshape_len == 3 && yshape[0] == 1);
+    for (int i=0; i<xnumel; i++) {
+        out[i] = x[i] + y[0];
+    }
 
-    for (int i=0; i<xshape[0]; i++) {
-        for (int j=0; j<xshape[1]; j++) {
-            for (int k=0; k<xshape[2]; k++) {
-                int x_offset = i*xstride[0] + j*xstride[1] + k*xstride[2];
-                int y_offset;
+    return out;
+} 
 
-                if (y_scalar) {                                 // scalar
-                    y_offset = 0;
-                } else if (y_row_or_1d){                        // row Tensor or ndim=1 
-                    y_offset = k*ystride[1];
-                } else if (y_col) {                             // column Tensor
-                    y_offset = j*ystride[0];
-                } else if (y_2d) {                              // 2D Tensor
-                    y_offset = j*ystride[0] + k*ystride[1]; 
-                } else if (y_3d_dim1) {                         // 3D Tensor with first dim = 1
-                    y_offset = j*ystride[0] + k*ystride[1];
-                } else {                                        // 3D Tensor
-                    y_offset = i*ystride[0] + j*ystride[1] + k*ystride[2];
-                }
+float *add_with_dim1(float *x, float *y, int xnumel, int at)
+{
+    float *out = malloc(sizeof(float) * xnumel);
 
-                switch(op) {
-                    case 0: // Add
-                        out[x_offset] = (xnumel >= ynumel) ? x[x_offset] + y[y_offset] : y[x_offset] + x[y_offset];
-                        break;
-                    case 1: // Subtract
-                        out[x_offset] = (xnumel >= ynumel) ? x[x_offset] - y[y_offset] : x[y_offset] - y[x_offset];
-                        break;
-                    case 2: // Multiply
-                        out[x_offset] = x[x_offset] * y[y_offset];
-                        break;
-                    case 3: // Divide
-                        out[x_offset] = x[x_offset] / y[y_offset];
-                        break;
-                }
-            }
-        }
+    int y_idx = 0;
+    for (int i=0; i<xnumel; i++) {
+        if (i!=0 && i%at==0)
+            y_idx = 0; // At every 'at', set y_idx to 0
+         
+        out[i] = x[i] + y[y_idx];
+        y_idx += 1;
     }
 
     return out;
 }
 
-float *op_2d(float *x, float *y, int xnumel, int ynumel, int *xshape, int *yshape, int *xstride, int *ystride, int yshape_len, int op) {
-    float out_size = (xnumel >= ynumel) ? xnumel : ynumel;
-    float *out = malloc(out_size * sizeof(float));
-   
-    int y_scalar = (yshape_len == 0);
-    int y_row_or_1d = (yshape[0] == 1 || yshape_len == 1);
-    int y_col = (yshape[1] == 1);
+float *add_with_dim0(float *x, float *y, int xnumel, int ynumel, int at)
+{
+    float *out = malloc(sizeof(float) * xnumel);
 
-    for (int i=0; i<xshape[0]; i++) {
-        for (int j=0; j<xshape[1]; j++) {
-            int x_offset = i*xstride[0] + j*xstride[1];
-            int y_offset = 0; 
-
-            if (y_scalar) {                 // scalar
-                y_offset = 0;
-            } else if (y_row_or_1d) {       // row Tensor or ndim=1
-                y_offset = j*ystride[1];
-            } else if (y_col) {             // column Tensor
-                y_offset = i*ystride[0];
-            } else {                        // 2D Tensor
-                y_offset = i*ystride[0] + j*ystride[1]; 
-            }
-
-            switch(op) {
-                case 0: // Add
-                    out[x_offset] = (xnumel >= ynumel) ? x[x_offset] + y[y_offset] : y[x_offset] + x[y_offset];
-                    break;
-                case 1: // Subtract
-                    out[x_offset] = (xnumel >= ynumel) ? x[x_offset] - y[y_offset] : x[y_offset] - y[x_offset];
-                    break;
-                case 2: // Multiply
-                    out[x_offset] = x[x_offset] * y[y_offset];
-                    break;
-                case 3: // Divide
-                    out[x_offset] = x[x_offset] / y[y_offset];
-                    break;
-            }
+    int y_idx = 0;
+    for (int i=0; i<xnumel; i++) {
+        if (i!=0 && i%at==0) {
+            y_idx += 1; // At every 'at', increment y_idx by 1
         }
+
+        if (y_idx >= ynumel) 
+            y_idx = 0;
+        
+        out[i] = x[i] + y[y_idx];
     }
 
     return out;
 }
 
-void free_op(float* ptr) {
+float *add(float *x, float *y, int xnumel)
+{
+    float *out = malloc(sizeof(float) * xnumel);
+
+    for (int i=0; i<xnumel; i++)
+        out[i] = x[i] + y[i];
+    
+    return out;
+}
+
+float *add_3d_with_2d(float *x, float *y, int xnumel, int ynumel)
+{
+    float *out = malloc(sizeof(float) * xnumel);
+    
+    int y_idx = 0;
+    for (int i=0; i<xnumel; i++) {
+        if (i!=0 && i%ynumel==0)
+            y_idx = 0;
+        
+        out[i] = x[i] + y[y_idx];
+        y_idx += 1;
+    }
+
+    return out;
+}
+
+float *add_with_dim1_with_dim0(float *x, float *y, int xnumel, int ynumel, int at, int ncols)
+{
+    float *out = malloc(sizeof(float) * xnumel);
+
+    int start = 0;
+    int y_idx = 0;
+    for (int i=0; i<xnumel; i++) {
+        if (i!=0 && i%at==0) {
+            start += ncols;
+            y_idx = start;
+        }
+        
+        if (i!=0 && i%ncols==0) {
+            y_idx = start;
+        }
+        
+        out[i] = x[i] + y[y_idx];
+        y_idx += 1;
+    }
+
+    return out;
+}
+
+void free_add(float *ptr) {
     free(ptr);
 }

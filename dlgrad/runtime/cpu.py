@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import _add  # type: ignore
 import _af  # type: ignore
+import _arithmetic  # type: ignore
 import _cmp  # type: ignore
 import _full  # type: ignore
 import _matmul  # type: ignore
@@ -122,6 +123,8 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x: Buffer, y: Buffer) -> CDataPtr:
+        print(_arithmetic.lib.ADD)
+        exit()
         arr = _get_add_func(x=x, y=y)(x.ptr, y.ptr)
 
         return CPU.ffi.gc(arr, _add.lib.free_add)

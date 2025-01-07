@@ -96,3 +96,8 @@ def resolve_ndim(inp_shape: tuple, grad_shape: tuple) -> int:
     return ndim
 
 
+def get_dim_from_3d(sh2: tuple) -> None:
+    if sh2[1] == 1:
+        return "dim1"
+    elif sh2[2] == 1:
+        return "dim0"

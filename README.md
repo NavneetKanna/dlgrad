@@ -33,6 +33,7 @@ print(b.grad.numpy())
 
 ## Things I'm Working On
 - [ ] Adding backward functions to ops
+- [ ] Adding support for 4D
 
 ## Tests
 
