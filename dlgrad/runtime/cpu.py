@@ -61,14 +61,22 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
     def sub(x: Buffer, y: Buffer) -> CDataPtr:
-        arr = ...
+        match x.ndim:
+            case 3:
+                arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel, 2)
+            case 2:
+                arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel, 2)
 
         return CPU.ffi.gc(arr, _sub.lib.free_sub)
 
     @staticmethod
     @dispatcher.register(BinaryOps.MUL, Device.CPU)
     def mul(x: Buffer, y: Buffer) -> CDataPtr:
-        arr = ...
+        match x.ndim:
+            case 3:
+                arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel, 1)
+            case 2:
+                arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel, 1)
 
         return CPU.ffi.gc(arr, _mul.lib.free_mul)
 
