@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
-from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, calculate_stride, get_dim_from_3d, prod_
+from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, calculate_stride, prod_
 
 
 @dataclass
@@ -89,7 +89,7 @@ class Buffer:
 
     def __add__(self, other: Buffer) -> Buffer:
         if self.numel >= other.numel:
-            dim = get_dim_from_3d(other.shape)  # noqa: F841
+            # dim = get_dim_from_3d(other.shape)  # noqa: F841
             return Buffer(data=dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other),
                           shape=self.shape, device=self.device)
         else:
