@@ -7,36 +7,35 @@
 #define SUB 2
 
 
-void add(float *x, float *y, int *xshape, int *xstrides, int *yshape, int *ystrides) 
+// Handles all broadcasting shapes
+float *add(float *x, float *y, int *xshape, int *xstrides, int *yshape, int *ystrides) 
 {
+    float *out = malloc(sizeof(float));
+
+    int x_idx = 0;
+    int y_idx = 0;
     int y_idx3 = 0;
     int y_idx2 = 0;
     int y_idx1 = 0;
+
     for (int i=0; i<xshape[0]; i++) {
-        if (xshape[0] == yshape[0]) {
-                y_idx1 = i;
-            } else {
-                y_idx1 = 0;
-            }
+        y_idx1 = (xshape[0] == yshape[0]) ? i : 0;
+       
         for (int j=0; j<xshape[1]; j++) {
-            if (xshape[1] == yshape[1]) {
-                y_idx2 = j;
-            } else {
-                y_idx2 = 0;
-            }
+            y_idx2 = (xshape[1] == yshape[1]) ? j : 0;
+
             for (int k=0; k<xshape[2]; k++) {
-                int x_idx = i*xstrides[0] + j*xstrides[1] + k*xstrides[2];
-                if (xshape[2] == yshape[2]) {
-                    y_idx3 = k;
-                } else {
-                    y_idx3 = 0;
-                }
+                x_idx = i*xstrides[0] + j*xstrides[1] + k*xstrides[2];
+                y_idx3 = (xshape[2] == yshape[2]) ? k : 0;
                 
-                int y_idx = y_idx1*ystrides[0] + y_idx2*ystrides[1] + y_idx3*ystrides[2];
+                y_idx = y_idx1*ystrides[0] + y_idx2*ystrides[1] + y_idx3*ystrides[2];
+
+                out[x_idx] = x[x_idx] + y[y_idx];
             }
         }
     }
-    
+
+    return out;
 }
 
 
