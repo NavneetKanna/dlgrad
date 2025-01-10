@@ -1,5 +1,3 @@
-from collections.abc import Callable
-
 import _add  # type: ignore
 import _af  # type: ignore
 import _arithmetic  # type: ignore
@@ -19,77 +17,6 @@ from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, DType, Scalar
 from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, prod_
 
-
-def _get_add_func(x: Buffer, y: Buffer) -> Callable:
-    sh = tuple(s1 if s1 == s2 else 1 for s1, s2 in zip(x.shape, y.shape))
-    if x.ndim == 3:
-        shape_map = {
-            (1, x.shape[1], x.shape[2]): lambda a, b: _add.lib.add_3d_with_2d(a, b, x.numel, y.numel),
-            (x.shape[0], 1, x.shape[2]): lambda a, b: _add.lib.add_with_dim1_with_dim0(a, b, x.numel, y.numel, x.shape[1]*x.shape[2], x.shape[2]),  # noqa: E501
-            (x.shape[0], x.shape[1], 1): lambda a, b: _add.lib.add_with_dim0(a, b, x.numel, y.numel, x.shape[2]),  # noqa: E501
-            (1, 1, x.shape[2]): lambda a, b: _add.lib.add_with_dim1(a, b, x.numel, x.shape[2]),
-            (1, x.shape[1], 1): lambda a, b: _add.lib.add_with_dim0(a, b, x.numel, y.numel, x.shape[2]),
-            (x.shape[0], 1, 1): lambda a, b: _add.lib.add_with_dim0(a, b, x.numel, y.numel, x.shape[1]*x.shape[2]),  # noqa: E501
-            (1, 1, 1): lambda a, b: _add.lib.add_with_scalar(a, b, x.numel),
-            (x.shape): lambda a, b: _add.lib.add(a, b, x.numel),
-        }
-    elif x.ndim == 2:
-        shape_map = {
-            (x.shape): lambda a, b: _add.lib.add(a, b, x.numel),
-            (1, x.shape[1]): lambda a, b: _add.lib.add_with_dim1(a, b, x.numel, x.shape[1]),
-            (x.shape[0], 1): lambda a, b: _add.lib.add_with_dim0(a, b, x.numel, y.numel, x.shape[1]),
-            (1, 1): lambda a, b: _add.lib.add_with_scalar(a, b, x.numel),
-        }
-
-    return shape_map[sh]
-
-def _get_sub_func(x: Buffer, y: Buffer) -> Callable:
-    sh = tuple(s1 if s1 == s2 else 1 for s1, s2 in zip(x.shape, y.shape))
-
-    if x.ndim == 3:
-        shape_map = {
-            (1, x.shape[1], x.shape[2]): lambda a, b: _sub.lib.sub_3d_with_2d(a, b, x.numel, y.numel),
-            (x.shape[0], 1, x.shape[2]): lambda a, b: _sub.lib.sub_with_dim1_with_dim0(a, b, x.numel, y.numel, x.shape[1]*x.shape[2], x.shape[2]),  # noqa: E501
-            (x.shape[0], x.shape[1], 1): lambda a, b: _sub.lib.sub_with_dim0(a, b, x.numel, y.numel, x.shape[2]),  # noqa: E501
-            (1, 1, x.shape[2]): lambda a, b: _sub.lib.sub_with_dim1(a, b, x.numel, x.shape[2]),
-            (1, x.shape[1], 1): lambda a, b: _sub.lib.sub_with_dim0(a, b, x.numel, y.numel, x.shape[2]),
-            (x.shape[0], 1, 1): lambda a, b: _sub.lib.sub_with_dim0(a, b, x.numel, y.numel, x.shape[1]*x.shape[2]),  # noqa: E501
-            (1, 1, 1): lambda a, b: _sub.lib.sub_with_scalar(a, b, x.numel),
-            (x.shape): lambda a, b: _sub.lib.sub(a, b, x.numel),
-        }
-    elif x.ndim == 2:
-        shape_map = {
-            (x.shape): lambda a, b: _sub.lib.sub(a, b, x.numel),
-            (1, x.shape[1]): lambda a, b: _sub.lib.sub_with_dim1(a, b, x.numel, x.shape[1]),
-            (x.shape[0], 1): lambda a, b: _sub.lib.sub_with_dim0(a, b, x.numel, y.numel, x.shape[1]),
-            (1, 1): lambda a, b: _sub.lib.sub_with_scalar(a, b, x.numel),
-        }
-
-    return shape_map[sh]
-
-def _get_mul_func(x: Buffer, y: Buffer) -> Callable:
-    sh = tuple(s1 if s1 == s2 else 1 for s1, s2 in zip(x.shape, y.shape))
-
-    if x.ndim == 3:
-        shape_map = {
-            (1, x.shape[1], x.shape[2]): lambda a, b: _mul.lib.mul_3d_with_2d(a, b, x.numel, y.numel),
-            (x.shape[0], 1, x.shape[2]): lambda a, b: _mul.lib.mul_with_dim1_with_dim0(a, b, x.numel, y.numel, x.shape[1]*x.shape[2], x.shape[2]),  # noqa: E501
-            (x.shape[0], x.shape[1], 1): lambda a, b: _mul.lib.mul_with_dim0(a, b, x.numel, y.numel, x.shape[2]),  # noqa: E501
-            (1, 1, x.shape[2]): lambda a, b: _mul.lib.mul_with_dim1(a, b, x.numel, x.shape[2]),
-            (1, x.shape[1], 1): lambda a, b: _mul.lib.mul_with_dim0(a, b, x.numel, y.numel, x.shape[2]),
-            (x.shape[0], 1, 1): lambda a, b: _mul.lib.mul_with_dim0(a, b, x.numel, y.numel, x.shape[1]*x.shape[2]),  # noqa: E501
-            (1, 1, 1): lambda a, b: _mul.lib.mul_with_scalar(a, b, x.numel),
-            (x.shape): lambda a, b: _mul.lib.mul(a, b, x.numel),
-        }
-    elif x.ndim == 2:
-        shape_map = {
-            (x.shape): lambda a, b: _mul.lib.mul(a, b, x.numel),
-            (1, x.shape[1]): lambda a, b: _mul.lib.mul_with_dim1(a, b, x.numel, x.shape[1]),
-            (x.shape[0], 1): lambda a, b: _mul.lib.mul_with_dim0(a, b, x.numel, y.numel, x.shape[1]),
-            (1, 1): lambda a, b: _mul.lib.mul_with_scalar(a, b, x.numel),
-        }
-
-    return shape_map[sh]
 
 # TODO: Calling ffi.gc() twice one after the other leads to error, find alternative
 class CPU:
@@ -123,10 +50,6 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x: Buffer, y: Buffer) -> CDataPtr:
-        # arr = _get_add_func(x=x, y=y)(x.ptr, y.ptr)
-        # if x.ndim == 4:
-        #     for i in range(x.shape[0]):
-        #         pass
         print(x.shape, y.shape)
         arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel)
 
@@ -135,14 +58,14 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
     def sub(x: Buffer, y: Buffer) -> CDataPtr:
-        arr = _get_sub_func(x=x, y=y)(x.ptr, y.ptr)
+        arr = ...
 
         return CPU.ffi.gc(arr, _sub.lib.free_sub)
 
     @staticmethod
     @dispatcher.register(BinaryOps.MUL, Device.CPU)
     def mul(x: Buffer, y: Buffer) -> CDataPtr:
-        arr = _get_mul_func(x=x, y=y)(x.ptr, y.ptr)
+        arr = ...
 
         return CPU.ffi.gc(arr, _mul.lib.free_mul)
 

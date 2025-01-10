@@ -8,7 +8,7 @@
 
 
 // Handles all broadcasting shapes
-float *op_3d(float *x, float *y, int *xshape, int *xstrides, int *yshape, int *ystrides, int outnumel) 
+float *op_3d(float *x, float *y, int *xshape, int *xstrides, int *yshape, int *ystrides, int outnumel, int op) 
 {
     float *out = malloc(outnumel*sizeof(float));
 
@@ -29,7 +29,17 @@ float *op_3d(float *x, float *y, int *xshape, int *xstrides, int *yshape, int *y
                 
                 y_idx = y_idx1*ystrides[0] + y_idx2*ystrides[1] + y_idx3*ystrides[2];
 
-                out[x_idx] = x[x_idx] + y[y_idx];
+                switch (op) {
+                case ADD:
+                    out[x_idx] = x[x_idx] + y[y_idx];
+                    break;
+                case MUL:
+                    out[x_idx] = x[x_idx] * y[y_idx];
+                    break;
+                case SUB:
+                    out[x_idx] = x[x_idx] - y[y_idx];
+                    break;
+                }
             }
         }
     }
