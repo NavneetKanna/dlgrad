@@ -83,6 +83,6 @@ float *op_2d(float *x, float *y, int *xshape, int *xstrides, int *yshape, int *y
     return out;
 }
 
-void free_add(float *ptr) {
+void free_op(float *ptr) {
     free(ptr);
 }

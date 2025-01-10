@@ -17,9 +17,6 @@ setup(
         'dlgrad/builder/float_full_build.py:ffi',
         "dlgrad/builder/float_activation_functions_build.py:ffi",
         'dlgrad/builder/float_comparision_build.py:ffi',
-        'dlgrad/builder/float_add_build.py:ffi',
-        'dlgrad/builder/float_sub_build.py:ffi',
-        'dlgrad/builder/float_mul_build.py:ffi',
     ],
     setup_requires=['cffi>=1.17.1'],
     install_requires=['cffi>=1.0.0']

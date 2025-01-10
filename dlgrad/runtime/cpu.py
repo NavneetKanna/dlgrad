@@ -1,12 +1,9 @@
-import _add  # type: ignore
 import _af  # type: ignore
 import _arithmetic  # type: ignore
 import _cmp  # type: ignore
 import _full  # type: ignore
 import _matmul  # type: ignore
-import _mul  # type: ignore
 import _neg  # type: ignore
-import _sub  # type: ignore
 import _sum  # type: ignore
 import _uniform  # type: ignore
 from cffi import FFI
@@ -56,7 +53,7 @@ class CPU:
             case 2:
                 arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel, 0)
 
-        return CPU.ffi.gc(arr, _add.lib.free_add)
+        return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
 
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
@@ -67,7 +64,7 @@ class CPU:
             case 2:
                 arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel, 2)
 
-        return CPU.ffi.gc(arr, _sub.lib.free_sub)
+        return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
 
     @staticmethod
     @dispatcher.register(BinaryOps.MUL, Device.CPU)
@@ -78,7 +75,7 @@ class CPU:
             case 2:
                 arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel, 1)
 
-        return CPU.ffi.gc(arr, _mul.lib.free_mul)
+        return CPU.ffi.gc(arr, _arithmetic.lib.free_op)
 
     @staticmethod
     @dispatcher.register(BinaryOps.NEG, Device.CPU)
