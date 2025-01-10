@@ -7,7 +7,8 @@ root_dir = os.path.dirname(os.path.abspath(__file__ + "/.."))
 ffi = FFI()
 
 ffi.cdef(
-    "float *op_3d(float *x, float *y, int *xshape, int *xstrides, int *yshape, int *ystrides, int outnumel);\
+    "float *op_3d(float *x, float *y, int *xshape, int *xstrides, int *yshape, int *ystrides, int outnumel, int op);\
+        float *op_2d(float *x, float *y, int *xshape, int *xstrides, int *yshape, int *ystrides, int outnumel, int op);\
         void free_add(float *ptr);")
 ffi.set_source("_arithmetic", f"""
     #include "{root_dir}/src/c/arithmetic.h"

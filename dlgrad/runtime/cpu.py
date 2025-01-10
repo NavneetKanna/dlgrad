@@ -50,8 +50,11 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x: Buffer, y: Buffer) -> CDataPtr:
-        print(x.shape, y.shape)
-        arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel)
+        match x.ndim:
+            case 3:
+                arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel, 0)
+            case 2:
+                arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel, 0)
 
         return CPU.ffi.gc(arr, _add.lib.free_add)
 

@@ -89,7 +89,6 @@ class Buffer:
 
     def __add__(self, other: Buffer) -> Buffer:
         if self.numel >= other.numel:
-            # dim = get_dim_from_3d(other.shape)  # noqa: F841
             return Buffer(data=dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other),
                           shape=self.shape, device=self.device)
         else:
