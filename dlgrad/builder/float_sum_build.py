@@ -6,9 +6,9 @@ root_dir = os.path.dirname(os.path.abspath(__file__ + "/.."))
 
 ffi = FFI()
 
-ffi.cdef("float *sum_3d(float *x, int *xshape, int *xstride, int outnumel, int dim);\
-            float *sum_2d(float *x, int *xshape, int *xstride, int outnumel, int dim);\
-         float *sum(float *x, int numel); void free_sum(float *ptr);")
+ffi.cdef("void sum_3d(float *x, float *out, int *xshape, int *xstride, int outnumel, int dim);\
+         void sum_2d(float *x, float *out, int *xshape, int *xstride, int outnumel, int dim);\
+         void sum(float *x, float *out, int numel);")
 ffi.set_source("_sum", f"""
     #include "{root_dir}/src/c/sum.h"
 """,
