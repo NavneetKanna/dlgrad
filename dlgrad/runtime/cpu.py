@@ -95,21 +95,19 @@ class CPU:
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
     def sum(x: Buffer, dim: int | None, numel: int) -> CDataPtr:
         if x.ndim == 3:
-            if dim == 0:
-                arr = _sum.lib.sum_3d_dim0(x.ptr, numel, x.shape, x.stride)
-            if dim == 1:
-                arr = _sum.lib.sum_3d_dim1(x.ptr, numel, x.shape, x.stride)
-            if dim == 2:
-                arr = _sum.lib.sum_3d_dim2(x.ptr, numel, x.shape, x.stride)
             if not dim and dim != 0:
                 arr = _sum.lib.sum(x.ptr, prod_(x.shape))
+            else:
+                arr = _sum.lib.sum_3d(x.ptr, x.shape, x.stride, numel, dim)
         if x.ndim == 2:
-            if dim == 0:
-                arr = _sum.lib.sum_2d_dim0(x.ptr, numel, x.shape, x.stride)
-            if dim == 1:
-                arr = _sum.lib.sum_2d_dim1(x.ptr, numel, x.shape, x.stride)
+            # if dim == 0:
+                # arr = _sum.lib.sum_2d_dim0(x.ptr, numel, x.shape, x.stride)
+            # if dim == 1:
+                # arr = _sum.lib.sum_2d_dim1(x.ptr, numel, x.shape, x.stride)
             if not dim and dim != 0:
                 arr = _sum.lib.sum(x.ptr, prod_(x.shape))
+            else:
+                arr = _sum.lib.sum_2d(x.ptr, x.shape, x.stride, numel, dim)
 
         return CPU.ffi.gc(arr, _sum.lib.free_sum)
 

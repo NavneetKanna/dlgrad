@@ -1,84 +1,78 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "sum.h"
 
 
-float *sum_3d_dim0(float *arr, int numel, int *shape, int *strides) {
-    float *out = malloc(sizeof(float)*numel);
-    int idx = 0;
-
-    for (int i=0; i<shape[1]; i++) { // rows
-        for (int j=0; j<shape[2]; j++) { // cols
-            float sum = 0.0;
-            for (int k = 0; k < shape[0]; k++) {
-                sum += arr[k * strides[0] + i * strides[1] + j * strides[2]];
-            }
-            out[idx++] = sum;
-        }
-    }
-
-    return out;
-}
-
-float *sum_3d_dim1(float *arr, int numel, int *shape, int *strides) {
-    float *out = malloc(sizeof(float)*numel);
-    int idx = 0;
-
-    for(int i=0; i<shape[0]*strides[0]; i+=strides[0]) {
-        for (int j=0; j<shape[2]; j++) { // cols
-            float sum = 0.0;
-            for(int k=i+j; k<(i+strides[0]); k+=strides[1]) { // rows
-                sum += arr[k];
-            }
-            out[idx] = sum;
-            idx += 1;
-        }
-    }
-
-    return out;
-}
-
-float *sum_3d_dim2(float *arr, int numel, int *shape, int *strides) {
-    float *out = malloc(sizeof(float)*numel);
-    int idx = 0;
+float *sum_3d(float *x, int *xshape, int *xstride, int outnumel, int dim)
+{
+    float *out = malloc(outnumel * sizeof(float));
+    memset(out, 0, outnumel * sizeof(float));
     
-    for (int i = 0; i < shape[0]; i++) {
-        for (int j = 0; j < shape[1]; j++) { // rows
-            float sum = 0.0;
-            for (int k = 0; k < shape[2]; k++) { // cols
-                sum += arr[i * strides[0] + j * strides[1] + k * strides[2]];
+    int out_idx = 0;
+    int x_idx = 0;
+    
+    int nouter_dim = xshape[0];
+    int nrows = xshape[1];
+    int ncols = xshape[2];
+    
+    int od_stride = xstride[0];
+    int row_stride = xstride[1];
+    int col_stride = xstride[2];
+    
+    for (int od=0; od<nouter_dim; od++) {
+        for (int row=0; row<nrows; row++) {
+            for (int col=0; col<ncols; col++) {
+                x_idx = od*od_stride + row*row_stride + col*col_stride;
+                switch (dim) {
+                    case 0:
+                        out_idx = row*ncols + col;
+                        out[out_idx] += x[x_idx];
+                        break;
+                    case 1:
+                        out_idx = od*ncols + col;
+                        out[out_idx] += x[x_idx];
+                        break;
+                    case 2:
+                        out_idx = od*nrows + row;
+                        out[out_idx] += x[x_idx];
+                        break;
+                }
             }
-            out[idx++] = sum;
         }
     }
-
+    
     return out;
 }
 
-float *sum_2d_dim0(float *arr, int numel, int *shape, int *strides) {
-    float *out = malloc(sizeof(float)*numel);
-    int idx = 0;
-
-    for (int i=0; i<shape[1]; i++) { // cols
-        float sum = 0.0;
-        for (int j=0; j<shape[0]; j++) { // rows
-            sum += arr[i + j*strides[0]];
+float *sum_2d(float *x, int *xshape, int *xstride, int outnumel, int dim)
+{
+    float *out = malloc(outnumel * sizeof(float));
+    memset(out, 0, outnumel * sizeof(float));
+    
+    int out_idx = 0;
+    int x_idx = 0;
+    
+    int nrows = xshape[0];
+    int ncols = xshape[1];
+    
+    int row_stride = xstride[0];
+    int col_stride = xstride[1];
+    
+    for (int row=0; row<nrows; row++) {
+        for (int col=0; col<ncols; col++) {
+            x_idx = row*row_stride + col*col_stride;
+            switch (dim) {
+                case 0:
+                    out_idx = col;
+                    out[out_idx] += x[x_idx];
+                    break;
+                case 1:
+                    out_idx = row;
+                    out[out_idx] += x[x_idx];
+                    break;
+            }
         }
-        out[idx++] = sum;
-    }
-    return out;
-}
-
-float *sum_2d_dim1(float *arr, int numel, int *shape, int *strides) {
-    float *out = malloc(sizeof(float)*numel);
-    int idx = 0;
-
-    for (int i=0; i<shape[0]; i++) { // rows
-        float sum = 0.0;
-        for (int j=0; j<shape[1]; j++) { // cols
-            sum += arr[i*strides[0] + j];
-        }
-        out[idx++] = sum;
     }
     
     return out;
