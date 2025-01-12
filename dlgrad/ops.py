@@ -10,7 +10,7 @@ def transpose(x: Buffer) -> Buffer:
 
 
 class Sum(OP):
-	def forward(self, x: Buffer, dim: int | None) -> Buffer:
+	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
 		self.inp_shape = x.shape
 		self.device = x.device
 		return x.sum(dim=dim)

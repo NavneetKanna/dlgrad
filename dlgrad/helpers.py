@@ -28,7 +28,7 @@ class BinaryOps(Enum):
     GT = auto() # >
 
 def prod_(x: Iterable) -> int:
-    return prod(x) if x else tuple()
+    return prod(x) if x else 1
 
 def check_broadcast(x_shape: tuple, y_shape: tuple) -> bool:
     """

@@ -169,6 +169,10 @@ def test_sum_3d(shapes):
         to_out = torch_data.sum(dim=2)
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
+        dl_out = dlgrad_data.sum()
+        to_out = torch_data.sum()
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
 @pytest.mark.parametrize("shapes", [
     [(4, 3)],
     [(20, 40)],
@@ -185,6 +189,10 @@ def test_sum_2d(shapes):
 
         dl_out = dlgrad_data.sum(dim=1)
         to_out = torch_data.sum(dim=1)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+        dl_out = dlgrad_data.sum()
+        to_out = torch_data.sum()
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", [

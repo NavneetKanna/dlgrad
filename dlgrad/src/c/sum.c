@@ -4,8 +4,29 @@
 #include "sum.h"
 
 
+// TODO: Optimise by reording loops for each dim ?
+// TODO: Check if memset is efficient or calloc
+// TODO: Use macros for dim ?
+
+float *sum(float *x, int numel) {
+    float *out = malloc(1 * sizeof(float));
+
+    float sum = 0.0;
+    for (int i=0; i<numel; i++) {
+        sum += x[i];
+    }
+
+    out[0] = sum;
+
+    return out;
+}
+
 float *sum_3d(float *x, int *xshape, int *xstride, int outnumel, int dim)
 {
+    if (dim == -1) {                // elementwise
+        return sum(x, outnumel);
+    }
+
     float *out = malloc(outnumel * sizeof(float));
     memset(out, 0, outnumel * sizeof(float));
     
@@ -37,6 +58,8 @@ float *sum_3d(float *x, int *xshape, int *xstride, int outnumel, int dim)
                         out_idx = od*nrows + row;
                         out[out_idx] += x[x_idx];
                         break;
+                    case -1:
+                        break;
                 }
             }
         }
@@ -47,6 +70,10 @@ float *sum_3d(float *x, int *xshape, int *xstride, int outnumel, int dim)
 
 float *sum_2d(float *x, int *xshape, int *xstride, int outnumel, int dim)
 {
+    if (dim == -1) {                // elementwise 
+        return sum(x, outnumel);
+    }
+
     float *out = malloc(outnumel * sizeof(float));
     memset(out, 0, outnumel * sizeof(float));
     
@@ -78,18 +105,7 @@ float *sum_2d(float *x, int *xshape, int *xstride, int outnumel, int dim)
     return out;
 }
 
-float *sum(float *x, int numel) {
-    float *out = malloc(1 * sizeof(float));
 
-    float sum = 0.0;
-    for (int i=0; i<numel; i++) {
-        sum += x[i];
-    }
-
-    out[0] = sum;
-
-    return out;
-}
 
 void free_sum(float *ptr) {
     free(ptr);

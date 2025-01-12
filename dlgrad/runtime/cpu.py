@@ -16,6 +16,7 @@ from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, prod_
 
 
 # TODO: Calling ffi.gc() twice one after the other leads to error, find alternative
+# TODO: Should numel be sent as arg or be calculated here ?
 class CPU:
     """
     Main CPU runtime class which handles the logic of calling the compiled C source files.
@@ -95,19 +96,9 @@ class CPU:
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
     def sum(x: Buffer, dim: int | None, numel: int) -> CDataPtr:
         if x.ndim == 3:
-            if not dim and dim != 0:
-                arr = _sum.lib.sum(x.ptr, prod_(x.shape))
-            else:
-                arr = _sum.lib.sum_3d(x.ptr, x.shape, x.stride, numel, dim)
+            arr = _sum.lib.sum_3d(x.ptr, x.shape, x.stride, numel, dim)
         if x.ndim == 2:
-            # if dim == 0:
-                # arr = _sum.lib.sum_2d_dim0(x.ptr, numel, x.shape, x.stride)
-            # if dim == 1:
-                # arr = _sum.lib.sum_2d_dim1(x.ptr, numel, x.shape, x.stride)
-            if not dim and dim != 0:
-                arr = _sum.lib.sum(x.ptr, prod_(x.shape))
-            else:
-                arr = _sum.lib.sum_2d(x.ptr, x.shape, x.stride, numel, dim)
+            arr = _sum.lib.sum_2d(x.ptr, x.shape, x.stride, numel, dim)
 
         return CPU.ffi.gc(arr, _sum.lib.free_sum)
 

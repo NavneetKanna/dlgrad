@@ -29,7 +29,7 @@ class Buffer:
     #     return Buffer(data=dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self),
     #                   shape=self.shape, device=self.device)
 
-    def sum(self, dim: int | None) -> Buffer:  # noqa: C901
+    def sum(self, dim: int = -1) -> Buffer:  # noqa: C901
         out_shape = tuple()
         ndim = 0
         if self.ndim == 3:
@@ -49,11 +49,11 @@ class Buffer:
             elif dim ==1:
                 out_shape = (self.shape[0],)
             else:
-                out_shape = ()
+                out_shape = tuple()
 
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device,
-                                     x=self, dim=dim, numel=prod_(out_shape)),
+                                     x=self, dim=dim, numel=prod_(out_shape) if dim != -1 else self.numel),
             shape=out_shape, device=self.device, ndim=ndim)
 
     def matmul(self, other: Buffer) -> Buffer:

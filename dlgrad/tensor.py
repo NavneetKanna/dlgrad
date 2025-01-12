@@ -239,7 +239,7 @@ class Tensor:
 			requires_grad=x.requires_grad,
 		)
 
-	def sum(self, dim: int | None = None) -> Tensor:
+	def sum(self, dim: int = -1) -> Tensor:
 		return ops.Sum.execute(self, dim=dim)
 
 	def relu(self) -> Tensor:
