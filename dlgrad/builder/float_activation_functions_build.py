@@ -6,7 +6,7 @@ root_dir = os.path.dirname(os.path.abspath(__file__ + "/.."))
 
 ffi = FFI()
 
-ffi.cdef("float *relu(float *arr, int numel); void free_af(float *ptr);")
+ffi.cdef("void relu(float *arr, float *out, int numel);")
 ffi.set_source("_af", f"""
     #include "{root_dir}/src/c/activation_functions.h"
 """,

@@ -1,7 +1,6 @@
 #ifndef AF
 #define AF
 
-float *relu(float *arr, int numel);
-void free_af(float *ptr);
+void relu(float *arr, float *out, int numel);
 
 #endif

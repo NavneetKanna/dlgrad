@@ -124,8 +124,11 @@ class CPU:
     @staticmethod
     @dispatcher.register(UnaryOps.RELU, Device.CPU)
     def relu(x: Buffer, numel: int) -> CDataPtr:
-        arr = _af.lib.relu(x.ptr, numel)
-        return CPU.ffi.gc(arr, _af.lib.free_af)
+        out_ptr = CPU.allocate(num=numel)
+
+        _af.lib.relu(x.ptr, out_ptr, numel)
+
+        return out_ptr
 
     @staticmethod
     @dispatcher.register(BinaryOps.GT, Device.CPU)
