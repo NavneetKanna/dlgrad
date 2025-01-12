@@ -6,7 +6,7 @@ root_dir = os.path.dirname(os.path.abspath(__file__ + "/.."))
 
 ffi = FFI()
 
-ffi.cdef("float *neg(float *x, int numel); void free_neg(float* ptr);")
+ffi.cdef("void neg(float *x, float *out, int numel);")
 ffi.set_source("_neg", f"""
     #include "{root_dir}/src/c/neg.h"
 """,

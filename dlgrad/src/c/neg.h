@@ -1,7 +1,6 @@
 #ifndef NEG
 #define NEG
 
-float *neg(float *x, int numel);
-void free_neg(float *ptr);
+void neg(float *x, float *out, int numel);
 
 #endif

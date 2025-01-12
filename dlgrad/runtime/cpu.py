@@ -94,9 +94,11 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.NEG, Device.CPU)
     def neg(x: Buffer) -> CDataPtr:
-        arr = _neg.lib.neg(x.ptr, x.numel)
+        out_ptr = CPU.allocate(num=x.numel)
 
-        return CPU.ffi.gc(arr, _neg.lib.free_neg)
+        _neg.lib.neg(x.ptr, out_ptr, x.numel)
+
+        return out_ptr
 
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
