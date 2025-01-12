@@ -105,8 +105,6 @@ float *sum_2d(float *x, int *xshape, int *xstride, int outnumel, int dim)
     return out;
 }
 
-
-
 void free_sum(float *ptr) {
     free(ptr);
 }

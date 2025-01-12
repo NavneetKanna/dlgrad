@@ -25,10 +25,6 @@ class Buffer:
                                        kwargs.get("ndim", len(shape)))
         self.device = device
 
-    # def neg(self) -> Buffer:
-    #     return Buffer(data=dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self),
-    #                   shape=self.shape, device=self.device)
-
     def sum(self, dim: int = -1) -> Buffer:  # noqa: C901
         out_shape = tuple()
         ndim = 0
