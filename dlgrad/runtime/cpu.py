@@ -1,4 +1,5 @@
 import _af  # type: ignore
+import _allocate  # type: ignore
 import _arithmetic  # type: ignore
 import _cmp  # type: ignore
 import _full  # type: ignore
@@ -26,6 +27,12 @@ class CPU:
     ffi = FFI()
 
     @staticmethod
+    def allocate(num: int, initialize: bool = False) -> CDataPtr:
+        if not initialize:
+            return CPU.ffi.gc(_allocate.lib.uninitialized_memory(num), _allocate.lib.free_ptr)
+        return CPU.ffi.gc(_allocate.lib.initialized_memory(num), _allocate.lib.free_ptr)
+
+    @staticmethod
     @dispatcher.register(BufferOps.CREATE, Device.CPU)
     def create_buffer_from_scalar(x: Scalar) -> CDataPtr:
         return CPU.ffi.new(f"{DType.get_c_dtype(x)} [1]", [x])
@@ -48,9 +55,10 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x: Buffer, y: Buffer) -> CDataPtr:
+        out_ptr = CPU.allocate(num=x.numel)
         match x.ndim:
             case 3:
-                arr = _arithmetic.lib.op_3d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel, 0)
+                _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 0)
             case 2:
                 arr = _arithmetic.lib.op_2d(x.ptr, y.ptr, x.shape, x.stride, y.shape, y.stride, x.numel, 0)
 

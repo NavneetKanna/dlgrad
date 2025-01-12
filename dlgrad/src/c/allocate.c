@@ -4,7 +4,7 @@
 
 float *uninitialized_memory(size_t num)
 {
-    float *out = malloc(num*sizeof(float));
+    float *out = malloc(num * sizeof(float));
     if (out == NULL) {
         return NULL;
     }
@@ -22,7 +22,7 @@ float *initialized_memory(size_t num)
     return out;
 }
 
-void free(float *ptr)
+void free_ptr(float *ptr)
 {
     free(ptr);
 }
