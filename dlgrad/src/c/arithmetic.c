@@ -74,7 +74,3 @@ void op_2d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
         }
     }
 }
-
-void free_op(float *ptr) {
-    free(ptr);
-}
