@@ -44,10 +44,8 @@ void op_3d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
 }
 
 // Handles all broadcasting shapes
-float *op_2d(float *x, float *y, int *xshape, int *xstrides, int *yshape, int *ystrides, int outnumel, int op)
+void op_2d(float *x, float *y, float *out, int *xshape, int *xstrides, int *yshape, int *ystrides, int op)
 {
-    float *out = malloc(outnumel*sizeof(float));
-
     int x_idx = 0;
     int y_idx = 0;
     int y_idx2 = 0;
@@ -75,8 +73,6 @@ float *op_2d(float *x, float *y, int *xshape, int *xstrides, int *yshape, int *y
             }
         }
     }
-
-    return out;
 }
 
 void free_op(float *ptr) {
