@@ -133,12 +133,14 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.GT, Device.CPU)
     def gt(x: Buffer, y: int | float) -> CDataPtr:
+        out_ptr = CPU.allocate(num=x.numel)
+
         if isinstance(y, int):
             y = float(y)
 
-        arr = _cmp.lib.gt_with_scalar(x.ptr, y, x.numel)
+        _cmp.lib.gt_with_scalar(x.ptr, out_ptr, y, x.numel)
 
-        return CPU.ffi.gc(arr, _cmp.lib.free_cmp)
+        return out_ptr
 
 """
 

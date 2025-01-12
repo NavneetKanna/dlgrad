@@ -6,7 +6,7 @@ root_dir = os.path.dirname(os.path.abspath(__file__ + "/.."))
 
 ffi = FFI()
 
-ffi.cdef("float *gt_with_scalar(float *arr, float val, int numel); void free_cmp(float *ptr);")
+ffi.cdef("void gt_with_scalar(float *arr, float *out, float val, int numel); ")
 ffi.set_source("_cmp", f"""
     #include "{root_dir}/src/c/comparision.h"
 """,

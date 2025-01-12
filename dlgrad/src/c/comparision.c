@@ -2,21 +2,12 @@
 #include <stdlib.h>
 
 
-float *gt_with_scalar(float *arr, float val, int numel)
+void gt_with_scalar(float *arr, float *out, float val, int numel)
 {
-    float *out = malloc(sizeof(float) * numel);
-
     for (int i=0; i<numel; i++) {
         if (arr[i] > val)
             out[i] = 1.0;
         else
             out[i] = 0.0;
     }
-
-    return out;
-}
-
-void free_cmp(float *ptr)
-{
-    free(ptr);
 }
