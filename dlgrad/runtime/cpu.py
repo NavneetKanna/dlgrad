@@ -103,9 +103,11 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
-        arr = _matmul.lib.matmul(x.ptr, y.ptr, x.shape[0], y.shape[1], y.shape[0], y.stride, x.stride)
+        out_ptr = CPU.allocate(num=x.shape[0]*y.shape[1])
 
-        return CPU.ffi.gc(arr, _matmul.lib.free_matmul)
+        _matmul.lib.matmul(x.ptr, y.ptr, out_ptr, x.shape[0], y.shape[1], y.shape[0], y.stride, x.stride)
+
+        return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.CPU)

@@ -3,9 +3,7 @@
 
 
 // TODO: Naive solution, will optimise later
-float *matmul(float *x, float *y, int x_rows, int y_cols, int y_rows, int *ystride, int *xstride) {
-    float *out = malloc(x_rows*y_cols*sizeof(float));
-    
+void matmul(float *x, float *y, float *out, int x_rows, int y_cols, int y_rows, int *ystride, int *xstride) {
     float sum = 0.0;
     for (int i=0; i<x_rows; i++) {
         for (int j=0; j<y_cols; j++) {
@@ -16,10 +14,4 @@ float *matmul(float *x, float *y, int x_rows, int y_cols, int y_rows, int *ystri
             out[i*y_cols + j] = sum;
         }
     }
-
-    return out;
-}
-
-void free_matmul(float *ptr) {
-    free(ptr);
 }
