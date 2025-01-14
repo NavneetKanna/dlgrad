@@ -323,3 +323,10 @@ class Tensor:
 	@property
 	def ndim(self) -> int:
 		return self.data.ndim
+
+"""
+Roadmap:
+
+- memory pool instead of malloc if malloc is slow to call repeatedly
+
+"""

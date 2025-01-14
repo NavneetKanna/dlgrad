@@ -58,14 +58,6 @@ class Mul(OP):
 		  	   self.match_inp_shape(inp=self.y, upstream_grad=-upstream_grad) * self.y if self.req_grad[1] else None
 
 
-class Neg(OP):
-	def forward(self, x: Buffer) -> Buffer:
-		return x.neg()
-
-	def backward(self):  # noqa: ANN201
-		pass
-
-
 class MatMul(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		return x.matmul(y)

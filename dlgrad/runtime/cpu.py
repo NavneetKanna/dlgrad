@@ -17,7 +17,6 @@ from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, cal_sum_out_shape, pr
 
 
 # TODO: Calling ffi.gc() twice one after the other leads to error, find alternative
-# TODO: Should numel be sent as arg or be calculated here ?
 class CPU:
     """
     Main CPU runtime class which handles the logic of calling the compiled C source files.

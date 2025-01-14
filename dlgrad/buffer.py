@@ -25,24 +25,6 @@ class Buffer:
                                        kwargs.get("ndim", len(shape)))
         self.device = device
 
-    def sum(self, dim: int = -1) -> Buffer:  # noqa: C901
-        out_shape = prod_(cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape))
-
-        return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim),
-            shape=out_shape, device=self.device, ndim=self.ndim - 1
-        )
-
-    def matmul(self, other: Buffer) -> Buffer:
-        return Buffer(
-            data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other),
-            shape=(self.shape[0], other.shape[1]), device=self.device
-        )
-
-    # TODO: Check if x is del, then even the transposed is del
-    def transpose(self) -> Buffer:
-        return Buffer(self.ptr, self.shape[::-1], self.device, stride=self.stride[::-1])
-
     @staticmethod
     def create_buffer_from_scalar(x: Scalar, device: Device) -> Buffer:
         return Buffer(
@@ -63,6 +45,24 @@ class Buffer:
             data=dispatcher.dispatch(op=BufferOps.FULL, device=device, shape=shape, fill_value=fill_value),
             shape=shape, device=device
         )
+
+    def sum(self, dim: int = -1) -> Buffer:
+        out_shape = prod_(cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape))
+
+        return Buffer(
+            data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim),
+            shape=out_shape, device=self.device, ndim=self.ndim - 1
+        )
+
+    def matmul(self, other: Buffer) -> Buffer:
+        return Buffer(
+            data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other),
+            shape=(self.shape[0], other.shape[1]), device=self.device
+        )
+
+    # TODO: Check if x is del, then even the transposed is del
+    def transpose(self) -> Buffer:
+        return Buffer(self.ptr, self.shape[::-1], self.device, stride=self.stride[::-1])
 
     def relu(self) -> Buffer:
         return Buffer(
@@ -134,4 +134,3 @@ class Buffer:
     @property
     def ndim(self) -> int:
         return self.metadata.ndim
-
