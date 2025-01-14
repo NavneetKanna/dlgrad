@@ -25,7 +25,7 @@ exclude = [
 ]
 
 target-version = "py310"
-line-length = 120
+line-length = 125
 
 [lint]
 select = [

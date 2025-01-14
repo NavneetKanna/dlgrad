@@ -13,7 +13,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, DType, Scalar
-from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, prod_
+from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, cal_sum_out_shape, prod_
 
 
 # TODO: Calling ffi.gc() twice one after the other leads to error, find alternative
@@ -80,8 +80,8 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BinaryOps.MUL, Device.CPU)
-    def mul(x: Buffer, y: Buffer) -> CDataPtr:
-        out_ptr = CPU.allocate(num=x.numel)
+    def mul(x: Buffer, y: Buffer, num: int) -> CDataPtr:
+        out_ptr = CPU.allocate(num=num)
 
         match x.ndim:
             case 3:
@@ -93,8 +93,8 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BinaryOps.NEG, Device.CPU)
-    def neg(x: Buffer) -> CDataPtr:
-        out_ptr = CPU.allocate(num=x.numel)
+    def neg(x: Buffer, num: int) -> CDataPtr:
+        out_ptr = CPU.allocate(num=num)
 
         _neg.lib.neg(x.ptr, out_ptr, x.numel)
 
@@ -111,7 +111,8 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
-    def sum(x: Buffer, dim: int | None, numel: int) -> CDataPtr:
+    def sum(x: Buffer, dim: int | None) -> CDataPtr:
+        numel = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape)) if dim != -1 else x.numel
         out_ptr = CPU.allocate(num=numel, initialize=True)
 
         if x.ndim == 3:
@@ -123,10 +124,10 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.RELU, Device.CPU)
-    def relu(x: Buffer, numel: int) -> CDataPtr:
-        out_ptr = CPU.allocate(num=numel)
+    def relu(x: Buffer) -> CDataPtr:
+        out_ptr = CPU.allocate(num=x.numel)
 
-        _af.lib.relu(x.ptr, out_ptr, numel)
+        _af.lib.relu(x.ptr, out_ptr, x.numel)
 
         return out_ptr
 

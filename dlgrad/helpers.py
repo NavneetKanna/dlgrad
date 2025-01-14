@@ -94,3 +94,27 @@ def resolve_ndim(inp_shape: tuple, grad_shape: tuple) -> int:
             ndim += 1
 
     return ndim
+
+def cal_sum_out_shape(ndim: int, dim: int, inp_shape: tuple) -> tuple:
+    out_shape = tuple()
+    ndim = 0
+    if ndim == 3:
+        ndim = 2
+        if dim == 0:
+            out_shape = (inp_shape[1], inp_shape[2])
+        elif dim == 1:
+            out_shape = (inp_shape[0], inp_shape[2])
+        elif dim == 2:
+            out_shape = (inp_shape[0], inp_shape[1])
+        else:
+            out_shape = tuple()
+    elif ndim == 2:
+        ndim = 1
+        if dim == 0:
+            out_shape = (inp_shape[1],)
+        elif dim ==1:
+            out_shape = (inp_shape[0],)
+        else:
+            out_shape = tuple()
+
+    return out_shape
