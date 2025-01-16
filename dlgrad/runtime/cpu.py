@@ -58,12 +58,13 @@ class CPU:
 
         if y.ndim == 1:
             _arithmetic.lib.add_with_1d(x.ptr, y.ptr, out_ptr, x.numel, y.numel, 0)
-        else:
-            match x.ndim:
-                case 3:
-                    _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 0)
-                case 2:
-                    _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 0)
+            return out_ptr
+
+        match x.ndim:
+            case 3:
+                _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 0)
+            case 2:
+                _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 0)
 
         return out_ptr
 
@@ -74,12 +75,13 @@ class CPU:
 
         if y.ndim == 1:
             _arithmetic.lib.add_with_1d(x.ptr, y.ptr, out_ptr, x.numel, y.numel, 2)
-        else:
-            match x.ndim:
-                case 3:
-                    _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 2)
-                case 2:
-                    _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 2)
+            return out_ptr
+
+        match x.ndim:
+            case 3:
+                _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 2)
+            case 2:
+                _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 2)
 
         return out_ptr
 
@@ -90,12 +92,13 @@ class CPU:
 
         if y.ndim == 1:
             _arithmetic.lib.add_with_1d(x.ptr, y.ptr, out_ptr, x.numel, y.numel, 1)
-        else:
-            match x.ndim:
-                case 3:
-                    _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 1)
-                case 2:
-                    _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 1)
+            return out_ptr
+
+        match x.ndim:
+            case 3:
+                _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 1)
+            case 2:
+                _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 1)
 
         return out_ptr
 
