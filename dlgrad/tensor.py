@@ -214,16 +214,8 @@ class Tensor:
 		return ops.Sub.execute(x, y)
 
 	@staticmethod
-	def neg(x: Tensor) -> Tensor:
-		return ops.Neg.execute(x)
-
-	@staticmethod
 	def matmul(x: Tensor, y: Tensor) -> Tensor:
-		if (
-			x.data.shape[-1] != y.data.shape[0]
-			and x.data.ndim != 2
-			and y.data.ndim != 2
-		):
+		if (x.data.shape[-1] != y.data.shape[0] and x.data.ndim != 2 and y.data.ndim != 2):
 			raise ValueError("Either the Tensors shape dont match or is not 2D")
 
 		return ops.MatMul.execute(x, y)

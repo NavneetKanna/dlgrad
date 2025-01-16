@@ -74,3 +74,29 @@ void op_2d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
         }
     }
 }
+
+// if y dim is 1, it will always be add along cols
+void add_with_1d(float *x, float *y, float *out, int xnumel, int ynumel, int op)
+{
+    int y_idx = 0;
+    for (int x_idx=0; x_idx<xnumel; x_idx++) {
+
+        if (x_idx!=0 && x_idx%ynumel==0) {      // at start of every col, reset y_idx
+            y_idx = 0;
+        } 
+
+        switch (op) {
+        case ADD:
+            out[x_idx] = x[x_idx] + y[y_idx];
+            break;
+        case MUL:
+            out[x_idx] = x[x_idx] * y[y_idx];
+            break;
+        case SUB:
+            out[x_idx] = x[x_idx] - y[y_idx];
+            break;
+        }
+
+        y_idx += 1;
+    }
+}
