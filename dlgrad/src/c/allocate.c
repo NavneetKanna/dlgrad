@@ -2,9 +2,10 @@
 #include "allocate.h"
 
 
-float *uninitialized_memory(size_t num)
+// dlgrad only supports float, hence it is ok to have the return type as float
+float *uninitialized_memory(size_t nbytes)
 {
-    float *out = malloc(num * sizeof(float));
+    float *out = malloc(nbytes);
     if (out == NULL) {
         return NULL;
     }
@@ -12,9 +13,9 @@ float *uninitialized_memory(size_t num)
     return out;
 }
 
-float *initialized_memory(size_t num)
+float *initialized_memory(size_t num, size_t size)
 {
-    float *out = calloc(num, sizeof(float));
+    float *out = calloc(num, size);
     if (out == NULL) {
         return NULL;
     }
