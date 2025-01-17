@@ -47,7 +47,7 @@ class Buffer:
         )
 
     def sum(self, dim: int = -1) -> Buffer:
-        out_shape = prod_(cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape))
+        out_shape = cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
 
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim),

@@ -28,13 +28,19 @@ class CPU:
     @staticmethod
     def allocate(num: int, initialize: bool = False) -> CDataPtr:
         if not initialize:
-            return CPU.ffi.gc(_allocate.lib.uninitialized_memory(num), _allocate.lib.free_ptr)
-        return CPU.ffi.gc(_allocate.lib.initialized_memory(num), _allocate.lib.free_ptr)
+            ptr = CPU.ffi.gc(_allocate.lib.uninitialized_memory(num), _allocate.lib.free_ptr)
+            if ptr == CPU.ffi.NULL:
+                raise MemoryError(f"Unable to allocate requested memory of size {num}")
+            return ptr
+        ptr = CPU.ffi.gc(_allocate.lib.initialized_memory(num), _allocate.lib.free_ptr)
+        if ptr == CPU.ffi.NULL:
+            raise MemoryError(f"Unable to allocate requested memory of size {num}")
+        return ptr
 
     @staticmethod
     @dispatcher.register(BufferOps.CREATE, Device.CPU)
     def create_buffer_from_scalar(x: Scalar) -> CDataPtr:
-        return CPU.ffi.new(f"{DType.get_c_dtype(x)} [1]", [x])
+        return CPU.ffi.new(f"{DType.get_c_dtype(x)} [1]", [x]) # TODO: Is this the right thing to do ?
 
     @staticmethod
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
@@ -87,8 +93,8 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BinaryOps.MUL, Device.CPU)
-    def mul(x: Buffer, y: Buffer, num: int) -> CDataPtr:
-        out_ptr = CPU.allocate(num=num)
+    def mul(x: Buffer, y: Buffer) -> CDataPtr:
+        out_ptr = CPU.allocate(num=x.numel)
 
         if y.ndim == 1:
             _arithmetic.lib.add_with_1d(x.ptr, y.ptr, out_ptr, x.numel, y.numel, 1)
@@ -122,14 +128,14 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
-    def sum(x: Buffer, dim: int | None) -> CDataPtr:
-        numel = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape)) if dim != -1 else x.numel
-        out_ptr = CPU.allocate(num=numel, initialize=True)
+    def sum(x: Buffer, dim: int) -> CDataPtr:
+        num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        out_ptr = CPU.allocate(num=num, initialize=True)
 
         if x.ndim == 3:
-            _sum.lib.sum_3d(x.ptr, out_ptr, x.shape, x.stride, numel, dim)
+            _sum.lib.sum_3d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
         if x.ndim == 2:
-            _sum.lib.sum_2d(x.ptr, out_ptr, x.shape, x.stride, numel, dim)
+            _sum.lib.sum_2d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
 
         return out_ptr
 
