@@ -33,6 +33,7 @@ print(b.grad.numpy())
 
 ## Things I'm Working On
 - [ ] nn
+- [ ] Cross-Entropy Loss
 
 ## Tests
 
