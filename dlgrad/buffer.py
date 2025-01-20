@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
-from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, cal_sum_out_shape, calculate_stride, prod_
+from dlgrad.helpers import BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, calculate_stride, prod_
 
 
 @dataclass
@@ -117,6 +117,14 @@ class Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self),
             shape=self.shape, device=self.device
+        )
+
+    # only for nll loss
+    def __getitem__(self, i):  # noqa: ANN001, ANN204
+        print("in buffer", i)
+        return Buffer(
+            data=dispatcher.dispatch(op=CustomOps.INDEX, device=self.device, x=self),
+            shape=len(i[0]), device=self.device
         )
 
     @property

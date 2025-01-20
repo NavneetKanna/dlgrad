@@ -27,6 +27,10 @@ class BinaryOps(Enum):
     MATMUL = auto()
     GT = auto() # >
 
+class CustomOps(Enum):
+    INDEX = auto()
+
+
 def prod_(x: Iterable) -> int:
     return prod(x) if x else 1
 

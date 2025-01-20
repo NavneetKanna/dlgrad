@@ -15,7 +15,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, DType, Scalar
-from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, cal_sum_out_shape, prod_
+from dlgrad.helpers import BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, prod_
 
 
 # TODO: Calling ffi.gc() twice one after the other leads to error, find alternative
@@ -163,6 +163,12 @@ class CPU:
         _cmp.lib.gt_with_scalar(x.ptr, out_ptr, y, x.numel)
 
         return out_ptr
+
+    @staticmethod
+    @dispatcher.register(CustomOps.INDEX, Device.CPU)
+    def index(x: Buffer):  # noqa: ANN205
+        pass
+
 
 """
 

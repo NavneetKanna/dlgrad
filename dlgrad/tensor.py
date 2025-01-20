@@ -275,6 +275,7 @@ class Tensor:
 					p.grad = g if p.grad is None else p.grad + g
 
 	# see ...
+    # only for nll loss
 	def __getitem__(self, i):  # noqa: ANN001, ANN204
 		assert isinstance(i, tuple), "dlgrad supports only 1 kind of indexing, see ..."
 		assert isinstance(i[0], list), "The first item should be a list"
@@ -290,6 +291,8 @@ class Tensor:
 		for j in i[1]:
 			if j >= self.shape[1]:
 				raise IndexError(f"index {j} is >= the tensors shape {self.shape[1]}")
+
+		return Tensor(data=self.data[i], device=self.device, dtype=self.dtype)
 
 	def __repr__(self) -> str:
 		return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"  # noqa: E501
