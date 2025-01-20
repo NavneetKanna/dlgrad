@@ -121,10 +121,9 @@ class Buffer:
 
     # only for nll loss
     def __getitem__(self, i):  # noqa: ANN001, ANN204
-        print("in buffer", i)
         return Buffer(
-            data=dispatcher.dispatch(op=CustomOps.INDEX, device=self.device, x=self),
-            shape=len(i[0]), device=self.device
+            data=dispatcher.dispatch(op=CustomOps.INDEX, device=self.device, x=self, idx=i),
+            shape=(len(i[0]),), device=self.device
         )
 
     @property

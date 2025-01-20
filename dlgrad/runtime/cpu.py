@@ -5,6 +5,7 @@ import _allocate  # type: ignore
 import _arithmetic  # type: ignore
 import _cmp  # type: ignore
 import _full  # type: ignore
+import _index  # type: ignore
 import _matmul  # type: ignore
 import _neg  # type: ignore
 import _sum  # type: ignore
@@ -166,8 +167,13 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(CustomOps.INDEX, Device.CPU)
-    def index(x: Buffer):  # noqa: ANN205
-        pass
+    # only for nll loss
+    def index(x: Buffer, idx):  # noqa: ANN001, ANN205
+        out_ptr = CPU.malloc(num=len(idx[0]))
+
+        _index.lib.indexing(x.ptr, out_ptr, x.shape, x.stride, idx[1])
+
+        return out_ptr
 
 
 """
