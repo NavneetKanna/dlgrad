@@ -196,6 +196,54 @@ def test_sum_2d(shapes):
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", [
+    [(4, 3, 2)],
+    [(20, 40, 30)],
+])
+def test_max_3d(shapes):
+    for sh in shapes:
+        np_data = np.random.uniform(size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data)
+        torch_data = torch.tensor(np_data)
+
+        dl_out = dlgrad_data.max(dim=0)
+        to_out, _ = torch_data.max(dim=0)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+        dl_out = dlgrad_data.max(dim=1)
+        to_out, _ = torch_data.max(dim=1)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+        dl_out = dlgrad_data.max(dim=2)
+        to_out, _ = torch_data.max(dim=2)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+        dl_out = dlgrad_data.max()
+        to_out = torch_data.max()
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes", [
+    [(4, 3)],
+    [(20, 40)],
+])
+def test_max_2d(shapes):
+    for sh in shapes:
+        np_data = np.random.uniform(size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data)
+        torch_data = torch.tensor(np_data)
+
+        dl_out = dlgrad_data.max(dim=0)
+        to_out, _ = torch_data.max(dim=0)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+        dl_out = dlgrad_data.max(dim=1)
+        to_out, _ = torch_data.max(dim=1)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+        dl_out = dlgrad_data.max()
+        to_out = torch_data.max()
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes", [
     [(2, 3)],
     [(10, 10)]
 ])
