@@ -1,25 +1,25 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "sum.h"
+#include "max.h"
 
 
-// TODO: Optimise by reording loops for each dim ?
-// TODO: Use macros for dim ?
 
-void sum(float *x, float *out, int numel) {
-    float sum = 0.0;
+void max(float *x, float *out, int numel) {
+    float max = 0.0;
     for (int i=0; i<numel; i++) {
-        sum += x[i];
+        if (x[i] > max) {
+            max = x[i];
+        }
     }
 
-    out[0] = sum;
+    out[0] = max;
 }
 
-void sum_3d(float *x, float *out, int *xshape, int *xstride, int outnumel, int dim)
+void max_3d(float *x, float *out, int *xshape, int *xstride, int outnumel, int dim)
 {
     if (dim == -1) {                // elementwise
-        return sum(x, out, outnumel);
+        return max(x, out, outnumel);
     }
 
     int out_idx = 0;
@@ -40,32 +40,31 @@ void sum_3d(float *x, float *out, int *xshape, int *xstride, int outnumel, int d
                 switch (dim) {
                     case 0:
                         out_idx = row*ncols + col;
-                        out[out_idx] += x[x_idx];
                         break;
                     case 1:
                         out_idx = od*ncols + col;
-                        out[out_idx] += x[x_idx];
                         break;
                     case 2:
                         out_idx = od*nrows + row;
-                        out[out_idx] += x[x_idx];
                         break;
-                    case -1:
-                        break;
+                }
+                if (x[x_idx] > out[out_idx]) {
+                    out[out_idx] = x[x_idx];
                 }
             }
         }
     }
 }
 
-void sum_2d(float *x, float *out, int *xshape, int *xstride, int outnumel, int dim)
+void max_2d(float *x, float *out, int *xshape, int *xstride, int outnumel, int dim)
 {
     if (dim == -1) {                // elementwise 
-        return sum(x, out, outnumel);
+        return max(x, out, outnumel);
     }
 
     int out_idx = 0;
     int x_idx = 0;
+    int tmp_max = 0;
     
     int nrows = xshape[0];
     int ncols = xshape[1];
@@ -79,12 +78,13 @@ void sum_2d(float *x, float *out, int *xshape, int *xstride, int outnumel, int d
             switch (dim) {
                 case 0:
                     out_idx = col;
-                    out[out_idx] += x[x_idx];
                     break;
                 case 1:
                     out_idx = row;
-                    out[out_idx] += x[x_idx];
                     break;
+            }
+            if (x[x_idx] > out[out_idx]) {
+                out[out_idx] = x[x_idx];
             }
         }
     }

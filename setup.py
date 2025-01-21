@@ -14,6 +14,7 @@ setup(
         'dlgrad/builder/float_neg_build.py:ffi',
         'dlgrad/builder/float_matmul_build.py:ffi',
         'dlgrad/builder/float_sum_build.py:ffi',
+        'dlgrad/builder/float_max_build.py:ffi',
         'dlgrad/builder/float_full_build.py:ffi',
         "dlgrad/builder/float_activation_functions_build.py:ffi",
         'dlgrad/builder/float_comparision_build.py:ffi',

@@ -240,6 +240,12 @@ class Tensor:
 	def linear(self, weight: Tensor, bias: Tensor | None) -> Tensor:
 		return self @ weight.T + bias if bias else self @ weight.T
 
+	def max(self) -> Tensor:
+		pass
+
+	def cross_entropy_loss(self) -> Tensor:
+		pass
+
 	def backward(self) -> None:
 		assert self.shape == tuple(), "backward must be called on a scalar Tensor"
 
