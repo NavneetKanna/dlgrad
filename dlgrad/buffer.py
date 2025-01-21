@@ -127,6 +127,12 @@ class Buffer:
             shape=self.shape, device=self.device
         )
 
+    def __eq__(self, other: Buffer) -> Buffer:
+        return Buffer(
+            data=dispatcher.dispatch(op=BinaryOps.ET, device=self.device, x=self, y=other),
+            shape=self.shape, device=self.device
+        )
+
     # only for nll loss
     def __getitem__(self, i):  # noqa: ANN001, ANN204
         return Buffer(

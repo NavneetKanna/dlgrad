@@ -22,10 +22,12 @@ class Max(OP):
 	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
 		self.inp_shape = x.shape
 		self.device = x.device
-		return x.max(dim=dim)
+		self.x = x
+		self.out = x.max(dim=dim)
+		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		return ...
+		return self.x == self.out
 
 # ------------ Binary Ops -----------
 
