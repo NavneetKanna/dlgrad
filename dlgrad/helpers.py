@@ -10,6 +10,7 @@ ffi = FFI()
 
 class UnaryOps(Enum):
     SUM = auto()
+    MAX = auto()
     TRANSPOSE = auto()
     RELU = auto()
 

@@ -7,6 +7,7 @@ import _cmp  # type: ignore
 import _full  # type: ignore
 import _index  # type: ignore
 import _matmul  # type: ignore
+import _max  # type: ignore
 import _neg  # type: ignore
 import _sum  # type: ignore
 import _uniform  # type: ignore
@@ -38,6 +39,13 @@ class CPU:
     @staticmethod
     def calloc(num: int, size: int = struct.calcsize('f')) -> CDataPtr:
         ptr = CPU.ffi.gc(_allocate.lib.initialized_memory(num, size), _allocate.lib.free_ptr)
+        if ptr == CPU.ffi.NULL:
+            raise MemoryError(f"Unable to allocate requested memory of size {num*size} bytes")
+        return ptr
+
+    @staticmethod
+    def init_with_scalar(num: int, scalar: int, size: int = struct.calcsize('f')) ->CDataPtr:
+        ptr = CPU.ffi.gc(_allocate.lib.init_with_scalar(num*size, num, scalar), _allocate.lib.free_ptr)
         if ptr == CPU.ffi.NULL:
             raise MemoryError(f"Unable to allocate requested memory of size {num*size} bytes")
         return ptr
@@ -141,6 +149,19 @@ class CPU:
             _sum.lib.sum_3d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
         if x.ndim == 2:
             _sum.lib.sum_2d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.MAX, Device.CPU)
+    def max(x: Buffer, dim: int) -> CDataPtr:
+        num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
+
+        if x.ndim == 3:
+            _max.lib.max_3d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
+        if x.ndim == 2:
+            _max.lib.max_2d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
 
         return out_ptr
 

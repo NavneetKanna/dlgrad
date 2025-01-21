@@ -18,6 +18,14 @@ class Sum(OP):
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		return (Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device),)
 
+class Max(OP):
+	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
+		self.inp_shape = x.shape
+		self.device = x.device
+		return x.max(dim=dim)
+
+	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+		return ...
 
 # ------------ Binary Ops -----------
 

@@ -240,8 +240,8 @@ class Tensor:
 	def linear(self, weight: Tensor, bias: Tensor | None) -> Tensor:
 		return self @ weight.T + bias if bias else self @ weight.T
 
-	def max(self) -> Tensor:
-		pass
+	def max(self, dim: int = -1) -> Tensor:
+		return ops.Max.execute(self, dim=dim)
 
 	def cross_entropy_loss(self) -> Tensor:
 		pass

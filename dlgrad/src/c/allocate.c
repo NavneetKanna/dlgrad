@@ -23,6 +23,20 @@ float *initialized_memory(size_t num, size_t size)
     return out;
 }
 
+float *init_with_scalar(size_t nbytes, int numel, int scalar)
+{
+    float *out = malloc(nbytes);
+    if (out == NULL) {
+        return NULL;
+    }
+
+    for (int i=0; i<numel; i++) {
+        out[i] = scalar;
+    }
+
+    return out;
+}
+
 void free_ptr(float *ptr)
 {
     free(ptr);
