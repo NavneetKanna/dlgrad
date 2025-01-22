@@ -16,7 +16,7 @@ void max(float *x, float *out, int numel) {
     out[0] = max;
 }
 
-void max_3d(float *x, float *out, int *tmp, float *maxs_with_1s, int *xshape, int *xstride, int outnumel, int dim)
+void max_3d(float *x, float *out, float *tmp, float *maxs_with_1s, int *xshape, int *xstride, int outnumel, int dim)
 {
     if (dim == -1) {                // elementwise
         return max(x, out, outnumel);
@@ -59,23 +59,23 @@ void max_3d(float *x, float *out, int *tmp, float *maxs_with_1s, int *xshape, in
     {
     case 0:
         for (int i=0; i<nrows*ncols; i++) {
-            maxs_with_1s[tmp[i]] = 1.0f;
+            maxs_with_1s[(int)tmp[i]] = 1.0f;
         }
         break;
     case 1:
         for (int i=0; i<nouter_dim*ncols; i++) {
-            maxs_with_1s[tmp[i]] = 1.0f;
+            maxs_with_1s[(int)tmp[i]] = 1.0f;
         }
         break;
     case 2:
         for (int i=0; i<nouter_dim*nrows; i++) {
-            maxs_with_1s[tmp[i]] = 1.0f;
+            maxs_with_1s[(int)tmp[i]] = 1.0f;
         }
         break;
     }
 }
 
-void max_2d(float *x, float *out, int *tmp, float *maxs_with_1s, int *xshape, int *xstride, int outnumel, int dim)
+void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s, int *xshape, int *xstride, int outnumel, int dim)
 {
     if (dim == -1) {                // elementwise 
         return max(x, out, outnumel);
@@ -113,12 +113,12 @@ void max_2d(float *x, float *out, int *tmp, float *maxs_with_1s, int *xshape, in
     {
     case 0:
         for (int i=0; i<ncols; i++) {
-            maxs_with_1s[tmp[i]] = 1.0f;
+            maxs_with_1s[(int)tmp[i]] = 1.0f;
         }
         break;
     case 1:
         for (int i=0; i<nrows; i++) {
-            maxs_with_1s[tmp[i]] = 1.0f;
+            maxs_with_1s[(int)tmp[i]] = 1.0f;
         }
         break;
     }

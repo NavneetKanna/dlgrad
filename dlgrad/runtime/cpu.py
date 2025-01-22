@@ -157,7 +157,7 @@ class CPU:
     def max(x: Buffer, dim: int) -> CDataPtr:
         num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
-        tmp = CPU.malloc(num=num, size= struct.calcsize('i'))
+        tmp = CPU.malloc(num=num)
         max_with_1s = CPU.calloc(num=x.numel)
 
         if x.ndim == 3:
