@@ -57,10 +57,12 @@ class Buffer:
     def max(self, dim: int = -1) -> Buffer:
         out_shape = cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
 
-        return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.MAX, device=self.device, x=self, dim=dim),
-            shape=out_shape, device=self.device, ndim=self.ndim - 1
-        )
+        out, indices = dispatcher.dispatch(op=UnaryOps.MAX, device=self.device, x=self, dim=dim)
+
+        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim - 1)
+        indices_buf = Buffer(data=indices, shape=out_shape, device=self.device, ndim=self.ndim - 1)
+
+        return out_buf, indices_buf
 
     def matmul(self, other: Buffer) -> Buffer:
         return Buffer(
@@ -129,7 +131,7 @@ class Buffer:
 
     def __eq__(self, other: Buffer) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=BinaryOps.ET, device=self.device, x=self, y=other),
+            data=dispatcher.dispatch(op=BinaryOps.EQT, device=self.device, x=self, y=other),
             shape=self.shape, device=self.device
         )
 

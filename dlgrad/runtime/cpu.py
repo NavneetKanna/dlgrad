@@ -157,13 +157,15 @@ class CPU:
     def max(x: Buffer, dim: int) -> CDataPtr:
         num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
+        tmp = CPU.malloc(num=num, size= struct.calcsize('i'))
+        max_with_1s = CPU.calloc(num=x.numel)
 
         if x.ndim == 3:
-            _max.lib.max_3d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
+            _max.lib.max_3d(x.ptr, out_ptr, tmp, max_with_1s, x.shape, x.stride, x.numel, dim)
         if x.ndim == 2:
-            _max.lib.max_2d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
+            _max.lib.max_2d(x.ptr, out_ptr, tmp, max_with_1s, x.shape, x.stride, x.numel, dim)
 
-        return out_ptr
+        return out_ptr, max_with_1s
 
     @staticmethod
     @dispatcher.register(UnaryOps.RELU, Device.CPU)
@@ -183,6 +185,18 @@ class CPU:
             y = float(y)
 
         _cmp.lib.gt_with_scalar(x.ptr, out_ptr, y, x.numel)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(BinaryOps.EQT, Device.CPU)
+    def eqt(x: Buffer, y: Buffer) -> CDataPtr:
+        out_ptr = CPU.malloc(num=x.numel)
+
+        if isinstance(y, int):
+            y = float(y)
+
+        _cmp.lib.eqt(x.ptr, y, out_ptr, x.numel)
 
         return out_ptr
 

@@ -27,7 +27,7 @@ class BinaryOps(Enum):
     NEG = auto()
     MATMUL = auto()
     GT = auto() # >
-    ET = auto() # ==
+    EQT = auto() # ==
 
 class CustomOps(Enum):
     INDEX = auto()

@@ -11,3 +11,14 @@ void gt_with_scalar(float *arr, float *out, float val, int numel)
             out[i] = 0.0;
     }
 }
+
+void eqt(float *x, float *y, float *out, int xnumel)
+{
+    for (int i=0; i<xnumel; i++) {
+        if (x[i] == y[i]) {
+            out[i] = 1.0;
+        } else {
+            out[i] = 0.0;
+        }
+    }
+}

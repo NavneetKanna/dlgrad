@@ -23,11 +23,12 @@ class Max(OP):
 		self.inp_shape = x.shape
 		self.device = x.device
 		self.x = x
-		self.out = x.max(dim=dim)
+		self.out, self.max_with_1s = x.max(dim=dim)
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		return self.x == self.out
+		return self.max_with_1s * self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad)
+
 
 # ------------ Binary Ops -----------
 
