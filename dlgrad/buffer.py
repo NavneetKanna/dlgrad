@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
-from dlgrad.helpers import BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, calculate_stride, prod_
+from dlgrad.helpers import BinaryOps, BufferOps, UnaryOps, cal_sum_out_shape, calculate_stride, prod_
 
 
 @dataclass
@@ -47,11 +47,16 @@ class Buffer:
         )
 
     def sum(self, dim: int = -1) -> Buffer:
+        print("self.ndim", self.ndim)
+        print("dim", dim)
+        print("self.shape", self.shape)
         out_shape = cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
+        print("sum out shape", out_shape)
+        print("self.ndim", self.ndim)
 
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim),
-            shape=out_shape, device=self.device, ndim=self.ndim - 1
+            shape=out_shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1
         )
 
     def max(self, dim: int = -1) -> Buffer:
@@ -59,8 +64,8 @@ class Buffer:
 
         out, indices = dispatcher.dispatch(op=UnaryOps.MAX, device=self.device, x=self, dim=dim)
 
-        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim - 1)
-        indices_buf = Buffer(data=indices, shape=out_shape, device=self.device, ndim=self.ndim - 1)
+        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1)
+        indices_buf = Buffer(data=indices, shape=self.shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1)  # noqa: E501
 
         return out_buf, indices_buf
 
@@ -136,11 +141,11 @@ class Buffer:
         )
 
     # only for nll loss
-    def __getitem__(self, i):  # noqa: ANN001, ANN204
-        return Buffer(
-            data=dispatcher.dispatch(op=CustomOps.INDEX, device=self.device, x=self, idx=i),
-            shape=(len(i[0]),), device=self.device
-        )
+    # def __getitem__(self, i):  # noqa: ANN001, ANN204
+    #     return Buffer(
+    #         data=dispatcher.dispatch(op=CustomOps.INDEX, device=self.device, x=self, idx=i),
+    #         shape=(len(i[0]),), device=self.device
+    #     )
 
     @property
     def numel(self) -> int:

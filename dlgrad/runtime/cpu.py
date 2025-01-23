@@ -143,6 +143,9 @@ class CPU:
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
     def sum(x: Buffer, dim: int) -> CDataPtr:
         num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        print("sum num", num)
+        print("sim dim", dim)
+        print("x.ndim", x.ndim)
         out_ptr = CPU.calloc(num=num)
 
         if x.ndim == 3:

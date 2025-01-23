@@ -7,6 +7,7 @@ from dlgrad import Tensor
 # TODO: Test NaN's
 # TODO: Test Tensor(Scalar)
 # TODO: Test ones like
+# TODO: Test with shapes containing 1 for sum
 
 # Thanks to tinygrad for the template
 def run(shapes: list[tuple], func):
