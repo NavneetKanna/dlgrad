@@ -245,6 +245,9 @@ class Tensor:
 	def max(self, dim: int = -1) -> Tensor:
 		return ops.Max.execute(self, dim=dim)
 
+	def exp(self) -> Tensor:
+		return ops.Exp.execute(self)
+
 	def cross_entropy_loss(self) -> Tensor:
 		pass
 

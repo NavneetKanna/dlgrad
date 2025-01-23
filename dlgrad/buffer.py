@@ -74,6 +74,12 @@ class Buffer:
     def transpose(self) -> Buffer:
         return Buffer(self.ptr, self.shape[::-1], self.device, stride=self.stride[::-1])
 
+    def exp(self) -> Buffer:
+        return Buffer(
+            data=dispatcher.dispatch(op=UnaryOps.EXP, device=self.device),
+            shape=self.shape, device=self.device
+        )
+
     def relu(self) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.RELU, device=self.device, x=self),
@@ -125,7 +131,7 @@ class Buffer:
 
     def __neg__(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.NEG, device=self.device, x=self),
             shape=self.shape, device=self.device
         )
 

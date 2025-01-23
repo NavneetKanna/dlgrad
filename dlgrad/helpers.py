@@ -11,6 +11,8 @@ ffi = FFI()
 class UnaryOps(Enum):
     SUM = auto()
     MAX = auto()
+    NEG = auto()
+    EXP = auto()
     TRANSPOSE = auto()
     RELU = auto()
 
@@ -24,7 +26,6 @@ class BinaryOps(Enum):
     ADD = auto()
     SUB = auto()
     MUL = auto()
-    NEG = auto()
     MATMUL = auto()
     GT = auto() # >
     EQT = auto() # ==

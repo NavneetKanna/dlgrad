@@ -8,7 +8,6 @@ from dlgrad.tensor import OP
 def transpose(x: Buffer) -> Buffer:
 	return x.transpose()
 
-
 class Sum(OP):
 	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
 		self.inp_shape = x.shape
@@ -30,6 +29,12 @@ class Max(OP):
 		print(self.x.shape, upstream_grad.shape)
 		return (self.max_with_1s,)
 
+class Exp(OP):
+	def forward(self, x: Buffer) -> Buffer:
+		return x.exp()
+
+	def backward(self, upstream_grad: Buffer) -> Buffer:
+		pass
 
 # ------------ Binary Ops -----------
 

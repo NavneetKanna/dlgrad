@@ -122,11 +122,20 @@ class CPU:
         return out_ptr
 
     @staticmethod
-    @dispatcher.register(BinaryOps.NEG, Device.CPU)
+    @dispatcher.register(UnaryOps.NEG, Device.CPU)
     def neg(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
         _utils.lib.neg(x.ptr, out_ptr, x.numel)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.EXP, Device.CPU)
+    def exp(x: Buffer) -> CDataPtr:
+        out_ptr = CPU.malloc(num=x.numel)
+
+        _utils.lib.exp(x.ptr, out_ptr, x.numel)
 
         return out_ptr
 
