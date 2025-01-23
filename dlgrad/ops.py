@@ -16,7 +16,6 @@ class Sum(OP):
 		return x.sum(dim=dim)
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		print("sum backward")
 		return (Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device),)
 
 class Max(OP):
@@ -28,10 +27,8 @@ class Max(OP):
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		print("max backward")
 		print(self.x.shape, upstream_grad.shape)
-		print("max with 1s shape", self.max_with_1s.shape)
-		return (self.max_with_1s,)# * self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad)
+		return (self.max_with_1s,)
 
 
 # ------------ Binary Ops -----------

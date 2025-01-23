@@ -13,7 +13,6 @@ void sum(float *x, float *out, int numel) {
         sum += x[i];
     }
 
-    printf("sum in c: %f\n", sum);
     out[0] = sum;
 }
 
@@ -61,7 +60,6 @@ void sum_3d(float *x, float *out, int *xshape, int *xstride, int outnumel, int d
 
 void sum_2d(float *x, float *out, int *xshape, int *xstride, int outnumel, int dim)
 {
-    printf("%ddim in c\n", dim);
     if (dim == -1) {                // elementwise 
         return sum(x, out, outnumel);
     }

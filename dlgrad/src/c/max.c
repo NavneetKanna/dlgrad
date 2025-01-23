@@ -50,6 +50,7 @@ void max_3d(float *x, float *out, float *tmp, float *maxs_with_1s, int *xshape, 
                 }
                 if (x[x_idx] > out[out_idx]) {
                     out[out_idx] = x[x_idx];
+                    tmp[out_idx] = x_idx;
                 }
             }
         }
