@@ -8,9 +8,9 @@ import _full  # type: ignore
 import _index  # type: ignore
 import _matmul  # type: ignore
 import _max  # type: ignore
-import _neg  # type: ignore
 import _sum  # type: ignore
 import _uniform  # type: ignore
+import _utils  # type: ignore
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
@@ -126,7 +126,7 @@ class CPU:
     def neg(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        _neg.lib.neg(x.ptr, out_ptr, x.numel)
+        _utils.lib.neg(x.ptr, out_ptr, x.numel)
 
         return out_ptr
 
