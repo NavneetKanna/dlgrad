@@ -9,6 +9,7 @@ ffi = FFI()
 cdef = """
 void neg(float *x, float *out, int numel);
 void cexp(float *x, float *out, int numel);
+void clog(float *x, float *out, int numel);
 """
 ffi.cdef(cdef)
 ffi.set_source("_utils", f"""

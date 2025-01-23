@@ -140,6 +140,15 @@ class CPU:
         return out_ptr
 
     @staticmethod
+    @dispatcher.register(UnaryOps.LOG, Device.CPU)
+    def log(x: Buffer) -> CDataPtr:
+        out_ptr = CPU.malloc(num=x.numel)
+
+        _utils.lib.clog(x.ptr, out_ptr, x.numel)
+
+        return out_ptr
+
+    @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.shape[0]*y.shape[1])

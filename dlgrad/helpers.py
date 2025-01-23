@@ -13,6 +13,7 @@ class UnaryOps(Enum):
     MAX = auto()
     NEG = auto()
     EXP = auto()
+    LOG = auto()
     TRANSPOSE = auto()
     RELU = auto()
 

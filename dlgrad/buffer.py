@@ -80,6 +80,12 @@ class Buffer:
             shape=self.shape, device=self.device
         )
 
+    def log(self) -> Buffer:
+        return Buffer(
+            data=dispatcher.dispatch(op=UnaryOps.LOG, device=self.device, x=self),
+            shape=self.shape, device=self.device
+        )
+
     def relu(self) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.RELU, device=self.device, x=self),

@@ -248,6 +248,16 @@ class Tensor:
 	def exp(self) -> Tensor:
 		return ops.Exp.execute(self)
 
+	def log(self) -> Tensor:
+		return ops.Log.execute(self)
+
+	def log_softmax(self) -> Tensor:
+		m = self - self.max()
+		e = m.exp()
+		ss = e.sum()
+
+		m - ss.log()
+
 	def cross_entropy_loss(self) -> Tensor:
 		pass
 

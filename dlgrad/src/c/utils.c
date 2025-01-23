@@ -16,3 +16,10 @@ void cexp(float *x, float *out, int numel)
         out[i] = exp(x[i]);
     }
 }
+
+void clog(float *x, float *out, int numel)
+{
+    for (int i=0; i<numel; i++) {
+        out[i] = log(x[i]);
+    }
+}

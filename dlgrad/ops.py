@@ -36,6 +36,13 @@ class Exp(OP):
 	def backward(self, upstream_grad: Buffer) -> Buffer:
 		pass
 
+class Log(OP):
+	def forward(self, x: Buffer) -> Buffer:
+		return x.log()
+
+	def backward(self, upstream_grad: Buffer) -> Buffer:
+		pass
+
 # ------------ Binary Ops -----------
 
 
