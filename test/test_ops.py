@@ -257,3 +257,18 @@ def test_relu(shapes):
         dl_out = dlgrad_data.relu()
         to_out = torch_data.relu()
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes", [
+    [(2, 3)],
+    [(4, 10, 2)]
+])
+def test_exp(shapes):
+    for sh in shapes:
+        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data)
+        torch_data = torch.tensor(np_data)
+
+        dl_out = dlgrad_data.exp()
+        to_out = torch_data.exp()
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+

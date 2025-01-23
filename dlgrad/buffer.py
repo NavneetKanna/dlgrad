@@ -76,7 +76,7 @@ class Buffer:
 
     def exp(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.EXP, device=self.device),
+            data=dispatcher.dispatch(op=UnaryOps.EXP, device=self.device, x=self),
             shape=self.shape, device=self.device
         )
 
@@ -107,7 +107,7 @@ class Buffer:
         else:
             tmp = Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=other, y=self),
                          shape=other.shape, device=self.device)
-            tmp = Buffer(data=dispatcher.dispatch(op=BinaryOps.NEG, device=self.device, x=tmp),
+            tmp = Buffer(data=dispatcher.dispatch(op=UnaryOps.NEG, device=self.device, x=tmp),
                          shape=tmp.shape, device=tmp.device)
             return tmp
 

@@ -135,7 +135,7 @@ class CPU:
     def exp(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        _utils.lib.exp(x.ptr, out_ptr, x.numel)
+        _utils.lib.cexp(x.ptr, out_ptr, x.numel)
 
         return out_ptr
 
