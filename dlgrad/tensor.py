@@ -252,14 +252,10 @@ class Tensor:
 		return ops.Log.execute(self)
 
 	def log_softmax(self) -> Tensor:
-		m = self - self.max()
-		e = m.exp()
-		ss = e.sum()
+		return ops.LogSoftmax.execute(self)
 
-		m - ss.log()
-
-	def cross_entropy_loss(self) -> Tensor:
-		pass
+	def cross_entropy_loss(self, target) -> Tensor:  # noqa: ANN001
+		return ops.CrossEntropy.execute(self, target)
 
 	def backward(self) -> None:
 		assert self.shape == (1, 1), "backward must be called on a scalar Tensor"

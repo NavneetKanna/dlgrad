@@ -100,7 +100,27 @@ class Relu(OP):
 
 class CrossEntropy(OP):
 	def forward(self, logits: Buffer, target: Buffer) -> None:
-		pass
+		t, _ = logits.max(1)
+		m = logits - t
+		e = m.exp()
+		ss = e.sum(1)
+		self.log_softmax_output = m - ss.log()
+		tmp = self.log_softmax_output[target]
+		return -tmp.sum()
 
 	def backward(self) -> None:
 		pass
+
+
+class LogSoftmax(OP):
+	def forward(self, x: Buffer) -> Buffer:
+		m = x - x.max()
+		e = m.exp()
+		ss = e.sum()
+		self.out = m - ss.log()
+		return self.out
+
+	def backward(self, upstream_grad: Buffer) -> Buffer:
+		softmax_output = self.out.exp()
+		return upstream_grad - softmax_output * upstream_grad.sum(1)
+

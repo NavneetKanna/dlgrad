@@ -221,10 +221,10 @@ class CPU:
     @staticmethod
     @dispatcher.register(CustomOps.INDEX, Device.CPU)
     # only for nll loss
-    def index(x: Buffer, idx):  # noqa: ANN001, ANN205
-        out_ptr = CPU.malloc(num=len(idx[0]))
+    def index(x: Buffer, idx: Buffer):  # noqa: ANN001, ANN205
+        out_ptr = CPU.malloc(num=idx.numel)
 
-        _index.lib.indexing(x.ptr, out_ptr, x.shape, x.stride, idx[1])
+        _index.lib.indexing(x.ptr, out_ptr, x.shape, x.stride, idx.ptr)
 
         return out_ptr
 

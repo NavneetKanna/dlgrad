@@ -151,7 +151,7 @@ class Buffer:
     def __getitem__(self, i):  # noqa: ANN001, ANN204
         return Buffer(
             data=dispatcher.dispatch(op=CustomOps.INDEX, device=self.device, x=self, idx=i),
-            shape=(len(i[0]),), device=self.device
+            shape=(self.shape[0],1), device=self.device
         )
 
     @property
