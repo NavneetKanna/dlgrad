@@ -4,6 +4,7 @@ import _af  # type: ignore
 import _allocate  # type: ignore
 import _arithmetic  # type: ignore
 import _cmp  # type: ignore
+import _custom  # type: ignore
 import _full  # type: ignore
 import _index  # type: ignore
 import _matmul  # type: ignore
@@ -228,6 +229,10 @@ class CPU:
 
         return out_ptr
 
+    @staticmethod
+    @dispatcher.register(CustomOps.CE_BACKWARD, Device.CPU)
+    def ce_backward(x: Buffer, target: Buffer) -> CDataPtr:
+        _custom.lib.ce_backward(x.ptr, target.ptr, x.shape, x.stride)
 
 """
 

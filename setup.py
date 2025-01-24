@@ -20,6 +20,7 @@ setup(
         'dlgrad/builder/float_comparision_build.py:ffi',
         'dlgrad/builder/float_allocate_build.py:ffi',
         'dlgrad/builder/float_index_build.py:ffi',
+        'dlgrad/builder/float_custom_build.py:ffi',
     ],
     setup_requires=['cffi>=1.17.1'],
     install_requires=['cffi>=1.0.0']

@@ -92,6 +92,10 @@ class Buffer:
             shape=self.shape, device=self.device
         )
 
+    @staticmethod
+    def ce_backward(**kwargs) -> None:
+        dispatcher.dispatch(op=kwargs.pop("op"), device=kwargs.pop("device"), **kwargs)
+
     def __add__(self, other: Buffer) -> Buffer:
         if self.numel >= other.numel:
             return Buffer(

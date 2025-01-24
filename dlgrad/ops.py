@@ -1,5 +1,5 @@
 from dlgrad.buffer import Buffer
-from dlgrad.helpers import check_broadcast
+from dlgrad.helpers import CustomOps, check_broadcast
 from dlgrad.tensor import OP
 
 # ------------ Unary Ops -----------
@@ -99,17 +99,20 @@ class Relu(OP):
 
 
 class CrossEntropy(OP):
-	def forward(self, logits: Buffer, target: Buffer) -> None:
+	def forward(self, logits: Buffer, target: Buffer) -> Buffer:
+		self.target = target
 		t, _ = logits.max(1)
 		m = logits - t
 		e = m.exp()
 		ss = e.sum(1)
 		self.log_softmax_output = m - ss.log()
-		tmp = self.log_softmax_output[target]
+		tmp = self.log_softmax_output[self.target]
 		return -tmp.sum()
 
-	def backward(self) -> None:
-		pass
+	def backward(self, upstream_grad: Buffer) -> Buffer:
+		tmp = self.log_softmax_output.exp()
+		Buffer.ce_backward(op=CustomOps.CE_BACKWARD, device=tmp.device, x=tmp, target=self.target)
+		return (tmp,)
 
 
 class LogSoftmax(OP):
