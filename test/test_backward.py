@@ -56,3 +56,37 @@ def test_relu_backward(shapes):
         torch_data.relu().sum().backward()
 
         np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
+
+#TODO: Reset grad instead of creating new tensors
+@pytest.mark.parametrize("shapes", [
+    [(4, 3, 2)],
+    [(20, 40, 30)],
+])
+def test_max_backward(shapes):
+    for sh in shapes:
+        np_data = np.random.uniform(size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, requires_grad=True)
+        torch_data = torch.tensor(np_data, requires_grad=True)
+
+        dlgrad_data.max(dim=0).sum().backward()
+        to_out, _ = torch_data.max(dim=0)
+        to_out.sum().backward()
+        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
+
+        np_data = np.random.uniform(size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, requires_grad=True)
+        torch_data = torch.tensor(np_data, requires_grad=True)
+
+        dlgrad_data.max(dim=1).sum().backward()
+        to_out, _ = torch_data.max(dim=1)
+        to_out.sum().backward()
+        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
+
+        np_data = np.random.uniform(size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, requires_grad=True)
+        torch_data = torch.tensor(np_data, requires_grad=True)
+
+        dlgrad_data.max(dim=2).sum().backward()
+        to_out, _ = torch_data.max(dim=2)
+        to_out.sum().backward()
+        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
