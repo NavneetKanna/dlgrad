@@ -258,6 +258,7 @@ class Tensor:
 	def log_softmax(self) -> Tensor:
 		return ops.LogSoftmax.execute(self)
 
+	# TODO: If target shape does not match raise error
 	def cross_entropy_loss(self, target: Tensor, dim: int = 1) -> Tensor:  # noqa: ANN001
 		return ops.CrossEntropy.execute(self, target, dim=dim)
 
