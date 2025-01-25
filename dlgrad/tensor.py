@@ -279,7 +279,7 @@ class Tensor:
 
 		_topo_sort(self)
 
-		self.grad = Tensor(1.0)
+		self.grad = Tensor.ones_like((1, 1))
 
 		# TODO: del _ctx
 		for node in reversed(topo):
@@ -294,27 +294,6 @@ class Tensor:
 				if p.requires_grad:
 					assert (g.shape == p.shape), f"Tensor shape and grad shape must match {p.shape}, {g.shape}"  # noqa: E501
 					p.grad = g if p.grad is None else p.grad + g
-
-	# TODO: Maybe replace this with custom ce function ?
-	# see ...
-    # only for nll loss
-	def __getitem__(self, i):  # noqa: ANN001, ANN204
-		assert isinstance(i, tuple), "dlgrad supports only 1 kind of indexing, see ..."
-		assert isinstance(i[0], list), "The first item should be a list"
-		assert isinstance(i[1], list), "The second item should be a list"
-		assert len(i[0]) == len(i[1]), "The len of the lists should be the same"
-		assert len(i[0]) == self.shape[0], f"The len of the list should match the shape {self.shape[0]}"
-		assert len(i[1]) == self.shape[0], f"The len of the list should match the shape {self.shape[1]}"
-
-		for j in i[0]:
-			if j >= self.ndim:
-				raise IndexError(f"index {j} is >= the tensor's dim {self.ndim} ")
-
-		for j in i[1]:
-			if j >= self.shape[1]:
-				raise IndexError(f"index {j} is >= the tensors shape {self.shape[1]}")
-
-		return Tensor(data=self.data[i], device=self.device, dtype=self.dtype)
 
 	def __repr__(self) -> str:
 		return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"  # noqa: E501

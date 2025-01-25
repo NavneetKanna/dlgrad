@@ -106,7 +106,8 @@ class CrossEntropy(OP):
 		e = m.exp()
 		ss = e.sum(1)
 		self.log_softmax_output = m - ss.log()
-		tmp = self.log_softmax_output[self.target]
+		tmp = Buffer.ce_forward(self.log_softmax_output, self.target)
+		# tmp = self.log_softmax_output[self.target]
 		return -tmp.sum()
 
 	def backward(self, upstream_grad: Buffer) -> Buffer:

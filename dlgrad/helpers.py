@@ -33,6 +33,7 @@ class BinaryOps(Enum):
 
 class CustomOps(Enum):
     INDEX = auto()
+    CE_FORWARD = auto()
     CE_BACKWARD = auto()
 
 

@@ -86,6 +86,14 @@ class Buffer:
         )
 
     @staticmethod
+    def ce_forward(x: Buffer, y: Buffer) -> None:
+        return Buffer(
+            data=dispatcher.dispatch(op=CustomOps.CE_FORWARD, device=x.device,
+                                     x=x, y=y),
+            shape=(1, x.shape[0]), device=x.device
+        )
+
+    @staticmethod
     def ce_backward(**kwargs) -> None:
         dispatcher.dispatch(op=kwargs.pop("op"), device=kwargs.pop("device"), **kwargs)
 
@@ -142,13 +150,6 @@ class Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BinaryOps.EQT, device=self.device, x=self, y=other),
             shape=self.shape, device=self.device
-        )
-
-    # only for nll loss
-    def __getitem__(self, i):  # noqa: ANN001, ANN204
-        return Buffer(
-            data=dispatcher.dispatch(op=CustomOps.INDEX, device=self.device, x=self, idx=i),
-            shape=(self.shape[0],1), device=self.device
         )
 
     @property

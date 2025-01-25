@@ -4,9 +4,8 @@ import _af  # type: ignore
 import _allocate  # type: ignore
 import _arithmetic  # type: ignore
 import _cmp  # type: ignore
-import _custom  # type: ignore
 import _full  # type: ignore
-import _index  # type: ignore
+import _loss  # type: ignore
 import _matmul  # type: ignore
 import _max  # type: ignore
 import _sum  # type: ignore
@@ -215,19 +214,18 @@ class CPU:
         return out_ptr
 
     @staticmethod
-    @dispatcher.register(CustomOps.INDEX, Device.CPU)
-    # only for nll loss
-    def index(x: Buffer, idx: Buffer):  # noqa: ANN001, ANN205
-        out_ptr = CPU.malloc(num=idx.numel)
+    @dispatcher.register(CustomOps.CE_FORWARD, Device.CPU)
+    def ce_forward(x: Buffer, y: Buffer) -> CDataPtr:
+        out_ptr = CPU.malloc(num=x.shape[0])
 
-        _index.lib.indexing(x.ptr, out_ptr, x.shape, x.stride, idx.ptr)
+        _loss.lib.ce_forward(x.ptr, y.ptr, out_ptr, x.shape[0], x.stride)
 
         return out_ptr
 
     @staticmethod
     @dispatcher.register(CustomOps.CE_BACKWARD, Device.CPU)
     def ce_backward(x: Buffer, target: Buffer) -> CDataPtr:
-        _custom.lib.ce_backward(x.ptr, target.ptr, x.shape, x.stride)
+        _loss.lib.ce_backward(x.ptr, target.ptr, x.shape, x.stride)
 
 """
 
