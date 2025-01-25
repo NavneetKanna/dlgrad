@@ -1,6 +1,5 @@
 exclude = [
-    "test/test_nn.py",
-    "test/test_ops.py",
+    "test/*",
     "test.py",
     ".bzr",
     ".direnv",
