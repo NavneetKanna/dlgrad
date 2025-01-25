@@ -18,18 +18,6 @@ class DType(Enum):
         except KeyError:
             raise ValueError(f"Invalid dtype: {d}")
 
-    @staticmethod
-    def get_dtype_from_py(d: Scalar) -> DType:
-        if isinstance(d, float):
-            return DType.FLOAT32
-        else:
-            raise ValueError("dlgrad only supports float32 dtype")
-
-    @staticmethod
-    def get_c_dtype(d: Scalar) -> str:
-        if isinstance(d, float):
-            return "float"
-
     @classmethod
     def _get_n_bytes(cls) -> dict:
         return {cls.FLOAT32: 4}

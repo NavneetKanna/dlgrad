@@ -83,7 +83,7 @@ import dlgrad.ops as ops  # since ops module imports OP class, it is placed afte
 # TODO: I am setting device here as well as in Buffer, fix this
 # TODO: Check dim out of bounds
 class Tensor:
-	def __init__(self, data: Scalar | Buffer | "np.ndarray",  # type: ignore  # noqa: F821
+	def __init__(self, data: Buffer | "np.ndarray",  # type: ignore  # noqa: F821
 				 device: str | Device | None = Device.CPU, dtype: str | DType | None = None,
 			 	 requires_grad: bool = False) -> None:
 		self.device: Device = (
@@ -98,10 +98,7 @@ class Tensor:
 		self._ctx: OP = None  # used by autograd engine
 		self.grad = None
 
-		if isinstance(data, Scalar):
-			self.dtype = DType.get_dtype_from_py(data)
-			self.data = Buffer.create_buffer_from_scalar(data, self.device)
-		elif str(type(data)) == "<class 'numpy.ndarray'>":
+		if str(type(data)) == "<class 'numpy.ndarray'>":
 			if str(data.dtype) != "float32":
 				raise ValueError("dlgrad only supports float32 dtype")
 			self.data = Buffer(
@@ -114,6 +111,8 @@ class Tensor:
 			)
 		elif isinstance(data, Buffer):
 			self.data = data
+		else:
+			raise ValueError("The data must be of type Buffer or np.ndarray")
 
 	def numpy(self: Tensor) -> "np.ndarray":  # type: ignore  # noqa: F821
 		import numpy as np
@@ -158,6 +157,9 @@ class Tensor:
 			raise NotImplementedError("dlgrad only supports float32")
 		if not isinstance(shape, tuple):
 			raise ValueError("shape must be a tuple")
+
+		if len(shape) == 1:
+			shape = (1,) + shape
 
 		return Tensor(
 			data=Buffer.uniform(shape, device=device, low=low, high=high),
@@ -291,6 +293,7 @@ class Tensor:
 					assert (g.shape == p.shape), f"Tensor shape and grad shape must match {p.shape}, {g.shape}"  # noqa: E501
 					p.grad = g if p.grad is None else p.grad + g
 
+	# TODO: Maybe replace this with custom ce function ?
 	# see ...
     # only for nll loss
 	def __getitem__(self, i):  # noqa: ANN001, ANN204

@@ -17,7 +17,7 @@ from cffi import FFI
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
-from dlgrad.dtype import CDataPtr, DType, Scalar
+from dlgrad.dtype import CDataPtr, Scalar
 from dlgrad.helpers import BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, prod_
 
 
@@ -50,11 +50,6 @@ class CPU:
         if ptr == CPU.ffi.NULL:
             raise MemoryError(f"Unable to allocate requested memory of size {num*size} bytes")
         return ptr
-
-    @staticmethod
-    @dispatcher.register(BufferOps.CREATE, Device.CPU)
-    def create_buffer_from_scalar(x: Scalar) -> CDataPtr:
-        return CPU.ffi.new(f"{DType.get_c_dtype(x)} [1]", [x]) # TODO: Is this the right thing to do ?
 
     @staticmethod
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)

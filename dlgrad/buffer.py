@@ -26,13 +26,6 @@ class Buffer:
         self.device = device
 
     @staticmethod
-    def create_buffer_from_scalar(x: Scalar, device: Device) -> Buffer:
-        return Buffer(
-            data=dispatcher.dispatch(op=BufferOps.CREATE, device=device, x=x),
-            shape=tuple(), device=device, ndim=0
-        )
-
-    @staticmethod
     def uniform(shape: tuple, device: Device, **kwargs) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, shape=shape, **kwargs),
