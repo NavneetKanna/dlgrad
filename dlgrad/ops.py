@@ -92,7 +92,7 @@ class Mul(OP):
 		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad*self.y) if self.req_grad[0] else None, \
 		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad*self.x) if self.req_grad[1] else None
 
-
+# TODO: Add __matmul__ in buffer
 class MatMul(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		return x.matmul(y)

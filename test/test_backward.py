@@ -62,7 +62,7 @@ def test_relu_backward(shapes):
     [(4, 3, 2)],
     [(20, 40, 30)],
 ])
-def test_max_backward(shapes):
+def test_max_3d_backward(shapes):
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
         dlgrad_data = Tensor(np_data, requires_grad=True)
@@ -89,4 +89,46 @@ def test_max_backward(shapes):
         dlgrad_data.max(dim=2).sum().backward()
         to_out, _ = torch_data.max(dim=2)
         to_out.sum().backward()
+        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes", [
+    [(4, 3)],
+    [(20, 40)],
+])
+def test_max_2d_backward(shapes):
+    for sh in shapes:
+        np_data = np.random.uniform(size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, requires_grad=True)
+        torch_data = torch.tensor(np_data, requires_grad=True)
+
+        dlgrad_data.max(dim=0).sum().backward()
+        to_out, _ = torch_data.max(dim=0)
+        to_out.sum().backward()
+        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
+
+        np_data = np.random.uniform(size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, requires_grad=True)
+        torch_data = torch.tensor(np_data, requires_grad=True)
+
+        dlgrad_data.max(dim=1).sum().backward()
+        to_out, _ = torch_data.max(dim=1)
+        to_out.sum().backward()
+        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes", [
+    [(2, 3)]
+])
+def test_ce_backward(shapes):
+    for sh in shapes:
+        np_data = np.random.uniform(size=sh).astype(np.float32)
+        np_target = np.array([[1, 2]]).astype(np.float32)
+        dlgrad_data = Tensor(np_data, requires_grad=True)
+        dlgrad_target = Tensor(np_target)
+        torch_data = torch.tensor(np_data, requires_grad=True)
+        torch_target = torch.tensor(np_target, dtype=torch.long).reshape(-1, 1).squeeze()
+
+        dlgrad_data.cross_entropy_loss(dlgrad_target).backward()
+        loss = torch.nn.CrossEntropyLoss(reduction="sum")
+        loss(torch_data, torch_target).backward()
+
         np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)

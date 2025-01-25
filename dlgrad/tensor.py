@@ -81,6 +81,7 @@ import dlgrad.ops as ops  # since ops module imports OP class, it is placed afte
 
 # TODO: I am setting device here as well as in Buffer, fix this
 # TODO: Check dim out of bounds
+# TODO: Check 0d and 1d when creating tensor from np
 class Tensor:
 	def __init__(self, data: Buffer | "np.ndarray",  # type: ignore  # noqa: F821
 				 device: str | Device | None = Device.CPU, dtype: str | DType | None = None,
@@ -257,8 +258,8 @@ class Tensor:
 	def log_softmax(self) -> Tensor:
 		return ops.LogSoftmax.execute(self)
 
-	def cross_entropy_loss(self, target) -> Tensor:  # noqa: ANN001
-		return ops.CrossEntropy.execute(self, target)
+	def cross_entropy_loss(self, target: Tensor, dim: int = 1) -> Tensor:  # noqa: ANN001
+		return ops.CrossEntropy.execute(self, target, dim=dim)
 
 	def backward(self) -> None:
 		assert self.shape == (1, 1), "backward must be called on a scalar Tensor"
