@@ -89,8 +89,8 @@ class Mul(OP):
 			return x*y
 
 	def backward(self, upstream_grad: Buffer) -> Buffer:
-		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad) * self.x if self.req_grad[0] else None, \
-		  	   self.match_inp_shape(inp=self.y, upstream_grad=-upstream_grad) * self.y if self.req_grad[1] else None
+		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad*self.y) if self.req_grad[0] else None, \
+		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad*self.x) if self.req_grad[1] else None
 
 
 class MatMul(OP):

@@ -35,7 +35,6 @@ class OP:
 	def match_inp_shape(self, inp: Buffer, upstream_grad: Buffer) -> Buffer:
 		inp_shape = inp.shape
 		ndim = resolve_ndim(inp_shape=inp_shape, grad_shape=upstream_grad.shape)
-		print(ndim)
 		if not ndim:
 			return upstream_grad
 

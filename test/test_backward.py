@@ -5,6 +5,7 @@ import torch
 from dlgrad import Tensor
 
 
+# TODO: Test with one tensor req grad is none
 def run(shapes: list[tuple], func):
     np_data = [np.random.uniform(size=sh).astype(np.float32) for sh in shapes]
     dlgrad_data = [Tensor(data, requires_grad=True) for data in np_data]
@@ -20,7 +21,25 @@ def run(shapes: list[tuple], func):
 @pytest.mark.parametrize("shapes", [
     [(2, 3, 4), (1, 3, 4)],
     [(2, 3), (1, 3)],
+    [(2, 3), (2, 3)],
 ])
 def test_add_backward(shapes):
     run(shapes, lambda x, y: x+y)
+
+@pytest.mark.parametrize("shapes", [
+    [(2, 3, 4), (1, 3, 4)],
+    [(2, 3), (1, 3)],
+    [(2, 3), (2, 3)],
+])
+def test_sub_backward(shapes):
+    run(shapes, lambda x, y: x-y)
+
+@pytest.mark.parametrize("shapes", [
+    [(2, 3, 4), (1, 3, 4)],
+    [(2, 3), (1, 3)],
+    [(2, 3), (2, 3)],
+])
+def test_mul_backward(shapes):
+    run(shapes, lambda x, y: x*y)
+
 
