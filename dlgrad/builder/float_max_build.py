@@ -11,14 +11,14 @@ void max_3d(float *x, float *out, float *tmp, float *maxs_with_1s, int *xshape, 
 void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s, int *xshape, int *xstride, int outnumel, int dim);
 void max(float *x, float *out, int numel);
 """
+ffi.cdef(cdef)
 
-ffi.cdef(cdef)  # noqa: E501
 ffi.set_source("_max", f"""
-    #include "{root_dir}/src/c/max.h"
-""",
-sources=[f'{root_dir}/src/c/max.c'],
-libraries=["m"],
-extra_compile_args=["-O2", "-march=native"])
+        #include "{root_dir}/src/c/max.h"
+    """,
+    sources=[f'{root_dir}/src/c/max.c'],
+    extra_compile_args=["-O2", "-march=native"]
+)
 
 if __name__ == "__main__":
     ffi.compile(verbose=True)

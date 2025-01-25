@@ -53,17 +53,22 @@ class CPU:
     @staticmethod
     @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
     def uniform(shape: tuple, low: float, high: float) -> CDataPtr:
-        numel = prod_(shape)
-        arr = _uniform.lib.uniform(numel, low, high)
+        out_ptr = CPU.malloc(num=prod_(shape))
 
-        return CPU.ffi.gc(arr, _uniform.lib.free_uniform)
+        status = _uniform.lib.uniform(out_ptr, prod_(shape), low, high)
+        if status == -1:
+            raise MemoryError("Failed to create random values")
+
+        return out_ptr
 
     @staticmethod
     @dispatcher.register(BufferOps.FULL, Device.CPU)
     def full(shape: tuple, fill_value: Scalar) -> CDataPtr:
-        arr = _full.lib.full(prod_(shape), fill_value)
+        out_ptr = CPU.malloc(num=prod_(shape))
 
-        return CPU.ffi.gc(arr, _full.lib.free_full)
+        _full.lib.full(out_ptr, prod_(shape), fill_value)
+
+        return out_ptr
 
     @staticmethod
     def _binary_op(x: Buffer, y: Buffer, op_code: int) -> CDataPtr:

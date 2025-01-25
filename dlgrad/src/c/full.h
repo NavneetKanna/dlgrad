@@ -1,7 +1,6 @@
 #ifndef FULL
 #define FULL
 
-float *full(int numel, float fill_value);
-void *free_full(float *ptr);
+void full(float *out, int numel, float fill_value);
 
 #endif

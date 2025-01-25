@@ -10,23 +10,22 @@
 
 pcg32_random_t rng;
 
-float *uniform(int numel, float low, float high) {
+int uniform(float *out, int numel, float low, float high) 
+{
     int fd = open("/dev/random", O_RDONLY);
     if (fd < 0) {
-        return NULL;
+        return -1;
     }
 
     uint64_t seed;
     ssize_t bytes_read = read(fd, &seed, sizeof(seed));
     if (bytes_read != sizeof(seed)) {
-        return NULL;
+        return -1;
     }
 
     close(fd);
 
     pcg32_srandom_r(&rng, seed, (intptr_t)&rng);
-
-    float *out = malloc(numel * sizeof(float));
 
     for (int i= 0; i < numel; i++) {
         double d = ldexp(pcg32_random_r(&rng), -32);
@@ -38,9 +37,6 @@ float *uniform(int numel, float low, float high) {
             out[i] = low + (high - low) * f;
         }
     }
-    return out;
-}
 
-void free_uniform(float* ptr) {
-    free(ptr);
+    return 0;
 }
