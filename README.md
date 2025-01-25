@@ -33,7 +33,9 @@ print(b.grad.numpy())
 
 ## Things I'm Working On
 - [ ] nn
-- [ ] Cross-Entropy Loss
+- [x] Cross-Entropy Loss
+- [] Removing support for scalar and 1D tensors
+ 
 
 ## Tests
 
