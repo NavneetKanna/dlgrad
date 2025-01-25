@@ -42,4 +42,17 @@ def test_sub_backward(shapes):
 def test_mul_backward(shapes):
     run(shapes, lambda x, y: x*y)
 
+@pytest.mark.parametrize("shapes", [
+    [(2, 3)],
+    [(10, 10)]
+])
+def test_relu_backward(shapes):
+    for sh in shapes:
+        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, requires_grad=True)
+        torch_data = torch.tensor(np_data, requires_grad=True)
 
+        dlgrad_data.relu().sum().backward()
+        torch_data.relu().sum().backward()
+
+        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
