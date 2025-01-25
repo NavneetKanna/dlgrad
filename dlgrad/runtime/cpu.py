@@ -33,21 +33,21 @@ class CPU:
     def malloc(num: int, size: int = struct.calcsize('f')) -> CDataPtr:
         ptr = CPU.ffi.gc(_allocate.lib.uninitialized_memory(num*size), _allocate.lib.free_ptr)
         if ptr == CPU.ffi.NULL:
-            raise MemoryError(f"Unable to allocate requested memory of size {num*size} bytes")
+            raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
         return ptr
 
     @staticmethod
     def calloc(num: int, size: int = struct.calcsize('f')) -> CDataPtr:
         ptr = CPU.ffi.gc(_allocate.lib.initialized_memory(num, size), _allocate.lib.free_ptr)
         if ptr == CPU.ffi.NULL:
-            raise MemoryError(f"Unable to allocate requested memory of size {num*size} bytes")
+            raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
         return ptr
 
     @staticmethod
     def init_with_scalar(num: int, scalar: int, size: int = struct.calcsize('f')) ->CDataPtr:
         ptr = CPU.ffi.gc(_allocate.lib.init_with_scalar(num*size, num, scalar), _allocate.lib.free_ptr)
         if ptr == CPU.ffi.NULL:
-            raise MemoryError(f"Unable to allocate requested memory of size {num*size} bytes")
+            raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
         return ptr
 
     @staticmethod
@@ -66,55 +66,29 @@ class CPU:
         return CPU.ffi.gc(arr, _full.lib.free_full)
 
     @staticmethod
-    @dispatcher.register(BinaryOps.ADD, Device.CPU)
-    def add(x: Buffer, y: Buffer) -> CDataPtr:
+    def _binary_op(x: Buffer, y: Buffer, op_code: int) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-
-        if y.ndim == 1:
-            _arithmetic.lib.add_with_1d(x.ptr, y.ptr, out_ptr, x.numel, y.numel, 0)
-            return out_ptr
-
         match x.ndim:
             case 3:
-                _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 0)
+                _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, op_code)
             case 2:
-                _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 0)
-
+                _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, op_code)
         return out_ptr
+
+    @staticmethod
+    @dispatcher.register(BinaryOps.ADD, Device.CPU)
+    def add(x: Buffer, y: Buffer) -> CDataPtr:
+        return CPU._binary_op(x, y, op_code=0)
 
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
     def sub(x: Buffer, y: Buffer) -> CDataPtr:
-        out_ptr = CPU.malloc(num=x.numel)
-
-        if y.ndim == 1:
-            _arithmetic.lib.add_with_1d(x.ptr, y.ptr, out_ptr, x.numel, y.numel, 2)
-            return out_ptr
-
-        match x.ndim:
-            case 3:
-                _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 2)
-            case 2:
-                _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 2)
-
-        return out_ptr
+        return CPU._binary_op(x, y, op_code=2)
 
     @staticmethod
     @dispatcher.register(BinaryOps.MUL, Device.CPU)
     def mul(x: Buffer, y: Buffer) -> CDataPtr:
-        out_ptr = CPU.malloc(num=x.numel)
-
-        if y.ndim == 1:
-            _arithmetic.lib.add_with_1d(x.ptr, y.ptr, out_ptr, x.numel, y.numel, 1)
-            return out_ptr
-
-        match x.ndim:
-            case 3:
-                _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 1)
-            case 2:
-                _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, 1)
-
-        return out_ptr
+        return CPU._binary_op(x, y, op_code=1)
 
     @staticmethod
     @dispatcher.register(UnaryOps.NEG, Device.CPU)

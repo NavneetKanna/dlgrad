@@ -47,15 +47,15 @@ class Buffer:
             shape=out_shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1
         )
 
-    def max(self, dim: int = -1) -> Buffer:
+    def max(self, dim: int = -1) -> tuple[Buffer, Buffer]:
         out_shape = cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
 
-        out, indices = dispatcher.dispatch(op=UnaryOps.MAX, device=self.device, x=self, dim=dim)
+        out, max_with_1s = dispatcher.dispatch(op=UnaryOps.MAX, device=self.device, x=self, dim=dim)
 
         out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1)
-        indices_buf = Buffer(data=indices, shape=self.shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1)  # noqa: E501
+        max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1)  # noqa: E501
 
-        return out_buf, indices_buf
+        return out_buf, max_with_1s_buf
 
     def matmul(self, other: Buffer) -> Buffer:
         return Buffer(
@@ -86,7 +86,7 @@ class Buffer:
         )
 
     @staticmethod
-    def ce_forward(x: Buffer, y: Buffer) -> None:
+    def ce_forward(x: Buffer, y: Buffer) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=CustomOps.CE_FORWARD, device=x.device,
                                      x=x, y=y),
@@ -97,42 +97,26 @@ class Buffer:
     def ce_backward(**kwargs) -> None:
         dispatcher.dispatch(op=kwargs.pop("op"), device=kwargs.pop("device"), **kwargs)
 
-    def __add__(self, other: Buffer) -> Buffer:
+    def _binary_op(self, other: Buffer, op: BinaryOps) -> Buffer:
         if self.numel >= other.numel:
             return Buffer(
-                data=dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other),
+                data=dispatcher.dispatch(op=op, device=self.device, x=self, y=other),
                 shape=self.shape, device=self.device
             )
         else:
             return Buffer(
-                data=dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=other, y=self),
+                data=dispatcher.dispatch(op=op, device=self.device, x=other, y=self),
                 shape=other.shape, device=self.device
             )
+
+    def __add__(self, other: Buffer) -> Buffer:
+        return self._binary_op(other, BinaryOps.ADD)
 
     def __sub__(self, other: Buffer) -> Buffer:
-        if self.numel >= other.numel:
-            return Buffer(
-                data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=self, y=other),
-                shape=self.shape, device=self.device
-            )
-        else:
-            tmp = Buffer(data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=other, y=self),
-                         shape=other.shape, device=self.device)
-            tmp = Buffer(data=dispatcher.dispatch(op=UnaryOps.NEG, device=self.device, x=tmp),
-                         shape=tmp.shape, device=tmp.device)
-            return tmp
+        return self._binary_op(other, BinaryOps.SUB)
 
     def __mul__(self, other: Buffer) -> Buffer:
-        if self.numel >= other.numel:
-            return Buffer(
-                data=dispatcher.dispatch(op=BinaryOps.MUL, device=self.device, x=self, y=other),
-                shape=self.shape, device=self.device
-            )
-        else:
-            return Buffer(
-                data=dispatcher.dispatch(op=BinaryOps.MUL, device=self.device, x=other, y=self),
-                shape=other.shape, device=self.device
-            )
+        return self._binary_op(other, BinaryOps.MUL)
 
     def __gt__(self, other: int | float) -> Buffer:
         return Buffer(

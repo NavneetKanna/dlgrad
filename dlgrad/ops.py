@@ -4,9 +4,9 @@ from dlgrad.tensor import OP
 
 # ------------ Unary Ops -----------
 
-
 def transpose(x: Buffer) -> Buffer:
 	return x.transpose()
+
 
 class Sum(OP):
 	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
@@ -17,6 +17,7 @@ class Sum(OP):
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		return (Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device),)
 
+
 class Max(OP):
 	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
 		self.inp_shape = x.shape
@@ -26,8 +27,8 @@ class Max(OP):
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		print(self.x.shape, upstream_grad.shape)
 		return (self.max_with_1s,)
+
 
 class Exp(OP):
 	def forward(self, x: Buffer) -> Buffer:
@@ -36,6 +37,7 @@ class Exp(OP):
 	def backward(self, upstream_grad: Buffer) -> Buffer:
 		pass
 
+
 class Log(OP):
 	def forward(self, x: Buffer) -> Buffer:
 		return x.log()
@@ -43,8 +45,17 @@ class Log(OP):
 	def backward(self, upstream_grad: Buffer) -> Buffer:
 		pass
 
-# ------------ Binary Ops -----------
 
+class Relu(OP):
+	def forward(self, x: Buffer) -> Buffer:
+		self.out = x.relu()
+		return self.out
+
+	def backward(self, upstream_grad: Buffer) -> Buffer:
+		return ((self.out>0.0) * upstream_grad,)
+
+
+# ------------ Binary Ops -----------
 
 class Add(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
@@ -89,25 +100,16 @@ class MatMul(OP):
 	def backward(self):  # noqa: ANN201
 		pass
 
-class Relu(OP):
-	def forward(self, x: Buffer) -> Buffer:
-		self.out = x.relu()
-		return self.out
-
-	def backward(self, upstream_grad: Buffer) -> Buffer:
-		return ((self.out>0.0) * upstream_grad,)
-
 
 class CrossEntropy(OP):
-	def forward(self, logits: Buffer, target: Buffer) -> Buffer:
+	def forward(self, logits: Buffer, target: Buffer, dim: int = 1) -> Buffer:
 		self.target = target
-		t, _ = logits.max(1)
+		t, _ = logits.max(dim=dim)
 		m = logits - t
 		e = m.exp()
-		ss = e.sum(1)
+		ss = e.sum(dim=dim)
 		self.log_softmax_output = m - ss.log()
 		tmp = Buffer.ce_forward(self.log_softmax_output, self.target)
-		# tmp = self.log_softmax_output[self.target]
 		return -tmp.sum()
 
 	def backward(self, upstream_grad: Buffer) -> Buffer:
@@ -127,4 +129,3 @@ class LogSoftmax(OP):
 	def backward(self, upstream_grad: Buffer) -> Buffer:
 		softmax_output = self.out.exp()
 		return upstream_grad - softmax_output * upstream_grad.sum(1)
-

@@ -315,7 +315,6 @@ class Tensor:
 		return Tensor.sub(self, other)
 
 	def __neg__(self) -> Tensor:
-		# return Tensor.neg(self)
 		return Tensor(data=-self.data, device=self.device, dtype=self.dtype)
 
 	def __matmul__(self, other: Tensor) -> Tensor:
