@@ -23,3 +23,10 @@ void clog(float *x, float *out, int numel)
         out[i] = log(x[i]);
     }
 }
+
+void cpow(float *x, float *out, int val, int numel)
+{
+    for (int i=0; i<numel; i++) {
+        out[i] = pow(x[i], val);
+    }
+}

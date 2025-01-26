@@ -27,6 +27,7 @@ class BinaryOps(Enum):
     ADD = auto()
     SUB = auto()
     MUL = auto()
+    DIV = auto()
     MATMUL = auto()
     GT = auto() # >
     EQT = auto() # ==

@@ -220,6 +220,10 @@ class Tensor:
 		return ops.Sub.execute(x, y)
 
 	@staticmethod
+	def div(x: Tensor, y: Tensor) -> Tensor:
+		return ops.Div.execute(x, y)
+
+	@staticmethod
 	def matmul(x: Tensor, y: Tensor) -> Tensor:
 		if (x.data.shape[-1] != y.data.shape[0] and x.data.ndim != 2 and y.data.ndim != 2):
 			raise ValueError("Either the Tensors shape dont match or is not 2D")
@@ -259,8 +263,8 @@ class Tensor:
 		return ops.LogSoftmax.execute(self)
 
 	# TODO: If target shape does not match raise error
-	def cross_entropy_loss(self, target: Tensor, dim: int = 1) -> Tensor:  # noqa: ANN001
-		return ops.CrossEntropy.execute(self, target, dim=dim)
+	def cross_entropy_loss(self, target: Tensor) -> Tensor:  # noqa: ANN001
+		return ops.CrossEntropy.execute(self, target)
 
 	def backward(self) -> None:
 		assert self.shape == (1, 1), "backward must be called on a scalar Tensor"
@@ -314,6 +318,9 @@ class Tensor:
 
 	def __sub__(self, other: Tensor) -> Tensor:
 		return Tensor.sub(self, other)
+
+	def __truediv__(self, other: Tensor) -> Tensor:
+		return Tensor.div(self, other)
 
 	def __neg__(self) -> Tensor:
 		return Tensor(data=-self.data, device=self.device, dtype=self.dtype)

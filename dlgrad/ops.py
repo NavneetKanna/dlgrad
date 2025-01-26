@@ -32,18 +32,21 @@ class Max(OP):
 
 class Exp(OP):
 	def forward(self, x: Buffer) -> Buffer:
-		return x.exp()
+		self.out = x.exp()
+		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> Buffer:
-		pass
+		return (upstream_grad * self.out,)
 
 
 class Log(OP):
 	def forward(self, x: Buffer) -> Buffer:
-		return x.log()
+		self.x = x
+		self.out = x.log()
+		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> Buffer:
-		pass
+		return upstream_grad / self.x
 
 
 class Relu(OP):
@@ -91,6 +94,17 @@ class Mul(OP):
 	def backward(self, upstream_grad: Buffer) -> Buffer:
 		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad*self.y) if self.req_grad[0] else None, \
 		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad*self.x) if self.req_grad[1] else None
+
+class Div(OP):
+	def forward(self, x: Buffer, y: Buffer) -> Buffer:
+		self.x = x
+		self.y = y
+		if check_broadcast(x.shape, y.shape):
+			return x/y
+
+	def backward(self, upstream_grad: Buffer) -> Buffer:
+		pass
+
 
 # TODO: Add __matmul__ in buffer
 class MatMul(OP):

@@ -98,12 +98,9 @@ class Buffer:
         dispatcher.dispatch(op=kwargs.pop("op"), device=kwargs.pop("device"), **kwargs)
 
     def _binary_op(self, other: Buffer, op: BinaryOps) -> Buffer:
-        # Determine the output shape based on broadcasting rules
         output_shape = self.shape if self.numel >= other.numel else other.shape
 
-        # Handle subtraction separately since it's not commutative
         if op == BinaryOps.SUB and self.numel < other.numel:
-            # Compute (other - self) and then negate the result
             tmp = Buffer(
                 data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=other, y=self),
                 shape=other.shape, device=self.device
@@ -113,7 +110,6 @@ class Buffer:
                 shape=tmp.shape, device=tmp.device
             )
 
-        # For other operations (ADD, MUL), dispatch based on the larger tensor
         x, y = (self, other) if self.numel >= other.numel else (other, self)
         return Buffer(
             data=dispatcher.dispatch(op=op, device=self.device, x=x, y=y),
@@ -128,6 +124,9 @@ class Buffer:
 
     def __mul__(self, other: Buffer) -> Buffer:
         return self._binary_op(other, BinaryOps.MUL)
+
+    def __truediv__(self, other: Buffer) -> Buffer:
+        return self._binary_op(other, BinaryOps.DIV)
 
     def __gt__(self, other: int | float) -> Buffer:
         return Buffer(
