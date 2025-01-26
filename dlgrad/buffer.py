@@ -126,7 +126,13 @@ class Buffer:
         return self._binary_op(other, BinaryOps.MUL)
 
     def __truediv__(self, other: Buffer) -> Buffer:
-        return self._binary_op(other, BinaryOps.DIV)
+        return self._binary_op(other**-1, BinaryOps.MUL)
+
+    def __pow__(self, val: int) -> Buffer:
+        return Buffer(
+            data=dispatcher.dispatch(op=UnaryOps.POW, device=self.device, x=self, val=val),
+            shape=self.shape, device=self.device
+        )
 
     def __gt__(self, other: int | float) -> Buffer:
         return Buffer(

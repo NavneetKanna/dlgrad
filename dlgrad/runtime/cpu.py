@@ -96,11 +96,6 @@ class CPU:
         return CPU._binary_op(x, y, op_code=1)
 
     @staticmethod
-    @dispatcher.register(BinaryOps.MUL, Device.CPU)
-    def div(x: Buffer, y: Buffer) -> CDataPtr:
-        return CPU._binary_op(x, y, op_code=3)
-
-    @staticmethod
     @dispatcher.register(UnaryOps.NEG, Device.CPU)
     def neg(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
@@ -124,6 +119,15 @@ class CPU:
         out_ptr = CPU.malloc(num=x.numel)
 
         _utils.lib.clog(x.ptr, out_ptr, x.numel)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.POW, Device.CPU)
+    def pow(x: Buffer, val: int) -> CDataPtr:
+        out_ptr = CPU.malloc(num=x.numel)
+
+        _utils.lib.cpow(x.ptr, out_ptr, val, x.numel)
 
         return out_ptr
 

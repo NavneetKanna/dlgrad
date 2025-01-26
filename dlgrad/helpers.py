@@ -14,6 +14,7 @@ class UnaryOps(Enum):
     NEG = auto()
     EXP = auto()
     LOG = auto()
+    POW = auto()
     TRANSPOSE = auto()
     RELU = auto()
 

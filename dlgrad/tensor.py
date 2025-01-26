@@ -320,7 +320,10 @@ class Tensor:
 		return Tensor.sub(self, other)
 
 	def __truediv__(self, other: Tensor) -> Tensor:
-		return Tensor.div(self, other)
+		return Tensor.mul(self, other**-1)
+
+	def __pow__(self, val: int) -> Tensor:
+		return Tensor(data=self.data**val, device=self.device)
 
 	def __neg__(self) -> Tensor:
 		return Tensor(data=-self.data, device=self.device, dtype=self.dtype)
