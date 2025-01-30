@@ -62,6 +62,15 @@ def check_broadcast(x_shape: tuple, y_shape: tuple) -> bool:
 
     return True
 
+def find_broadcast_dim(shape1: tuple, shape2: tuple) -> int:
+    if len(shape1) != len(shape2):
+        raise ValueError("Shapes must have the same number of dimensions")
+
+    for i in range(len(shape1)):
+        if (shape1[i] == 1 and shape2[i] != 1) or (shape2[i] == 1 and shape1[i] != 1):
+            if shape1[i] == shape2[i] or shape1[i] == 1 or shape2[i] == 1:
+                return i
+
 def get_brodcast_tensor(x, y):  # noqa: ANN001, ANN201
     if len(x.shape) > len(y.shape):
         return x, y
@@ -121,7 +130,7 @@ def cal_sum_out_shape(ndim: int, dim: int, inp_shape: tuple) -> tuple:
     elif ndim == 2:
         if dim == 0:
             out_shape = (1, inp_shape[1])
-        elif dim ==1:
+        elif dim == 1:
             out_shape = (inp_shape[0], 1)
         else:
             out_shape = (1, 1)

@@ -1,5 +1,5 @@
 from dlgrad.buffer import Buffer
-from dlgrad.helpers import CustomOps, check_broadcast
+from dlgrad.helpers import CustomOps, check_broadcast, find_broadcast_dim
 from dlgrad.tensor import OP
 
 # ------------ Unary Ops -----------
@@ -15,7 +15,11 @@ class Sum(OP):
 		return x.sum(dim=dim)
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		return (Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device),)
+		# print("-----")
+		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device)
+		# print("returning", t.shape)
+		# print("-----")
+		return (t*upstream_grad,)
 
 
 class Max(OP):
@@ -27,7 +31,7 @@ class Max(OP):
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		return (self.max_with_1s,)
+		return (self.max_with_1s*upstream_grad,)
 
 
 class Exp(OP):
@@ -42,11 +46,11 @@ class Exp(OP):
 class Log(OP):
 	def forward(self, x: Buffer) -> Buffer:
 		self.x = x
-		self.out = x.log()
-		return self.out
+		return x.log()
 
 	def backward(self, upstream_grad: Buffer) -> Buffer:
-		return upstream_grad / self.x
+		print("log backward called", upstream_grad.shape)
+		return (upstream_grad / self.x,)
 
 
 class Relu(OP):
@@ -68,8 +72,9 @@ class Add(OP):
 			return x + y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad) if self.req_grad[0] else None, \
-		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad) if self.req_grad[1] else None
+		print("add backward", find_broadcast_dim(self.x.shape, self.y.shape))
+		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
+		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
 
 class Sub(OP):
@@ -80,8 +85,8 @@ class Sub(OP):
 			return x - y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad) if self.req_grad[0] else None, \
-		  	   self.match_inp_shape(inp=self.y, upstream_grad=-upstream_grad) if self.req_grad[1] else None
+		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
+		  	   self.match_inp_shape(inp=self.y, upstream_grad=-upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
 
 class Mul(OP):
@@ -92,8 +97,8 @@ class Mul(OP):
 			return x*y
 
 	def backward(self, upstream_grad: Buffer) -> Buffer:
-		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad*self.y) if self.req_grad[0] else None, \
-		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad*self.x) if self.req_grad[1] else None
+		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad*self.y, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
+		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad*self.x, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
 class Div(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
