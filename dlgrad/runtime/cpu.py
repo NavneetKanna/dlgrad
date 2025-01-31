@@ -96,6 +96,11 @@ class CPU:
         return CPU._binary_op(x, y, op_code=1)
 
     @staticmethod
+    @dispatcher.register(BinaryOps.DIV, Device.CPU)
+    def div(x: Buffer, y: Buffer) -> CDataPtr:
+        return CPU._binary_op(x, y, op_code=3)
+
+    @staticmethod
     @dispatcher.register(UnaryOps.NEG, Device.CPU)
     def neg(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)

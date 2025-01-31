@@ -223,6 +223,10 @@ class Tensor:
 
 	@staticmethod
 	def div(x: Tensor, y: Tensor) -> Tensor:
+		print("x")
+		print(x.numpy())
+		print("y")
+		print(y.numpy())
 		return ops.Div.execute(x, y)
 
 	@staticmethod
@@ -261,14 +265,12 @@ class Tensor:
 	def log(self) -> Tensor:
 		return ops.Log.execute(self)
 
-	def log_softmax(self) -> Tensor:
-		t = self.max(dim=1)
+	def log_softmax(self, dim: int = 1) -> Tensor:
+		t = self.max(dim=dim)
 		m = self - t
 		e = m.exp()
-		ss = e.sum(dim=1)
-		self.log_softmax_output = m - ss.log()
-		return self.log_softmax_output
-		# return ops.LogSoftmax.execute(self)
+		ss = e.sum(dim=dim)
+		return m - ss.log()
 
 	# TODO: If target shape does not match raise error
 	def cross_entropy_loss(self, target: Tensor) -> Tensor:
@@ -298,9 +300,6 @@ class Tensor:
 		for node in reversed(topo):
 			if node.grad is None:
 				raise RuntimeError(f"Tensor {node} has no grad")
-
-			print("-----")
-			print(node.grad.numpy())
 			upstream_grads: tuple[Buffer] = node._ctx.backward(node.grad.data)
 			upstream_grads: list[Tensor] = [
 				Tensor(g, device=self.device, requires_grad=False) for g in upstream_grads
@@ -310,20 +309,7 @@ class Tensor:
 				i += 1
 				if p.requires_grad:
 					assert (g.shape == p.shape), f"Tensor shape and grad shape must match {p.shape}, {g.shape}"  # noqa: E501
-					if p.grad is None:
-						print("p.grad is none")
-						p.grad = g
-						print(p.grad.numpy())
-					else:
-						print("p.grad is not none")
-						print("p.grad")
-						print(p.grad.numpy())
-						print("grad")
-						print(g.numpy())
-						p.grad = p.grad + g
-					# p.grad = g if p.grad is None else p.grad + g
-			# if i == 2:
-			# 	exit()
+					p.grad = g if p.grad is None else p.grad + g
 
 	def __repr__(self) -> str:
 		return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"  # noqa: E501
@@ -345,7 +331,7 @@ class Tensor:
 		return Tensor.sub(self, other)
 
 	def __truediv__(self, other: Tensor) -> Tensor:
-		return Tensor.mul(self, other**-1)
+		return Tensor.div(self, other)
 
 	def __pow__(self, val: int) -> Tensor:
 		return Tensor(data=self.data**val, device=self.device)

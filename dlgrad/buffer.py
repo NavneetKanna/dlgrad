@@ -126,7 +126,7 @@ class Buffer:
         return self._binary_op(other, BinaryOps.MUL)
 
     def __truediv__(self, other: Buffer) -> Buffer:
-        return self._binary_op(other**-1, BinaryOps.MUL)
+        return self._binary_op(other, BinaryOps.DIV)
 
     def __pow__(self, val: int) -> Buffer:
         return Buffer(
