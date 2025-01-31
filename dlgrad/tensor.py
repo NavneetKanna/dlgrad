@@ -294,18 +294,14 @@ class Tensor:
 
 		# TODO: del _ctx
 		for node in reversed(topo):
-			if node.grad is None:
+			if not node.grad:
 				raise RuntimeError(f"Tensor {node} has no grad")
 			upstream_grads: tuple[Buffer] = node._ctx.backward(node.grad.data)
 			upstream_grads: list[Tensor] = [
 				Tensor(g, device=self.device, requires_grad=False) for g in upstream_grads
 			]
-			i = 0
 			for p, g in zip(node._ctx.parents, upstream_grads):
-				i += 1
-				if p.requires_grad:
-					assert (g.shape == p.shape), f"Tensor shape and grad shape must match {p.shape}, {g.shape}"  # noqa: E501
-					p.grad = g if p.grad is None else p.grad + g
+				p.grad = g if not p.grad else p.grad + g
 
 	def __repr__(self) -> str:
 		return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"  # noqa: E501

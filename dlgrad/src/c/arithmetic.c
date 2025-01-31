@@ -5,7 +5,6 @@
 #define ADD 0
 #define MUL 1
 #define SUB 2
-#define DIV 3
 
 
 // Handles all broadcasting shapes
@@ -38,9 +37,6 @@ void op_3d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
                 case SUB:
                     out[x_idx] = x[x_idx] - y[y_idx];
                     break;
-                case DIV:
-                    out[x_idx] = x[x_idx] / y[y_idx];
-                    break;
                 }
             }
         }
@@ -63,7 +59,6 @@ void op_2d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
             x_idx = i*xstrides[0] + j*xstrides[1];
             
             y_idx = y_idx1*ystrides[0] + y_idx2*ystrides[1];
-
             switch (op) {
             case ADD:
                 out[x_idx] = x[x_idx] + y[y_idx];
@@ -73,9 +68,6 @@ void op_2d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
                 break;
             case SUB:
                 out[x_idx] = x[x_idx] - y[y_idx];
-                break;
-            case DIV:
-                out[x_idx] = x[x_idx] / y[y_idx];
                 break;
             }
         }

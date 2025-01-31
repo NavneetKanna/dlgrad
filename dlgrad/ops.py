@@ -18,7 +18,7 @@ class Sum(OP):
 		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device)
 		return (t*upstream_grad,)
 
-
+# NOTE: Max backward does not work for 3d tensors when combined with ops down the graph :(
 class Max(OP):
 	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
 		self.inp_shape = x.shape
@@ -28,6 +28,7 @@ class Max(OP):
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+		print("max backward called")
 		return (self.max_with_1s*upstream_grad,)
 
 
@@ -68,6 +69,7 @@ class Add(OP):
 			return x + y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
+		print("add backward called")
 		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
 		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 

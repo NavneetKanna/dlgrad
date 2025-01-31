@@ -5,7 +5,16 @@ from dataclasses import dataclass
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
-from dlgrad.helpers import BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, calculate_stride, prod_
+from dlgrad.helpers import (
+    BinaryOps,
+    BufferOps,
+    CustomOps,
+    UnaryOps,
+    cal_sum_out_shape,
+    calculate_stride,
+    check_broadcast,
+    prod_,
+)
 
 
 @dataclass
@@ -98,6 +107,9 @@ class Buffer:
         dispatcher.dispatch(op=kwargs.pop("op"), device=kwargs.pop("device"), **kwargs)
 
     def _binary_op(self, other: Buffer, op: BinaryOps) -> Buffer:
+        if not check_broadcast(self.shape, other.shape):
+            raise ValueError(f"Cannot broadcast {other.shape} to {self.shape}")
+
         output_shape = self.shape if self.numel >= other.numel else other.shape
 
         if op == BinaryOps.SUB and self.numel < other.numel:
@@ -126,7 +138,7 @@ class Buffer:
         return self._binary_op(other, BinaryOps.MUL)
 
     def __truediv__(self, other: Buffer) -> Buffer:
-        return self._binary_op(other, BinaryOps.DIV)
+        return self._binary_op(other**-1, BinaryOps.MUL)
 
     def __pow__(self, val: int) -> Buffer:
         return Buffer(
