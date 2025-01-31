@@ -223,10 +223,6 @@ class Tensor:
 
 	@staticmethod
 	def div(x: Tensor, y: Tensor) -> Tensor:
-		print("x")
-		print(x.numpy())
-		print("y")
-		print(y.numpy())
 		return ops.Div.execute(x, y)
 
 	@staticmethod

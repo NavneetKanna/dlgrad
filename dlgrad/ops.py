@@ -92,8 +92,8 @@ class Mul(OP):
 			return x*y
 
 	def backward(self, upstream_grad: Buffer) -> Buffer:
-		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape))*self.y if self.req_grad[0] else None, \
-		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape))*self.x if self.req_grad[1] else None  # noqa: E501
+		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad*self.y, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
+		  	    self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad*self.x, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
 
 class Div(OP):
@@ -104,8 +104,8 @@ class Div(OP):
 			return x/y
 
 	def backward(self, upstream_grad: Buffer) -> Buffer:
-		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape))/self.y if self.req_grad[0] else None, \
-		  	   -(self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape))*self.x)/self.y**2 if self.req_grad[1] else None  # noqa: E501
+		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad/self.y, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
+		  	   self.match_inp_shape(inp=self.y, upstream_grad=(-upstream_grad*self.x)/self.y**2, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
 
 # TODO: Add __matmul__ in buffer

@@ -43,12 +43,21 @@ def test_mul_backward(shapes):
     run(shapes, lambda x, y: x*y)
 
 @pytest.mark.parametrize("shapes", [
+    [(2, 3, 4), (1, 3, 4)],
+    [(2, 3), (1, 3)],
+    [(2, 3), (2, 3)],
+])
+def test_div_backward(shapes):
+    run(shapes, lambda x, y: x/y)
+
+@pytest.mark.parametrize("shapes", [
     [(2, 3)],
     [(10, 10)]
 ])
 def test_relu_backward(shapes):
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
+
         dlgrad_data = Tensor(np_data, requires_grad=True)
         torch_data = torch.tensor(np_data, requires_grad=True)
 
@@ -65,6 +74,7 @@ def test_relu_backward(shapes):
 def test_max_3d_backward(shapes):
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
+
         dlgrad_data = Tensor(np_data, requires_grad=True)
         torch_data = torch.tensor(np_data, requires_grad=True)
 
@@ -98,6 +108,7 @@ def test_max_3d_backward(shapes):
 def test_max_2d_backward(shapes):
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
+
         dlgrad_data = Tensor(np_data, requires_grad=True)
         torch_data = torch.tensor(np_data, requires_grad=True)
 
@@ -122,6 +133,7 @@ def test_ce_backward(shapes):
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
         np_target = np.array([[1, 2]]).astype(np.float32)
+
         dlgrad_data = Tensor(np_data, requires_grad=True)
         dlgrad_target = Tensor(np_target)
         torch_data = torch.tensor(np_data, requires_grad=True)
@@ -129,6 +141,26 @@ def test_ce_backward(shapes):
 
         dlgrad_data.cross_entropy_loss(dlgrad_target).backward()
         loss = torch.nn.CrossEntropyLoss(reduction="sum")
+        loss(torch_data, torch_target).backward()
+
+        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes", [
+    [(2, 3),
+     (2, 3, 2)]
+])
+def test_log_sft_backward(shapes):
+    for sh in shapes:
+        np_data = np.random.uniform(size=sh).astype(np.float32)
+        np_target = np.array([[1, 2]]).astype(np.float32)
+
+        dlgrad_data = Tensor(np_data, requires_grad=True)
+        dlgrad_target = Tensor(np_target)
+        torch_data = torch.tensor(np_data, requires_grad=True)
+        torch_target = torch.tensor(np_target, dtype=torch.long).reshape(-1, 1).squeeze()
+
+        dlgrad_data.log_softmax(dlgrad_target, dim=1).backward()
+        loss = torch.nn.CrossEntropyLoss(dim=1, reduction="sum")
         loss(torch_data, torch_target).backward()
 
         np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
