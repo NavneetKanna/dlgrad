@@ -84,7 +84,7 @@ import dlgrad.ops as ops  # since ops module imports OP class, it is placed afte
 # TODO: I am setting device here as well as in Buffer, fix this
 # TODO: Check dim out of bounds
 # TODO: Check 0d and 1d when creating tensor from np
-# TODO: What is max() dim ? does subtracting this with tensor work ?
+# TODO: Move all checks and assert to Buffer
 class Tensor:
 	def __init__(self, data: Buffer | "np.ndarray",  # type: ignore  # noqa: F821
 				 device: str | Device | None = Device.CPU, dtype: str | DType | None = None,
@@ -104,13 +104,10 @@ class Tensor:
 		if str(type(data)) == "<class 'numpy.ndarray'>":
 			if str(data.dtype) != "float32":
 				raise ValueError("dlgrad only supports float32 dtype")
+
 			self.data = Buffer(
-				ffi.from_buffer(
-					cdecl="float *", python_buffer=data, require_writable=False
-				),
-				data.shape,
-				device,
-				ndim=data.ndim,
+				ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False),
+				data.shape, device, ndim=data.ndim,
 			)
 		elif isinstance(data, Buffer):
 			self.data = data
@@ -237,12 +234,16 @@ class Tensor:
 	def transpose(x: Tensor) -> Tensor:
 		assert x.data.ndim == 2, "Only 2D Tensors can be transposed"
 
-		return Tensor(
-			data=ops.transpose(x.data),
-			device=x.device,
-			dtype=x.dtype,
-			requires_grad=x.requires_grad,
-		)
+		# t = copy.copy(x)
+		# t.data = ops.transpose(x.data)
+		t = ops.Transpose.execute(x)
+		return t
+		# return Tensor(
+		# 	data=ops.transpose(x.data),
+		# 	device=x.device,
+		# 	dtype=x.dtype,
+		# 	requires_grad=x.requires_grad,
+		# )
 
 	def sum(self, dim: int = -1) -> Tensor:
 		return ops.Sum.execute(self, dim=dim)
@@ -301,10 +302,21 @@ class Tensor:
 			if not node.grad:
 				raise RuntimeError(f"Tensor {node} has no grad")
 			upstream_grads: tuple[Buffer] = node._ctx.backward(node.grad.data)
+			print("-----")
+
 			upstream_grads: list[Tensor] = [
 				Tensor(g, device=self.device, requires_grad=False) for g in upstream_grads
 			]
+			for i in upstream_grads:
+				print(i.numpy())
 			for p, g in zip(node._ctx.parents, upstream_grads):
+				if not p.grad:
+					print("p.grad is empty")
+					print(g.numpy())
+				else:
+					print("p.grad is not empty")
+					print(p.grad.numpy())
+					print(g.numpy())
 				p.grad = g if not p.grad else p.grad + g
 
 	def __repr__(self) -> str:

@@ -8,6 +8,13 @@ def transpose(x: Buffer) -> Buffer:
 	return x.transpose()
 
 
+class Transpose(OP):
+	def forward(self, x: Buffer):  # noqa: ANN201
+		return x.transpose()
+
+	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
+		return (upstream_grad.transpose(),)
+
 class Sum(OP):
 	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
 		self.inp_shape = x.shape
@@ -68,7 +75,6 @@ class Add(OP):
 			return x + y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		print("add backward called")
 		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
 		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
