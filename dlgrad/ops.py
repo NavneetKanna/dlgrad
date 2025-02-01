@@ -112,10 +112,12 @@ class Div(OP):
 # TODO: Add __matmul__ in buffer
 class MatMul(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
+		self.x = x
+		self.y = y
 		return x.matmul(y)
 
-	def backward(self):  # noqa: ANN201
-		pass
+	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
+		return (upstream_grad@self.y.T, self.x.T@upstream_grad)
 
 
 class CrossEntropy(OP):

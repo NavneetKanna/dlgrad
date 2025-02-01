@@ -164,6 +164,13 @@ class Buffer:
             shape=self.shape, device=self.device
         )
 
+    def __matmul__(self, other: Buffer) -> Buffer:
+        return self.matmul(other)
+
+    @property
+    def T(self) -> Buffer:  # noqa: N802
+        return self.transpose()
+
     @property
     def numel(self) -> int:
         return self.metadata.numel
