@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from functools import reduce
+
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
@@ -219,7 +221,6 @@ class Tensor:
 	@staticmethod
 	def sub(x: Tensor, y: Tensor) -> Tensor:
 		return ops.Sub.execute(x, y)
-		# return ops.Add.execute(x, -y)
 
 	@staticmethod
 	def div(x: Tensor, y: Tensor) -> Tensor:
@@ -267,6 +268,9 @@ class Tensor:
 		e = m.exp()
 		ss = e.sum(dim=dim)
 		return m - ss.log()
+
+	def sequential(self, layers: list[callable[Tensor]]) -> None:
+		return reduce(lambda inp, layer: layer(inp), layers, self)
 
 	# TODO: If target shape does not match raise error
 	def cross_entropy_loss(self, target: Tensor) -> Tensor:
