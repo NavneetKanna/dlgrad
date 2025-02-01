@@ -1,6 +1,7 @@
 import math
 
 from dlgrad import Tensor
+from dlgrad.nn import optim, utils  # noqa: F401
 
 
 class Linear:
