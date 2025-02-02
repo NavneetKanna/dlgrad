@@ -1,8 +1,11 @@
 import itertools
+import os
+import platform
 from collections.abc import Iterable
 from enum import Enum, auto
 from math import prod
 
+import requests
 from cffi import FFI
 
 ffi = FFI()
@@ -136,3 +139,17 @@ def cal_sum_out_shape(ndim: int, dim: int, inp_shape: tuple) -> tuple:
             out_shape = (1, 1)
 
     return out_shape
+
+
+OSX = platform.system() == "Darwin"
+CACHE_DIR = os.path.expanduser("~/Library/Caches/dlgrad" if OSX else "~/.cache/dlgrad")
+
+# TODO: Add pbar
+def fetch(url: str, filename: str) -> None:
+    os.makedirs(f"{CACHE_DIR}/downloads", exist_ok=True)
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(f"{CACHE_DIR}/downloads/{filename}", "wb") as file:
+            file.write(response.content)
+    else:
+        print(f"Failed to download file. Status code: {response.status_code}")

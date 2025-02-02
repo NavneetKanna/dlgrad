@@ -22,5 +22,5 @@ setup(
         'dlgrad/builder/float_loss_build.py:ffi',
     ],
     setup_requires=['cffi>=1.17.1'],
-    install_requires=['cffi>=1.0.0']
+    install_requires=['cffi>=1.0.0', 'requests']
 )
