@@ -1,6 +1,8 @@
+import gzip
 import itertools
 import os
 import platform
+import shutil
 from collections.abc import Iterable
 from enum import Enum, auto
 from math import prod
@@ -153,3 +155,8 @@ def fetch(url: str, filename: str) -> None:
             file.write(response.content)
     else:
         print(f"Failed to download file. Status code: {response.status_code}")
+
+def unzip(path: str, save_path: str) -> None:
+    with gzip.open(path, 'rb') as fin:
+        with open(save_path, "wb") as fout:
+            shutil.copyfileobj(fin, fout)
