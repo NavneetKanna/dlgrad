@@ -340,16 +340,16 @@ class Tensor:
 	def __gt__(self, other: int | float) -> Tensor:
 		return Tensor(data=self.data>other, device=self.device, dtype=self.dtype)
 
-	def __add__(self, other: Tensor) -> Tensor:
+	def __add__(self, other: Tensor| Scalar) -> Tensor:
 		return Tensor.add(self, other)
 
-	def __mul__(self, other: Tensor) -> Tensor:
+	def __mul__(self, other: Tensor | Scalar) -> Tensor:
 		return Tensor.mul(self, other)
 
-	def __sub__(self, other: Tensor) -> Tensor:
+	def __sub__(self, other: Tensor | Scalar) -> Tensor:
 		return Tensor.sub(self, other)
 
-	def __truediv__(self, other: Tensor) -> Tensor:
+	def __truediv__(self, other: Tensor | Scalar) -> Tensor:
 		return Tensor.div(self, other)
 
 	def __pow__(self, val: int) -> Tensor:
