@@ -13,6 +13,7 @@ from dlgrad.helpers import (
     cal_sum_out_shape,
     calculate_stride,
     check_broadcast,
+    ffi,
     prod_,
 )
 
@@ -33,6 +34,10 @@ class Buffer:
                                        kwargs.get("stride", calculate_stride(shape)),
                                        kwargs.get("ndim", len(shape)))
         self.device = device
+
+    @staticmethod
+    def from_scalar(val: Scalar) -> Buffer:
+        return Buffer(data=ffi.cast("float", val), shape=(1, 1), device=Device.CPU)
 
     @staticmethod
     def uniform(shape: tuple, device: Device, **kwargs) -> Buffer:
@@ -106,7 +111,13 @@ class Buffer:
     def ce_backward(**kwargs) -> None:
         dispatcher.dispatch(op=kwargs.pop("op"), device=kwargs.pop("device"), **kwargs)
 
-    def _binary_op(self, other: Buffer, op: BinaryOps) -> Buffer:
+    def _binary_op(self, other: Buffer | Scalar, op: BinaryOps) -> Buffer:
+        if isinstance(other, Scalar):
+            return Buffer(
+            data=dispatcher.dispatch(op=op, device=self.device, x=self, y=other),
+            shape=self.shape, device=self.device
+        )
+
         if not check_broadcast(self.shape, other.shape):
             raise ValueError(f"Cannot broadcast {other.shape} to {self.shape}")
 
@@ -128,16 +139,16 @@ class Buffer:
             shape=output_shape, device=self.device
         )
 
-    def __add__(self, other: Buffer) -> Buffer:
+    def __add__(self, other: Buffer | Scalar) -> Buffer:
         return self._binary_op(other, BinaryOps.ADD)
 
-    def __sub__(self, other: Buffer) -> Buffer:
+    def __sub__(self, other: Buffer | Scalar) -> Buffer:
         return self._binary_op(other, BinaryOps.SUB)
 
-    def __mul__(self, other: Buffer) -> Buffer:
+    def __mul__(self, other: Buffer | Scalar) -> Buffer:
         return self._binary_op(other, BinaryOps.MUL)
 
-    def __truediv__(self, other: Buffer) -> Buffer:
+    def __truediv__(self, other: Buffer | Scalar) -> Buffer:
         return self._binary_op(other**-1, BinaryOps.MUL)
 
     def __pow__(self, val: int) -> Buffer:

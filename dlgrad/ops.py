@@ -1,12 +1,9 @@
 from dlgrad.buffer import Buffer
+from dlgrad.dtype import Scalar
 from dlgrad.helpers import CustomOps, check_broadcast, find_broadcast_dim
 from dlgrad.tensor import OP
 
 # ------------ Unary Ops -----------
-
-def transpose(x: Buffer) -> Buffer:
-	return x.transpose()
-
 
 class Transpose(OP):
 	def forward(self, x: Buffer):  # noqa: ANN201
@@ -68,7 +65,7 @@ class Relu(OP):
 # ------------ Binary Ops -----------
 
 class Add(OP):
-	def forward(self, x: Buffer, y: Buffer) -> Buffer:
+	def forward(self, x: Buffer, y: Buffer | Scalar) -> Buffer:
 		self.x = x
 		self.y = y
 		if check_broadcast(x.shape, y.shape):
@@ -80,7 +77,7 @@ class Add(OP):
 
 
 class Sub(OP):
-	def forward(self, x: Buffer, y: Buffer) -> Buffer:
+	def forward(self, x: Buffer, y: Buffer | Scalar) -> Buffer:
 		self.x = x
 		self.y = y
 		if check_broadcast(x.shape, y.shape):
@@ -92,7 +89,7 @@ class Sub(OP):
 
 
 class Mul(OP):
-	def forward(self, x: Buffer, y: Buffer) -> Buffer:
+	def forward(self, x: Buffer, y: Buffer | Scalar) -> Buffer:
 		self.x = x
 		self.y = y
 		if check_broadcast(x.shape, y.shape):
@@ -104,7 +101,7 @@ class Mul(OP):
 
 
 class Div(OP):
-	def forward(self, x: Buffer, y: Buffer) -> Buffer:
+	def forward(self, x: Buffer, y: Buffer | Scalar) -> Buffer:
 		self.x = x
 		self.y = y
 		if check_broadcast(x.shape, y.shape):

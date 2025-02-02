@@ -71,28 +71,33 @@ class CPU:
         return out_ptr
 
     @staticmethod
-    def _binary_op(x: Buffer, y: Buffer, op_code: int) -> CDataPtr:
+    def _binary_op(x: Buffer, y: Buffer | Scalar, op_code: int) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
+        if y.numel == 1:
+            _arithmetic.lib.with_scalar(x.ptr, out_ptr, y.ptr, x.numel, op_code)
+            return out_ptr
+
         match x.ndim:
             case 3:
                 _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, op_code)
             case 2:
                 _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, op_code)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
-    def add(x: Buffer, y: Buffer) -> CDataPtr:
+    def add(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
         return CPU._binary_op(x, y, op_code=0)
 
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
-    def sub(x: Buffer, y: Buffer) -> CDataPtr:
+    def sub(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
         return CPU._binary_op(x, y, op_code=2)
 
     @staticmethod
     @dispatcher.register(BinaryOps.MUL, Device.CPU)
-    def mul(x: Buffer, y: Buffer) -> CDataPtr:
+    def mul(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
         return CPU._binary_op(x, y, op_code=1)
 
     @staticmethod

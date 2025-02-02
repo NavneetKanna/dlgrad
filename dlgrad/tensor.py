@@ -85,6 +85,7 @@ import dlgrad.ops as ops  # since ops module imports OP class, it is placed afte
 # TODO: Check dim out of bounds
 # TODO: Check 0d and 1d when creating tensor from np
 # TODO: Move all checks and assert to Buffer
+# TODO: Handle int scalar
 class Tensor:
 	def __init__(self, data: Buffer | "np.ndarray",  # type: ignore  # noqa: F821
 				 device: str | Device | None = Device.CPU, dtype: str | DType | None = None,
@@ -111,6 +112,8 @@ class Tensor:
 			)
 		elif isinstance(data, Buffer):
 			self.data = data
+		elif isinstance(data, Scalar):
+			self.data = Buffer.from_scalar(data)
 		else:
 			raise ValueError("The data must be of type Buffer or np.ndarray")
 
@@ -208,19 +211,27 @@ class Tensor:
 		return Tensor.full(shape, 1.0, device, dtype, **kwargs)
 
 	@staticmethod
-	def add(x: Tensor, y: Tensor) -> Tensor:
+	def add(x: Tensor, y: Tensor | Scalar) -> Tensor:
+		if isinstance(y, Scalar):
+			y = Tensor(y)
 		return ops.Add.execute(x, y)
 
 	@staticmethod
-	def mul(x: Tensor, y: Tensor) -> Tensor:
+	def mul(x: Tensor, y: Tensor | Scalar) -> Tensor:
+		if isinstance(y, Scalar):
+			y = Tensor(y)
 		return ops.Mul.execute(x, y)
 
 	@staticmethod
-	def sub(x: Tensor, y: Tensor) -> Tensor:
+	def sub(x: Tensor, y: Tensor | Scalar) -> Tensor:
+		if isinstance(y, Scalar):
+			y = Tensor(y)
 		return ops.Sub.execute(x, y)
 
 	@staticmethod
-	def div(x: Tensor, y: Tensor) -> Tensor:
+	def div(x: Tensor, y: Tensor | Scalar) -> Tensor:
+		if isinstance(y, Scalar):
+			y = Tensor(y)
 		return ops.Div.execute(x, y)
 
 	@staticmethod

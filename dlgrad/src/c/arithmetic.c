@@ -73,3 +73,20 @@ void op_2d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
         }
     }
 }
+
+void with_scalar(float *x, float *out, float y, int xnumel, int op)
+{
+    for (int i=0; i<xnumel; i++) {
+        switch (op) {
+            case ADD:
+                out[i] = x[i] + y;
+                break;
+            case MUL:
+                out[i] = x[i] * y;
+                break;
+            case SUB:
+                out[i] = x[i] - y;
+                break;
+            }
+    }
+}
