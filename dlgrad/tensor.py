@@ -85,7 +85,7 @@ import dlgrad.ops as ops  # since ops module imports OP class, it is placed afte
 # TODO: Check dim out of bounds
 # TODO: Check 0d and 1d when creating tensor from np
 # TODO: Move all checks and assert to Buffer
-# TODO: Handle int scalar
+# TODO: Handle int scalar, what if x is scalar ?
 class Tensor:
 	def __init__(self, data: Buffer | "np.ndarray",  # type: ignore  # noqa: F821
 				 device: str | Device | None = Device.CPU, dtype: str | DType | None = None,
@@ -306,28 +306,17 @@ class Tensor:
 
 		_topo_sort(self)
 
-		self.grad = Tensor.ones_like((1, 1))
+		self.grad = Tensor(1.0)
 
 		# TODO: del _ctx
 		for node in reversed(topo):
 			if not node.grad:
 				raise RuntimeError(f"Tensor {node} has no grad")
 			upstream_grads: tuple[Buffer] = node._ctx.backward(node.grad.data)
-			print("-----")
-
 			upstream_grads: list[Tensor] = [
 				Tensor(g, device=self.device, requires_grad=False) for g in upstream_grads
 			]
-			for i in upstream_grads:
-				print(i.numpy())
 			for p, g in zip(node._ctx.parents, upstream_grads):
-				if not p.grad:
-					print("p.grad is empty")
-					print(g.numpy())
-				else:
-					print("p.grad is not empty")
-					print(p.grad.numpy())
-					print(g.numpy())
 				p.grad = g if not p.grad else p.grad + g
 
 	def __repr__(self) -> str:

@@ -8,10 +8,8 @@ class Optimiser:
 
     def step(self) -> None:
         for i in self.params:
-            print(i)
-            print(i.grad)
             assert i.shape == i.grad.shape, f"The shape of the weight {i.shape} and its grad {i.grad.shape} do not match"
-            i = i - self.lr*i.grad
+            i = i - i.grad*self.lr
 
     def zero_grad(self) -> None:
         for i in self.params:
