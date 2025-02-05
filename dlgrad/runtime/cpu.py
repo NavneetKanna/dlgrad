@@ -8,6 +8,7 @@ import _full  # type: ignore
 import _loss  # type: ignore
 import _matmul  # type: ignore
 import _max  # type: ignore
+import _mnist_loader  # type: ignore
 import _sum  # type: ignore
 import _uniform  # type: ignore
 import _utils  # type: ignore
@@ -44,7 +45,18 @@ class CPU:
         return ptr
 
     @staticmethod
-    def init_with_scalar(num: int, scalar: int, size: int = struct.calcsize('f')) ->CDataPtr:
+    def mnist_loader(images: bool, path: str, magic_number: int) -> CDataPtr:
+        if images:
+            ptr = CPU.ffi.gc(_mnist_loader.lib.mnist_images_loader(path.encode('ascii'), magic_number), _allocate.lib.free_ptr)  # noqa: E501
+        else:
+            ptr = CPU.ffi.gc(_mnist_loader.lib.mnist_labels_loader(path.encode('ascii'), magic_number), _allocate.lib.free_ptr)  # noqa: E501
+
+        if ptr == CPU.ffi.NULL:
+            raise MemoryError("Error when loading MNIST data")
+        return ptr
+
+    @staticmethod
+    def init_with_scalar(num: int, scalar: int, size: int = struct.calcsize('f')) -> CDataPtr:
         ptr = CPU.ffi.gc(_allocate.lib.init_with_scalar(num*size, num, scalar), _allocate.lib.free_ptr)
         if ptr == CPU.ffi.NULL:
             raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
