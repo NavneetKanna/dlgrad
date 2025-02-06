@@ -313,7 +313,11 @@ class Tensor:
 
 	def __getitem__(self, idx: slice):  # noqa: ANN001, ANN204
 		if isinstance(idx, slice) and idx.start is not None and idx.stop is not None and idx.step is None:
-				print("true")
+			s = idx.start*self.stride[0]
+			ns = tuple([idx.stop-idx.start, *self.shape[1:]])
+
+			buf = Buffer(data=self.data.ptr+s, shape=ns, device=self.device)
+			return Tensor(data=buf, device=self.device, dtype=self.dtype, requires_grad=self.requires_grad)
 
 	def __repr__(self) -> str:
 		return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"  # noqa: E501
