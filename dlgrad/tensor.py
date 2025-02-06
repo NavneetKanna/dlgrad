@@ -245,16 +245,8 @@ class Tensor:
 	def transpose(x: Tensor) -> Tensor:
 		assert x.data.ndim == 2, "Only 2D Tensors can be transposed"
 
-		# t = copy.copy(x)
-		# t.data = ops.transpose(x.data)
 		t = ops.Transpose.execute(x)
 		return t
-		# return Tensor(
-		# 	data=ops.transpose(x.data),
-		# 	device=x.device,
-		# 	dtype=x.dtype,
-		# 	requires_grad=x.requires_grad,
-		# )
 
 	def sum(self, dim: int = -1) -> Tensor:
 		return ops.Sum.execute(self, dim=dim)
@@ -318,6 +310,10 @@ class Tensor:
 			]
 			for p, g in zip(node._ctx.parents, upstream_grads):
 				p.grad = g if not p.grad else p.grad + g
+
+	def __getitem__(self, idx: slice):  # noqa: ANN001, ANN204
+		if isinstance(idx, slice) and idx.start is not None and idx.stop is not None and idx.step is None:
+				print("true")
 
 	def __repr__(self) -> str:
 		return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"  # noqa: E501
