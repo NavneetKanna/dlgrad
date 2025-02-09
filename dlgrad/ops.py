@@ -120,7 +120,9 @@ class MatMul(OP):
 		return x.matmul(y)
 
 	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
-		return (upstream_grad@self.y.T, self.x.T@upstream_grad)
+		t1 = self.x.T
+		t2 = self.y.T
+		return (upstream_grad@t2, t1@upstream_grad)
 
 
 class CrossEntropy(OP):

@@ -7,10 +7,16 @@ from dlgrad.runtime.cpu import CPU
 
 def mnist() -> list[Tensor]:
     base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
+    # t = [
+    #     ("train-images-idx3-ubyte.gz", True, 2051, (60000, 28, 28)),
+    #     ("train-labels-idx1-ubyte.gz", False, 2049, (60000, 1)),
+    #     ("t10k-images-idx3-ubyte.gz", True, 2051, (10000, 28, 28)),
+    #     ("t10k-labels-idx1-ubyte.gz", False, 2049, (10000, 1)),
+    # ]
     t = [
-        ("train-images-idx3-ubyte.gz", True, 2051, (60000, 28, 28)),
+        ("train-images-idx3-ubyte.gz", True, 2051, (60000, 784)),
         ("train-labels-idx1-ubyte.gz", False, 2049, (60000, 1)),
-        ("t10k-images-idx3-ubyte.gz", True, 2051, (10000, 28, 28)),
+        ("t10k-images-idx3-ubyte.gz", True, 2051, (10000, 784)),
         ("t10k-labels-idx1-ubyte.gz", False, 2049, (10000, 1)),
     ]
     res: list[Tensor] = []

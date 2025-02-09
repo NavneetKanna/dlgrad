@@ -9,7 +9,17 @@ class Optimiser:
     def step(self) -> None:
         for i in self.params:
             assert i.shape == i.grad.shape, f"The shape of the weight {i.shape} and its grad {i.grad.shape} do not match"
-            i = i - i.grad*self.lr
+            # if i.shape == (16, 784):
+            #     print("i before")
+            #     print(id(i))
+            #     print("i.grad")
+            #     print(i.grad.numpy().any())
+            i.data = (i - i.grad*self.lr).data
+            # if i.shape == (16, 784):
+            #     print("init wt after updated")
+            #     print(id(i))
+            # print(id(i))
+                # print(i.grad.numpy())
 
     def zero_grad(self) -> None:
         for i in self.params:
