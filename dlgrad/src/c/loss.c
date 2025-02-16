@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include "loss.h"
 
 void ce_forward(float *x, float *target, float *out, int nrows, int *xstride)

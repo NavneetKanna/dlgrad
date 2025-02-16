@@ -279,6 +279,8 @@ class Tensor:
 
 	# TODO: If target shape does not match raise error
 	def cross_entropy_loss(self, target: Tensor) -> Tensor:
+		if isinstance(target, Scalar):
+			target = Tensor(target)
 		return ops.CrossEntropy.execute(self, target)
 
 	def backward(self) -> None:
@@ -309,7 +311,10 @@ class Tensor:
 			upstream_grads: list[Tensor] = [
 				Tensor(g, device=self.device, requires_grad=False) for g in upstream_grads
 			]
+			# for i in upstream_grads:
+				# print("i.shape", i.shape, "i.stride", i.stride)
 			for p, g in zip(node._ctx.parents, upstream_grads):
+				# print("p.grad is none ? ", p.grad is None)
 				p.grad = g if not p.grad else p.grad + g
 
 	def __getitem__(self, idx: slice):  # noqa: ANN001, ANN204

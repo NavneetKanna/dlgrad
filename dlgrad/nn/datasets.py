@@ -1,12 +1,12 @@
 from dlgrad import Tensor
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
-from dlgrad.helpers import CACHE_DIR, fetch, unzip
+from dlgrad.helpers import CACHE_DIR
 from dlgrad.runtime.cpu import CPU
 
 
 def mnist() -> list[Tensor]:
-    base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
+    base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"  # noqa: F841
     # t = [
     #     ("train-images-idx3-ubyte.gz", True, 2051, (60000, 28, 28)),
     #     ("train-labels-idx1-ubyte.gz", False, 2049, (60000, 1)),
@@ -21,8 +21,8 @@ def mnist() -> list[Tensor]:
     ]
     res: list[Tensor] = []
     for u in t:
-        fetch(url=base_url+u[0], filename=u)
-        unzip(path=f"{CACHE_DIR}/downloads/{u[0]}", save_path=f"{CACHE_DIR}/downloads/{''.join(u[0].split('.')[:-1])}")
+        # fetch(url=base_url+u[0], filename=u)
+        # unzip(path=f"{CACHE_DIR}/downloads/{u[0]}", save_path=f"{CACHE_DIR}/downloads/{''.join(u[0].split('.')[:-1])}")
         data = CPU.mnist_loader(images=u[1], path=f"{CACHE_DIR}/downloads/{''.join(u[0].split('.')[:-1])}", magic_number=u[2])  # noqa: E501
         res.append(
             Tensor(

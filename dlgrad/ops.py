@@ -7,10 +7,14 @@ from dlgrad.tensor import OP
 
 class Transpose(OP):
 	def forward(self, x: Buffer):  # noqa: ANN201
-		return x.transpose()
+		t = x.transpose()
+		# print("transpose forward called org shape", x.shape, "org stride", x.stride, "t.shape", t.shape, "t.stride", t.stride)  # noqa: E501
+		return t
 
 	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
-		return (upstream_grad.transpose(),)
+		t = upstream_grad.transpose()
+		# print("transpose backward called", t.shape, t.stride, "org.shape", upstream_grad.shape, "orgh stride", upstream_grad.stride)  # noqa: E501
+		return (t,)
 
 class Sum(OP):
 	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
@@ -128,12 +132,103 @@ class MatMul(OP):
 class CrossEntropy(OP):
 	def forward(self, logits: Buffer, target: Buffer, dim: int = 1) -> Buffer:
 		self.target = target
+		# import numpy as np
+		# from dlgrad.helpers import ffi
+		# import torch
+		# tnnlog = torch.nn.LogSoftmax(dim=dim)
+
+		# data = np.frombuffer(
+		# 	ffi.buffer(logits.ptr, logits.numel * ffi.sizeof("float")),
+		# 	count=-1,
+		# 	dtype=np.float32,
+		# )
+
+		# lt = np.lib.stride_tricks.as_strided(
+		# 	data,
+		# 	logits.shape,
+		# 	tuple(
+		# 		stride * 4 for stride in logits.stride
+		# 	),
+		# )
+		# print("logits")
+		# print(t)
 		t, _ = logits.max(dim=dim)
+		# print("done1")
 		m = logits - t
+		# print("done2")
 		e = m.exp()
+		# print("done3")
 		ss = e.sum(dim=dim)
+		# print("done4")
 		self.log_softmax_output = m - ss.log()
+		# print("done5")
+		# data = np.frombuffer(
+		# 	ffi.buffer(self.log_softmax_output.ptr, self.log_softmax_output.numel * ffi.sizeof("float")),
+		# 	count=-1,
+		# 	dtype=np.float32,
+		# )
+
+		# t = np.lib.stride_tricks.as_strided(
+		# 	data,
+		# 	self.log_softmax_output.shape,
+		# 	tuple(
+		# 		stride * 4 for stride in self.log_softmax_output.stride
+		# 	),
+		# )
+		# print("log soft max out")
+		# print(t)
+
 		tmp = Buffer.ce_forward(self.log_softmax_output, self.target)
+		# data = np.frombuffer(
+		# 	ffi.buffer(tmp.ptr, tmp.numel * ffi.sizeof("float")),
+		# 	count=-1,
+		# 	dtype=np.float32,
+		# )
+
+		# t = np.lib.stride_tricks.as_strided(
+		# 	data,
+		# 	tmp.shape,
+		# 	tuple(
+		# 		stride * 4 for stride in tmp.stride
+		# 	),
+		# )
+		# print("tmp")
+		# print(t)
+		# data = np.frombuffer(
+		# 	ffi.buffer(target.ptr, target.numel * ffi.sizeof("float")),
+		# 	count=-1,
+		# 	dtype=np.float32,
+		# )
+
+		# tt = np.lib.stride_tricks.as_strided(
+		# 	data,
+		# 	target.shape,
+		# 	tuple(
+		# 		stride * 4 for stride in target.stride
+		# 	),
+		# )
+		# print("torch tmp")
+		# print(tlog[range(len(tt)), tt])
+
+		# print("sum")
+		# r = -tmp.sum()
+		# data = np.frombuffer(
+		# 	ffi.buffer(r.ptr, r.numel * ffi.sizeof("float")),
+		# 	count=-1,
+		# 	dtype=np.float32,
+		# )
+
+		# t = np.lib.stride_tricks.as_strided(
+		# 	data,
+		# 	r.shape,
+		# 	tuple(
+		# 		stride * 4 for stride in r.stride
+		# 	),
+		# )
+		# print(t)
+		# print("torch sum")
+		# print(-tlog[range(len(tt)), tt].sum())
+
 		return -tmp.sum()
 
 	def backward(self, upstream_grad: Buffer) -> Buffer:

@@ -10,6 +10,7 @@ import _matmul  # type: ignore
 import _max  # type: ignore
 import _mnist_loader  # type: ignore
 import _sum  # type: ignore
+import _transpose  # type: ignore
 import _uniform  # type: ignore
 import _utils  # type: ignore
 from cffi import FFI
@@ -18,7 +19,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
-from dlgrad.helpers import BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, prod_
+from dlgrad.helpers import BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, calculate_stride, prod_
 
 
 # TODO: Calling ffi.gc() twice one after the other leads to error, find alternative
@@ -86,8 +87,11 @@ class CPU:
     def _binary_op(x: Buffer, y: Buffer | Scalar, op_code: int) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
         if y.numel == 1:
-            _arithmetic.lib.with_scalar(x.ptr, out_ptr, y.ptr, x.numel, op_code)
-            return out_ptr
+            try:
+                _arithmetic.lib.with_scalar(x.ptr, out_ptr, y.ptr, x.numel, op_code)
+                return out_ptr
+            except:  # noqa: E722
+                pass
 
         match x.ndim:
             case 3:
@@ -118,6 +122,15 @@ class CPU:
         out_ptr = CPU.malloc(num=x.numel)
 
         _utils.lib.neg(x.ptr, out_ptr, x.numel)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.TRANSPOSE, Device.CPU)
+    def transpose(x: Buffer) -> CDataPtr:
+        out_ptr = CPU.malloc(num=x.numel)
+
+        _transpose.lib.transpose(x.ptr, out_ptr, x.shape[0], x.shape[1], x.stride, calculate_stride(x.shape[::-1]))
 
         return out_ptr
 

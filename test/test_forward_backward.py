@@ -67,7 +67,7 @@ torch_loss.backward()
 
 # step
 
-dl_optimizer = nn.optim.SDG(nn.utils.get_parameters(m))
+dl_optimizer = nn.optim.SGD(nn.utils.get_parameters(m))
 to_optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
 
 dl_optimizer.step()

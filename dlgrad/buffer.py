@@ -79,7 +79,12 @@ class Buffer:
 
     # TODO: Check if x is del, then even the transposed is del
     def transpose(self) -> Buffer:
-        return Buffer(self.ptr, self.shape[::-1], self.device, stride=self.stride[::-1])
+        # return Buffer(self.ptr, self.shape[::-1], self.device, stride=self.stride[::-1])
+        return Buffer(
+            data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=self.device, x=self),
+            shape=self.shape[::-1], device=self.device
+        )
+        # return Buffer(self.ptr, self.shape[::-1], self.device, stride=calculate_stride(self.shape[::-1]))
 
     def exp(self) -> Buffer:
         return Buffer(
