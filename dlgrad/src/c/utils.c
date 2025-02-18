@@ -30,3 +30,10 @@ void cpow(float *x, float *out, int val, int numel)
         out[i] = pow(x[i], val);
     }
 }
+
+void csqrt(float *x, float *out, int numel)
+{
+    for (int i=0; i<numel; i++) {
+        out[i] = sqrtf(x[i]);
+    }
+}

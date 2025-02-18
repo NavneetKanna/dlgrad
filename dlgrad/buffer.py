@@ -92,6 +92,12 @@ class Buffer:
             shape=self.shape, device=self.device
         )
 
+    def sqrt(self) -> Buffer:
+        return Buffer(
+            data=dispatcher.dispatch(op=UnaryOps.SQRT, device=self.device, x=self),
+            shape=self.shape, device=self.device
+        )
+
     def log(self) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.LOG, device=self.device, x=self),
@@ -119,9 +125,9 @@ class Buffer:
     def _binary_op(self, other: Buffer | Scalar, op: BinaryOps) -> Buffer:
         if isinstance(other, Scalar):
             return Buffer(
-            data=dispatcher.dispatch(op=op, device=self.device, x=self, y=other),
-            shape=self.shape, device=self.device
-        )
+                data=dispatcher.dispatch(op=op, device=self.device, x=self, y=other),
+                shape=self.shape, device=self.device
+            )
 
         if not check_broadcast(self.shape, other.shape):
             raise ValueError(f"Cannot broadcast {other.shape} to {self.shape}")
@@ -154,7 +160,11 @@ class Buffer:
         return self._binary_op(other, BinaryOps.MUL)
 
     def __truediv__(self, other: Buffer | Scalar) -> Buffer:
-        return self._binary_op(other**-1, BinaryOps.MUL)
+        # TODO: This does not look correct, find a better way to determine if the tensor has 1 element
+        if other.numel == 1:
+            return self._binary_op(other, BinaryOps.MUL)
+        else:
+            return self._binary_op(other**-1, BinaryOps.MUL)
 
     def __pow__(self, val: int) -> Buffer:
         return Buffer(

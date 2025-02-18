@@ -198,6 +198,7 @@ class Tensor:
 
 		return Tensor.uniform(shape, device, dtype, **kwargs)
 
+	# TODO: Check if shape is tuple
 	@staticmethod
 	def full(shape: tuple, fill_value: Scalar, device: Device = Device.CPU,
 			 dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
@@ -210,6 +211,11 @@ class Tensor:
 	def ones_like(shape: tuple, device: Device = Device.CPU,
 			      dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
 		return Tensor.full(shape, 1.0, device, dtype, **kwargs)
+
+	@staticmethod
+	def zeros_like(shape: tuple, device: Device = Device.CPU,
+			      dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
+		return Tensor.full(shape, 0.0, device, dtype, **kwargs)
 
 	@staticmethod
 	def add(x: Tensor, y: Tensor | Scalar) -> Tensor:
@@ -266,6 +272,9 @@ class Tensor:
 
 	def log(self) -> Tensor:
 		return ops.Log.execute(self)
+
+	def sqrt(self) -> Tensor:
+		return ops.Sqrt.execute(self)
 
 	def log_softmax(self, dim: int = 1) -> Tensor:
 		t = self.max(dim=dim)
@@ -338,6 +347,7 @@ class Tensor:
 	def __add__(self, other: Tensor| Scalar) -> Tensor:
 		return Tensor.add(self, other)
 
+	# TODO: Support rmul, lmul
 	def __mul__(self, other: Tensor | Scalar) -> Tensor:
 		return Tensor.mul(self, other)
 

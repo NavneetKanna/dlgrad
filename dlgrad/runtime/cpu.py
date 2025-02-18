@@ -86,6 +86,7 @@ class CPU:
     @staticmethod
     def _binary_op(x: Buffer, y: Buffer | Scalar, op_code: int) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
+        # TODO: This does not look correct, find a better way to determine if the tensor has 1 element
         if y.numel == 1:
             try:
                 _arithmetic.lib.with_scalar(x.ptr, out_ptr, y.ptr, x.numel, op_code)
@@ -140,6 +141,15 @@ class CPU:
         out_ptr = CPU.malloc(num=x.numel)
 
         _utils.lib.cexp(x.ptr, out_ptr, x.numel)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.SQRT, Device.CPU)
+    def sqrt(x: Buffer) -> CDataPtr:
+        out_ptr = CPU.malloc(num=x.numel)
+
+        _utils.lib.csqrt(x.ptr, out_ptr, x.numel)
 
         return out_ptr
 

@@ -20,6 +20,7 @@ class UnaryOps(Enum):
     EXP = auto()
     LOG = auto()
     POW = auto()
+    SQRT = auto()
     TRANSPOSE = auto()
     RELU = auto()
 

@@ -66,6 +66,15 @@ class Relu(OP):
 		return ((self.out>0.0) * upstream_grad,)
 
 
+
+class Sqrt(OP):
+  def forward(self, x: Buffer) -> Buffer:
+    self.out = x.sqrt()
+    return self.out
+
+  def backward(self, grad_output: Buffer) -> Buffer:
+	  return grad_output / (self.out*2)
+
 # ------------ Binary Ops -----------
 
 class Add(OP):
