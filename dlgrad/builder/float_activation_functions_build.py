@@ -8,6 +8,8 @@ ffi = FFI()
 
 ffi.cdef("void relu(float *arr, float *out, int numel);")
 
+# TODO: One place for all args
+
 ffi.set_source("_af", f"""
         #include "{root_dir}/src/c/activation_functions.h"
     """,
