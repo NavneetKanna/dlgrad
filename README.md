@@ -32,9 +32,7 @@ print(b.grad.numpy())
 ```
 
 ## Things I'm Working On
-- [x] nn
-- [x] Cross-Entropy Loss
-- [ ] Indexing
+- [ ] Adam Optimizer
  
 
 ## Tests
