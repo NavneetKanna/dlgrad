@@ -107,9 +107,13 @@ class Tensor:
 			if str(data.dtype) != "float32":
 				raise ValueError("dlgrad only supports float32 dtype")
 
+			shape = data.shape
+			if len(data.shape) == 1:
+				shape = (1,) + data.shape
+
 			self.data = Buffer(
 				ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False),
-				data.shape, device, ndim=data.ndim,
+				shape, device, ndim=data.ndim,
 			)
 		elif isinstance(data, Buffer):
 			self.data = data
