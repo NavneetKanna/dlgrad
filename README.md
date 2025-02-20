@@ -14,27 +14,65 @@ python3 -m pip install git+https://github.com/NavneetKanna/dlgrad
 
 You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Behind-the-scenes.html), where I document my journey of building dlgrad, sharing insights and explaining some of the ideas/algorithms.
 
-## Example
+## MNIST Example
 
 ```python
-from dlgrad.tensor import Tensor
+from dlgrad import Tensor, nn
+from dlgrad.nn.datasets import mnist
+import numpy as np
+from tqdm import tqdm
 
-a = Tensor.rand((2, 3), requires_grad=True)
-b = Tensor.rand((1, 3), requires_grad=True)
+BS, in_dim, HS, ncls = 128, 784, 64, 10
+STEPS = int(60000/BS) * 2
+    
+class Model:
+    def __init__(self):
+        self.layers = [
+            nn.Linear(in_dim, HS, bias=True),
+            Tensor.relu,
+            nn.Linear(HS, ncls, bias=True)
+        ]
+    
+    def __call__(self, x: Tensor) -> Tensor: 
+        return x.sequential(self.layers)
 
-c = a + b
+x_train_images, x_train_labels, x_test_images, x_test_labels = mnist()
 
-c.sum().backward()
+model = Model()
 
-print(a.grad.numpy())
-print(b.grad.numpy())
+opt = nn.optim.Adam(params=nn.utils.get_parameters(model), lr=1e-3)
 
+s = 0
+h = s + BS
+
+for i in tqdm(range(STEPS)):
+    opt.zero_grad()
+
+    output = model(x=x_train_images[s:h])
+  
+    loss = output.cross_entropy_loss(target=x_train_labels[s:h])
+
+    loss.backward()
+
+    opt.step()
+
+    s += BS
+    h = s + BS
+    if s >= 60000 or h >= 60000:
+        s = 0
+        h = s+BS
+
+y_pred = model(x=x_test_images).numpy().argmax(axis=1)
+tv = np.squeeze(x_test_labels.numpy())
+correct = np.sum(y_pred==tv)
+total = tv.size
+test_acc = (correct/total) * 100
+print("test acc", test_acc)
 ```
 
 ## Things I'm Working On
-- [ ] Adam Optimizer
+- [x] Adam Optimizer
  
-
 ## Tests
 
 To run the tests (pytest is required)
