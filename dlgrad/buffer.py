@@ -37,7 +37,9 @@ class Buffer:
 
     @staticmethod
     def from_scalar(val: Scalar) -> Buffer:
-        return Buffer(data=ffi.cast("float", val), shape=(1, 1), device=Device.CPU)
+        float_arr = ffi.new("float[]", 1)
+        float_arr[0] = val
+        return Buffer(data=float_arr, shape=(1, 1), device=Device.CPU)
 
     @staticmethod
     def uniform(shape: tuple, device: Device, **kwargs) -> Buffer:

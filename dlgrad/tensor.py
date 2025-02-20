@@ -88,7 +88,7 @@ import dlgrad.ops as ops  # since ops module imports OP class, it is placed afte
 # TODO: Handle int scalar, what if x is scalar ?
 # TODO: Why didnt the model catch the error of (16, 784) * (32, 28, 28) ?
 class Tensor:
-	def __init__(self, data: Buffer | "np.ndarray",  # type: ignore  # noqa: F821
+	def __init__(self, data: Buffer | "np.ndarray" | Scalar,  # type: ignore  # noqa: F821
 				 device: str | Device | None = Device.CPU, dtype: str | DType | None = None,
 			 	 requires_grad: bool = False) -> None:
 		self.device: Device = (
@@ -110,6 +110,8 @@ class Tensor:
 			shape = data.shape
 			if len(data.shape) == 1:
 				shape = (1,) + data.shape
+			elif not shape:
+				shape = (1, 1)
 
 			self.data = Buffer(
 				ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False),
@@ -120,7 +122,7 @@ class Tensor:
 		elif isinstance(data, Scalar):
 			self.data = Buffer.from_scalar(data)
 		else:
-			raise ValueError("The data must be of type Buffer or np.ndarray")
+			raise ValueError("The data must be of type Buffer, np.ndarray or float")
 
 	def numpy(self: Tensor) -> "np.ndarray":  # type: ignore  # noqa: F821
 		import numpy as np
