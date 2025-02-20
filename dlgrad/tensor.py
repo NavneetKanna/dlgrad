@@ -83,9 +83,7 @@ import dlgrad.ops as ops  # since ops module imports OP class, it is placed afte
 
 # TODO: I am setting device here as well as in Buffer, fix this
 # TODO: Check dim out of bounds
-# TODO: Check 0d and 1d when creating tensor from np
 # TODO: Move all checks and assert to Buffer
-# TODO: Handle int scalar, what if x is scalar ?
 # TODO: Why didnt the model catch the error of (16, 784) * (32, 28, 28) ?
 class Tensor:
 	def __init__(self, data: Buffer | "np.ndarray" | Scalar,  # type: ignore  # noqa: F821
@@ -108,14 +106,16 @@ class Tensor:
 				raise ValueError("dlgrad only supports float32 dtype")
 
 			shape = data.shape
+			ndim = data.ndim
 			if len(data.shape) == 1:
 				shape = (1,) + data.shape
 			elif not shape:
 				shape = (1, 1)
+				ndim = 2
 
 			self.data = Buffer(
 				ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False),
-				shape, device, ndim=data.ndim,
+				shape, device, ndim=ndim,
 			)
 		elif isinstance(data, Buffer):
 			self.data = data
