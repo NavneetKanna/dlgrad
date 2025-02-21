@@ -185,11 +185,7 @@ class Buffer:
         return self._binary_op(other, BinaryOps.MUL)
 
     def __truediv__(self, other: Buffer | Scalar) -> Buffer:
-        # TODO: This does not look correct, find a better way to determine if the tensor has 1 element
-        if other.numel == 1:
-            return self._binary_op(other, BinaryOps.MUL)
-        else:
-            return self._binary_op(other**-1, BinaryOps.MUL)
+        return self._binary_op(other**-1, BinaryOps.MUL)
 
     def __pow__(self, val: int) -> Buffer:
         return Buffer(

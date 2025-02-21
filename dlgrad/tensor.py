@@ -306,7 +306,7 @@ class Tensor:
 		return Tensor.transpose(self)
 
 	def __gt__(self, other: int | float) -> Tensor:
-		return Tensor(data=self.data>other, device=self.device, dtype=self.dtype)
+		return Tensor(data=self.data>other)
 
 	def __add__(self, other: Tensor| Scalar) -> Tensor:
 		return Tensor.add(self, other)
@@ -322,10 +322,10 @@ class Tensor:
 		return Tensor.div(self, other)
 
 	def __pow__(self, val: int) -> Tensor:
-		return Tensor(data=self.data**val, device=self.device)
+		return Tensor(data=self.data**val)
 
 	def __neg__(self) -> Tensor:
-		return Tensor(data=-self.data, device=self.device, dtype=self.dtype, requires_grad=self.requires_grad)
+		return Tensor(data=-self.data, requires_grad=self.requires_grad)
 
 	def __matmul__(self, other: Tensor) -> Tensor:
 		return Tensor.matmul(self, other)
