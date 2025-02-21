@@ -149,15 +149,22 @@ CACHE_DIR = os.path.expanduser("~/Library/Caches/dlgrad" if OSX else "~/.cache/d
 
 # TODO: Add pbar
 def fetch(url: str, filename: str) -> None:
-    os.makedirs(f"{CACHE_DIR}/downloads", exist_ok=True)
-    response = requests.get(url)
-    if response.status_code == 200:
-        with open(f"{CACHE_DIR}/downloads/{filename}", "wb") as file:
-            file.write(response.content)
+    if not os.path.exists(f"{CACHE_DIR}/downloads"):
+        os.makedirs(f"{CACHE_DIR}/downloads")
+    if not os.path.exists(f"{CACHE_DIR}/downloads/{filename}"):
+        response = requests.get(url)
+        if response.status_code == 200:
+            with open(f"{CACHE_DIR}/downloads/{filename}", "wb") as file:
+                file.write(response.content)
+        else:
+            print(f"Failed to download file. Status code: {response.status_code}")
     else:
-        print(f"Failed to download file. Status code: {response.status_code}")
+        print(f"{f"{CACHE_DIR}/downloads/{filename}"} already exists")
 
 def unzip(path: str, save_path: str) -> None:
-    with gzip.open(path, 'rb') as fin:
-        with open(save_path, "wb") as fout:
-            shutil.copyfileobj(fin, fout)
+    if not os.path.exists(save_path):
+        with gzip.open(path, 'rb') as fin:
+            with open(save_path, "wb") as fout:
+                shutil.copyfileobj(fin, fout)
+    else:
+        print(f"{save_path} already exists")
