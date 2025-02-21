@@ -40,8 +40,6 @@ class Buffer:
                                        stride=kwargs.get("stride", calculate_stride(shape)),
                                        ndim=kwargs.get("ndim", len(shape)),
                                        dtype=dtype, device=device)
-        # self.device = device
-        # self.dtype = dtype
 
     @staticmethod
     def from_scalar(val: Scalar) -> Buffer:
@@ -90,7 +88,6 @@ class Buffer:
 
     # TODO: Check if x is del, then even the transposed is del
     def transpose(self) -> Buffer:
-        # return Buffer(self.ptr, self.shape[::-1], self.device, stride=self.stride[::-1])
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=self.device, x=self),
             shape=self.shape[::-1], device=self.device, dtype=self.dtype

@@ -72,8 +72,6 @@ class OP:
 		tensor.data.metadata.dtype = kwargs.get("dtype", data[0].dtype)
 		tensor.data.metadata.device = kwargs.get("device", data[0].device)
 		tensor.requires_grad = ctx.requires_grad
-		# tensor.dtype = kwargs.get("dtype", data[0].dtype)
-		# tensor.device = kwargs.get("device", data[0].device)
 		tensor._ctx = ctx if ctx.requires_grad else None
 		tensor.grad = None
 
@@ -89,16 +87,7 @@ import dlgrad.ops as ops  # since ops module imports OP class, it is placed afte
 # TODO: Why didnt the model catch the error of (16, 784) * (32, 28, 28) ?
 class Tensor:
 	def __init__(self, data: Buffer | "np.ndarray" | Scalar,  # type: ignore  # noqa: F821
-				#  device: str | Device | None = Device.CPU, dtype: str | DType | None = None,
 			 	 requires_grad: bool = False) -> None:
-		# self.device: Device = (
-		# 	device if isinstance(device, Device)
-		# 	else Device.from_str(device) if isinstance(device, str) else Device.CPU
-		# )
-		# self.dtype: DType = (
-		# 	dtype if isinstance(dtype, DType)
-		# 	else DType.from_str(dtype) if isinstance(dtype, str) else DType.FLOAT32
-		# )
 		self.requires_grad: bool = requires_grad
 		self._ctx: OP = None  # used by autograd engine
 		self.grad = None
@@ -175,8 +164,6 @@ class Tensor:
 
 		return Tensor(
 			data=Buffer.uniform(shape, device=device, dtype=dtype, low=low, high=high),
-			# device=device,
-			# dtype=dtype,
 			requires_grad=kwargs.get("requires_grad"),
 		)
 
@@ -339,7 +326,7 @@ class Tensor:
 			ns = tuple([idx.stop-idx.start, *self.shape[1:]])
 
 			buf = Buffer(data=self.data.ptr+s, shape=ns, device=self.device, dtype=self.dtype)
-			# return Tensor(data=buf, device=self.device, dtype=self.dtype, requires_grad=self.requires_grad)
+
 			return Tensor(data=buf, requires_grad=self.requires_grad)
 
 	def __repr__(self) -> str:
