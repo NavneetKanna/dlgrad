@@ -82,13 +82,14 @@ class Buffer:
             ndim=self.ndim if self.ndim == 2 else self.ndim - 1, dtype=self.dtype
         )
 
+    # NOTE: keepdim is true by default
     def max(self, dim: int = -1) -> tuple[Buffer, Buffer]:
         out_shape = cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
 
         out, max_with_1s = dispatcher.dispatch(op=UnaryOps.MAX, device=self.device, x=self, dim=dim)
 
-        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1, dtype=self.dtype)  # noqa: E501
-        max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1, dtype=self.dtype)  # noqa: E501
+        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
+        max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
 
         return out_buf, max_with_1s_buf
 

@@ -126,11 +126,11 @@ def cal_sum_out_shape(ndim: int, dim: int, inp_shape: tuple) -> tuple:
     out_shape = tuple()
     if ndim == 3:
         if dim == 0:
-            out_shape = (inp_shape[1], inp_shape[2])
+            out_shape = (1, inp_shape[1], inp_shape[2])
         elif dim == 1:
-            out_shape = (inp_shape[0], inp_shape[2])
+            out_shape = (inp_shape[0], 1, inp_shape[2])
         elif dim == 2:
-            out_shape = (inp_shape[0], inp_shape[1])
+            out_shape = (inp_shape[0], inp_shape[1], 1)
         else:
             out_shape = (1, 1)
     elif ndim == 2:
