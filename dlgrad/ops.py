@@ -139,6 +139,8 @@ class MatMul(OP):
 
 class CrossEntropy(OP):
 	def forward(self, logits: Buffer, target: Buffer, dim: int = 1) -> Buffer:
+		assert logits.shape[0] == target.shape[0], f"logits shape[0] and target shape[0] does not match {logits.shape} != {target.shape}"  # noqa: E501
+
 		self.target = target
 		t, _ = logits.max(dim=dim)
 		m = logits - t

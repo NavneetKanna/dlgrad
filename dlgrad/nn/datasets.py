@@ -1,6 +1,7 @@
 from dlgrad import Tensor
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
+from dlgrad.dtype import DType
 from dlgrad.helpers import CACHE_DIR
 from dlgrad.runtime.cpu import CPU
 
@@ -26,8 +27,7 @@ def mnist() -> list[Tensor]:
         data = CPU.mnist_loader(images=u[1], path=f"{CACHE_DIR}/downloads/{''.join(u[0].split('.')[:-1])}", magic_number=u[2])  # noqa: E501
         res.append(
             Tensor(
-                data=Buffer(data=data, shape=u[3], device=Device.CPU),
-                dtype="float32",
+                data=Buffer(data=data, shape=u[3], dtype=DType.FLOAT32, device=Device.CPU),
                 requires_grad=False
             )
         )

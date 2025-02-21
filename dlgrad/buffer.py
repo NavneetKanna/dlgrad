@@ -48,7 +48,20 @@ class Buffer:
         return Buffer(data=float_arr, shape=(1, 1), device=Device.CPU, dtype=DType.FLOAT32)
 
     @staticmethod
-    def uniform(shape: tuple, device: Device, dtype: DType, **kwargs) -> Buffer:
+    def uniform(shape: tuple, device: Device, dtype: DType | str, **kwargs) -> Buffer:
+        if isinstance(dtype, str):
+            dtype = DType.from_str(dtype)
+
+        if dtype is not DType.FLOAT32:
+            raise NotImplementedError("dlgrad only supports float32")
+        if not isinstance(shape, tuple):
+            raise ValueError("shape must be a tuple")
+
+        if not isinstance(shape, tuple):
+            raise ValueError("Shape must be a tuple")
+        if len(shape) == 1:
+            shape = (1,) + shape
+
         return Buffer(
             data=dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, shape=shape, **kwargs),
             shape=shape, device=device, dtype=dtype
@@ -81,6 +94,9 @@ class Buffer:
         return out_buf, max_with_1s_buf
 
     def matmul(self, other: Buffer) -> Buffer:
+        if (self.shape[-1] != other.shape[0] and self.ndim != 2 and other.ndim != 2):
+            raise ValueError("Either the Tensors shape dont match or is not 2D")
+
         return Buffer(
             data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other),
             shape=(self.shape[0], other.shape[1]), device=self.device, dtype=self.dtype
@@ -88,6 +104,8 @@ class Buffer:
 
     # TODO: Check if x is del, then even the transposed is del
     def transpose(self) -> Buffer:
+        assert self.ndim == 2, "Only 2D Tensors can be transposed"
+
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=self.device, x=self),
             shape=self.shape[::-1], device=self.device, dtype=self.dtype

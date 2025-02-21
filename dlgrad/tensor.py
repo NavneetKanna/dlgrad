@@ -81,8 +81,6 @@ class OP:
 import dlgrad.ops as ops  # since ops module imports OP class, it is placed after the defination  # noqa: E402, E501
 
 
-# TODO: I am setting device here as well as in Buffer, fix this
-# TODO: Check dim out of bounds
 # TODO: Move all checks and assert to Buffer
 # TODO: Why didnt the model catch the error of (16, 784) * (32, 28, 28) ?
 class Tensor:
@@ -151,17 +149,6 @@ class Tensor:
 		Returns:
 		    Tensor: A Tensor filled with random numbers.
 		"""
-		if isinstance(dtype, str):
-			dtype = DType.from_str(dtype)
-
-		if dtype is not DType.FLOAT32:
-			raise NotImplementedError("dlgrad only supports float32")
-		if not isinstance(shape, tuple):
-			raise ValueError("shape must be a tuple")
-
-		if len(shape) == 1:
-			shape = (1,) + shape
-
 		return Tensor(
 			data=Buffer.uniform(shape, device=device, dtype=dtype, low=low, high=high),
 			requires_grad=kwargs.get("requires_grad"),
@@ -183,24 +170,13 @@ class Tensor:
 		Returns:
 		    Tensor: A Tensor filled with random numbers.
 		"""
-		if isinstance(dtype, str):
-			dtype = DType.from_str(dtype)
-
-		if dtype is not DType.FLOAT32:
-			raise NotImplementedError("dlgrad supports only float32")
-		if not isinstance(shape, tuple):
-			raise ValueError("shape must be a tuple")
-
 		return Tensor.uniform(shape, device, dtype, **kwargs)
 
-	# TODO: Check if shape is tuple
 	@staticmethod
 	def full(shape: tuple, fill_value: Scalar, device: Device = Device.CPU,
 			 dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
-		if len(shape) == 1:
-			shape = (1,) + shape
 		return Tensor(
-			data=Buffer.full(shape, fill_value=fill_value, device=device, dtype=dtype),#, device=device, dtype=dtype,
+			data=Buffer.full(shape, fill_value=fill_value, device=device, dtype=dtype),
 			requires_grad=kwargs.get("requires_grad")
 		)
 
@@ -240,17 +216,11 @@ class Tensor:
 
 	@staticmethod
 	def matmul(x: Tensor, y: Tensor) -> Tensor:
-		if (x.data.shape[-1] != y.data.shape[0] and x.data.ndim != 2 and y.data.ndim != 2):
-			raise ValueError("Either the Tensors shape dont match or is not 2D")
-
 		return ops.MatMul.execute(x, y)
 
 	@staticmethod
 	def transpose(x: Tensor) -> Tensor:
-		assert x.data.ndim == 2, "Only 2D Tensors can be transposed"
-
-		t = ops.Transpose.execute(x)
-		return t
+		return ops.Transpose.execute(x)
 
 	def sum(self, dim: int = -1) -> Tensor:
 		return ops.Sum.execute(self, dim=dim)
@@ -283,7 +253,6 @@ class Tensor:
 	def sequential(self, layers: list[callable[Tensor]]) -> None:
 		return reduce(lambda inp, layer: layer(inp), layers, self)
 
-	# TODO: If target shape does not match raise error
 	def cross_entropy_loss(self, target: Tensor) -> Tensor:
 		if isinstance(target, Scalar):
 			target = Tensor(target)
