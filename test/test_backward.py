@@ -98,12 +98,12 @@ def test_max_2d_backward(shapes):
 def test_ce_backward(shapes):
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
-        np_target = np.array([[1, 2]]).astype(np.float32)
+        np_target = np.array([[1, 2]]).astype(np.float32).reshape(-1, 1)
 
         dlgrad_data = Tensor(np_data, requires_grad=True)
         dlgrad_target = Tensor(np_target)
         torch_data = torch.tensor(np_data, requires_grad=True)
-        torch_target = torch.tensor(np_target, dtype=torch.long).reshape(-1, 1).squeeze()
+        torch_target = torch.tensor(np_target, dtype=torch.long).squeeze()
 
         dlgrad_data.cross_entropy_loss(dlgrad_target).backward()
         loss = torch.nn.CrossEntropyLoss(reduction="sum")

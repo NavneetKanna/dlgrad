@@ -124,12 +124,11 @@ class Div(OP):
 		  	   self.match_inp_shape(inp=self.y, upstream_grad=(-upstream_grad*self.x)/self.y**2, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
 
-# TODO: Add __matmul__ in buffer
 class MatMul(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
 		self.y = y
-		return x.matmul(y)
+		return x@y
 
 	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
 		t1 = self.x.T

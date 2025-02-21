@@ -28,7 +28,6 @@ class BufferMetadata:
     device: Device
 
 
-# TODO: Check all conds such as is shapes are compatible etc here
 class Buffer:
     def __init__(
             self, data: CDataPtr, shape: tuple,

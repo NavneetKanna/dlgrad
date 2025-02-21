@@ -159,7 +159,7 @@ def fetch(url: str, filename: str) -> None:
         else:
             print(f"Failed to download file. Status code: {response.status_code}")
     else:
-        print(f"{f"{CACHE_DIR}/downloads/{filename}"} already exists")
+        print(f"{CACHE_DIR}/downloads/{filename} already exists")
 
 def unzip(path: str, save_path: str) -> None:
     if not os.path.exists(save_path):
