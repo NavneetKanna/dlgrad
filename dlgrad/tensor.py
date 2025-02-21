@@ -81,9 +81,12 @@ class OP:
 import dlgrad.ops as ops  # since ops module imports OP class, it is placed after the defination  # noqa: E402, E501
 
 
+# TODO: Test with one of the tensor req_grad is false
 class Tensor:
-	def __init__(self, data: Buffer | "np.ndarray" | Scalar,  # type: ignore  # noqa: F821
-			 	 requires_grad: bool = False) -> None:
+	def __init__(
+			self, data: Buffer | "np.ndarray" | Scalar,  # type: ignore  # noqa: F821
+			requires_grad: bool = False
+		) -> None:
 		self.requires_grad: bool = requires_grad
 		self._ctx: OP = None  # used by autograd engine
 		self.grad = None
@@ -133,7 +136,7 @@ class Tensor:
 	@staticmethod
 	def uniform(shape: tuple, device: str | Device | None = Device.CPU,
 				dtype: str | DType | None = DType.FLOAT32, low: float = 0.0,
-				high: float = 1.0, **kwargs) -> Tensor:
+				high: float = 1.0, requires_grad: bool = False) -> Tensor:
 		"""
 		Creates a Tensor with the specified shape filled with random numbers from a
 		uniform distribution on the interval [low, high).
@@ -149,12 +152,12 @@ class Tensor:
 		"""
 		return Tensor(
 			data=Buffer.uniform(shape, device=device, dtype=dtype, low=low, high=high),
-			requires_grad=kwargs.get("requires_grad"),
+			requires_grad=requires_grad,
 		)
 
 	@staticmethod
 	def rand(shape: tuple, device: str | Device | None = Device.CPU,
-		     dtype: str | DType | None = DType.FLOAT32, **kwargs) -> Tensor:
+		     dtype: str | DType | None = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
 		"""
 		Creates a Tensor with the specified shape filled with random numbers from a
 		uniform distribution on the interval [0, 1).
@@ -168,25 +171,25 @@ class Tensor:
 		Returns:
 		    Tensor: A Tensor filled with random numbers.
 		"""
-		return Tensor.uniform(shape, device, dtype, **kwargs)
+		return Tensor.uniform(shape, device, dtype, requires_grad)
 
 	@staticmethod
 	def full(shape: tuple, fill_value: Scalar, device: Device = Device.CPU,
-			 dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
+			 dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
 		return Tensor(
 			data=Buffer.full(shape, fill_value=fill_value, device=device, dtype=dtype),
-			requires_grad=kwargs.get("requires_grad")
+			requires_grad=requires_grad
 		)
 
 	@staticmethod
 	def ones_like(shape: tuple, device: Device = Device.CPU,
-			      dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
-		return Tensor.full(shape, 1.0, device, dtype, **kwargs)
+			      dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
+		return Tensor.full(shape, 1.0, device, dtype, requires_grad)
 
 	@staticmethod
 	def zeros_like(shape: tuple, device: Device = Device.CPU,
-			      dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
-		return Tensor.full(shape, 0.0, device, dtype, **kwargs)
+			      dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
+		return Tensor.full(shape, 0.0, device, dtype, requires_grad)
 
 	@staticmethod
 	def add(x: Tensor, y: Tensor | Scalar) -> Tensor:
@@ -303,10 +306,10 @@ class Tensor:
 	def T(self) -> Tensor:  # noqa: N802
 		return Tensor.transpose(self)
 
-	def __gt__(self, other: int | float) -> Tensor:
+	def __gt__(self, other: Scalar) -> Tensor:
 		return Tensor(data=self.data>other)
 
-	def __add__(self, other: Tensor| Scalar) -> Tensor:
+	def __add__(self, other: Tensor | Scalar) -> Tensor:
 		return Tensor.add(self, other)
 
 	# TODO: Support rmul, lmul
@@ -319,8 +322,8 @@ class Tensor:
 	def __truediv__(self, other: Tensor | Scalar) -> Tensor:
 		return Tensor.div(self, other)
 
-	def __pow__(self, val: int) -> Tensor:
-		return Tensor(data=self.data**val)
+	def __pow__(self, val: Scalar) -> Tensor:
+		return Tensor(data=self.data**val, requires_grad=self.requires_grad)
 
 	def __neg__(self) -> Tensor:
 		return Tensor(data=-self.data, requires_grad=self.requires_grad)
