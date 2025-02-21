@@ -116,63 +116,49 @@ class CPU:
     @dispatcher.register(UnaryOps.NEG, Device.CPU)
     def neg(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-
         _utils.lib.neg(x.ptr, out_ptr, x.numel)
-
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.TRANSPOSE, Device.CPU)
     def transpose(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-
         _transpose.lib.transpose(x.ptr, out_ptr, x.shape[0], x.shape[1], x.stride, calculate_stride(x.shape[::-1]))
-
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.EXP, Device.CPU)
     def exp(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-
         _utils.lib.cexp(x.ptr, out_ptr, x.numel)
-
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.SQRT, Device.CPU)
     def sqrt(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-
         _utils.lib.csqrt(x.ptr, out_ptr, x.numel)
-
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.LOG, Device.CPU)
     def log(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-
         _utils.lib.clog(x.ptr, out_ptr, x.numel)
-
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.POW, Device.CPU)
-    def pow(x: Buffer, val: int) -> CDataPtr:
+    def pow(x: Buffer, val: Scalar) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-
         _utils.lib.cpow(x.ptr, out_ptr, val, x.numel)
-
         return out_ptr
 
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.shape[0]*y.shape[1])
-
         _matmul.lib.matmul(x.ptr, y.ptr, out_ptr, x.shape[0], y.shape[1], y.shape[0], y.stride, x.stride)
-
         return out_ptr
 
     @staticmethod
@@ -207,42 +193,28 @@ class CPU:
     @dispatcher.register(UnaryOps.RELU, Device.CPU)
     def relu(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-
         _af.lib.relu(x.ptr, out_ptr, x.numel)
-
         return out_ptr
 
     @staticmethod
     @dispatcher.register(BinaryOps.GT, Device.CPU)
     def gt(x: Buffer, y: int | float) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-
-        if isinstance(y, int):
-            y = float(y)
-
         _cmp.lib.gt_with_scalar(x.ptr, out_ptr, y, x.numel)
-
         return out_ptr
 
     @staticmethod
     @dispatcher.register(BinaryOps.EQT, Device.CPU)
     def eqt(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-
-        if isinstance(y, int):
-            y = float(y)
-
         _cmp.lib.eqt(x.ptr, y, out_ptr, x.numel)
-
         return out_ptr
 
     @staticmethod
     @dispatcher.register(CustomOps.CE_FORWARD, Device.CPU)
     def ce_forward(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.shape[0])
-
         _loss.lib.ce_forward(x.ptr, y.ptr, out_ptr, x.shape[0], x.stride)
-
         return out_ptr
 
     @staticmethod

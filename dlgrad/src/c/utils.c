@@ -24,7 +24,7 @@ void clog(float *x, float *out, int numel)
     }
 }
 
-void cpow(float *x, float *out, int val, int numel)
+void cpow(float *x, float *out, float val, int numel)
 {
     for (int i=0; i<numel; i++) {
         out[i] = pow(x[i], val);

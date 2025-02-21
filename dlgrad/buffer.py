@@ -185,13 +185,13 @@ class Buffer:
     def __truediv__(self, other: Buffer | Scalar) -> Buffer:
         return self._binary_op(other**-1, BinaryOps.MUL)
 
-    def __pow__(self, val: int) -> Buffer:
+    def __pow__(self, val: Scalar) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.POW, device=self.device, x=self, val=val),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
-    def __gt__(self, other: int | float) -> Buffer:
+    def __gt__(self, other: Scalar) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BinaryOps.GT, device=self.device, x=self, y=other),
             shape=self.shape, device=self.device, dtype=self.dtype
