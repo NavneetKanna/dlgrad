@@ -20,10 +20,11 @@ class Sum(OP):
 	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
 		self.inp_shape = x.shape
 		self.device = x.device
+		self.dtype = x.dtype
 		return x.sum(dim=dim)
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device)
+		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
 		return (t*upstream_grad,)
 
 # NOTE: Max backward does not work for 3d tensors :(

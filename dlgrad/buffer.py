@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
-from dlgrad.dtype import CDataPtr, Scalar
+from dlgrad.dtype import CDataPtr, DType, Scalar
 from dlgrad.helpers import (
     BinaryOps,
     BufferOps,
@@ -24,35 +24,43 @@ class BufferMetadata:
     numel: int
     stride: tuple
     ndim: int
+    dtype: DType
+    device: Device
 
 
 # TODO: Check all conds such as is shapes are compatible etc here
 class Buffer:
-    def __init__(self, data: CDataPtr, shape: tuple, device: Device, **kwargs) -> None:
+    def __init__(
+            self, data: CDataPtr, shape: tuple,
+            device: str | Device | None = Device.CPU,
+            dtype: str | DType | None = None, **kwargs
+        ) -> None:
         self.ptr = data # ptr to the array
-        self.metadata = BufferMetadata(shape, prod_(shape),
-                                       kwargs.get("stride", calculate_stride(shape)),
-                                       kwargs.get("ndim", len(shape)))
-        self.device = device
+        self.metadata = BufferMetadata(shape=shape, numel=prod_(shape),
+                                       stride=kwargs.get("stride", calculate_stride(shape)),
+                                       ndim=kwargs.get("ndim", len(shape)),
+                                       dtype=dtype, device=device)
+        # self.device = device
+        # self.dtype = dtype
 
     @staticmethod
     def from_scalar(val: Scalar) -> Buffer:
         float_arr = ffi.new("float[]", 1)
         float_arr[0] = val
-        return Buffer(data=float_arr, shape=(1, 1), device=Device.CPU)
+        return Buffer(data=float_arr, shape=(1, 1), device=Device.CPU, dtype=DType.FLOAT32)
 
     @staticmethod
-    def uniform(shape: tuple, device: Device, **kwargs) -> Buffer:
+    def uniform(shape: tuple, device: Device, dtype: DType, **kwargs) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, shape=shape, **kwargs),
-            shape=shape, device=device
+            shape=shape, device=device, dtype=dtype
         )
 
     @staticmethod
-    def full(shape: tuple, fill_value: Scalar, device: Device) -> Buffer:
+    def full(shape: tuple, fill_value: Scalar, device: Device, dtype: DType) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BufferOps.FULL, device=device, shape=shape, fill_value=fill_value),
-            shape=shape, device=device
+            shape=shape, device=device, dtype=dtype
         )
 
     def sum(self, dim: int = -1) -> Buffer:
@@ -60,7 +68,8 @@ class Buffer:
 
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim),
-            shape=out_shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1
+            shape=out_shape, device=self.device,
+            ndim=self.ndim if self.ndim == 2 else self.ndim - 1, dtype=self.dtype
         )
 
     def max(self, dim: int = -1) -> tuple[Buffer, Buffer]:
@@ -68,15 +77,15 @@ class Buffer:
 
         out, max_with_1s = dispatcher.dispatch(op=UnaryOps.MAX, device=self.device, x=self, dim=dim)
 
-        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1)
-        max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1)  # noqa: E501
+        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1, dtype=self.dtype)  # noqa: E501
+        max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim if self.ndim == 2 else self.ndim - 1, dtype=self.dtype)  # noqa: E501
 
         return out_buf, max_with_1s_buf
 
     def matmul(self, other: Buffer) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other),
-            shape=(self.shape[0], other.shape[1]), device=self.device
+            shape=(self.shape[0], other.shape[1]), device=self.device, dtype=self.dtype
         )
 
     # TODO: Check if x is del, then even the transposed is del
@@ -84,32 +93,31 @@ class Buffer:
         # return Buffer(self.ptr, self.shape[::-1], self.device, stride=self.stride[::-1])
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=self.device, x=self),
-            shape=self.shape[::-1], device=self.device
+            shape=self.shape[::-1], device=self.device, dtype=self.dtype
         )
-        # return Buffer(self.ptr, self.shape[::-1], self.device, stride=calculate_stride(self.shape[::-1]))
 
     def exp(self) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.EXP, device=self.device, x=self),
-            shape=self.shape, device=self.device
+            shape=self.shape, device=self.device, dtype=self.dtype
         )
 
     def sqrt(self) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.SQRT, device=self.device, x=self),
-            shape=self.shape, device=self.device
+            shape=self.shape, device=self.device, dtype=self.dtype
         )
 
     def log(self) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.LOG, device=self.device, x=self),
-            shape=self.shape, device=self.device
+            shape=self.shape, device=self.device, dtype=self.dtype
         )
 
     def relu(self) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.RELU, device=self.device, x=self),
-            shape=self.shape, device=self.device
+            shape=self.shape, device=self.device, dtype=self.dtype
         )
 
     @staticmethod
@@ -117,7 +125,7 @@ class Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=CustomOps.CE_FORWARD, device=x.device,
                                      x=x, y=y),
-            shape=(1, x.shape[0]), device=x.device
+            shape=(1, x.shape[0]), device=x.device, dtype=x.dtype
         )
 
     @staticmethod
@@ -128,7 +136,7 @@ class Buffer:
         if isinstance(other, Scalar):
             return Buffer(
                 data=dispatcher.dispatch(op=op, device=self.device, x=self, y=other),
-                shape=self.shape, device=self.device
+                shape=self.shape, device=self.device, dtype=self.dtype
             )
 
         if not check_broadcast(self.shape, other.shape):
@@ -139,17 +147,17 @@ class Buffer:
         if op == BinaryOps.SUB and self.numel < other.numel:
             tmp = Buffer(
                 data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=other, y=self),
-                shape=other.shape, device=self.device
+                shape=other.shape, device=self.device, dtype=self.dtype
             )
             return Buffer(
                 data=dispatcher.dispatch(op=UnaryOps.NEG, device=self.device, x=tmp),
-                shape=tmp.shape, device=tmp.device
+                shape=tmp.shape, device=tmp.device, dtype=self.dtype
             )
 
         x, y = (self, other) if self.numel >= other.numel else (other, self)
         return Buffer(
             data=dispatcher.dispatch(op=op, device=self.device, x=x, y=y),
-            shape=output_shape, device=self.device
+            shape=output_shape, device=self.device, dtype=self.dtype
         )
 
     def __add__(self, other: Buffer | Scalar) -> Buffer:
@@ -171,25 +179,25 @@ class Buffer:
     def __pow__(self, val: int) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.POW, device=self.device, x=self, val=val),
-            shape=self.shape, device=self.device
+            shape=self.shape, device=self.device, dtype=self.dtype
         )
 
     def __gt__(self, other: int | float) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BinaryOps.GT, device=self.device, x=self, y=other),
-            shape=self.shape, device=self.device
+            shape=self.shape, device=self.device, dtype=self.dtype
         )
 
     def __neg__(self) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.NEG, device=self.device, x=self),
-            shape=self.shape, device=self.device
+            shape=self.shape, device=self.device, dtype=self.dtype
         )
 
     def __eq__(self, other: Buffer) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BinaryOps.EQT, device=self.device, x=self, y=other),
-            shape=self.shape, device=self.device
+            shape=self.shape, device=self.device, dtype=self.dtype
         )
 
     def __matmul__(self, other: Buffer) -> Buffer:
@@ -214,3 +222,11 @@ class Buffer:
     @property
     def ndim(self) -> int:
         return self.metadata.ndim
+
+    @property
+    def dtype(self) -> int:
+        return self.metadata.dtype
+
+    @property
+    def device(self) -> int:
+        return self.metadata.device

@@ -69,9 +69,11 @@ class OP:
 		ctx = cls(*data)
 		tensor = Tensor.__new__(Tensor)
 		tensor.data = ctx.forward(*[d.data for d in data], **kwargs)
+		tensor.data.metadata.dtype = kwargs.get("dtype", data[0].dtype)
+		tensor.data.metadata.device = kwargs.get("device", data[0].device)
 		tensor.requires_grad = ctx.requires_grad
-		tensor.dtype = kwargs.get("dtype", data[0].dtype)
-		tensor.device = kwargs.get("device", data[0].device)
+		# tensor.dtype = kwargs.get("dtype", data[0].dtype)
+		# tensor.device = kwargs.get("device", data[0].device)
 		tensor._ctx = ctx if ctx.requires_grad else None
 		tensor.grad = None
 
@@ -87,16 +89,16 @@ import dlgrad.ops as ops  # since ops module imports OP class, it is placed afte
 # TODO: Why didnt the model catch the error of (16, 784) * (32, 28, 28) ?
 class Tensor:
 	def __init__(self, data: Buffer | "np.ndarray" | Scalar,  # type: ignore  # noqa: F821
-				 device: str | Device | None = Device.CPU, dtype: str | DType | None = None,
+				#  device: str | Device | None = Device.CPU, dtype: str | DType | None = None,
 			 	 requires_grad: bool = False) -> None:
-		self.device: Device = (
-			device if isinstance(device, Device)
-			else Device.from_str(device) if isinstance(device, str) else Device.CPU
-		)
-		self.dtype: DType = (
-			dtype if isinstance(dtype, DType)
-			else DType.from_str(dtype) if isinstance(dtype, str) else DType.FLOAT32
-		)
+		# self.device: Device = (
+		# 	device if isinstance(device, Device)
+		# 	else Device.from_str(device) if isinstance(device, str) else Device.CPU
+		# )
+		# self.dtype: DType = (
+		# 	dtype if isinstance(dtype, DType)
+		# 	else DType.from_str(dtype) if isinstance(dtype, str) else DType.FLOAT32
+		# )
 		self.requires_grad: bool = requires_grad
 		self._ctx: OP = None  # used by autograd engine
 		self.grad = None
@@ -114,8 +116,8 @@ class Tensor:
 				ndim = 2
 
 			self.data = Buffer(
-				ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False),
-				shape, device, ndim=ndim,
+				data=ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False),
+				shape=shape, dtype=DType.FLOAT32, device=Device.CPU, ndim=ndim
 			)
 		elif isinstance(data, Buffer):
 			self.data = data
@@ -172,9 +174,9 @@ class Tensor:
 			shape = (1,) + shape
 
 		return Tensor(
-			data=Buffer.uniform(shape, device=device, low=low, high=high),
-			device=device,
-			dtype=dtype,
+			data=Buffer.uniform(shape, device=device, dtype=dtype, low=low, high=high),
+			# device=device,
+			# dtype=dtype,
 			requires_grad=kwargs.get("requires_grad"),
 		)
 
@@ -210,8 +212,10 @@ class Tensor:
 			 dtype: DType = DType.FLOAT32, **kwargs) -> Tensor:
 		if len(shape) == 1:
 			shape = (1,) + shape
-		return Tensor(data=Buffer.full(shape, fill_value=fill_value, device=device), device=device,
-				dtype=dtype, requires_grad=kwargs.get("requires_grad"))
+		return Tensor(
+			data=Buffer.full(shape, fill_value=fill_value, device=device, dtype=dtype),#, device=device, dtype=dtype,
+			requires_grad=kwargs.get("requires_grad")
+		)
 
 	@staticmethod
 	def ones_like(shape: tuple, device: Device = Device.CPU,
@@ -324,12 +328,9 @@ class Tensor:
 				raise RuntimeError(f"Tensor {node} has no grad")
 			upstream_grads: tuple[Buffer] = node._ctx.backward(node.grad.data)
 			upstream_grads: list[Tensor] = [
-				Tensor(g, device=self.device, requires_grad=False) for g in upstream_grads
+				Tensor(g, requires_grad=False) for g in upstream_grads
 			]
-			# for i in upstream_grads:
-				# print("i.shape", i.shape, "i.stride", i.stride)
 			for p, g in zip(node._ctx.parents, upstream_grads):
-				# print("p.grad is none ? ", p.grad is None)
 				p.grad = g if not p.grad else p.grad + g
 
 	def __getitem__(self, idx: slice):  # noqa: ANN001, ANN204
@@ -337,8 +338,9 @@ class Tensor:
 			s = idx.start*self.stride[0]
 			ns = tuple([idx.stop-idx.start, *self.shape[1:]])
 
-			buf = Buffer(data=self.data.ptr+s, shape=ns, device=self.device)
-			return Tensor(data=buf, device=self.device, dtype=self.dtype, requires_grad=self.requires_grad)
+			buf = Buffer(data=self.data.ptr+s, shape=ns, device=self.device, dtype=self.dtype)
+			# return Tensor(data=buf, device=self.device, dtype=self.dtype, requires_grad=self.requires_grad)
+			return Tensor(data=buf, requires_grad=self.requires_grad)
 
 	def __repr__(self) -> str:
 		return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"  # noqa: E501
@@ -387,6 +389,14 @@ class Tensor:
 	@property
 	def ndim(self) -> int:
 		return self.data.ndim
+
+	@property
+	def dtype(self) -> int:
+		return self.data.dtype
+
+	@property
+	def device(self) -> int:
+		return self.data.device
 
 """
 Roadmap:
