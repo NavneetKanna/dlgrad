@@ -81,8 +81,6 @@ class OP:
 import dlgrad.ops as ops  # since ops module imports OP class, it is placed after the defination  # noqa: E402, E501
 
 
-# TODO: Move all checks and assert to Buffer
-# TODO: Why didnt the model catch the error of (16, 784) * (32, 28, 28) ?
 class Tensor:
 	def __init__(self, data: Buffer | "np.ndarray" | Scalar,  # type: ignore  # noqa: F821
 			 	 requires_grad: bool = False) -> None:
