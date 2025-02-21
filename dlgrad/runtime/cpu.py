@@ -22,7 +22,6 @@ from dlgrad.dtype import CDataPtr, Scalar
 from dlgrad.helpers import BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, calculate_stride, prod_
 
 
-# TODO: Calling ffi.gc() twice one after the other leads to error, find alternative
 class CPU:
     """
     Main CPU runtime class which handles the logic of calling the compiled C source files.
@@ -86,13 +85,9 @@ class CPU:
     @staticmethod
     def _binary_op(x: Buffer, y: Buffer | Scalar, op_code: int) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        # TODO: This does not look correct, find a better way to determine if the tensor has 1 element
         if y.numel == 1:
-            try:
-                _arithmetic.lib.with_scalar(x.ptr, out_ptr, y.ptr, x.numel, op_code)
-                return out_ptr
-            except:  # noqa: E722
-                pass
+            _arithmetic.lib.with_scalar(x.ptr, out_ptr, y.ptr, x.numel, op_code)
+            return out_ptr
 
         match x.ndim:
             case 3:

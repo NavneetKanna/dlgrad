@@ -101,7 +101,6 @@ class Buffer:
             shape=(self.shape[0], other.shape[1]), device=self.device, dtype=self.dtype
         )
 
-    # TODO: Check if x is del, then even the transposed is del
     def transpose(self) -> Buffer:
         assert self.ndim == 2, "Only 2D Tensors can be transposed"
 

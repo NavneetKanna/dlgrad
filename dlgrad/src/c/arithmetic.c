@@ -79,20 +79,20 @@ void op_2d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
     }
 }
 
-void with_scalar(float *x, float *out, float y, int xnumel, int op)
+void with_scalar(float *x, float *out, float *y, int xnumel, int op)
 {
     for (int i=0; i<xnumel; i++) {
         switch (op) {
             case ADD:
-                out[i] = x[i] + y;
+                out[i] = x[i] + y[0];
                 break;
             case MUL:
-                out[i] = x[i] * y;
+                out[i] = x[i] * y[0];
                 // printf("x[%d] = %f\n", i, x[i]);
                 // printf("out[%d] = %f\n", i, out[i]);
                 break;
             case SUB:
-                out[i] = x[i] - y;
+                out[i] = x[i] - y[0];
                 break;
             }
     }
