@@ -1,5 +1,5 @@
 from dlgrad import Tensor
-from dlgrad.nn.optim import SGD
+from dlgrad.nn.optim import SGD, Adam
 import torch
 import numpy as np
 
@@ -45,3 +45,4 @@ def _test_optim(dlgrad_optim, torch_optim, steps, atol, rtol):
          
 def test():
     _test_optim(SGD, torch.optim.SGD, 5, 1e-2, 1e-3)
+    _test_optim(Adam, torch.optim.Adam, 5, 1e-2, 1e-3)
