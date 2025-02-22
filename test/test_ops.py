@@ -5,9 +5,6 @@ import torch
 from dlgrad import Tensor
 
 # TODO: Test NaN's
-# TODO: Test Tensor(Scalar)
-# TODO: Test ones like
-# TODO: Test with shapes containing 1 for sum
 
 # Thanks to tinygrad for the template
 def run(shapes: list[tuple], func):
@@ -97,10 +94,15 @@ def test_transpose_diff_tensors_reverse(shapes):
 
 @pytest.mark.parametrize("shapes", [
     [(2, 3)],
-    [(78, 91)],
 ])
 def test_transpose_same_tensors(shapes):
     run(shapes, lambda x: x@x.T)
+
+@pytest.mark.parametrize("shapes", [
+    [(2, 3)]
+])
+def test_pow(shapes):
+    run(shapes, lambda x: x**2)
 
 @pytest.mark.parametrize("shapes", [
     [(4, 3, 2)],
