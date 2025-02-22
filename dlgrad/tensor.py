@@ -26,6 +26,7 @@ class OP:
 	def __init__(self, *data: Tensor) -> None:
 		self.parents: tuple = data
 		self.req_grad = [i.requires_grad for i in data]
+		print(self.req_grad)
 		self.requires_grad = True if any(self.req_grad) else False
 
 	def forward(self, *args, **kwargs) -> None:

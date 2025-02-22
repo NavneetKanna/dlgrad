@@ -256,3 +256,19 @@ def test_logsoftmax(shapes):
         m = torch.nn.LogSoftmax(dim=1)
         to_out = m(torch_data)
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+def srun(shapes: list[tuple], func):
+    np_data = np.random.uniform(size=shapes[0]).astype(np.float32)
+    dlgrad_data = [Tensor(np_data), Tensor(shapes[1])]
+    torch_data = [torch.tensor(np_data), torch.tensor(shapes[1])]
+
+    np.testing.assert_allclose(func(*dlgrad_data).numpy(), func(*torch_data).numpy(), atol=1e-6, rtol=1e-3)
+
+s = [
+    (2, 3), (2.0)
+]
+
+srun(s, lambda x, y: x+y)
+srun(s, lambda x, y: x-y)
+srun(s, lambda x, y: x*y)
+srun(s, lambda x, y: x/y)
