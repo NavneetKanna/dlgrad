@@ -26,7 +26,6 @@ class OP:
 	def __init__(self, *data: Tensor) -> None:
 		self.parents: tuple = data
 		self.req_grad = [i.requires_grad for i in data]
-		print(self.req_grad)
 		self.requires_grad = True if any(self.req_grad) else False
 
 	def forward(self, *args, **kwargs) -> None:
@@ -172,7 +171,7 @@ class Tensor:
 		Returns:
 		    Tensor: A Tensor filled with random numbers.
 		"""
-		return Tensor.uniform(shape, device, dtype, requires_grad)
+		return Tensor.uniform(shape, device, dtype, requires_grad=requires_grad)
 
 	@staticmethod
 	def full(shape: tuple, fill_value: Scalar, device: Device = Device.CPU,
@@ -286,7 +285,7 @@ class Tensor:
 				raise RuntimeError(f"Tensor {node} has no grad")
 			upstream_grads: tuple[Buffer] = node._ctx.backward(node.grad.data)
 			upstream_grads: list[Tensor] = [
-				Tensor(g, requires_grad=False) for g in upstream_grads
+				Tensor(g, requires_grad=False) for g in upstream_grads if g is not None
 			]
 			for p, g in zip(node._ctx.parents, upstream_grads):
 				p.grad = g if not p.grad else p.grad + g

@@ -66,12 +66,12 @@ class Relu(OP):
 
 
 class Sqrt(OP):
-  def forward(self, x: Buffer) -> Buffer:
-    self.out = x.sqrt()
-    return self.out
+	def forward(self, x: Buffer) -> Buffer:
+		self.out = x.sqrt()
+		return self.out
 
-  def backward(self, grad_output: Buffer) -> Buffer:
-	  return grad_output / (self.out*2)
+	def backward(self, grad_output: Buffer) -> Buffer:
+		return grad_output / (self.out*2)
 
 
 # ------------ Binary Ops -----------
