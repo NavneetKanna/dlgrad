@@ -50,7 +50,6 @@ void op_2d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
     int y_idx = 0;
     int y_idx2 = 0;
     int y_idx1 = 0;
-    int o = 0;
 
     for (int i=0; i<xshape[0]; i++) {
         y_idx1 = (xshape[0] == yshape[0]) ? i : 0;
@@ -66,10 +65,6 @@ void op_2d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
                 break;
             case MUL:
                 out[x_idx] = x[x_idx] * y[y_idx];
-                // printf("x[%d] = %f\n", o, x[x_idx]);
-                // printf("y[%d] = %f\n", o, y[y_idx]);
-                // printf("out[%d] = %f\n", o, out[x_idx]);
-                o += 1;
                 break;
             case SUB:
                 out[x_idx] = x[x_idx] - y[y_idx];
