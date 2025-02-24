@@ -7,6 +7,8 @@
 #define SUB 2
 
 
+// See my blog post for explanation - https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Behind-the-scenes.html
+
 // Handles all broadcasting shapes
 void op_3d(float *x, float *y, float *out, int *xshape, int *xstrides, int *yshape, int *ystrides, int op) 
 {
@@ -59,6 +61,7 @@ void op_2d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
             x_idx = i*xstrides[0] + j*xstrides[1];
             
             y_idx = y_idx1*ystrides[0] + y_idx2*ystrides[1];
+
             switch (op) {
             case ADD:
                 out[x_idx] = x[x_idx] + y[y_idx];
@@ -83,8 +86,6 @@ void with_scalar(float *x, float *out, float *y, int xnumel, int op)
                 break;
             case MUL:
                 out[i] = x[i] * y[0];
-                // printf("x[%d] = %f\n", i, x[i]);
-                // printf("out[%d] = %f\n", i, out[i]);
                 break;
             case SUB:
                 out[i] = x[i] - y[0];

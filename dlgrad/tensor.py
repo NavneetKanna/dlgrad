@@ -145,7 +145,9 @@ class Tensor:
 		    shape (tuple) : The desired shape
 		    device (str | Device | None) : Default device is CPU
 		    dtype (str | DType | None) : Default dtype is float32
-		    **kwargs (dict) : Any additional keyword args.
+			low (float) : Default is 0.0
+			hight (float) : Default is 1.0
+			requires_grad (bool) : Default is False
 
 		Returns:
 		    Tensor: A Tensor filled with random numbers.
@@ -166,7 +168,7 @@ class Tensor:
 		    shape (tuple) : The desired shape
 		    device (str | Device | None) : Default device is CPU
 		    dtype (str | DType | None) : Default dtype is float32
-		    **kwargs (dict) : Any additional keyword args.
+			requires_grad (bool) : Default is False
 
 		Returns:
 		    Tensor: A Tensor filled with random numbers.
@@ -176,6 +178,19 @@ class Tensor:
 	@staticmethod
 	def full(shape: tuple, fill_value: Scalar, device: Device = Device.CPU,
 			 dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
+		"""
+		Creates a Tensor with the specified shape filled with fill_value value.
+
+		Parameters:
+		 	shape (tuple) : The desired shape
+			fill_value (Scalar) : The value that the Tensor should be filled with
+		    device (str | Device | None) : Default device is CPU
+		    dtype (str | DType | None) : Default dtype is float32
+			requires_grad (bool) : Default is False
+
+		Returns:
+		    Tensor: A Tensor filled with specfied values.
+		"""
 		return Tensor(
 			data=Buffer.full(shape, fill_value=fill_value, device=device, dtype=dtype),
 			requires_grad=requires_grad
