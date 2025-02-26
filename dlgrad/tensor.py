@@ -267,6 +267,9 @@ class Tensor:
 		----------
 		x : Tensor
 		y : Tensor | Scalar
+
+		Returns:
+			The sum of `x` and `y`
 		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y)
@@ -281,6 +284,10 @@ class Tensor:
 		----------
 		x : Tensor
 		y : Tensor | Scalar
+
+
+		Returns:
+			The product of `x` and `y`
 		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y)
@@ -295,6 +302,9 @@ class Tensor:
 		----------
 		x : Tensor
 		y : Tensor | Scalar
+
+		Returns:
+			The difference of `x` and `y`
 		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y)
@@ -309,6 +319,9 @@ class Tensor:
 		----------
 		x : Tensor
 		y :  Tensor | Scalar
+
+		Returns:
+			The quotient of `x` and `y`
 		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y)
