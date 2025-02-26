@@ -16,15 +16,18 @@ class Dispatcher:
     def __init__(self) -> None:
         self._dispatch_table: dict = {}
 
-    def register(self, op: Enum, device: Enum) -> Callable:  # noqa: ANN201
+    def register(self, op: Enum, device: Enum) -> Callable:
         """
         Registers a function for a specific operation and device.
 
         This method is intended to be used as a decorator.
 
-        Parameters:
-            op (Enum) : Any of the op enums defined in the helper module.
-            device (Enum) : Any of the device enums defined in the device module.
+        Parameters
+        ----------
+        op : Enum
+            Any of the op enums defined in the helper module
+        device : Enum
+            Any of the device enums defined in the device module
         """
         def decorator(func: Callable):  # noqa: ANN202
             self._dispatch_table[(op, device)] = func
@@ -34,14 +37,19 @@ class Dispatcher:
         """
         Calls the function registered in the dispatch table based on the op and device.
 
-        Parameters:
-            x (Any) : Data to be passed to the function.
-            op (Enum) : Any of the op enums defined in the helper module.
-            device (Enum) : Any of the device enums defined in the device module.
-            **kwargs (dict) : Any additional args.
+        Parameters
+        ----------
+        x : Any
+            Data to be passed to the function
+        op Enum
+            Any of the op enums defined in the helper module
+        device Enum
+            Any of the device enums defined in the device module
+        kwargs : dict
+            Any additional args
 
         Returns:
-            Buffer: A Buffer object.
+            A Buffer object
         """
 
         return self._dispatch_table[(op, device)](*args, **kwargs)

@@ -16,7 +16,7 @@ class OP:
 	This is the superclass for all the ops implemented in the ops module.
 	Used by the autograd engine to build the graph.
 
-	Thanks to tinygrad for the template, this is similar to the Function class.
+	Thanks to tinygrad for the template.
 
 	Attribute:
 	    parents (tuple): A tuple containing the parents of the op.
@@ -58,13 +58,17 @@ class OP:
 		This method takes a subclass (cls) as parameter and calls its forward method.
 		Then it returns a Tensor with the returned data and attributes.
 
-		Parameters:
-		    fxn (Type[OP]) : One of the Op's class defined in the ops module.
-		    data (tuple(Tensor)) : A tuple of Tensors, which are the parents of the op.
-		    **kwargs (dict) : Any additional keyword args.
+		Parameters
+		----------
+		fxn : Type[OP]
+			One of the Op's class defined in the ops module.
+		data : tuple(Tensor)
+			A tuple of Tensors, which are the parents of the op.
+		**kwargs : dict
+			Any additional keyword args.
 
 		Returns:
-		    Tensor: A Tensor which is the output of the op.
+		    A Tensor which is the output of the op.
 		"""
 		ctx = cls(*data)
 		tensor = Tensor.__new__(Tensor)
@@ -81,7 +85,6 @@ class OP:
 import dlgrad.ops as ops  # since ops module imports OP class, it is placed after the defination  # noqa: E402, E501
 
 
-# TODO: Test with one of the tensor req_grad is false
 class Tensor:
 	def __init__(
 			self, data: Buffer | "np.ndarray" | Scalar,  # type: ignore  # noqa: F821
@@ -526,7 +529,10 @@ class Tensor:
 			for p, g in zip(node._ctx.parents, upstream_grads):
 				p.grad = g if not p.grad else p.grad + g
 
-	def __getitem__(self, idx: slice):  # noqa: ANN001, ANN204
+	def __getitem__(self, idx: slice) -> Tensor:
+		"""
+		dlgrad only supports slicing indexing.
+		"""
 		if isinstance(idx, slice) and idx.start is not None and idx.stop is not None and idx.step is None:
 			s = idx.start*self.stride[0]
 			ns = tuple([idx.stop-idx.start, *self.shape[1:]])
@@ -534,6 +540,8 @@ class Tensor:
 			buf = Buffer(data=self.data.ptr+s, shape=ns, device=self.device, dtype=self.dtype)
 
 			return Tensor(data=buf, requires_grad=self.requires_grad)
+		else:
+			raise ValueError("dlgrad only supports slicing or start, stop are None")
 
 	def __repr__(self) -> str:
 		return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"  # noqa: E501
@@ -595,5 +603,6 @@ class Tensor:
 Roadmap:
 
 - memory pool instead of malloc if malloc is slow to call repeatedly
+- python slots
 
 """

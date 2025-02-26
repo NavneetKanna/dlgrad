@@ -5,6 +5,7 @@ from dlgrad.tensor import OP
 
 # ------------ Unary Ops -----------
 
+# TODO: Remove compulsory tuple return type in backward
 class Transpose(OP):
 	def forward(self, x: Buffer):  # noqa: ANN201
 		return x.transpose()

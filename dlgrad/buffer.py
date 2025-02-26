@@ -82,7 +82,6 @@ class Buffer:
             ndim=self.ndim if self.ndim == 2 else self.ndim - 1, dtype=self.dtype
         )
 
-    # NOTE: keepdim is true by default
     def max(self, dim: int = -1) -> tuple[Buffer, Buffer]:
         out_shape = cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
 
