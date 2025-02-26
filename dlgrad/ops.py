@@ -53,7 +53,7 @@ class Log(OP):
 		self.x = x
 		return x.log()
 
-	def backward(self, upstream_grad: Buffer) -> Buffer:
+	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		return (upstream_grad / self.x,)
 
 
@@ -62,7 +62,7 @@ class Relu(OP):
 		self.out = x.relu()
 		return self.out
 
-	def backward(self, upstream_grad: Buffer) -> Buffer:
+	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		return ((self.out>0.0) * upstream_grad,)
 
 
@@ -71,12 +71,13 @@ class Sqrt(OP):
 		self.out = x.sqrt()
 		return self.out
 
-	def backward(self, grad_output: Buffer) -> Buffer:
+	def backward(self, grad_output: Buffer) -> tuple[Buffer]:
 		return grad_output / (self.out*2)
 
 
 # ------------ Binary Ops -----------
 
+# TODO: Redundant calls to find_broadcast_dim
 class Add(OP):
 	def forward(self, x: Buffer, y: Buffer | Scalar) -> Buffer:
 		self.x = x
@@ -108,7 +109,7 @@ class Mul(OP):
 		if check_broadcast(x.shape, y.shape):
 			return x*y
 
-	def backward(self, upstream_grad: Buffer) -> Buffer:
+	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
 		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad*self.y, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
 		  	    self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad*self.x, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
@@ -120,7 +121,7 @@ class Div(OP):
 		if check_broadcast(x.shape, y.shape):
 			return x/y
 
-	def backward(self, upstream_grad: Buffer) -> Buffer:
+	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
 		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad/self.y, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
 		  	   self.match_inp_shape(inp=self.y, upstream_grad=(-upstream_grad*self.x)/self.y**2, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
@@ -131,12 +132,13 @@ class MatMul(OP):
 		self.y = y
 		return x@y
 
-	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
+	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		t1 = self.x.T
 		t2 = self.y.T
 		return (upstream_grad@t2, t1@upstream_grad)
 
 
+# TODO: Fuse all ops performed here in C ?
 class CrossEntropy(OP):
 	def forward(self, logits: Buffer, target: Buffer, dim: int = 1) -> Buffer:
 		assert logits.shape[0] == target.shape[0], f"logits shape[0] and target shape[0] does not match {logits.shape} != {target.shape}"  # noqa: E501
@@ -151,7 +153,7 @@ class CrossEntropy(OP):
 
 		return -tmp.sum()
 
-	def backward(self, upstream_grad: Buffer) -> Buffer:
+	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		tmp = self.log_softmax_output.exp()
 		Buffer.ce_backward(op=CustomOps.CE_BACKWARD, device=tmp.device, x=tmp, target=self.target)
 		return (tmp,)

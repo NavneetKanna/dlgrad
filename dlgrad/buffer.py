@@ -54,9 +54,6 @@ class Buffer:
         if dtype is not DType.FLOAT32:
             raise NotImplementedError("dlgrad only supports float32")
         if not isinstance(shape, tuple):
-            raise ValueError("shape must be a tuple")
-
-        if not isinstance(shape, tuple):
             raise ValueError("Shape must be a tuple")
         if len(shape) == 1:
             shape = (1,) + shape

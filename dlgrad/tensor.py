@@ -604,5 +604,7 @@ Roadmap:
 
 - memory pool instead of malloc if malloc is slow to call repeatedly
 - python slots
+- kernel fusion, ex, relu after matmul
+- functools cache in helpers
 
 """

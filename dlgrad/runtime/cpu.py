@@ -30,6 +30,7 @@ class CPU:
     """
     ffi = FFI()
 
+    # TODO: Cache struct.calcsize('f')
     @staticmethod
     def malloc(num: int, size: int = struct.calcsize('f')) -> CDataPtr:
         ptr = CPU.ffi.gc(_allocate.lib.uninitialized_memory(num*size), _allocate.lib.free_ptr)
@@ -221,47 +222,3 @@ class CPU:
     @dispatcher.register(CustomOps.CE_BACKWARD, Device.CPU)
     def ce_backward(x: Buffer, target: Buffer) -> CDataPtr:
         _loss.lib.ce_backward(x.ptr, target.ptr, x.shape, x.stride)
-
-"""
-
-    (2, 3, 4) + (1, 3, 4)
-    (2, 3, 4) + (2, 1, 4)
-    (2, 3, 4) + (2, 3, 1)
-    (2, 3, 4) + (1, 1, 4)
-    (2, 3, 4) + (1, 3, 1)
-    (2, 3, 4) + (2, 1, 1)
-    (2, 3, 4) + (1, 1, 1)
-    (m, n, p) + (1, n, p)
-    (m, n, p) + (m, 1, p)
-    (m, n, p) + (m, n, 1)
-    (m, n, p) + (1, 1, p)
-    (m, n, p) + (1, n, 1)
-    (m, n, p) + (m, 1, 1)
-    (m, n, p) + (1, 1, 1)
-
-
-
-    (2, 3) + (1, 3)
-    (2, 3) + (2, 1)
-    (2, 3) + (1, 1)
-    (m, n) + (1, n)
-    (m, n) + (m, 1)
-    (m, n) + (1, 1)
-
-
-    (a, b, c, d) + (1, b, c, d)
-    (a, b, c, d) + (a, 1, c, d)
-    (a, b, c, d) + (a, b, 1, d)
-    (a, b, c, d) + (a, b, c, 1)
-    (a, b, c, d) + (1, 1, c, d)
-    (a, b, c, d) + (1, b, 1, d)
-    (a, b, c, d) + (1, b, c, 1)
-    (a, b, c, d) + (a, 1, 1, d)
-    (a, b, c, d) + (a, 1, c, 1)
-    (a, b, c, d) + (a, b, 1, 1)
-    (a, b, c, d) + (1, 1, 1, d)
-    (a, b, c, d) + (1, 1, c, 1)
-    (a, b, c, d) + (1, b, 1, 1)
-    (a, b, c, d) + (a, 1, 1, 1)
-    (a, b, c, d) + (1, 1, 1, 1)
-"""

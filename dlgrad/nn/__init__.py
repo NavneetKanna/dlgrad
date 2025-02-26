@@ -11,6 +11,4 @@ class Linear:
         self.bias = Tensor.uniform((1, out_features), low=-bound, high=bound, requires_grad=True) if bias else None
 
     def __call__(self, x: Tensor) -> Tensor:
-        # print(self.weight.numpy())
-        # print("---")
         return x.linear(self.weight, self.bias)
