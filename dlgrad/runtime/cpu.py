@@ -93,10 +93,6 @@ class CPU:
             case 3:
                 _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, op_code)
             case 2:
-                print("x.shape", x.shape)
-                print("x.stride", x.stride)
-                print("y.shape", y.shape)
-                print("y.stride", y.stride)
                 _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, op_code)
 
         return out_ptr

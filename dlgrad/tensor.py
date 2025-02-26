@@ -261,7 +261,7 @@ class Tensor:
 	@staticmethod
 	def add(x: Tensor, y: Tensor | Scalar) -> Tensor:
 		"""
-		Adds x and y tensors with broadcasting.
+		Adds `x` and `y` tensors with broadcasting.
 
 		Parameters
 		----------
@@ -278,7 +278,7 @@ class Tensor:
 	@staticmethod
 	def mul(x: Tensor, y: Tensor | Scalar) -> Tensor:
 		"""
-		Multiplies x and y tensors with broadcasting.
+		Multiplies `x` and `y` tensors with broadcasting.
 
 		Parameters
 		----------
@@ -296,7 +296,7 @@ class Tensor:
 	@staticmethod
 	def sub(x: Tensor, y: Tensor | Scalar) -> Tensor:
 		"""
-		Subtracts x and y tensors with broadcasting.
+		Subtracts `x` and `y` tensors with broadcasting.
 
 		Parameters
 		----------
@@ -313,7 +313,7 @@ class Tensor:
 	@staticmethod
 	def div(x: Tensor, y: Tensor | Scalar) -> Tensor:
 		"""
-		Divides x and y tensors with broadcasting.
+		Divides `x` and `y` tensors with broadcasting.
 
 		Parameters
 		----------
@@ -330,35 +330,45 @@ class Tensor:
 	@staticmethod
 	def matmul(x: Tensor, y: Tensor) -> Tensor:
 		"""
-		Matrix multiply x and y tensors.
+		Matrix multiply `x` and `y` tensors.
 
 		Parameters
 		----------
 		x : Tensor
 		y : Tensor
+
+		Returns:
+			The matmul product of `x` and `y`
 		"""
 		return ops.MatMul.execute(x, y)
 
 	@staticmethod
 	def transpose(x: Tensor) -> Tensor:
 		"""
-		Transpose x tensor.
+		Transpose `x` tensor. Returns a new tensor.
 
-		Parameters:
-			x (Tensor)
+		Parameters
+		----------
+		x : Tensor
+
+		Returns:
+			The transposed tensor
 		"""
 		return ops.Transpose.execute(x)
 
 	def sum(self, dim: int = -1) -> Tensor:
 		"""
 		Sum a tensor along dimension `dim`. keepdim is by default True.
+		Which means the returned tensor shape is the same as the input tensor shape.
 
-		Parameters:
-			`self` (Tensor)
-			`dim` (int) : Dimension along which to sum, -1 sums all elements.
+		Parameters
+		----------
+		self : Tensor
+		dim : int
+			Dimension along which to sum, -1 means it sums all elements.
 
 		Returns:
-			A tensor of the same shpae as self.
+			A tensor of the same shape as self.
 		"""
 		return ops.Sum.execute(self, dim=dim)
 
@@ -366,35 +376,100 @@ class Tensor:
 		"""
 		Applies ReLU activation to tensor.
 
-		Parameters:
-			x (Tensor)
+		Parameters
+		----------
+		self : Tensor
+
+		Returns:
+			A tensor with ReLU activation applied
 		"""
 		return ops.Relu.execute(self)
 
 	def linear(self, weight: Tensor, bias: Tensor | None) -> Tensor:
 		"""
 		Applies a linear transformation to `self` using `weight` and `bias`.
+		`self @ weight.T + bias`
 
-		Parameters:
-			self (Tensor)
-			weight (Tensor)
-			bias (Tensor | None)
+		Parameters
+		----------
+		self : Tensor
+		weight : Tensor
+		bias : Tensor | None
+
+		Returns:
+			A tensor with linear transformation applied
 		"""
 		return self @ weight.T + bias if bias else self @ weight.T
 
 	def max(self, dim: int = -1) -> Tensor:
+		"""
+		Find maximum of a tensor along dimension `dim`. keepdim is by default True.
+		Which means the returned tensor shape is the same as the input tensor shape.
+
+		Parameters
+		----------
+		self : Tensor
+		dim : int
+			Dimension along which to find the max, -1 means find max of full tensor.
+
+		Returns:
+			A tensor of the same shape as self.
+		"""
 		return ops.Max.execute(self, dim=dim)
 
 	def exp(self) -> Tensor:
+		"""
+		Applies the exponential function to the tensor elementwise.
+
+		Parameters
+		----------
+		self : Tensor
+
+		Returns:
+			A tensor of the same shape as self.
+		"""
 		return ops.Exp.execute(self)
 
+	# TODO: Find which log
 	def log(self) -> Tensor:
+		"""
+		Applies the logarithm function to the tensor elementwise.
+
+		Parameters
+		----------
+		self : Tensor
+
+		Returns:
+			A tensor of the same shape as self.
+		"""
 		return ops.Log.execute(self)
 
 	def sqrt(self) -> Tensor:
+		"""
+		Applies the sqaure root function to the tensor elementwise.
+
+		Parameters
+		----------
+		self : Tensor
+
+		Returns:
+			A tensor of the same shape as self.
+		"""
 		return ops.Sqrt.execute(self)
 
 	def log_softmax(self, dim: int = 1) -> Tensor:
+		"""
+		Applies the log-softmax function to the tensor along `dim`.
+
+		Parameters
+		----------
+		self : Tensor
+		dim : int
+			Dimension along wich log-softmax should be applied
+
+		Returns:
+			A tensor of the same shape as self.
+		"""
 		t = self.max(dim=dim)
 		m = self - t
 		e = m.exp()
@@ -405,6 +480,17 @@ class Tensor:
 		return reduce(lambda inp, layer: layer(inp), layers, self)
 
 	def cross_entropy_loss(self, target: Tensor) -> Tensor:
+		"""
+		Finds the cross-entropy loss between `self` and `target`.
+
+		Parameters
+		----------
+		self : Tensor
+		target: Tensor
+
+		Returns:
+			A tensor of shape (1, 1).
+		"""
 		if isinstance(target, Scalar):
 			target = Tensor(target)
 		return ops.CrossEntropy.execute(self, target)
