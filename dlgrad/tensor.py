@@ -141,16 +141,23 @@ class Tensor:
 		Creates a tensor with the specified shape filled with random numbers from a
 		uniform distribution on the interval [low, high).
 
-		Parameters:
-		    shape (tuple) : The desired shape
-		    device (str | Device | None) : Default device is CPU
-		    dtype (str | DType | None) : Default dtype is float32
-		    low (float) : Default 0.0
-		    hight (float) : Default 1.0
-		    requires_grad (bool) : Default is False
+		Parameters
+		----------
+		shape : tuple
+				The desired shape
+		device : str | Device | None
+				Default device is CPU
+		dtype : str | DType | None
+				Default dtype is float32
+		low : float
+				The minimum value
+		high : float
+				The maximum value
+		requires_grad : bool
+				Default is False
 
 		Returns:
-		    tensor: A tensor filled with random numbers.
+		    A tensor filled with random numbers.
 		"""
 		return Tensor(
 			data=Buffer.uniform(shape, device=device, dtype=dtype, low=low, high=high),
@@ -164,14 +171,19 @@ class Tensor:
 		Creates a tensor with the specified shape filled with random numbers from a
 		uniform distribution on the interval [0, 1).
 
-		Parameters:
-		    shape (tuple): The desired shape
-		    device (str | Device | None): Default device is CPU
-		    dtype (str | DType | None): Default dtype is float32
-		    requires_grad (bool) : Default is False
+		Parameters
+		----------
+		shape : tuple
+				The desired shape
+		device : str | Device | None
+				Default device is CPU
+		dtype : str | DType | None
+				Default dtype is float32
+		requires_grad : bool
+				Default is False
 
 		Returns:
-		    tensor: A tensor filled with random numbers.
+		    A tensor filled with random numbers.
 		"""
 		return Tensor.uniform(shape, device, dtype, requires_grad=requires_grad)
 
@@ -179,17 +191,23 @@ class Tensor:
 	def full(shape: tuple, fill_value: Scalar, device: Device = Device.CPU,
 			 dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
 		"""
-		Creates a tensor with the specified shape filled with fill_value value.
+		Creates a tensor with the specified shape filled with `fill_value`.
 
-		Parameters:
-		 	shape (tuple) : The desired shape
-		 	fill_value (Scalar) : The value that the tensor should be filled with
-		 	device (str | Device | None) : Default device is CPU
-		 	dtype (str | DType | None) : Default dtype is float32
-		 	requires_grad (bool) : Default is False
+		Parameters
+		----------
+		shape : tuple
+				The desired shape.
+		fill_value : Scalar
+				The value to fill the tensor with.
+		device : str | Device | None
+				Default device is CPU.
+		dtype : str | DType | None
+				Default dtype is float32.
+		requires_grad : bool
+				Default is False.
 
 		Returns:
-		    tensor: A tensor filled with specfied values.
+		   	A tensor filled with specfied values.
 		"""
 		return Tensor(
 			data=Buffer.full(shape, fill_value=fill_value, device=device, dtype=dtype),
@@ -202,14 +220,19 @@ class Tensor:
 		"""
 		Creates a tensor with the specified shape filled with 1.0.
 
-		Parameters:
-		    shape (tuple) : The desired shape
-		    device (str | Device | None) : Default device is CPU
-		    dtype (str | DType | None) : Default dtype is float32
-		    requies_grad (bool) : Default is False
+		Parameters
+		----------
+		shape : tuple
+				The desired shape
+		device : str | Device | None
+				Default device is CPU
+		dtype : str | DType | None
+				Default dtype is float32
+		requires_grad : bool
+				Default is False
 
 		Returns:
-		    tensor: A tensor filled with 1.0.
+		    A tensor filled with 1.0.
 		"""
 		return Tensor.full(shape, 1.0, device, dtype, requires_grad)
 
@@ -219,14 +242,19 @@ class Tensor:
 		"""
 		Creates a tensor with the specified shape filled with 0.0.
 
-		Parameters:
-		    shape (tuple) : The desired shape
-		    device (str | Device | None) : Default device is CPU
-		    dtype (str | DType | None) : Default dtype is float32
-		    requires_grad (bool) : Default is False
+		Parameters
+		----------
+		shape : tuple
+				The desired shape
+		device : str | Device | None
+				Default device is CPU
+		dtype : str | DType | None
+				Default dtype is float32
+		requires_grad : bool
+				Default is False
 
 		Returns:
-		    tensor: A tensor filled with 0.0.
+		    A tensor filled with 0.0.
 		"""
 		return Tensor.full(shape, 0.0, device, dtype, requires_grad)
 
@@ -235,9 +263,10 @@ class Tensor:
 		"""
 		Adds x and y tensors with broadcasting.
 
-		Parameters:
-			x (Tensor)
-			y (Tensor | Scalar)
+		Parameters
+		----------
+		x : Tensor
+		y : Tensor | Scalar
 		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y)
@@ -248,9 +277,10 @@ class Tensor:
 		"""
 		Multiplies x and y tensors with broadcasting.
 
-		Parameters:
-			x (Tensor)
-			y (Tensor | Scalar)
+		Parameters
+		----------
+		x : Tensor
+		y : Tensor | Scalar
 		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y)
@@ -261,9 +291,10 @@ class Tensor:
 		"""
 		Subtracts x and y tensors with broadcasting.
 
-		Parameters:
-			x (Tensor)
-			y (Tensor | Scalar)
+		Parameters
+		----------
+		x : Tensor
+		y : Tensor | Scalar
 		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y)
@@ -271,25 +302,71 @@ class Tensor:
 
 	@staticmethod
 	def div(x: Tensor, y: Tensor | Scalar) -> Tensor:
+		"""
+		Divides x and y tensors with broadcasting.
+
+		Parameters
+		----------
+		x : Tensor
+		y :  Tensor | Scalar
+		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y)
 		return ops.Div.execute(x, y)
 
 	@staticmethod
 	def matmul(x: Tensor, y: Tensor) -> Tensor:
+		"""
+		Matrix multiply x and y tensors.
+
+		Parameters
+		----------
+		x : Tensor
+		y : Tensor
+		"""
 		return ops.MatMul.execute(x, y)
 
 	@staticmethod
 	def transpose(x: Tensor) -> Tensor:
+		"""
+		Transpose x tensor.
+
+		Parameters:
+			x (Tensor)
+		"""
 		return ops.Transpose.execute(x)
 
 	def sum(self, dim: int = -1) -> Tensor:
+		"""
+		Sum a tensor along dimension `dim`. keepdim is by default True.
+
+		Parameters:
+			`self` (Tensor)
+			`dim` (int) : Dimension along which to sum, -1 sums all elements.
+
+		Returns:
+			A tensor of the same shpae as self.
+		"""
 		return ops.Sum.execute(self, dim=dim)
 
 	def relu(self) -> Tensor:
+		"""
+		Applies ReLU activation to tensor.
+
+		Parameters:
+			x (Tensor)
+		"""
 		return ops.Relu.execute(self)
 
 	def linear(self, weight: Tensor, bias: Tensor | None) -> Tensor:
+		"""
+		Applies a linear transformation to `self` using `weight` and `bias`.
+
+		Parameters:
+			self (Tensor)
+			weight (Tensor)
+			bias (Tensor | None)
+		"""
 		return self @ weight.T + bias if bias else self @ weight.T
 
 	def max(self, dim: int = -1) -> Tensor:

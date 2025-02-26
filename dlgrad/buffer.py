@@ -94,6 +94,7 @@ class Buffer:
         return out_buf, max_with_1s_buf
 
     def matmul(self, other: Buffer) -> Buffer:
+        assert self.ndim == 2 and other.ndim == 2, "dlgrad only supports 2d matrix multiplication"
         if (self.shape[-1] != other.shape[0] and self.ndim != 2 and other.ndim != 2):
             raise ValueError("Either the Tensors shape dont match or is not 2D")
 
