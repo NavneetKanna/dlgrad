@@ -138,19 +138,19 @@ class Tensor:
 				dtype: str | DType | None = DType.FLOAT32, low: float = 0.0,
 				high: float = 1.0, requires_grad: bool = False) -> Tensor:
 		"""
-		Creates a Tensor with the specified shape filled with random numbers from a
+		Creates a tensor with the specified shape filled with random numbers from a
 		uniform distribution on the interval [low, high).
 
 		Parameters:
 		    shape (tuple) : The desired shape
 		    device (str | Device | None) : Default device is CPU
 		    dtype (str | DType | None) : Default dtype is float32
-			low (float) : Default is 0.0
-			hight (float) : Default is 1.0
-			requires_grad (bool) : Default is False
+		    low (float) : Default 0.0
+		    hight (float) : Default 1.0
+		    requires_grad (bool) : Default is False
 
 		Returns:
-		    Tensor: A Tensor filled with random numbers.
+		    tensor: A tensor filled with random numbers.
 		"""
 		return Tensor(
 			data=Buffer.uniform(shape, device=device, dtype=dtype, low=low, high=high),
@@ -161,17 +161,17 @@ class Tensor:
 	def rand(shape: tuple, device: str | Device | None = Device.CPU,
 		     dtype: str | DType | None = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
 		"""
-		Creates a Tensor with the specified shape filled with random numbers from a
+		Creates a tensor with the specified shape filled with random numbers from a
 		uniform distribution on the interval [0, 1).
 
 		Parameters:
-		    shape (tuple) : The desired shape
-		    device (str | Device | None) : Default device is CPU
-		    dtype (str | DType | None) : Default dtype is float32
-			requires_grad (bool) : Default is False
+		    shape (tuple): The desired shape
+		    device (str | Device | None): Default device is CPU
+		    dtype (str | DType | None): Default dtype is float32
+		    requires_grad (bool) : Default is False
 
 		Returns:
-		    Tensor: A Tensor filled with random numbers.
+		    tensor: A tensor filled with random numbers.
 		"""
 		return Tensor.uniform(shape, device, dtype, requires_grad=requires_grad)
 
@@ -179,17 +179,17 @@ class Tensor:
 	def full(shape: tuple, fill_value: Scalar, device: Device = Device.CPU,
 			 dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
 		"""
-		Creates a Tensor with the specified shape filled with fill_value value.
+		Creates a tensor with the specified shape filled with fill_value value.
 
 		Parameters:
 		 	shape (tuple) : The desired shape
-			fill_value (Scalar) : The value that the Tensor should be filled with
-		    device (str | Device | None) : Default device is CPU
-		    dtype (str | DType | None) : Default dtype is float32
-			requires_grad (bool) : Default is False
+		 	fill_value (Scalar) : The value that the tensor should be filled with
+		 	device (str | Device | None) : Default device is CPU
+		 	dtype (str | DType | None) : Default dtype is float32
+		 	requires_grad (bool) : Default is False
 
 		Returns:
-		    Tensor: A Tensor filled with specfied values.
+		    tensor: A tensor filled with specfied values.
 		"""
 		return Tensor(
 			data=Buffer.full(shape, fill_value=fill_value, device=device, dtype=dtype),
@@ -199,27 +199,72 @@ class Tensor:
 	@staticmethod
 	def ones_like(shape: tuple, device: Device = Device.CPU,
 			      dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
+		"""
+		Creates a tensor with the specified shape filled with 1.0.
+
+		Parameters:
+		    shape (tuple) : The desired shape
+		    device (str | Device | None) : Default device is CPU
+		    dtype (str | DType | None) : Default dtype is float32
+		    requies_grad (bool) : Default is False
+
+		Returns:
+		    tensor: A tensor filled with 1.0.
+		"""
 		return Tensor.full(shape, 1.0, device, dtype, requires_grad)
 
 	@staticmethod
 	def zeros_like(shape: tuple, device: Device = Device.CPU,
 			      dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
+		"""
+		Creates a tensor with the specified shape filled with 0.0.
+
+		Parameters:
+		    shape (tuple) : The desired shape
+		    device (str | Device | None) : Default device is CPU
+		    dtype (str | DType | None) : Default dtype is float32
+		    requires_grad (bool) : Default is False
+
+		Returns:
+		    tensor: A tensor filled with 0.0.
+		"""
 		return Tensor.full(shape, 0.0, device, dtype, requires_grad)
 
 	@staticmethod
 	def add(x: Tensor, y: Tensor | Scalar) -> Tensor:
+		"""
+		Adds x and y tensors with broadcasting.
+
+		Parameters:
+			x (Tensor)
+			y (Tensor | Scalar)
+		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y)
 		return ops.Add.execute(x, y)
 
 	@staticmethod
 	def mul(x: Tensor, y: Tensor | Scalar) -> Tensor:
+		"""
+		Multiplies x and y tensors with broadcasting.
+
+		Parameters:
+			x (Tensor)
+			y (Tensor | Scalar)
+		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y)
 		return ops.Mul.execute(x, y)
 
 	@staticmethod
 	def sub(x: Tensor, y: Tensor | Scalar) -> Tensor:
+		"""
+		Subtracts x and y tensors with broadcasting.
+
+		Parameters:
+			x (Tensor)
+			y (Tensor | Scalar)
+		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y)
 		return ops.Sub.execute(x, y)
