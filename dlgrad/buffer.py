@@ -172,62 +172,7 @@ class Buffer:
         )
 
     def __add__(self, other: Buffer | Scalar) -> Buffer:
-        # print("---")
-        # s = time.perf_counter()
-        if isinstance(other, Scalar):
-            return Buffer(
-                data=dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=self, y=other),
-                shape=self.shape, device=self.device, dtype=self.dtype
-            )
-        # e = time.perf_counter()
-        # time_diff_seconds = e - s
-        # time_diff_us = time_diff_seconds * 1_000_000
-        # print(f"first check: {time_diff_us} µs")
-        # s = time.perf_counter()
-        if not check_broadcast(self.shape, other.shape):
-            raise ValueError(f"Cannot broadcast {other.shape} to {self.shape}")
-        # e = time.perf_counter()
-        # time_diff_seconds = e - s
-        # time_diff_us = time_diff_seconds * 1_000_000
-        # print(f"second check: {time_diff_us} µs")
-
-        # s = time.perf_counter()
-        output_shape = self.shape if self.numel >= other.numel else other.shape
-        # e = time.perf_counter()
-        # time_diff_seconds = e - s
-        # time_diff_us = time_diff_seconds * 1_000_000
-        # print(f"out shape: {time_diff_us} µs")
-
-        # s = time.perf_counter()
-        x, y = (self, other) if self.numel >= other.numel else (other, self)
-        # e = time.perf_counter()
-        # time_diff_seconds = e - s
-        # time_diff_us = time_diff_seconds * 1_000_000
-        # print(f"x y: {time_diff_us} µs")
-
-        # s = time.perf_counter()
-        t = dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=x, y=y)
-        # e = time.perf_counter()
-        # time_diff_seconds = e - s
-        # time_diff_us = time_diff_seconds * 1_000_000
-        # print(f"call cpu: {time_diff_us} µs")
-
-        # s = time.perf_counter()
-        tt=Buffer(
-            data=t,
-            shape=output_shape, device=self.device, dtype=self.dtype
-        )
-        # e = time.perf_counter()
-        # time_diff_seconds = e - s
-        # time_diff_us = time_diff_seconds * 1_000_000
-        # print(f"buffer init: {time_diff_us} µs")
-        return tt
-        # return Buffer(
-        #     data=dispatcher.dispatch(op=BinaryOps.ADD, device=self.device, x=x, y=y),
-        #     shape=output_shape, device=self.device, dtype=self.dtype
-        # )
-
-        # return self._binary_op(other, BinaryOps.ADD)
+        return self._binary_op(other, BinaryOps.ADD)
 
     def __sub__(self, other: Buffer | Scalar) -> Buffer:
         return self._binary_op(other, BinaryOps.SUB)

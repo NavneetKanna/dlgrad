@@ -84,25 +84,7 @@ class Add(OP):
 		self.x = x
 		self.y = y
 		if check_broadcast(x.shape, y.shape):
-			# s = time.perf_counter()
-			# t =x+y
-			# e = time.perf_counter()
-			# # Calculate the time difference in seconds
-			# time_diff_seconds = e - s
-			# # Convert to milliseconds
-			# time_diff_ms = time_diff_seconds * 1000
-
-			# # Convert to microseconds
-			# time_diff_us = time_diff_seconds * 1_000_000
-
-			# # Convert to nanoseconds
-			# time_diff_ns = time_diff_seconds * 1_000_000_000
-
-			# print(f"Time to call buffer from ops: {time_diff_ms} ms")
-			# print(f"Time to call buffer from ops: {time_diff_us} µs")
-			# print(f"Time to call buffer from ops: {time_diff_ns} ns")
 			return x + y
-			# return t
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
 		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \

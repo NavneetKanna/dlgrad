@@ -10,6 +10,8 @@ import time
 from dlgrad import Tensor
 
 
+# TODO: Convert s to ms, us, ns
+# TODO: Colorize
 def run(shapes: list[tuple], func, op_name: str, nargs: int):
     np_data = [np.random.uniform(size=shapes[0]).astype(np.float32) for _ in range(nargs)]
     dlgrad_data = [Tensor(data) for data in np_data]
@@ -26,24 +28,13 @@ def run(shapes: list[tuple], func, op_name: str, nargs: int):
         func(*dlgrad_data)
         func(*torch_data)
         
-    # s = time.perf_counter()
-    # func(*dlgrad_data)
-    # e = time.perf_counter()
-    # dl_time = e - s
-
-    # s = time.perf_counter()
-    # func(*torch_data)
-    # e = time.perf_counter()
-    # torch_time = e - s
     n_iter = 1000
 
-    # Time dlgrad
     s = time.perf_counter()
     for _ in range(n_iter):
         func(*dlgrad_data)
     dl_time = (time.perf_counter() - s) / n_iter
 
-    # Time torch
     s = time.perf_counter()
     for _ in range(n_iter):
         func(*torch_data)
