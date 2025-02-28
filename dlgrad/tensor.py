@@ -86,6 +86,8 @@ import dlgrad.ops as ops  # since ops module imports OP class, it is placed afte
 
 
 class Tensor:
+	# __slots__ = ("_ctx", "grad", "requires_grad", "data") # Not seeing any difference in speed
+
 	def __init__(
 			self, data: Buffer | "np.ndarray" | Scalar,  # type: ignore  # noqa: F821
 			requires_grad: bool = False
