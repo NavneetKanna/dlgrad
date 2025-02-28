@@ -93,3 +93,20 @@ void with_scalar(float *x, float *out, float *y, int xnumel, int op)
             }
     }
 }
+
+void same_shape(float *x, float *y, float *out, int numel, int op)
+{
+    for (int i=0; i<numel; i++) {
+        switch (op) {
+        case ADD:
+            out[i] = x[i] + y[i];
+            break;
+        case MUL:
+            out[i] = x[i] * y[i];
+            break;
+        case SUB:
+            out[i] = x[i] - y[i];
+            break;
+        }
+    }
+}

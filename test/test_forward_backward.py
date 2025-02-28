@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import torch
-
 from dlgrad import Tensor, nn
 
 BS, in_dim, HS, ncls = 2, 3, 5, 4

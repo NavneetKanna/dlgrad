@@ -1,13 +1,22 @@
-from dlgrad.builder.builder_utils import build_extension
+import os
 
-ffi = build_extension(
-    module_name="_mnist_loader",
-    headers=["mnist.h"],
-    sources=["mnist.c"],
-    cdef="""
-        float *mnist_images_loader(char *path, uint32_t magic_number);
-        float *mnist_labels_loader(char *path, uint32_t magic_number);
-    """
+from cffi import FFI
+
+root_dir = os.path.dirname(os.path.abspath(__file__ + "/.."))
+
+ffi = FFI()
+
+cdef = """
+float *mnist_images_loader(char *path, uint32_t magic_number);
+float *mnist_labels_loader(char *path, uint32_t magic_number);
+"""
+ffi.cdef(cdef)
+
+ffi.set_source("_mnist_loader", f"""
+        #include "{root_dir}/src/c/mnist.h"
+    """,
+    sources=[f'{root_dir}/src/c/mnist.c'],
+    extra_compile_args=["-O2", "-march=native"]
 )
 
 if __name__ == "__main__":

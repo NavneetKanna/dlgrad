@@ -1,12 +1,21 @@
-from dlgrad.builder.builder_utils import build_extension
+import os
 
-ffi = build_extension(
-    module_name="_transpose",
-    headers=["transpose.h"],
-    sources=["transpose.c"],
-    cdef="""
-        void transpose(float *x, float *out, int xrows, int xcols, int *xstride, int *outstride);
-    """
+from cffi import FFI
+
+root_dir = os.path.dirname(os.path.abspath(__file__ + "/.."))
+
+ffi = FFI()
+
+cdef = """
+void transpose(float *x, float *out, int xrows, int xcols, int *xstride, int *outstride);
+"""
+ffi.cdef(cdef)
+
+ffi.set_source("_transpose", f"""
+        #include "{root_dir}/src/c/transpose.h"
+    """,
+    sources=[f'{root_dir}/src/c/transpose.c'],
+    extra_compile_args=["-O2", "-march=native"]
 )
 
 if __name__ == "__main__":

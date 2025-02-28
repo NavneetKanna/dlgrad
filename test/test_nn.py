@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-
 from dlgrad import Tensor, nn
 
 

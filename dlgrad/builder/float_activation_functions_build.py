@@ -1,12 +1,20 @@
-from dlgrad.builder.builder_utils import build_extension
+import os
 
-ffi = build_extension(
-    module_name="_af",
-    headers=["activation_functions.h"],
-    sources=["activation_functions.c"],
-    cdef="""
-        void relu(float *arr, float *out, int numel);
-    """
+from cffi import FFI
+
+root_dir = os.path.dirname(os.path.abspath(__file__ + "/.."))
+
+ffi = FFI()
+
+ffi.cdef("void relu(float *arr, float *out, int numel);")
+
+# TODO: One place for all args
+
+ffi.set_source("_af", f"""
+        #include "{root_dir}/src/c/activation_functions.h"
+    """,
+    sources=[f'{root_dir}/src/c/activation_functions.c'],
+    extra_compile_args=["-O2", "-march=native"]
 )
 
 if __name__ == "__main__":
