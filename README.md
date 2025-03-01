@@ -72,6 +72,7 @@ print("test acc", test_acc)
 
 ## Things I'm Working On
 - [x] Adam Optimizer
+- [x] Speed comparision script
  
 ## Tests
 
@@ -79,6 +80,11 @@ To run the tests (pytest is required)
 
 ```bash
 python3 -m pytest test/
+```
+
+To compare the speed of dlgrad with pytorch and tinygrad
+```python3
+OMP_NUM_THREADS=1 python3 -m pytest -s -q -k test_speed_v_torch
 ```
 
 ##  History
