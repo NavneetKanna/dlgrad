@@ -9,6 +9,7 @@ import pytest
 import time
 from dlgrad import Tensor
 import tinygrad
+import math
 
 
 ITER = 8
@@ -22,9 +23,17 @@ def _run(func, data, tiny = False):
     
     return np.min(t)
 
-# TODO: Convert s to ms, us, ns
+def convert_time(time_in_s: float):
+    nzeros = abs(int(math.log10(abs(time_in_s))))
+
+    if 0 <= nzeros <= 3: # ms
+        return round(time_in_s * 1e3, 2), "ms"
+    elif 3 < nzeros <= 6: # us
+        return round(time_in_s * 1e6, 2), "us"
+    elif 6 < nzeros <= 9: # ns
+        return round(time_in_s * 1e9, 2), "ns"
+
 # TODO: Colorize
-# TODO: Include tinygrad
 def run(shapes: list[tuple], func, op_name: str, nargs: int):
     np_data = [np.random.uniform(size=shapes[0]).astype(np.float32) for _ in range(nargs)]
     dlgrad_data = [Tensor(data) for data in np_data]
@@ -40,13 +49,16 @@ def run(shapes: list[tuple], func, op_name: str, nargs: int):
 
     tinygrad_ratio = tinygrad_time / dlgrad_time if dlgrad_time < tinygrad_time else dlgrad_time / tinygrad_time
     tinygrad_desc = "faster" if dlgrad_time < tinygrad_time else "slower"
-
     
+    dlgrad_time, dl_unit = convert_time(_run(func=func, data=dlgrad_data))
+    torch_time, to_unit = convert_time(_run(func=func, data=torch_data))
+    tinygrad_time, ti_unit = convert_time(_run(func=func, data=tinygrad_data, tiny=True))
+
     print(
         f"{op_name:<20} ({shapes[0][0]:5d}, {shapes[0][0]:5d}) "
-        f"dlgrad: {dlgrad_time:.9f}s, "
-        f"Torch: {torch_time:.9f}s -> {torch_ratio:.2f} {torch_desc} "
-        f"Tinygrad: {tinygrad_time:.9f}s  -> {tinygrad_ratio:.2f} {tinygrad_desc}"
+        f"dlgrad: {dlgrad_time}{dl_unit}, "
+        f"Torch: {torch_time}{to_unit} -> {torch_ratio:.2f} {torch_desc} "
+        f"Tinygrad: {tinygrad_time}{ti_unit}  -> {tinygrad_ratio:.2f} {tinygrad_desc}"
     )
 
     np.testing.assert_allclose(
