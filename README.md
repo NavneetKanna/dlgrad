@@ -71,8 +71,8 @@ print("test acc", test_acc)
 ```
 
 ## Things I'm Working On
-- [x] Adam Optimizer
 - [x] Speed comparision script
+- [ ] Metal Device
  
 ## Tests
 
