@@ -10,7 +10,7 @@ import time
 from dlgrad import Tensor
 import tinygrad
 import math
-
+from dlgrad.helpers import get_color
 
 ITER = 8
 def _run(func, data, tiny = False):
@@ -46,19 +46,27 @@ def run(shapes: list[tuple], func, op_name: str, nargs: int):
 
     torch_ratio = torch_time / dlgrad_time if dlgrad_time < torch_time else dlgrad_time / torch_time
     torch_desc = "faster" if dlgrad_time < torch_time else "slower"
+    if torch_desc == "faster":
+        torch_ratio = f"{get_color('green')}{round(torch_ratio, 2)}{get_color('end')}"
+    else:
+        torch_ratio = f"{get_color('red')}{round(torch_ratio, 2)}{get_color('end')}"
 
     tinygrad_ratio = tinygrad_time / dlgrad_time if dlgrad_time < tinygrad_time else dlgrad_time / tinygrad_time
     tinygrad_desc = "faster" if dlgrad_time < tinygrad_time else "slower"
+    if tinygrad_desc == "faster":
+        tinygrad_ratio = f"{get_color('green')}{round(tinygrad_ratio, 2)}{get_color('end')}"
+    else:
+        tinygrad_ratio = f"{get_color('red')}{round(tinygrad_ratio, 2)}{get_color('end')}"
     
     dlgrad_time, dl_unit = convert_time(_run(func=func, data=dlgrad_data))
     torch_time, to_unit = convert_time(_run(func=func, data=torch_data))
     tinygrad_time, ti_unit = convert_time(_run(func=func, data=tinygrad_data, tiny=True))
 
     print(
-        f"{op_name:<20} ({shapes[0][0]:5d}, {shapes[0][0]:5d}) "
-        f"dlgrad: {dlgrad_time}{dl_unit}, "
-        f"Torch: {torch_time}{to_unit} -> {torch_ratio:.2f} {torch_desc} "
-        f"Tinygrad: {tinygrad_time}{ti_unit}  -> {tinygrad_ratio:.2f} {tinygrad_desc}"
+        f"{op_name:<20} ({shapes[0][0]:5d}, {shapes[0][0]:5d}){'':3} "
+        f"dlgrad: {dlgrad_time:7}{dl_unit},{'':7} "
+        f"Torch: {torch_time:7}{to_unit} -> {torch_ratio:15} {torch_desc},{'':7} "
+        f"Tinygrad: {tinygrad_time:7}{ti_unit}  -> {tinygrad_ratio:15} {tinygrad_desc}"
     )
 
     np.testing.assert_allclose(
@@ -78,7 +86,6 @@ shapes_list = [
     [(20, 30)],
     [(4096, 4096)]
 ]
-
 operations = [
     (lambda x, y: x + y, "add", 2),
     (lambda x, y: x - y, "sub", 2),
@@ -89,7 +96,6 @@ operations = [
     (lambda x: x.sum(), "sum", 1),
     (lambda x: x.max(), "max", 1),
 ]
-
 def test_all_ops():
     for j in shapes_list:
         for i in operations:
