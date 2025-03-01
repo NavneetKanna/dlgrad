@@ -99,6 +99,9 @@ def test_all_operations() -> None:
         (lambda x: x**2, "pow", 1),
         (lambda x: x.sum(), "sum", 1),
         (lambda x: x.max(), "max", 1),
+        (lambda x: x.exp(), "exp", 1),
+        (lambda x: x.log(), "log", 1),
+        (lambda x: x.sqrt(), "sqrt", 1),
     ]
     for shape in shapes:
         for func, name, nargs in operations:
