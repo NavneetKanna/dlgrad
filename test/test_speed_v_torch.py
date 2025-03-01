@@ -5,68 +5,71 @@ os.environ["OMP_NUM_THREADS"] = "1"
 import torch
 torch.set_num_threads(1)
 import numpy as np
-import pytest
 import time
 from dlgrad import Tensor
 import tinygrad
 import math
 from dlgrad.helpers import get_color
 
-ITER = 8
-def _run(func, data, tiny = False):
-    t = []
-    for _ in range(ITER):
-        s = time.perf_counter()
-        func(*data) if not tiny else func(*data).realize()
-        e = time.perf_counter()
-        t.append(e-s)
+ITERATIONS = 8
+
+def benchmark(func, data, use_tiny: bool = False) -> float:
+    times = []
+    for _ in range(ITERATIONS):
+        start = time.perf_counter()
+        result = func(*data)
+        if use_tiny:
+            result = result.realize()
+        times.append(time.perf_counter() - start)
+    return np.min(times)
+
+def convert_time(seconds: float) -> tuple[float, str]:
+    if seconds == 0:
+        return 0.0, "s"
+    nzeros = abs(int(math.log10(abs(seconds))))
+    if 0 <= nzeros <= 3:      # milliseconds
+        return round(seconds * 1e3, 2), "ms"
+    elif 3 < nzeros <= 6:     # microseconds
+        return round(seconds * 1e6, 2), "µs"
+    elif 6 < nzeros <= 9:     # nanoseconds
+        return round(seconds * 1e9, 2), "ns"
+    else:
+        return round(seconds, 2), "s"
+
+def color_ratio(lib_time: float, dlgrad_time: float):
+    if dlgrad_time == lib_time:
+        return f"{get_color('end')}1.0", "equal"
+    elif dlgrad_time < lib_time:  # dlgrad is faster
+        ratio = lib_time / dlgrad_time
+        return f"{get_color('green')}{ratio:.1f}{get_color('end')}", "faster"
+    else:  
+        ratio = dlgrad_time / lib_time
+        return f"{get_color('red')}{ratio:.1f}{get_color('end')}", "slower"
     
-    return np.min(t)
-
-def convert_time(time_in_s: float):
-    nzeros = abs(int(math.log10(abs(time_in_s))))
-
-    if 0 <= nzeros <= 3: # ms
-        return round(time_in_s * 1e3, 2), "ms"
-    elif 3 < nzeros <= 6: # us
-        return round(time_in_s * 1e6, 2), "us"
-    elif 6 < nzeros <= 9: # ns
-        return round(time_in_s * 1e9, 2), "ns"
-
-# TODO: Colorize
-def run(shapes: list[tuple], func, op_name: str, nargs: int):
-    np_data = [np.random.uniform(size=shapes[0]).astype(np.float32) for _ in range(nargs)]
+def run_benchmark(shapes: tuple, func, op_name: str, nargs: int):
+    np_data = [np.random.uniform(size=shapes).astype(np.float32) for _ in range(nargs)]
     dlgrad_data = [Tensor(data) for data in np_data]
     tinygrad_data = [tinygrad.Tensor(data, device="cpu") for data in np_data]
     torch_data = [torch.tensor(data, device="cpu") for data in np_data]
 
-    dlgrad_time = _run(func=func, data=dlgrad_data)
-    torch_time = _run(func=func, data=torch_data)
-    tinygrad_time = _run(func=func, data=tinygrad_data, tiny=True)
+    dlgrad_time = benchmark(func, dlgrad_data)
+    torch_time = benchmark(func, torch_data)
+    tinygrad_time = benchmark(func, tinygrad_data, use_tiny=True)
 
-    torch_ratio = torch_time / dlgrad_time if dlgrad_time < torch_time else dlgrad_time / torch_time
-    torch_desc = "faster" if dlgrad_time < torch_time else "slower"
-    if torch_desc == "faster":
-        torch_ratio = f"{get_color('green')}{round(torch_ratio, 2)}{get_color('end')}"
-    else:
-        torch_ratio = f"{get_color('red')}{round(torch_ratio, 2)}{get_color('end')}"
+    torch_ratio, torch_desc = color_ratio(torch_time, dlgrad_time)
+    tinygrad_ratio, tinygrad_desc = color_ratio(tinygrad_time, dlgrad_time)
 
-    tinygrad_ratio = tinygrad_time / dlgrad_time if dlgrad_time < tinygrad_time else dlgrad_time / tinygrad_time
-    tinygrad_desc = "faster" if dlgrad_time < tinygrad_time else "slower"
-    if tinygrad_desc == "faster":
-        tinygrad_ratio = f"{get_color('green')}{round(tinygrad_ratio, 2)}{get_color('end')}"
-    else:
-        tinygrad_ratio = f"{get_color('red')}{round(tinygrad_ratio, 2)}{get_color('end')}"
-    
-    dlgrad_time, dl_unit = convert_time(_run(func=func, data=dlgrad_data))
-    torch_time, to_unit = convert_time(_run(func=func, data=torch_data))
-    tinygrad_time, ti_unit = convert_time(_run(func=func, data=tinygrad_data, tiny=True))
+    dlgrad_time, dlgrad_unit = convert_time(dlgrad_time)
+    torch_time, torch_unit = convert_time(torch_time)
+    tinygrad_time, tinygrad_unit = convert_time(tinygrad_time)
 
     print(
-        f"{op_name:<20} ({shapes[0][0]:5d}, {shapes[0][0]:5d}){'':3} "
-        f"dlgrad: {dlgrad_time:7}{dl_unit},{'':7} "
-        f"Torch: {torch_time:7}{to_unit} -> {torch_ratio:15} {torch_desc},{'':7} "
-        f"Tinygrad: {tinygrad_time:7}{ti_unit}  -> {tinygrad_ratio:15} {tinygrad_desc}"
+        f"{op_name:<20} ({shapes[0]:5d}, {shapes[1]:5d}){'':3} "
+        f"dlgrad: {dlgrad_time:7}{dlgrad_unit},{'':4} "
+        f"Torch: {torch_time:7}{torch_unit},{'':4} "
+        f"Tinygrad: {tinygrad_time:7}{tinygrad_unit},{'':4} "
+        f"dlgrad is {torch_ratio:15} {torch_desc} than torch,{'':4} "
+        f"dlgrad is {tinygrad_ratio:15} {tinygrad_desc} than tinygrad"
     )
 
     np.testing.assert_allclose(
@@ -82,21 +85,24 @@ def run(shapes: list[tuple], func, op_name: str, nargs: int):
         rtol=1e-3
     )
 
-shapes_list = [
-    [(20, 30)],
-    [(4096, 4096)]
-]
-operations = [
-    (lambda x, y: x + y, "add", 2),
-    (lambda x, y: x - y, "sub", 2),
-    (lambda x, y: x / y, "div", 2),
-    (lambda x, y: x * y, "mul", 2),
-    (lambda x: x.relu(), "relu", 1),
-    (lambda x: x**2, "pow", 1),
-    (lambda x: x.sum(), "sum", 1),
-    (lambda x: x.max(), "max", 1),
-]
-def test_all_ops():
-    for j in shapes_list:
-        for i in operations:
-            run(j, i[0], i[1], i[2])
+def test_all_operations() -> None:
+    shapes = [
+        (20, 20),
+        (4096, 4096)
+    ]
+    operations = [
+        (lambda x, y: x + y, "add", 2),
+        (lambda x, y: x - y, "sub", 2),
+        (lambda x, y: x / y, "div", 2),
+        (lambda x, y: x * y, "mul", 2),
+        (lambda x: x.relu(), "relu", 1),
+        (lambda x: x**2, "pow", 1),
+        (lambda x: x.sum(), "sum", 1),
+        (lambda x: x.max(), "max", 1),
+    ]
+    for shape in shapes:
+        for func, name, nargs in operations:
+            run_benchmark(shape, func, name, nargs)
+
+if __name__ == '__main__':
+    test_all_operations()
