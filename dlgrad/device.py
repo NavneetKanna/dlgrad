@@ -3,6 +3,7 @@ from enum import Enum, auto
 
 class Device(Enum):
     CPU = auto()
+    METAL = auto()
 
     @staticmethod
     def from_str(d: str) -> str:
