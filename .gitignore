@@ -7,8 +7,6 @@ metal-cpp=example/
 *.metal
 *.metallib
 *.o
-*.cpp
-*.hpp
 *.ir
 
 .idea
