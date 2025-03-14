@@ -26,6 +26,7 @@ class BufferMetadata:
     ndim: int
     dtype: DType
     device: Device
+    nbytes: int
 
 
 class Buffer:
@@ -38,7 +39,7 @@ class Buffer:
         self.metadata = BufferMetadata(shape=shape, numel=prod_(shape),
                                        stride=kwargs.get("stride", calculate_stride(shape)),
                                        ndim=kwargs.get("ndim", len(shape)),
-                                       dtype=dtype, device=device)
+                                       dtype=dtype, device=device, nbytes=prod_(shape)*DType.get_n_bytes(dtype))
 
     @staticmethod
     def from_scalar(val: Scalar) -> Buffer:
@@ -50,6 +51,8 @@ class Buffer:
     def uniform(shape: tuple, device: Device, dtype: DType | str, **kwargs) -> Buffer:
         if isinstance(dtype, str):
             dtype = DType.from_str(dtype)
+        if isinstance(device, str):
+            device = Device.from_str(device)
 
         if dtype is not DType.FLOAT32:
             raise NotImplementedError("dlgrad only supports float32")
@@ -57,6 +60,9 @@ class Buffer:
             raise ValueError("Shape must be a tuple")
         if len(shape) == 1:
             shape = (1,) + shape
+        # All data creation is done on cpu
+        if device != Device.CPU:
+            device = Device.CPU
 
         return Buffer(
             data=dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, shape=shape, **kwargs),
@@ -237,3 +243,7 @@ class Buffer:
     @property
     def device(self) -> int:
         return self.metadata.device
+
+    @property
+    def nbytes(self) -> int:
+        return self.metadata.nbytes
