@@ -8,6 +8,7 @@ from dlgrad.dtype import DType, Scalar
 from dlgrad.helpers import ffi, resolve_ndim
 from dlgrad.runtime import (
 	cpu,  # needed to register all the cpu runtime functions  # noqa: F401
+	metal,  # needed to register all the cpu runtime functions  # noqa: F401
 )
 
 

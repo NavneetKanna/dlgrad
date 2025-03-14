@@ -1,4 +1,26 @@
+import os
+import subprocess
+
 from setuptools import find_packages, setup
+from setuptools.command.build import build as _build
+
+
+class BuildWithMetal(_build):
+    def run(self):  # noqa: ANN201
+        _build.run(self)
+
+        package_dir = os.path.join(self.build_lib, 'dlgrad')
+        metal_dir = os.path.join(package_dir, 'src', 'metal')
+        os.makedirs(metal_dir, exist_ok=True)
+        metal_file = os.path.join('dlgrad', 'src', 'metal', 'add.metal')
+        ir_file = os.path.join(package_dir, 'add.ir')
+        metallib_file = os.path.join(metal_dir, 'add.metallib')
+
+        subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c', metal_file])
+
+        subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metallib', '-o', metallib_file, ir_file])
+
+        os.remove(ir_file)
 
 setup(
     name='dlgrad',
@@ -24,5 +46,6 @@ setup(
         'dlgrad/builder/float_transpose_build.py:ffi',
     ],
     setup_requires=['cffi>=1.17.1'],
-    install_requires=['cffi>=1.0.0', 'requests']
+    install_requires=['cffi>=1.0.0', 'requests', 'pyobjc'],
+    cmdclass={'build': BuildWithMetal},
 )

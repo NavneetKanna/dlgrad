@@ -4,7 +4,6 @@ test3.py
 Metal.hpp
 test.cpp
 metal-cpp=example/
-*.metal
 *.metallib
 *.o
 *.ir
