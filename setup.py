@@ -12,9 +12,10 @@ class BuildWithMetal(_build):
         package_dir = os.path.join(self.build_lib, 'dlgrad')
         metal_dir = os.path.join(package_dir, 'src', 'metal')
         os.makedirs(metal_dir, exist_ok=True)
-        metal_file = os.path.join('dlgrad', 'src', 'metal', 'add.metal')
-        ir_file = os.path.join(package_dir, 'add.ir')
-        metallib_file = os.path.join(metal_dir, 'add.metallib')
+
+        metal_file = os.path.join('dlgrad', 'src', 'metal', 'arithmetic.metal')
+        ir_file = os.path.join(package_dir, 'arithmetic.ir')
+        metallib_file = os.path.join(metal_dir, 'arithmetic.metallib')
 
         subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c', metal_file])
 

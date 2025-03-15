@@ -16,11 +16,19 @@ from dlgrad.helpers import BinaryOps
 device = Metal.MTLCreateSystemDefaultDevice()
 commandQueue = device.newCommandQueue()  # noqa: N816
 
-add_metallib_path = f"{sysconfig.get_paths()['purelib']}/dlgrad/src/metal/add.metallib"
-add_lib = device.newLibraryWithURL_error_(add_metallib_path, None)[0]
-add_func_name = add_lib.newFunctionWithName_("add_arrays")
+arithmetic_metallib_path = f"{sysconfig.get_paths()['purelib']}/dlgrad/src/metal/arithmetic.metallib"
+arithmetic_lib = device.newLibraryWithURL_error_(arithmetic_metallib_path, None)[0]
+add_func_name = arithmetic_lib.newFunctionWithName_("add_arrays")
 add_pso = device.newComputePipelineStateWithFunction_error_(add_func_name, None)[0]
 
+sub_func_name = arithmetic_lib.newFunctionWithName_("sub_arrays")
+sub_pso = device.newComputePipelineStateWithFunction_error_(add_func_name, None)[0]
+
+mul_func_name = arithmetic_lib.newFunctionWithName_("mul_arrays")
+mul_pso = device.newComputePipelineStateWithFunction_error_(add_func_name, None)[0]
+
+div_func_name = arithmetic_lib.newFunctionWithName_("div_arrays")
+div_pso = device.newComputePipelineStateWithFunction_error_(add_func_name, None)[0]
 
 class MetalGPU:
     """
@@ -45,24 +53,17 @@ class MetalGPU:
         return ptr
 
     @staticmethod
-    @dispatcher.register(BinaryOps.ADD, Device.METAL)
-    def add(x: Buffer, y: Buffer | Scalar):  # noqa: ANN205
-        out_ptr = MetalGPU.malloc(num=x.numel)
-        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(x.ptr, x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
-        y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(y.ptr, y.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
-        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(out_ptr, x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
-
+    def _run(pso, x_buf, y_buf, out_buf) -> None:  # noqa: ANN001
         commandBuffer = commandQueue.commandBuffer()  # noqa: N806
         computeEncoder = commandBuffer.computeCommandEncoder()  # noqa: N806
 
-        computeEncoder.setComputePipelineState_(add_pso)
+        computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(y_buf, 0, 1)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 2)
 
         threadsPerThreadgroup = Metal.MTLSizeMake(1024, 1, 1)  # noqa: N806
-        threadgroupSize = Metal.MTLSizeMake(add_pso.maxTotalThreadsPerThreadgroup(), 1, 1)  # noqa: N806
-
+        threadgroupSize = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup(), 1, 1)  # noqa: N806
 
         computeEncoder.dispatchThreads_threadsPerThreadgroup_(threadsPerThreadgroup, threadgroupSize)
         computeEncoder.endEncoding()
@@ -70,4 +71,44 @@ class MetalGPU:
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
-        return out_ptr
+        return
+
+    @staticmethod
+    @dispatcher.register(BinaryOps.ADD, Device.METAL)
+    def add(x: Buffer, y: Buffer | Scalar):  # noqa: ANN205
+        out_ptr = MetalGPU.malloc(num=x.numel)
+        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(x.ptr, x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+        y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(y.ptr, y.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(out_ptr, x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+
+        MetalGPU._run(pso=add_pso, x_buf=x_buf, y_buf=y_buf, out_buf=out_buf)
+
+    @staticmethod
+    @dispatcher.register(BinaryOps.SUB, Device.METAL)
+    def sub(x: Buffer, y: Buffer | Scalar):  # noqa: ANN205
+        out_ptr = MetalGPU.malloc(num=x.numel)
+        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(x.ptr, x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+        y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(y.ptr, y.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(out_ptr, x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+
+        MetalGPU._run(pso=sub_pso, x_buf=x_buf, y_buf=y_buf, out_buf=out_buf)
+
+    @staticmethod
+    @dispatcher.register(BinaryOps.SUB, Device.METAL)
+    def mul(x: Buffer, y: Buffer | Scalar):  # noqa: ANN205
+        out_ptr = MetalGPU.malloc(num=x.numel)
+        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(x.ptr, x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+        y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(y.ptr, y.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(out_ptr, x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+
+        MetalGPU._run(pso=mul_pso, x_buf=x_buf, y_buf=y_buf, out_buf=out_buf)
+
+    @staticmethod
+    @dispatcher.register(BinaryOps.SUB, Device.METAL)
+    def div(x: Buffer, y: Buffer | Scalar):  # noqa: ANN205
+        out_ptr = MetalGPU.malloc(num=x.numel)
+        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(x.ptr, x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+        y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(y.ptr, y.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(out_ptr, x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+
+        MetalGPU._run(pso=div_pso, x_buf=x_buf, y_buf=y_buf, out_buf=out_buf)
