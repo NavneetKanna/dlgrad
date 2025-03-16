@@ -61,11 +61,13 @@ class Buffer:
         if len(shape) == 1:
             shape = (1,) + shape
         # All data creation is done on cpu
-        if device != Device.CPU:
-            device = Device.CPU
+        # if device != Device.CPU:
+            # device = Device.CPU
 
         return Buffer(
-            data=dispatcher.dispatch(op=BufferOps.UNIFORM, device=device, shape=shape, **kwargs),
+            data=dispatcher.dispatch(op=BufferOps.UNIFORM,
+                                     device=Device.CPU if device != Device.CPU else device,
+                                     shape=shape, **kwargs),
             shape=shape, device=device, dtype=dtype
         )
 
@@ -150,6 +152,7 @@ class Buffer:
         dispatcher.dispatch(op=kwargs.pop("op"), device=kwargs.pop("device"), **kwargs)
 
     def _binary_op(self, other: Buffer | Scalar, op: BinaryOps) -> Buffer:
+        print(self.device)
         if isinstance(other, Scalar):
             return Buffer(
                 data=dispatcher.dispatch(op=op, device=self.device, x=self, y=other),

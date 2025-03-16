@@ -101,29 +101,7 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
-        # s = time.perf_counter()
-        out_ptr = CPU.malloc(num=x.numel)
-        # e = time.perf_counter()
-        # time_diff_seconds = e - s
-        # time_diff_us = time_diff_seconds * 1_000_000
-        # print(f"malloc: {time_diff_us} µs")
-        op_code = 0
-        if y.numel == 1:
-            _arithmetic.lib.with_scalar(x.ptr, out_ptr, y.ptr, x.numel, op_code)
-            return out_ptr
-        match x.ndim:
-            case 3:
-                _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, op_code)
-            case 2:
-                # s = time.perf_counter()
-                _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, op_code)
-                # e = time.perf_counter()
-                # time_diff_seconds = e - s
-                # time_diff_us = time_diff_seconds * 1_000_000
-                # print(f"call c func: {time_diff_us} µs")
-
-        return out_ptr
-        # return CPU._binary_op(x, y, op_code=0)
+        return CPU._binary_op(x, y, op_code=0)
 
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
