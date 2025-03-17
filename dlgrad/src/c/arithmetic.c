@@ -5,6 +5,7 @@
 #define ADD 0
 #define MUL 1
 #define SUB 2
+#define DIV 3
 
 
 // See my blog post for explanation - https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Behind-the-scenes.html
@@ -39,6 +40,9 @@ void op_3d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
                 case SUB:
                     out[x_idx] = x[x_idx] - y[y_idx];
                     break;
+                case DIV:
+                    out[x_idx] = x[x_idx] / y[y_idx];
+                    break;
                 }
             }
         }
@@ -72,6 +76,9 @@ void op_2d(float *x, float *y, float *out, int *xshape, int *xstrides, int *ysha
             case SUB:
                 out[x_idx] = x[x_idx] - y[y_idx];
                 break;
+            case DIV:
+                out[x_idx] = x[x_idx] / y[y_idx];
+                break;
             }
         }
     }
@@ -90,6 +97,9 @@ void with_scalar(float *x, float *out, float *y, int xnumel, int op)
             case SUB:
                 out[i] = x[i] - y[0];
                 break;
+            case DIV:
+                out[x_idx] = x[i] / y[0];
+                break;
             }
     }
 }
@@ -106,6 +116,9 @@ void same_shape(float *x, float *y, float *out, int numel, int op)
             break;
         case SUB:
             out[i] = x[i] - y[i];
+            break;
+        case DIV:
+            out[x_idx] = x[i] / y[i];
             break;
         }
     }
