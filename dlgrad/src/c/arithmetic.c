@@ -98,7 +98,7 @@ void with_scalar(float *x, float *out, float *y, int xnumel, int op)
                 out[i] = x[i] - y[0];
                 break;
             case DIV:
-                out[x_idx] = x[i] / y[0];
+                out[i] = x[i] / y[0];
                 break;
             }
     }
@@ -118,7 +118,7 @@ void same_shape(float *x, float *y, float *out, int numel, int op)
             out[i] = x[i] - y[i];
             break;
         case DIV:
-            out[x_idx] = x[i] / y[i];
+            out[i] = x[i] / y[i];
             break;
         }
     }

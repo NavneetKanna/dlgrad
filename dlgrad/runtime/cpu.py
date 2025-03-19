@@ -114,7 +114,7 @@ class CPU:
         return CPU._binary_op(x, y, op_code=1)
 
     @staticmethod
-    @dispatcher.register(BinaryOps.MUL, Device.CPU)
+    @dispatcher.register(BinaryOps.DIV, Device.CPU)
     def div(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
         return CPU._binary_op(x, y, op_code=3)
 

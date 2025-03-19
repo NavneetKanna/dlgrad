@@ -1,39 +1,31 @@
-kernel void add_arrays(device const float* inA,
-                       device const float* inB,
-                       device float* result,
+kernel void add_arrays(device const float* x,
+                       device const float* y,
+                       device float* out,
                        uint index [[thread_position_in_grid]])
 {
-    // the for-loop is replaced with a collection of threads, each of which
-    // calls this function.
-    result[index] = inA[index] + inB[index];
+    out[index] = x[index] + y[index];
 }
 
-kernel void sub_arrays(device const float* inA,
-                       device const float* inB,
-                       device float* result,
+kernel void sub_arrays(device const float* x,
+                       device const float* y,
+                       device float* out,
                        uint index [[thread_position_in_grid]])
 {
-    // the for-loop is replaced with a collection of threads, each of which
-    // calls this function.
-    result[index] = inA[index] - inB[index];
+    out[index] = x[index] - y[index];
 }
 
-kernel void mul_arrays(device const float* inA,
-                       device const float* inB,
-                       device float* result,
+kernel void mul_arrays(device const float* x,
+                       device const float* y,
+                       device float* out,
                        uint index [[thread_position_in_grid]])
 {
-    // the for-loop is replaced with a collection of threads, each of which
-    // calls this function.
-    result[index] = inA[index] * inB[index];
+    out[index] = x[index] * y[index];
 }
 
-kernel void div_arrays(device const float* inA,
-                       device const float* inB,
-                       device float* result,
+kernel void div_arrays(device const float* x,
+                       device const float* y,
+                       device float* out,
                        uint index [[thread_position_in_grid]])
 {
-    // the for-loop is replaced with a collection of threads, each of which
-    // calls this function.
-    result[index] = inA[index] / inB[index];
+    out[index] = x[index] / y[index];
 }

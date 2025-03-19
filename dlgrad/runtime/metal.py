@@ -14,8 +14,14 @@ from dlgrad.dtype import CDataPtr, Scalar
 from dlgrad.helpers import BinaryOps
 
 device = Metal.MTLCreateSystemDefaultDevice()
-commandQueue = device.newCommandQueue()  # noqa: N816
+commandQueue = device.newCommandQueue()
 
+# threadExecutionWidth - warp in cuda
+# more no of threadgroups, more time it takes to run
+# make the number of threads in the threadgroup a multiple of threadExecutionWidth.
+# maxTotalThreadsPerThreadgroup - 1024 threadExecutionWidth - 32
+
+# TODO: Can i create only 1 pso ?
 arithmetic_metallib_path = f"{sysconfig.get_paths()['purelib']}/dlgrad/src/metal/arithmetic.metallib"
 arithmetic_lib = device.newLibraryWithURL_error_(arithmetic_metallib_path, None)[0]
 
@@ -55,77 +61,58 @@ class MetalGPU:
 
     @staticmethod
     def _run(pso, x_buf, y_buf, out_buf) -> None:  # noqa: ANN001
-        commandBuffer = commandQueue.commandBuffer()  # noqa: N806
-        computeEncoder = commandBuffer.computeCommandEncoder()  # noqa: N806
+        commandBuffer = commandQueue.commandBuffer()
+        computeEncoder = commandBuffer.computeCommandEncoder()
 
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(y_buf, 0, 1)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 2)
 
-        threadsPerThreadgroup = Metal.MTLSizeMake(4000, 1, 1)  # noqa: N806
-        threadgroupSize = Metal.MTLSizeMake(4000, 1, 1)  # noqa: N806
-
-        computeEncoder.dispatchThreads_threadsPerThreadgroup_(threadsPerThreadgroup, threadgroupSize)
+        # TODO: If array size is < maxTotalThreadsPerThreadgroup, then set threadsPerThreadgroup = array size
+        # TODO: 3D ?
+        # TODO: Broadcasting
+        # The total num of threads
+        threadsPerGrid = Metal.MTLSizeMake(500, 500, 1)
+        # Num of threads per threadgroup
+        threadsPerThreadgroup = Metal.MTLSizeMake(pso._.maxTotalThreadsPerThreadgroup, pso._.maxTotalThreadsPerThreadgroup, 1)  # noqa: E501
+        computeEncoder.dispatchThreads_threadsPerThreadgroup_(threadsPerGrid, threadsPerThreadgroup)
         computeEncoder.endEncoding()
 
         commandBuffer.commit()
         commandBuffer.waitUntilCompleted()
 
     @staticmethod
-    @dispatcher.register(BinaryOps.ADD, Device.METAL)
-    def add(x: Buffer, y: Buffer | Scalar):  # noqa: ANN205
+    def _binary_op(x: Buffer, y: Buffer | Scalar, pso) -> CDataPtr:  # noqa: ANN001
         out_ptr = MetalGPU.malloc(num=x.numel)
 
         x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-           MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+           MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
         y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(y.ptr, y.nbytes), y.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+            MetalGPU.ffi.buffer(y.ptr, y.nbytes), y.nbytes, Metal.MTLResourceStorageModeShared, None)
         out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
+            MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
 
-        MetalGPU._run(pso=add_pso, x_buf=x_buf, y_buf=y_buf, out_buf=out_buf)
+        MetalGPU._run(pso=pso, x_buf=x_buf, y_buf=y_buf, out_buf=out_buf)
 
         return out_ptr
 
     @staticmethod
+    @dispatcher.register(BinaryOps.ADD, Device.METAL)
+    def add(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
+        return MetalGPU._binary_op(x, y, add_pso)
+
+    @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.METAL)
-    def sub(x: Buffer, y: Buffer | Scalar):  # noqa: ANN205
-        out_ptr = MetalGPU.malloc(num=x.numel)
-
-        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-           MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
-        y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(y.ptr, y.nbytes), y.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
-        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
-
-        MetalGPU._run(pso=sub_pso, x_buf=x_buf, y_buf=y_buf, out_buf=out_buf)
+    def sub(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
+        return MetalGPU._binary_op(x, y, sub_pso)
 
     @staticmethod
     @dispatcher.register(BinaryOps.MUL, Device.METAL)
-    def mul(x: Buffer, y: Buffer | Scalar):  # noqa: ANN205
-        out_ptr = MetalGPU.malloc(num=x.numel)
-
-        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-           MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
-        y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(y.ptr, y.nbytes), y.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
-        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
-
-        MetalGPU._run(pso=mul_pso, x_buf=x_buf, y_buf=y_buf, out_buf=out_buf)
+    def mul(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
+        return MetalGPU._binary_op(x, y, mul_pso)
 
     @staticmethod
     @dispatcher.register(BinaryOps.DIV, Device.METAL)
-    def div(x: Buffer, y: Buffer | Scalar):  # noqa: ANN205
-        out_ptr = MetalGPU.malloc(num=x.numel)
-
-        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-           MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
-        y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(y.ptr, y.nbytes), y.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
-        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)  # noqa: E501
-
-        MetalGPU._run(pso=div_pso, x_buf=x_buf, y_buf=y_buf, out_buf=out_buf)
+    def div(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
+        return MetalGPU._binary_op(x, y, div_pso)
