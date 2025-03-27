@@ -24,17 +24,18 @@ def benchmark(func, data, use_tiny: bool = False) -> float:
     return np.min(times)
 
 def convert_time(seconds: float) -> tuple[float, str]:
-    if seconds == 0:
-        return 0.0, "s"
-    nzeros = abs(int(math.log10(abs(seconds))))
-    if 0 <= nzeros <= 3:      # milliseconds
-        return round(seconds * 1e3, 2), "ms"
-    elif 3 < nzeros <= 6:     # microseconds
-        return round(seconds * 1e6, 2), "µs"
-    elif 6 < nzeros <= 9:     # nanoseconds
-        return round(seconds * 1e9, 2), "ns"
-    else:
-        return round(seconds, 2), "s"
+    return round(seconds * 1e3, 2), "ms"
+    # if seconds == 0:
+    #     return 0.0, "s"
+    # nzeros = abs(int(math.log10(abs(seconds))))
+    # if 0 <= nzeros <= 3:      # milliseconds
+    #     return round(seconds * 1e3, 2), "ms"
+    # elif 3 < nzeros <= 6:     # microseconds
+    #     return round(seconds * 1e6, 2), "µs"
+    # elif 6 < nzeros <= 9:     # nanoseconds
+    #     return round(seconds * 1e9, 2), "ns"
+    # else:
+    #     return round(seconds, 2), "s"
 
 def color_ratio(lib_time: float, dlgrad_time: float):
     if dlgrad_time == lib_time:
@@ -64,13 +65,13 @@ def run_benchmark(shapes: tuple, func, op_name: str, nargs: int):
     tinygrad_time, tinygrad_unit = convert_time(tinygrad_time)
 
     print(
-        f"{op_name:<20} ({shapes[0]:5d}, {shapes[1]:5d}){'':3} "
-        f"dlgrad: {dlgrad_time:7}{dlgrad_unit},{'':4} "
-        f"Torch: {torch_time:7}{torch_unit},{'':4} "
-        f"Tinygrad: {tinygrad_time:7}{tinygrad_unit},{'':4} "
-        f"dlgrad is {torch_ratio:15} {torch_desc} than torch,{'':4} "
-        f"dlgrad is {tinygrad_ratio:15} {tinygrad_desc} than tinygrad"
+        f"{op_name:^12} | "                      
+        f"{f'{shapes[0]}x{shapes[1]}':^12} | "    
+        f"{f'dlgrad: {dlgrad_time:.2f}{dlgrad_unit} Torch: {torch_time:.2f}{torch_unit} Tinygrad: {tinygrad_time:.2f}{tinygrad_unit}':^64} | "  # Times: 64 chars
+        f"{f'vs Torch: {torch_ratio} ({torch_desc})':^16} | " 
+        f"{f'vs Tinygrad: {tinygrad_ratio} ({tinygrad_desc})':^16}" 
     )
+    print()
 
     np.testing.assert_allclose(
         func(*dlgrad_data).numpy(),
@@ -102,10 +103,15 @@ def test_all_operations() -> None:
         (lambda x: x.exp(), "exp", 1),
         (lambda x: x.log(), "log", 1),
         (lambda x: x.sqrt(), "sqrt", 1),
-    ]
+    ] 
+    # print(
+    #     f"{'Operation':<10} | {'Shape':>11} | {'Times':>56} | {'vs Torch':>22} | {'vs Tinygrad':>15}"
+    # )
+    print("-" * 150)
     for shape in shapes:
         for func, name, nargs in operations:
             run_benchmark(shape, func, name, nargs)
+    print("-" * 150)
 
 if __name__ == '__main__':
     test_all_operations()

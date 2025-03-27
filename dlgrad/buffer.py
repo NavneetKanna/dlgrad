@@ -187,7 +187,10 @@ class Buffer:
         return self._binary_op(other, BinaryOps.MUL)
 
     def __truediv__(self, other: Buffer | Scalar) -> Buffer:
-        return self._binary_op(other, BinaryOps.DIV)
+        if self.numel >= other.numel:
+            return self._binary_op(other, BinaryOps.DIV)
+        else:
+            return self._binary_op(other**-1, BinaryOps.MUL)
 
     def __pow__(self, val: Scalar) -> Buffer:
         return Buffer(
