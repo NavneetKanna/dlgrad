@@ -47,11 +47,15 @@ def color_ratio(lib_time: float, dlgrad_time: float):
         ratio = dlgrad_time / lib_time
         return f"{get_color('red')}{ratio:.1f}{get_color('end')}", "slower"
     
-def run_benchmark(shapes: tuple, func, op_name: str, nargs: int):
+def run_benchmark(shapes: tuple, func, op_name: str, nargs: int, device: str):
     np_data = [np.random.uniform(size=shapes).astype(np.float32) for _ in range(nargs)]
-    dlgrad_data = [Tensor(data) for data in np_data]
-    tinygrad_data = [tinygrad.Tensor(data, device="cpu") for data in np_data]
-    torch_data = [torch.tensor(data, device="cpu") for data in np_data]
+    dlgrad_data = [Tensor(data, device=device) for data in np_data]
+    tinygrad_data = [tinygrad.Tensor(data, device=device) for data in np_data]
+    if device == "metal":
+        d = "mps"
+    else:
+        d = device
+    torch_data = [torch.tensor(data, device=d) for data in np_data]
 
     dlgrad_time = benchmark(func, dlgrad_data)
     torch_time = benchmark(func, torch_data)
@@ -67,15 +71,15 @@ def run_benchmark(shapes: tuple, func, op_name: str, nargs: int):
     print(
         f"{op_name:^12} | "                      
         f"{f'{shapes[0]}x{shapes[1]}':^12} | "    
-        f"{f'dlgrad: {dlgrad_time:.2f}{dlgrad_unit} Torch: {torch_time:.2f}{torch_unit} Tinygrad: {tinygrad_time:.2f}{tinygrad_unit}':^64} | "  # Times: 64 chars
-        f"{f'vs Torch: {torch_ratio} ({torch_desc})':^16} | " 
-        f"{f'vs Tinygrad: {tinygrad_ratio} ({tinygrad_desc})':^16}" 
+        f"{f'dlgrad: {dlgrad_time:.2f}{dlgrad_unit} Torch: {torch_time:.2f}{torch_unit} Tinygrad: {tinygrad_time:.2f}{tinygrad_unit}':^64} | "
+        f"{f'vs Torch: {torch_ratio:15} ({torch_desc:})':^20} | " 
+        f"{f'vs Tinygrad: {tinygrad_ratio:15} ({tinygrad_desc})':^16} |" 
     )
-    print()
+    # print()
 
     np.testing.assert_allclose(
         func(*dlgrad_data).numpy(),
-        func(*torch_data).numpy(),
+        func(*torch_data).cpu().numpy(),
         atol=1e-6,
         rtol=1e-3
     )
@@ -87,6 +91,9 @@ def run_benchmark(shapes: tuple, func, op_name: str, nargs: int):
     )
 
 def test_all_operations() -> None:
+    header = " CPU Benchmarks "
+    print(f"{'=' * ((155 - len(header)) // 2)}{header}{'=' * ((155 - len(header)) // 2)}")
+    print(f"{'Operation':^12} | {'Shape':^12} | {'Times':^64} | {'vs Torch':^25} | {'vs Tinygrad':^28} |")
     shapes = [
         (20, 20),
         (4096, 4096)
@@ -104,14 +111,32 @@ def test_all_operations() -> None:
         (lambda x: x.log(), "log", 1),
         (lambda x: x.sqrt(), "sqrt", 1),
     ] 
-    # print(
-    #     f"{'Operation':<10} | {'Shape':>11} | {'Times':>56} | {'vs Torch':>22} | {'vs Tinygrad':>15}"
-    # )
-    print("-" * 150)
+
+    print("-" * 155)
     for shape in shapes:
         for func, name, nargs in operations:
-            run_benchmark(shape, func, name, nargs)
-    print("-" * 150)
+            run_benchmark(shape, func, name, nargs, "cpu")
+    print("-" * 155)
+    print()
+    header = " Metal Benchmarks "
+    print(f"{'=' * ((155 - len(header)) // 2)}{header}{'=' * ((155 - len(header)) // 2)}")
+    print(f"{'Operation':^12} | {'Shape':^12} | {'Times':^64} | {'vs Torch':^25} | {'vs Tinygrad':^28}")
+    shapes = [
+        (20, 20),
+        (4096, 4096)
+    ]
+    operations = [
+        (lambda x, y: x + y, "add", 2),
+        (lambda x, y: x - y, "sub", 2),
+        (lambda x, y: x / y, "div", 2),
+        (lambda x, y: x * y, "mul", 2)
+    ] 
+
+    print("-" * 155)
+    for shape in shapes:
+        for func, name, nargs in operations:
+            run_benchmark(shape, func, name, nargs, "metal")
+    print("-" * 155)
 
 if __name__ == '__main__':
     test_all_operations()

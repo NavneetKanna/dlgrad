@@ -48,13 +48,13 @@ add_func_name = arithmetic_lib.newFunctionWithName_("add_arrays")
 add_pso = device.newComputePipelineStateWithFunction_error_(add_func_name, None)[0]
 
 sub_func_name = arithmetic_lib.newFunctionWithName_("sub_arrays")
-sub_pso = device.newComputePipelineStateWithFunction_error_(add_func_name, None)[0]
+sub_pso = device.newComputePipelineStateWithFunction_error_(sub_func_name, None)[0]
 
 mul_func_name = arithmetic_lib.newFunctionWithName_("mul_arrays")
-mul_pso = device.newComputePipelineStateWithFunction_error_(add_func_name, None)[0]
+mul_pso = device.newComputePipelineStateWithFunction_error_(mul_func_name, None)[0]
 
 div_func_name = arithmetic_lib.newFunctionWithName_("div_arrays")
-div_pso = device.newComputePipelineStateWithFunction_error_(add_func_name, None)[0]
+div_pso = device.newComputePipelineStateWithFunction_error_(div_func_name, None)[0]
 
 class MetalGPU:
     """
@@ -79,19 +79,28 @@ class MetalGPU:
         return ptr
 
     @staticmethod
-    def _cal_nthreds_per_threadgroup(pso, shape: tuple) -> tuple[int]:  # noqa: ANN001
+    def _cal_threds_per_threadgroup(pso, xshape: tuple, yshape: tuple) -> tuple[int]:  # noqa: ANN001
         out = tuple()
-        for i in shape:
+
+        if xshape == yshape:
+            if xshape[0] * xshape[1] < pso._.maxTotalThreadsPerThreadgroup:
+                t = xshape[0] * xshape[1]
+            else:
+                t = pso._.maxTotalThreadsPerThreadgroup
+            return (t, 1, 1)
+
+        # TODO: Multiple of thread execution width ?
+        for i in xshape:
             if i < pso._.maxTotalThreadsPerThreadgroup:
                 out = out + (i,)
             else:
-                out = out + (pso._.maxTotalThreadsPerThreadgroup)
+                out = out + (pso._.maxTotalThreadsPerThreadgroup,)
         if len(out) == 2:
             out = out + (1,)
         return out
 
     @staticmethod
-    def _run(pso, x_buf, y_buf, out_buf, xshape_buf, xstride_buf, yshape_buf, ystride_buf, xshape) -> None:  # noqa: ANN001
+    def _run(pso, x_buf, y_buf, out_buf, xshape_buf, xstride_buf, yshape_buf, ystride_buf, xshape, yshape) -> None:  # noqa: ANN001
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
 
@@ -104,16 +113,19 @@ class MetalGPU:
         computeEncoder.setBuffer_offset_atIndex_(yshape_buf, 0, 5)
         computeEncoder.setBuffer_offset_atIndex_(ystride_buf, 0, 6)
 
-        # TODO: Broadcasting - check 3.2 Matrix Operators in metal guide
+        # TODO: Broadcasting - check 3.2 in metal guide pdf
         if len(xshape) == 3:    # 3D
             # The total num of threads
             threadsPerGrid = Metal.MTLSizeMake(xshape[2], xshape[1], xshape[0])
         elif len(xshape) == 2:  # 2D
-             # The total num of threads
+            # The total num of threads
             threadsPerGrid = Metal.MTLSizeMake(xshape[1], xshape[0], 1)
+        if xshape == yshape:
+            # The total num of threads
+            threadsPerGrid = Metal.MTLSizeMake(xshape[1]*xshape[0], 1, 1)
 
         # Num of threads per threadgroup
-        threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_nthreds_per_threadgroup(pso=pso, shape=xshape))
+        threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=pso, xshape=xshape, yshape=yshape))
         # Therefore the num of threadgroups = threadsPerGrid / threadsPerThreadgroup
         # This function handles non-uniform sizes
         computeEncoder.dispatchThreads_threadsPerThreadgroup_(threadsPerGrid, threadsPerThreadgroup)
@@ -154,7 +166,7 @@ class MetalGPU:
             MetalGPU.ffi.buffer(d), dd, Metal.MTLResourceStorageModeShared, None)
 
         MetalGPU._run(pso=pso, x_buf=x_buf, y_buf=y_buf, out_buf=out_buf, xshape_buf=xshape_buf,
-                      xstride_buf=xstride_buf, yshape_buf=yshape_buf, ystride_buf=ystride_buf, xshape=xshape)
+                      xstride_buf=xstride_buf, yshape_buf=yshape_buf, ystride_buf=ystride_buf, xshape=xshape, yshape=yshape)
 
         return out_ptr
 
@@ -165,7 +177,8 @@ class MetalGPU:
             pso = add3d_pso
         elif x.ndim == 2:
             pso = add2d_pso
-        elif x.shape == y.shape:
+
+        if x.shape == y.shape:
             pso = add_pso
         return MetalGPU._binary_op(x, y, pso, x.shape, x.stride, y.shape, y.stride)
 
@@ -176,7 +189,8 @@ class MetalGPU:
             pso = sub3d_pso
         elif x.ndim == 2:
             pso = sub2d_pso
-        elif x.shape == y.shape:
+
+        if x.shape == y.shape:
             pso = sub_pso
         return MetalGPU._binary_op(x, y, pso, x.shape, x.stride, y.shape, y.stride)
 
@@ -187,7 +201,8 @@ class MetalGPU:
             pso = mul3d_pso
         elif x.ndim == 2:
             pso = mul2d_pso
-        elif x.shape == y.shape:
+
+        if x.shape == y.shape:
             pso = mul_pso
         return MetalGPU._binary_op(x, y, pso, x.shape, x.stride, y.shape, y.stride)
 
@@ -198,6 +213,7 @@ class MetalGPU:
             pso = div3d_pso
         elif x.ndim == 2:
             pso = div2d_pso
-        elif x.shape == y.shape:
+
+        if x.shape == y.shape:
             pso = div_pso
         return MetalGPU._binary_op(x, y, pso, x.shape, x.stride, y.shape, y.stride)
