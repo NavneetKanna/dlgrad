@@ -17,7 +17,6 @@ device = Metal.MTLCreateSystemDefaultDevice()
 commandQueue = device.newCommandQueue()
 
 # threadExecutionWidth - warp in cuda
-# more no of threadgroups, more time it takes to run
 # make the number of threads in the threadgroup a multiple of threadExecutionWidth.
 # maxTotalThreadsPerThreadgroup - 1024 threadExecutionWidth - 32
 
@@ -27,9 +26,23 @@ arithmetic_lib = device.newLibraryWithURL_error_(arithmetic_metallib_path, None)
 
 add2d_func_name = arithmetic_lib.newFunctionWithName_("add_arrays_2d")
 add2d_pso = device.newComputePipelineStateWithFunction_error_(add2d_func_name, None)[0]
-
 add3d_func_name = arithmetic_lib.newFunctionWithName_("add_arrays_3d")
 add3d_pso = device.newComputePipelineStateWithFunction_error_(add3d_func_name, None)[0]
+
+sub2d_func_name = arithmetic_lib.newFunctionWithName_("sub_arrays_2d")
+sub2d_pso = device.newComputePipelineStateWithFunction_error_(sub2d_func_name, None)[0]
+sub3d_func_name = arithmetic_lib.newFunctionWithName_("sub_arrays_3d")
+sub3d_pso = device.newComputePipelineStateWithFunction_error_(sub3d_func_name, None)[0]
+
+mul2d_func_name = arithmetic_lib.newFunctionWithName_("mul_arrays_2d")
+mul2d_pso = device.newComputePipelineStateWithFunction_error_(mul2d_func_name, None)[0]
+mul3d_func_name = arithmetic_lib.newFunctionWithName_("mul_arrays_3d")
+mul3d_pso = device.newComputePipelineStateWithFunction_error_(mul3d_func_name, None)[0]
+
+div2d_func_name = arithmetic_lib.newFunctionWithName_("div_arrays_2d")
+div2d_pso = device.newComputePipelineStateWithFunction_error_(div2d_func_name, None)[0]
+div3d_func_name = arithmetic_lib.newFunctionWithName_("div_arrays_3d")
+div3d_pso = device.newComputePipelineStateWithFunction_error_(div3d_func_name, None)[0]
 
 add_func_name = arithmetic_lib.newFunctionWithName_("add_arrays")
 add_pso = device.newComputePipelineStateWithFunction_error_(add_func_name, None)[0]
@@ -152,19 +165,39 @@ class MetalGPU:
             pso = add3d_pso
         elif x.ndim == 2:
             pso = add2d_pso
+        elif x.shape == y.shape:
+            pso = add_pso
         return MetalGPU._binary_op(x, y, pso, x.shape, x.stride, y.shape, y.stride)
 
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.METAL)
     def sub(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
-        return MetalGPU._binary_op(x, y, sub_pso)
+        if x.ndim == 3:
+            pso = sub3d_pso
+        elif x.ndim == 2:
+            pso = sub2d_pso
+        elif x.shape == y.shape:
+            pso = sub_pso
+        return MetalGPU._binary_op(x, y, pso, x.shape, x.stride, y.shape, y.stride)
 
     @staticmethod
     @dispatcher.register(BinaryOps.MUL, Device.METAL)
     def mul(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
-        return MetalGPU._binary_op(x, y, mul_pso)
+        if x.ndim == 3:
+            pso = mul3d_pso
+        elif x.ndim == 2:
+            pso = mul2d_pso
+        elif x.shape == y.shape:
+            pso = mul_pso
+        return MetalGPU._binary_op(x, y, pso, x.shape, x.stride, y.shape, y.stride)
 
     @staticmethod
     @dispatcher.register(BinaryOps.DIV, Device.METAL)
     def div(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
-        return MetalGPU._binary_op(x, y, div_pso)
+        if x.ndim == 3:
+            pso = div3d_pso
+        elif x.ndim == 2:
+            pso = div2d_pso
+        elif x.shape == y.shape:
+            pso = div_pso
+        return MetalGPU._binary_op(x, y, pso, x.shape, x.stride, y.shape, y.stride)

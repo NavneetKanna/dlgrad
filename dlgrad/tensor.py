@@ -91,7 +91,7 @@ class Tensor:
 
 	def __init__(
 			self, data: Buffer | "np.ndarray" | Scalar,  # type: ignore  # noqa: F821
-			requires_grad: bool = False
+			requires_grad: bool = False, device: Device | str = Device.CPU
 		) -> None:
 		self.requires_grad: bool = requires_grad
 		self._ctx: OP = None  # used by autograd engine
@@ -111,12 +111,14 @@ class Tensor:
 
 			self.data = Buffer(
 				data=ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False),
-				shape=shape, dtype=DType.FLOAT32, device=Device.CPU, ndim=ndim
+				shape=shape, dtype=DType.FLOAT32, device=Device.from_str(device) if isinstance(device, str) else device, ndim=ndim
 			)
 		elif isinstance(data, Buffer):
 			self.data = data
+			self.data.metadata.device = Device.from_str(device) if isinstance(device, str) else device
 		elif isinstance(data, Scalar):
 			self.data = Buffer.from_scalar(data)
+			self.data.metadata.device = Device.from_str(device) if isinstance(device, str) else device
 		else:
 			raise ValueError("The data must be of type Buffer, np.ndarray or float")
 

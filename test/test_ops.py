@@ -271,3 +271,49 @@ srun(s, lambda x, y: x+y)
 srun(s, lambda x, y: x-y)
 srun(s, lambda x, y: x*y)
 srun(s, lambda x, y: x/y)
+
+def run2(shapes: list[tuple], func):
+    np_data = [np.random.uniform(size=sh).astype(np.float32) for sh in shapes]
+    dlgrad_data = [Tensor(data, device="metal") for data in np_data]
+    torch_data = [torch.tensor(data, device="mps") for data in np_data]
+
+    np.testing.assert_allclose(func(*dlgrad_data).numpy(), func(*torch_data).cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+s = [
+    [(2, 3, 4), (1, 3, 4)],
+    [(2, 3, 4), (2, 1, 4)],
+    [(2, 3, 4), (2, 3, 1)],
+    [(2, 3, 4), (1, 1, 4)],
+    [(2, 3, 4), (1, 3, 1)],
+    [(2, 3, 4), (2, 1, 1)],
+    [(2, 3, 4), (2, 3, 4)],
+    [(2, 3), (1, 3)],
+    [(2, 3), (2, 1)],
+    [(2, 3), (2, 3)]
+]
+rs = [
+    [(1, 3, 4), (2, 3, 4)],
+    [(2, 1, 4), (2, 3, 4)],
+    [(2, 3, 1), (2, 3, 4)],
+    [(1, 1, 4), (2, 3, 4)],
+    [(1, 3, 1), (2, 3, 4)],
+    [(2, 1, 1), (2, 3, 4)],
+    [(2, 3, 4), (2, 3, 4)],
+    [(1, 3), (2, 3)],
+    [(2, 1), (2, 3)],
+    [(2, 3), (2, 3)]
+]
+
+@pytest.mark.parametrize("shapes", s)
+def test_metal_add(shapes):
+    run2(shapes, lambda x, y: x+y)
+@pytest.mark.parametrize("shapes", s)
+def test_metal_sub(shapes):
+    run2(shapes, lambda x, y: x-y)
+@pytest.mark.parametrize("shapes", s)
+def test_metal_mul(shapes):
+    run2(shapes, lambda x, y: x*y)
+@pytest.mark.parametrize("shapes", s)
+def test_metal_div(shapes):
+    run2(shapes, lambda x, y: x/y)
+
