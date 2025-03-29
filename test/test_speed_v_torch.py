@@ -75,7 +75,6 @@ def run_benchmark(shapes: tuple, func, op_name: str, nargs: int, device: str):
         f"{f'vs Torch: {torch_ratio:15} ({torch_desc:})':^20} | " 
         f"{f'vs Tinygrad: {tinygrad_ratio:15} ({tinygrad_desc})':^16} |" 
     )
-    # print()
 
     np.testing.assert_allclose(
         func(*dlgrad_data).numpy(),

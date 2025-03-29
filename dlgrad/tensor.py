@@ -169,7 +169,7 @@ class Tensor:
 		"""
 		return Tensor(
 			data=Buffer.uniform(shape, device=device, dtype=dtype, low=low, high=high),
-			requires_grad=requires_grad,
+			requires_grad=requires_grad, device=device
 		)
 
 	@staticmethod
@@ -219,7 +219,7 @@ class Tensor:
 		"""
 		return Tensor(
 			data=Buffer.full(shape, fill_value=fill_value, device=device, dtype=dtype),
-			requires_grad=requires_grad
+			requires_grad=requires_grad, device=device
 		)
 
 	@staticmethod

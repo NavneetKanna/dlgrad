@@ -1,5 +1,6 @@
 # https://dougallj.github.io/applegpu/docs.html
 
+import functools
 import struct
 import sysconfig
 
@@ -12,6 +13,16 @@ from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
 from dlgrad.helpers import BinaryOps
+
+
+# TODO: Maybe create buffers during creation time ?
+@functools.cache
+def get_buffer_for_int_array(arr: tuple) -> any:
+    ffi_arr = MetalGPU.ffi.new("int[]", list(arr))
+    size = len(arr) * MetalGPU.ffi.sizeof("int")
+    return device.newBufferWithBytesNoCopy_length_options_deallocator_(
+        MetalGPU.ffi.buffer(ffi_arr), size, Metal.MTLResourceStorageModeShared, None)
+
 
 device = Metal.MTLCreateSystemDefaultDevice()
 commandQueue = device.newCommandQueue()
@@ -83,7 +94,7 @@ class MetalGPU:
         out = tuple()
 
         if xshape == yshape:
-            if xshape[0] * xshape[1] < pso._.maxTotalThreadsPerThreadgroup:
+            if (xshape[0] * xshape[1]) < pso._.maxTotalThreadsPerThreadgroup:
                 t = xshape[0] * xshape[1]
             else:
                 t = pso._.maxTotalThreadsPerThreadgroup
@@ -104,6 +115,7 @@ class MetalGPU:
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
 
+        # TODO: Is this right for same shape ?
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(y_buf, 0, 1)
@@ -145,25 +157,10 @@ class MetalGPU:
         out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
             MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
 
-        a = MetalGPU.ffi.new("int[]", list(xshape))
-        aa = len(xshape) * MetalGPU.ffi.sizeof("int")
-        xshape_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(a), aa, Metal.MTLResourceStorageModeShared, None)
-
-        b = MetalGPU.ffi.new("int[]", list(yshape))
-        bb = len(yshape) * MetalGPU.ffi.sizeof("int")
-        yshape_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(b), bb, Metal.MTLResourceStorageModeShared, None)
-
-        c = MetalGPU.ffi.new("int[]", list(xstride))
-        cc = len(xstride) * MetalGPU.ffi.sizeof("int")
-        xstride_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(c), cc, Metal.MTLResourceStorageModeShared, None)
-
-        d = MetalGPU.ffi.new("int[]", list(ystride))
-        dd = len(ystride) * MetalGPU.ffi.sizeof("int")
-        ystride_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(d), dd, Metal.MTLResourceStorageModeShared, None)
+        xshape_buf = get_buffer_for_int_array(tuple(xshape))
+        yshape_buf = get_buffer_for_int_array(tuple(yshape))
+        xstride_buf = get_buffer_for_int_array(tuple(xstride))
+        ystride_buf = get_buffer_for_int_array(tuple(ystride))
 
         MetalGPU._run(pso=pso, x_buf=x_buf, y_buf=y_buf, out_buf=out_buf, xshape_buf=xshape_buf,
                       xstride_buf=xstride_buf, yshape_buf=yshape_buf, ystride_buf=ystride_buf, xshape=xshape, yshape=yshape)
