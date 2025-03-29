@@ -23,6 +23,16 @@ class BuildWithMetal(_build):
 
         os.remove(ir_file)
 
+        metal_file = os.path.join('dlgrad', 'src', 'metal', 'utils.metal')
+        ir_file = os.path.join(package_dir, 'utils.ir')
+        metallib_file = os.path.join(metal_dir, 'utils.metallib')
+
+        subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c',  metal_file])
+
+        subprocess.check_call(['xcrun',  '-sdk', 'macosx', 'metallib','-o', metallib_file, ir_file])
+
+        os.remove(ir_file)
+
 setup(
     name='dlgrad',
     description='An autograd engine built for my understanding',

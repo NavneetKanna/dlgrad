@@ -128,7 +128,9 @@ def test_all_operations() -> None:
         (lambda x, y: x + y, "add", 2),
         (lambda x, y: x - y, "sub", 2),
         (lambda x, y: x / y, "div", 2),
-        (lambda x, y: x * y, "mul", 2)
+        (lambda x, y: x * y, "mul", 2),
+        (lambda x: x.exp(), "exp", 1),
+        (lambda x: x.log(), "log", 1),
     ] 
 
     print("-" * 155)

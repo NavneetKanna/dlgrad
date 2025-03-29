@@ -1,5 +1,5 @@
 // same shape
-kernel void add_arrays(device const float* x,
+kernel void add(device const float* x,
                        device const float* y,
                        device float* out,
                        uint index [[thread_position_in_grid]])
@@ -7,7 +7,7 @@ kernel void add_arrays(device const float* x,
     out[index] = x[index] + y[index];
 }
 
-kernel void sub_arrays(device const float* x,
+kernel void sub(device const float* x,
                        device const float* y,
                        device float* out,
                        uint index [[thread_position_in_grid]])
@@ -15,7 +15,7 @@ kernel void sub_arrays(device const float* x,
     out[index] = x[index] - y[index];
 }
 
-kernel void mul_arrays(device const float* x,
+kernel void mul(device const float* x,
                        device const float* y,
                        device float* out,
                        uint index [[thread_position_in_grid]])
@@ -23,7 +23,7 @@ kernel void mul_arrays(device const float* x,
     out[index] = x[index] * y[index];
 }
 
-kernel void div_arrays(device const float* x,
+kernel void div(device const float* x,
                        device const float* y,
                        device float* out,
                        uint index [[thread_position_in_grid]])
@@ -32,7 +32,7 @@ kernel void div_arrays(device const float* x,
 }
 
 // broadcast
-kernel void add_arrays_2d(device const float* x,
+kernel void add2d(device const float* x,
                           device const float* y,
                           device float* out,
                           constant int* xshape,
@@ -53,7 +53,7 @@ kernel void add_arrays_2d(device const float* x,
     out[x_idx] = x[x_idx] + y[y_idx];
 }
 
-kernel void add_arrays_3d(device const float* x,
+kernel void add3d(device const float* x,
                           device const float* y,
                           device float* out,
                           constant int* xshape,
@@ -76,7 +76,7 @@ kernel void add_arrays_3d(device const float* x,
     out[x_idx] = x[x_idx] + y[y_idx];
 }
 
-kernel void sub_arrays_2d(device const float* x,
+kernel void sub2d(device const float* x,
                           device const float* y,
                           device float* out,
                           constant int* xshape,
@@ -97,7 +97,7 @@ kernel void sub_arrays_2d(device const float* x,
     out[x_idx] = x[x_idx] - y[y_idx];
 }
 
-kernel void sub_arrays_3d(device const float* x,
+kernel void sub3d(device const float* x,
                           device const float* y,
                           device float* out,
                           constant int* xshape,
@@ -120,7 +120,7 @@ kernel void sub_arrays_3d(device const float* x,
     out[x_idx] = x[x_idx] - y[y_idx];
 }
 
-kernel void mul_arrays_2d(device const float* x,
+kernel void mul2d(device const float* x,
                           device const float* y,
                           device float* out,
                           constant int* xshape,
@@ -141,7 +141,7 @@ kernel void mul_arrays_2d(device const float* x,
     out[x_idx] = x[x_idx] * y[y_idx];
 }
 
-kernel void mul_arrays_3d(device const float* x,
+kernel void mul3d(device const float* x,
                           device const float* y,
                           device float* out,
                           constant int* xshape,
@@ -164,7 +164,7 @@ kernel void mul_arrays_3d(device const float* x,
     out[x_idx] = x[x_idx] * y[y_idx];
 }
 
-kernel void div_arrays_2d(device const float* x,
+kernel void div2d(device const float* x,
                           device const float* y,
                           device float* out,
                           constant int* xshape,
@@ -185,7 +185,7 @@ kernel void div_arrays_2d(device const float* x,
     out[x_idx] = x[x_idx] / y[y_idx];
 }
 
-kernel void div_arrays_3d(device const float* x,
+kernel void div3d(device const float* x,
                           device const float* y,
                           device float* out,
                           constant int* xshape,
