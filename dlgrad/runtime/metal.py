@@ -79,6 +79,12 @@ log_pso = device.newComputePipelineStateWithFunction_error_(log_func_name, None)
 exp_func_name = utils_lib.newFunctionWithName_("mexp")
 exp_pso = device.newComputePipelineStateWithFunction_error_(exp_func_name, None)[0]
 
+sqrt_func_name = utils_lib.newFunctionWithName_("msqrt")
+sqrt_pso = device.newComputePipelineStateWithFunction_error_(sqrt_func_name, None)[0]
+
+pow_func_name = utils_lib.newFunctionWithName_("mpow")
+pow_pso = device.newComputePipelineStateWithFunction_error_(pow_func_name, None)[0]
+
 class MetalGPU:
     """
     Main GPU runtime class for apple silicon gpus which handles the logic of using metal.
@@ -240,7 +246,6 @@ class MetalGPU:
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
 
-        # TODO: Is this right for same shape ?
         computeEncoder.setComputePipelineState_(neg_pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
@@ -265,7 +270,6 @@ class MetalGPU:
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
 
-        # TODO: Is this right for same shape ?
         computeEncoder.setComputePipelineState_(log_pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
@@ -290,13 +294,65 @@ class MetalGPU:
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
 
-        # TODO: Is this right for same shape ?
         computeEncoder.setComputePipelineState_(exp_pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
 
         threadsPerGrid = Metal.MTLSizeMake(prod_(x.shape), 1, 1)
         threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=exp_pso, xshape=x.shape))
+
+        MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.SQRT, Device.METAL)
+    def sqrt(x: Buffer) -> CDataPtr:
+        out_ptr = MetalGPU.malloc(num=x.numel)
+
+        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+           MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+            MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+
+        commandBuffer = commandQueue.commandBuffer()
+        computeEncoder = commandBuffer.computeCommandEncoder()
+
+        computeEncoder.setComputePipelineState_(sqrt_pso)
+        computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
+        computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
+
+        threadsPerGrid = Metal.MTLSizeMake(prod_(x.shape), 1, 1)
+        threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sqrt_pso, xshape=x.shape))
+
+        MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.POW, Device.METAL)
+    def pow(x: Buffer, val: Scalar) -> CDataPtr:
+        out_ptr = MetalGPU.malloc(num=x.numel)
+
+        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+           MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+            MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+        ffi_arr = MetalGPU.ffi.new("float[]", [val])
+        size = MetalGPU.ffi.sizeof("float")
+        val_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+            MetalGPU.ffi.buffer(ffi_arr), size, Metal.MTLResourceStorageModeShared, None)
+
+        commandBuffer = commandQueue.commandBuffer()
+        computeEncoder = commandBuffer.computeCommandEncoder()
+
+        computeEncoder.setComputePipelineState_(pow_pso)
+        computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
+        computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
+        computeEncoder.setBuffer_offset_atIndex_(val_buf, 0, 2)
+
+        threadsPerGrid = Metal.MTLSizeMake(prod_(x.shape), 1, 1)
+        threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=pow_pso, xshape=x.shape))
 
         MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
 
