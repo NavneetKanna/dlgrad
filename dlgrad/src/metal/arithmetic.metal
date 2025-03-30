@@ -1,37 +1,3 @@
-// same shape
-kernel void add(device const float* x,
-                       device const float* y,
-                       device float* out,
-                       uint index [[thread_position_in_grid]])
-{
-    out[index] = x[index] + y[index];
-}
-
-kernel void sub(device const float* x,
-                       device const float* y,
-                       device float* out,
-                       uint index [[thread_position_in_grid]])
-{
-    out[index] = x[index] - y[index];
-}
-
-kernel void mul(device const float* x,
-                       device const float* y,
-                       device float* out,
-                       uint index [[thread_position_in_grid]])
-{
-    out[index] = x[index] * y[index];
-}
-
-kernel void div(device const float* x,
-                       device const float* y,
-                       device float* out,
-                       uint index [[thread_position_in_grid]])
-{
-    out[index] = x[index] / y[index];
-}
-
-// broadcast
 kernel void add2d(device const float* x,
                           device const float* y,
                           device float* out,
