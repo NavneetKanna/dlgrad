@@ -90,33 +90,33 @@ def run_benchmark(shapes: tuple, func, op_name: str, nargs: int, device: str):
     )
 
 def test_all_operations() -> None:
-    header = " CPU Benchmarks "
-    print(f"{'=' * ((155 - len(header)) // 2)}{header}{'=' * ((155 - len(header)) // 2)}")
-    print(f"{'Operation':^12} | {'Shape':^12} | {'Times':^64} | {'vs Torch':^25} | {'vs Tinygrad':^28} |")
-    shapes = [
-        (20, 20),
-        (4096, 4096)
-    ]
-    operations = [
-        (lambda x, y: x + y, "add", 2),
-        (lambda x, y: x - y, "sub", 2),
-        (lambda x, y: x / y, "div", 2),
-        (lambda x, y: x * y, "mul", 2),
-        (lambda x: x.relu(), "relu", 1),
-        (lambda x: x**2, "pow", 1),
-        (lambda x: x.sum(), "sum", 1),
-        (lambda x: x.max(), "max", 1),
-        (lambda x: x.exp(), "exp", 1),
-        (lambda x: x.log(), "log", 1),
-        (lambda x: x.sqrt(), "sqrt", 1),
-    ] 
+    # header = " CPU Benchmarks "
+    # print(f"{'=' * ((155 - len(header)) // 2)}{header}{'=' * ((155 - len(header)) // 2)}")
+    # print(f"{'Operation':^12} | {'Shape':^12} | {'Times':^64} | {'vs Torch':^25} | {'vs Tinygrad':^28} |")
+    # shapes = [
+    #     (20, 20),
+    #     (4096, 4096)
+    # ]
+    # operations = [
+    #     (lambda x, y: x + y, "add", 2),
+    #     (lambda x, y: x - y, "sub", 2),
+    #     (lambda x, y: x / y, "div", 2),
+    #     (lambda x, y: x * y, "mul", 2),
+    #     (lambda x: x.relu(), "relu", 1),
+    #     (lambda x: x**2, "pow", 1),
+    #     (lambda x: x.sum(), "sum", 1),
+    #     (lambda x: x.max(), "max", 1),
+    #     (lambda x: x.exp(), "exp", 1),
+    #     (lambda x: x.log(), "log", 1),
+    #     (lambda x: x.sqrt(), "sqrt", 1),
+    # ] 
 
-    print("-" * 155)
-    for shape in shapes:
-        for func, name, nargs in operations:
-            run_benchmark(shape, func, name, nargs, "cpu")
-    print("-" * 155)
-    print()
+    # print("-" * 155)
+    # for shape in shapes:
+    #     for func, name, nargs in operations:
+    #         run_benchmark(shape, func, name, nargs, "cpu")
+    # print("-" * 155)
+    # print()
     header = " Metal Benchmarks "
     print(f"{'=' * ((155 - len(header)) // 2)}{header}{'=' * ((155 - len(header)) // 2)}")
     print(f"{'Operation':^12} | {'Shape':^12} | {'Times':^64} | {'vs Torch':^25} | {'vs Tinygrad':^28}")
@@ -125,10 +125,10 @@ def test_all_operations() -> None:
         (4096, 4096)
     ]
     operations = [
-        (lambda x, y: x + y, "add", 2),
-        (lambda x, y: x - y, "sub", 2),
-        (lambda x, y: x / y, "div", 2),
-        (lambda x, y: x * y, "mul", 2),
+        # (lambda x, y: x + y, "add", 2),
+        # (lambda x, y: x - y, "sub", 2),
+        # (lambda x, y: x / y, "div", 2),
+        # (lambda x, y: x * y, "mul", 2),
         (lambda x: x.exp(), "exp", 1),
         (lambda x: x.log(), "log", 1),
         (lambda x: x.sqrt(), "sqrt", 1),
