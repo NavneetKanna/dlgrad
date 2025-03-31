@@ -12,7 +12,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
-from dlgrad.helpers import BinaryOps, UnaryOps
+from dlgrad.helpers import BinaryOps, UnaryOps, cal_sum_out_shape, prod_
 
 
 # TODO: Maybe create buffers during creation time ?
@@ -359,6 +359,36 @@ class MetalGPU:
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
         computeEncoder.setBuffer_offset_atIndex_(val_buf, 0, 2)
         computeEncoder.setBuffer_offset_atIndex_(xstride_buf, 0, 3)
+
+        MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.SUM, Device.METAL)
+    def sum(x: Buffer, dim: int) -> CDataPtr:
+        num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        out_ptr = MetalGPU.calloc(num=num)
+
+        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+        xstride_buf, _ = get_buffer_for_int_array(x.stride)
+
+        commandBuffer = commandQueue.commandBuffer()
+        computeEncoder = commandBuffer.computeCommandEncoder()
+
+        if x.ndim == 2:
+            computeEncoder.setComputePipelineState_(sqrt2d_pso)
+            threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
+            threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sqrt2d_pso, xshape=x.shape))
+        elif x.ndim == 3:
+            computeEncoder.setComputePipelineState_(sqrt3d_pso)
+            threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], x.shape[-3])
+            threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sqrt3d_pso, xshape=x.shape))
+
+        computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
+        computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
+        computeEncoder.setBuffer_offset_atIndex_(xstride_buf, 0, 2)
 
         MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
 

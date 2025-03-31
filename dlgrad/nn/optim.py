@@ -5,11 +5,11 @@ from dlgrad.tensor import Tensor
 class Optimizer:
     def __init__(self, params: list[Tensor], lr: int = 1e-1) -> None:
         self.params = params
-        self.lr = lr
+        self.lr = Tensor(lr)
 
     def step(self) -> None:
         for i in self.params:
-            assert i.shape == i.grad.shape, f"The shape of the weight {i.shape} and its grad {i.grad.shape} do not match"
+            assert i.shape == i.grad.shape, f"The shape of the parameter {i.shape} and its grad {i.grad.shape} do not match"
 
             i.data = (i - i.grad*self.lr).data
 
@@ -19,8 +19,30 @@ class Optimizer:
 
 
 class SGD(Optimizer):
-    def __init__(self, params: list[Tensor], lr: int = 1e-3) -> None:
+    def __init__(self, params: list[Tensor], lr: int = 1e-3, momentum: float = 0.0) -> None:
         super().__init__(params, lr)
+        self.momentum = Tensor(momentum)
+        self.velocities = {id(param): Tensor.zeros_like(param.shape) for param in self.params}
+
+    def step(self) -> None:
+        for param in self.params:
+            if param.grad is None:
+                continue
+
+            assert param.shape == param.grad.shape, (
+                f"The shape of the parameter {param.shape} and its grad {param.grad.shape} do not match"
+            )
+
+            param_id = id(param)
+            grad = param.grad
+
+            if self.momentum != 0:
+                velocity = self.velocities[param_id]
+                velocity = self.momentum * velocity + grad
+                self.velocities[param_id] = velocity
+                param.data = (param - self.lr * velocity).data
+            else:
+                param.data = (param - self.lr * grad).data
 
 class Adam(Optimizer):
     def __init__(self, params: list[Tensor], lr: float = 1e-3,
