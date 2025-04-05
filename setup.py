@@ -16,21 +16,22 @@ class BuildWithMetal(_build):
         metal_file = os.path.join('dlgrad', 'src', 'metal', 'arithmetic.metal')
         ir_file = os.path.join(package_dir, 'arithmetic.ir')
         metallib_file = os.path.join(metal_dir, 'arithmetic.metallib')
-
         subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c',  metal_file])
-
         subprocess.check_call(['xcrun',  '-sdk', 'macosx', 'metallib','-o', metallib_file, ir_file])
-
         os.remove(ir_file)
 
         metal_file = os.path.join('dlgrad', 'src', 'metal', 'utils.metal')
         ir_file = os.path.join(package_dir, 'utils.ir')
         metallib_file = os.path.join(metal_dir, 'utils.metallib')
-
         subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c',  metal_file])
-
         subprocess.check_call(['xcrun',  '-sdk', 'macosx', 'metallib','-o', metallib_file, ir_file])
+        os.remove(ir_file)
 
+        metal_file = os.path.join('dlgrad', 'src', 'metal', 'sum.metal')
+        ir_file = os.path.join(package_dir, 'sum.ir')
+        metallib_file = os.path.join(metal_dir, 'sum.metallib')
+        subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c',  metal_file])
+        subprocess.check_call(['xcrun',  '-sdk', 'macosx', 'metallib','-o', metallib_file, ir_file])
         os.remove(ir_file)
 
 setup(

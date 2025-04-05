@@ -44,6 +44,7 @@ class SGD(Optimizer):
             else:
                 param.data = (param - self.lr * grad).data
 
+# https://paperswithcode.com/method/adam
 class Adam(Optimizer):
     def __init__(self, params: list[Tensor], lr: float = 1e-3,
                  betas: tuple[float, float] = (0.9, 0.999), eps: float = 1e-8) -> None:

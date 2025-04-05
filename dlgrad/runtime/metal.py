@@ -39,6 +39,10 @@ arithmetic_lib = device.newLibraryWithURL_error_(arithmetic_metallib_path, None)
 utils_metallib_path = f"{sysconfig.get_paths()['purelib']}/dlgrad/src/metal/utils.metallib"
 utils_lib = device.newLibraryWithURL_error_(utils_metallib_path, None)[0]
 
+sum_metallib_path = f"{sysconfig.get_paths()['purelib']}/dlgrad/src/metal/sum.metallib"
+sum_lib = device.newLibraryWithURL_error_(sum_metallib_path, None)[0]
+
+
 add2d_func_name = arithmetic_lib.newFunctionWithName_("add2d")
 add2d_pso = device.newComputePipelineStateWithFunction_error_(add2d_func_name, None)[0]
 add3d_func_name = arithmetic_lib.newFunctionWithName_("add3d")
@@ -84,6 +88,9 @@ pow2d_pso = device.newComputePipelineStateWithFunction_error_(pow2d_func_name, N
 pow3d_func_name = utils_lib.newFunctionWithName_("mpow3d")
 pow3d_pso = device.newComputePipelineStateWithFunction_error_(pow3d_func_name, None)[0]
 
+sum2d_dim1_func_name = sum_lib.newFunctionWithName_("sum2d_dim1")
+sum2d_dim1_pso = device.newComputePipelineStateWithFunction_error_(sum2d_dim1_func_name, None)[0]
+
 class MetalGPU:
     """
     Main GPU runtime class for apple silicon gpus which handles the logic of using metal.
@@ -109,14 +116,8 @@ class MetalGPU:
     @staticmethod
     def _cal_threds_per_threadgroup(pso, xshape: tuple) -> tuple[int]:  # noqa: ANN001
         if len(xshape) == 2:
-            if xshape[0] < pso._.threadExecutionWidth:
-                w = xshape[0]
-            else:
-                w = pso._.threadExecutionWidth
-            if xshape[1] < pso._.maxTotalThreadsPerThreadgroup / pso._.threadExecutionWidth:
-                h = xshape[1]
-            else:
-                h = pso._.maxTotalThreadsPerThreadgroup / pso._.threadExecutionWidth
+            w = pso._.threadExecutionWidth     # Warp
+            h = pso._.maxTotalThreadsPerThreadgroup / pso._.threadExecutionWidth
             return (w, h, 1)
         elif len(xshape) == 3:
             return (pso._.threadExecutionWidth, 4, (pso._.maxTotalThreadsPerThreadgroup / pso._.threadExecutionWidth) / 4)
@@ -370,25 +371,20 @@ class MetalGPU:
         num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = MetalGPU.calloc(num=num)
 
-        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
-        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
-        xstride_buf, _ = get_buffer_for_int_array(x.stride)
+        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+           MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+            MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-
         if x.ndim == 2:
-            computeEncoder.setComputePipelineState_(sqrt2d_pso)
+            computeEncoder.setComputePipelineState_(sum2d_dim1_pso)
             threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
-            threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sqrt2d_pso, xshape=x.shape))
-        elif x.ndim == 3:
-            computeEncoder.setComputePipelineState_(sqrt3d_pso)
-            threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], x.shape[-3])
-            threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sqrt3d_pso, xshape=x.shape))
+            threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sum2d_dim1_pso, xshape=x.shape))
 
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
-        computeEncoder.setBuffer_offset_atIndex_(xstride_buf, 0, 2)
 
         MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
 
