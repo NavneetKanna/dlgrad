@@ -5,6 +5,7 @@
 using namespace metal;
 
 
+// TODO: Atomic function is slow
 kernel void sum2d(device const float *x, device atomic_float *out,
                       uint2 tid [[thread_position_in_grid]], uint2 grid_size [[threads_per_grid]], 
                       uint simd_size [[threads_per_simdgroup]], uint simd_lane_id [[thread_index_in_simdgroup]])
@@ -43,6 +44,10 @@ kernel void sum2d_dim1(device const float *x, device atomic_float *out,
     uint index = tid.y * grid_size.x + tid.x;
     float val = x[index];
 
+    // This is all we need, but it is slower than shuffle
+    // atomic_fetch_add_explicit(&out[tid.y], val, memory_order_relaxed);
+
+    
     // Perform reduction for each warp
     for (uint offset=simd_size/2; offset>0; offset /= 2) {
         val += simd_shuffle_down(val, offset);
@@ -64,10 +69,20 @@ kernel void sum2d_dim1(device const float *x, device atomic_float *out,
     if (simd_lane_id == 0) {
         atomic_fetch_add_explicit(&out[tid.y], val, memory_order_relaxed);
     }
+    
+    
 }
 
 
+kernel void sum2d_dim0(device const float *x, device atomic_float *out,
+                      uint2 tid [[thread_position_in_grid]], uint2 grid_size [[threads_per_grid]], 
+                      uint simd_size [[threads_per_simdgroup]], uint simd_lane_id [[thread_index_in_simdgroup]])
+{
+    uint index = tid.y * grid_size.x + tid.x;
+    float val = x[index];
 
+    atomic_fetch_add_explicit(&out[tid.x], val, memory_order_relaxed);
+}
 
 
 

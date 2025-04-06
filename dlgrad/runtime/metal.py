@@ -92,6 +92,8 @@ sum2d_func_name = sum_lib.newFunctionWithName_("sum2d")
 sum2d_pso = device.newComputePipelineStateWithFunction_error_(sum2d_func_name, None)[0]
 sum2d_dim1_func_name = sum_lib.newFunctionWithName_("sum2d_dim1")
 sum2d_dim1_pso = device.newComputePipelineStateWithFunction_error_(sum2d_dim1_func_name, None)[0]
+sum2d_dim0_func_name = sum_lib.newFunctionWithName_("sum2d_dim0")
+sum2d_dim0_pso = device.newComputePipelineStateWithFunction_error_(sum2d_dim0_func_name, None)[0]
 
 # TODO OR NOTE: If the tensor dim is less than 32 (warp), getting wrong results for sum, what to do in this case ?
 #               Should I move these tensors to cpu or find a fix for this condition ?
@@ -380,22 +382,31 @@ class MetalGPU:
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-        if x.ndim == 2 and dim == -1:
-            nbytes = DType.get_n_bytes(x.dtype)
-            out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-                MetalGPU.ffi.buffer(out_ptr, nbytes), nbytes, Metal.MTLResourceStorageModeShared, None
-            )
-            computeEncoder.setComputePipelineState_(sum2d_pso)
-            threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
-            threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sum2d_pso, xshape=x.shape))
-        elif x.ndim == 2 and dim == 1:
-            nbytes = x.shape[0] * DType.get_n_bytes(x.dtype)
-            out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-                MetalGPU.ffi.buffer(out_ptr, nbytes), nbytes, Metal.MTLResourceStorageModeShared, None
-            )
-            computeEncoder.setComputePipelineState_(sum2d_dim1_pso)
-            threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
-            threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sum2d_dim1_pso, xshape=x.shape))
+        if x.ndim == 2:
+            if dim == -1:
+                nbytes = DType.get_n_bytes(x.dtype)
+                out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+                    MetalGPU.ffi.buffer(out_ptr, nbytes), nbytes, Metal.MTLResourceStorageModeShared, None
+                )
+                computeEncoder.setComputePipelineState_(sum2d_pso)
+                threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
+                threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sum2d_pso, xshape=x.shape))
+            elif dim == 1:
+                nbytes = x.shape[0] * DType.get_n_bytes(x.dtype)
+                out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+                    MetalGPU.ffi.buffer(out_ptr, nbytes), nbytes, Metal.MTLResourceStorageModeShared, None
+                )
+                computeEncoder.setComputePipelineState_(sum2d_dim1_pso)
+                threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
+                threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sum2d_dim1_pso, xshape=x.shape))
+            elif dim == 0:
+                nbytes = x.shape[1] * DType.get_n_bytes(x.dtype)
+                out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+                    MetalGPU.ffi.buffer(out_ptr, nbytes), nbytes, Metal.MTLResourceStorageModeShared, None
+                )
+                computeEncoder.setComputePipelineState_(sum2d_dim0_pso)
+                threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
+                threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sum2d_dim0_pso, xshape=x.shape))
 
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
