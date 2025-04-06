@@ -121,7 +121,7 @@ def test_all_operations() -> None:
     print(f"{'=' * ((155 - len(header)) // 2)}{header}{'=' * ((155 - len(header)) // 2)}")
     print(f"{'Operation':^12} | {'Shape':^12} | {'Times':^64} | {'vs Torch':^25} | {'vs Tinygrad':^28}")
     shapes = [
-        (20, 20),
+        (64, 64),
         (4096, 4096)
     ]
     operations = [
@@ -133,6 +133,7 @@ def test_all_operations() -> None:
         (lambda x: x.log(), "log", 1),
         (lambda x: x.sqrt(), "sqrt", 1),
         (lambda x: x**2, "pow", 1),
+        (lambda x: x.sum(), "sum", 1),
     ] 
 
     print("-" * 155)

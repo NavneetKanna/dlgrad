@@ -88,6 +88,8 @@ pow2d_pso = device.newComputePipelineStateWithFunction_error_(pow2d_func_name, N
 pow3d_func_name = utils_lib.newFunctionWithName_("mpow3d")
 pow3d_pso = device.newComputePipelineStateWithFunction_error_(pow3d_func_name, None)[0]
 
+sum2d_func_name = sum_lib.newFunctionWithName_("sum2d")
+sum2d_pso = device.newComputePipelineStateWithFunction_error_(sum2d_func_name, None)[0]
 sum2d_dim1_func_name = sum_lib.newFunctionWithName_("sum2d_dim1")
 sum2d_dim1_pso = device.newComputePipelineStateWithFunction_error_(sum2d_dim1_func_name, None)[0]
 
@@ -378,7 +380,15 @@ class MetalGPU:
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-        if x.ndim == 2:
+        if x.ndim == 2 and dim == -1:
+            nbytes = DType.get_n_bytes(x.dtype)
+            out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+                MetalGPU.ffi.buffer(out_ptr, nbytes), nbytes, Metal.MTLResourceStorageModeShared, None
+            )
+            computeEncoder.setComputePipelineState_(sum2d_pso)
+            threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
+            threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sum2d_pso, xshape=x.shape))
+        elif x.ndim == 2 and dim == 1:
             nbytes = x.shape[0] * DType.get_n_bytes(x.dtype)
             out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
                 MetalGPU.ffi.buffer(out_ptr, nbytes), nbytes, Metal.MTLResourceStorageModeShared, None
