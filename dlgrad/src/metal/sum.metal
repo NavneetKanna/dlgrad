@@ -5,7 +5,7 @@
 using namespace metal;
 
 kernel void sum2d_dim1(device const float *x, device atomic_float *out,
-                      uint2 tid [[thread_position_in_grid]], uint2 grid_size [[threads_per_grid]], uint nwarps [[simdgroups_per_threadgroup]], 
+                      uint2 tid [[thread_position_in_grid]], uint2 grid_size [[threads_per_grid]], 
                       uint simd_size [[threads_per_simdgroup]], uint simd_lane_id [[thread_index_in_simdgroup]])
 {
     uint index = tid.y * grid_size.x + tid.x;

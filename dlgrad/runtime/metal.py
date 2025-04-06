@@ -11,7 +11,7 @@ from cffi import FFI
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
-from dlgrad.dtype import CDataPtr, Scalar
+from dlgrad.dtype import CDataPtr, DType, Scalar
 from dlgrad.helpers import BinaryOps, UnaryOps, cal_sum_out_shape, prod_
 
 
@@ -91,6 +91,8 @@ pow3d_pso = device.newComputePipelineStateWithFunction_error_(pow3d_func_name, N
 sum2d_dim1_func_name = sum_lib.newFunctionWithName_("sum2d_dim1")
 sum2d_dim1_pso = device.newComputePipelineStateWithFunction_error_(sum2d_dim1_func_name, None)[0]
 
+# TODO OR NOTE: If the tensor dim is less than 32 (warp), getting wrong results for sum, what to do in this case ?
+#               Should I move these tensors to cpu or find a fix for this condition ?
 class MetalGPU:
     """
     Main GPU runtime class for apple silicon gpus which handles the logic of using metal.
@@ -373,12 +375,14 @@ class MetalGPU:
 
         x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
            MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
-        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
         if x.ndim == 2:
+            nbytes = x.shape[0] * DType.get_n_bytes(x.dtype)
+            out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+                MetalGPU.ffi.buffer(out_ptr, nbytes), nbytes, Metal.MTLResourceStorageModeShared, None
+            )
             computeEncoder.setComputePipelineState_(sum2d_dim1_pso)
             threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
             threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sum2d_dim1_pso, xshape=x.shape))
