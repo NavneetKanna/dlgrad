@@ -1,6 +1,7 @@
 # https://dougallj.github.io/applegpu/docs.html
 
 import functools
+import math
 import struct
 import sysconfig
 
@@ -13,15 +14,23 @@ from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, DType, Scalar
 from dlgrad.helpers import BinaryOps, UnaryOps, cal_sum_out_shape, prod_
+from dlgrad.runtime.cpu import CPU
 
 
 # TODO: Maybe create buffers during creation time ?
 @functools.cache
 def get_buffer_for_int_array(arr: tuple) -> any:
+    # import time
+    # s = time.perf_counter()
     ffi_arr = MetalGPU.ffi.new("int[]", list(arr))
     size = len(arr) * MetalGPU.ffi.sizeof("int")
+    # ee = time.perf_counter()
+    # print(f"ffi buf {(ee-s)*1e3}")
+    # s = time.perf_counter()
     buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
         MetalGPU.ffi.buffer(ffi_arr), size, Metal.MTLResourceStorageModeShared, None)
+    # ee = time.perf_counter()
+    # print(f"xshae buf {(ee-s)*1e3}")
     return buf, ffi_arr
 
 
@@ -41,6 +50,9 @@ utils_lib = device.newLibraryWithURL_error_(utils_metallib_path, None)[0]
 
 sum_metallib_path = f"{sysconfig.get_paths()['purelib']}/dlgrad/src/metal/sum.metallib"
 sum_lib = device.newLibraryWithURL_error_(sum_metallib_path, None)[0]
+
+max_metallib_path = f"{sysconfig.get_paths()['purelib']}/dlgrad/src/metal/max.metallib"
+max_lib = device.newLibraryWithURL_error_(max_metallib_path, None)[0]
 
 
 add2d_func_name = arithmetic_lib.newFunctionWithName_("add2d")
@@ -95,6 +107,14 @@ sum2d_dim1_pso = device.newComputePipelineStateWithFunction_error_(sum2d_dim1_fu
 sum2d_dim0_func_name = sum_lib.newFunctionWithName_("sum2d_dim0")
 sum2d_dim0_pso = device.newComputePipelineStateWithFunction_error_(sum2d_dim0_func_name, None)[0]
 
+max2d_func_name = max_lib.newFunctionWithName_("max2d")
+max2d_pso = device.newComputePipelineStateWithFunction_error_(max2d_func_name, None)[0]
+# max2d_dim1_func_name = max_lib.newFunctionWithName_("max2d_dim1")
+# max2d_dim1_pso = device.newComputePipelineStateWithFunction_error_(max2d_dim1_func_name, None)[0]
+# max2d_dim0_func_name = max_lib.newFunctionWithName_("max2d_dim0")
+# max2d_dim0_pso = device.newComputePipelineStateWithFunction_error_(max2d_dim0_func_name, None)[0]
+
+
 # TODO OR NOTE: If the tensor dim is less than 32 (warp), getting wrong results for sum, what to do in this case ?
 #               Should I move these tensors to cpu or find a fix for this condition ?
 class MetalGPU:
@@ -118,6 +138,36 @@ class MetalGPU:
         if ptr == MetalGPU.ffi.NULL:
             raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
         return ptr
+
+    @staticmethod
+    def cal_height(width: int, height: int):  # noqa: ANN205
+        return min(math.floor(1024 / width), height)
+
+    @staticmethod
+    def cal(width: int):  # noqa: ANN205, N805
+        match int(math.log10(width)) + 1: # n digits
+            case 2:
+                nelements_per_thread = 4
+                if width % nelements_per_thread == 0:
+                    nthreads_per_threadgroup = width // nelements_per_thread
+                else:
+                    next_multiple = width + (nelements_per_thread - (width % nelements_per_thread))
+                    nthreads_per_threadgroup = next_multiple // nelements_per_thread
+
+                return nelements_per_thread, nthreads_per_threadgroup
+            case 3:
+                pass
+            case 4:
+                nelements_per_thread = 4
+                if width % nelements_per_thread == 0:
+                    nthreads_per_threadgroup = width // nelements_per_thread
+                else:
+                    next_multiple = width + (nelements_per_thread - (width % nelements_per_thread))
+                    nthreads_per_threadgroup = next_multiple // nelements_per_thread
+
+                return nelements_per_thread, nthreads_per_threadgroup
+            case 5:
+                pass
 
     @staticmethod
     def _cal_threds_per_threadgroup(pso, xshape: tuple) -> tuple[int]:  # noqa: ANN001
@@ -414,3 +464,53 @@ class MetalGPU:
         MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
 
         return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.MAX, Device.METAL)
+    def max(x: Buffer, dim: int) -> CDataPtr:
+        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+           MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+
+        xshape_buf, _ = get_buffer_for_int_array(x.shape)
+
+        commandBuffer = commandQueue.commandBuffer()
+        computeEncoder = commandBuffer.computeCommandEncoder()
+        if x.ndim == 2:
+            if dim == -1:
+                nelements_per_thread, nthreads_per_threadgroup = MetalGPU.cal(width=x.shape[-1])
+                print("nelements_per_thread", nelements_per_thread)
+                print("nthreads_per_threadgroup", nthreads_per_threadgroup)
+
+                nelements_per_thread_bytes = struct.pack('i', nelements_per_thread)
+
+                tmp_ptr = MetalGPU.calloc(num=x.shape[0])
+                out_tmp_buf = Buffer(data=tmp_ptr, shape=(x.shape[0], 1), dtype=DType.FLOAT32)
+                tmp_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+                    MetalGPU.ffi.buffer(out_tmp_buf.ptr, out_tmp_buf.nbytes), out_tmp_buf.nbytes, Metal.MTLResourceStorageModeShared, None
+                )
+
+                computeEncoder.setComputePipelineState_(max2d_pso)
+
+                h = MetalGPU.cal_height(width=nthreads_per_threadgroup, height=x.shape[0])
+                print("h", h)
+
+                threadsPerGrid = Metal.MTLSizeMake(nthreads_per_threadgroup, x.shape[0], 1) # the total number of threads in the grid
+                threadsPerThreadgroup = Metal.MTLSizeMake(nthreads_per_threadgroup, h, 1)
+
+                print("threadsPerGrid", (nthreads_per_threadgroup, x.shape[0], 1))
+                print("threadsPerThreadgroup", (nthreads_per_threadgroup, h, 1))
+
+                num_floats = nthreads_per_threadgroup * h
+                threadgroup_memory_bytes = num_floats * 4
+                computeEncoder.setThreadgroupMemoryLength_atIndex_(threadgroup_memory_bytes, 0)
+
+        computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
+        computeEncoder.setBuffer_offset_atIndex_(tmp_buf, 0, 1)
+        computeEncoder.setBuffer_offset_atIndex_(xshape_buf, 0, 2)
+        computeEncoder.setBytes_length_atIndex_(nelements_per_thread_bytes, len(nelements_per_thread_bytes), 3)
+
+        MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
+
+        out_ptr = CPU.max(x=out_tmp_buf, dim=-1)
+
+        return out_ptr, None

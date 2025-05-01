@@ -181,19 +181,25 @@ class CPU:
         return out_ptr
 
     @staticmethod
-    @dispatcher.register(UnaryOps.MAX, Device.CPU)
-    def max(x: Buffer, dim: int) -> CDataPtr:
+    # @dispatcher.register(UnaryOps.MAX, Device.CPU)
+    def max(x: Buffer, dim: int, flag: bool = False) -> CDataPtr:
         num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
-        tmp = CPU.malloc(num=num)
-        max_with_1s = CPU.calloc(num=x.numel)
+        if flag:
+            tmp = CPU.malloc(num=num)
+            max_with_1s = CPU.calloc(num=x.numel)
+        else:
+            tmp = None
+            max_with_1s = None
 
         if x.ndim == 3:
             _max.lib.max_3d(x.ptr, out_ptr, tmp, max_with_1s, x.shape, x.stride, x.numel, dim)
         if x.ndim == 2:
-            _max.lib.max_2d(x.ptr, out_ptr, tmp, max_with_1s, x.shape, x.stride, x.numel, dim)
+            # _max.lib.max_2d(x.ptr, out_ptr, tmp, max_with_1s, x.shape, x.stride, x.numel, dim, flag)
+            _max.lib.mmax_2d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
 
-        return out_ptr, max_with_1s
+        # return out_ptr, max_with_1s if flag else out_ptr
+        return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.RELU, Device.CPU)

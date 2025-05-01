@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include "max.h"
 
 
@@ -76,6 +77,41 @@ void max_3d(float *x, float *out, float *tmp, float *maxs_with_1s, int *xshape, 
     }
 }
 
+void mmax_2d(float *x, float *out, int *xshape, int *xstride, int outnumel, int dim)
+{
+    if (dim == -1) {                // elementwise 
+        return max(x, out, outnumel);
+    }
+
+    int out_idx = 0;
+    int x_idx = 0;
+    int tmp_max = 0;
+    
+    int nrows = xshape[0];
+    int ncols = xshape[1];
+    
+    int row_stride = xstride[0];
+    int col_stride = xstride[1];
+    
+    for (int row=0; row<nrows; row++) {
+        for (int col=0; col<ncols; col++) {
+            x_idx = row*row_stride + col*col_stride;
+            switch (dim) {
+                case 0:
+                    out_idx = col;
+                    break;
+                case 1:
+                    out_idx = row;
+                    break;
+            }
+            if (x[x_idx] > out[out_idx]) {
+                out[out_idx] = x[x_idx];
+            }
+        }
+    }
+
+}
+
 void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s, int *xshape, int *xstride, int outnumel, int dim)
 {
     if (dim == -1) {                // elementwise 
@@ -110,6 +146,7 @@ void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s, int *xshape, 
         }
     }
 
+    
     switch (dim)
     {
     case 0:

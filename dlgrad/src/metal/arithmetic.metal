@@ -1,3 +1,6 @@
+// TODO: using grid size instead of shape
+
+
 kernel void add2d(device const float* x,
                           device const float* y,
                           device float* out,

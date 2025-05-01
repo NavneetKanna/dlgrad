@@ -5,7 +5,8 @@
 using namespace metal;
 
 
-// TODO: Atomic function is slow
+// TODO: Atomic function is too slow
+
 kernel void sum2d(device const float *x, device atomic_float *out,
                       uint2 tid [[thread_position_in_grid]], uint2 grid_size [[threads_per_grid]], 
                       uint simd_size [[threads_per_simdgroup]], uint simd_lane_id [[thread_index_in_simdgroup]])
@@ -18,19 +19,6 @@ kernel void sum2d(device const float *x, device atomic_float *out,
         val += simd_shuffle_down(val, offset);
     }
 
-    // If it is the first thread in the simd/warp group,
-    // then update the output tensor with val by addition
-    // For example, if the width of the tensor is 64 and 
-    // thread group width is 32, then for the first row
-    // there will be 2 val's that needs to be added, one,
-    // from the first warp and two, from the second
-    // warp. So after say the first warp completes, fetch
-    // the value of output at index grid_size.x, add val to it and
-    // write back, now after the second warp completes, 
-    // fetch the value of output at the same index ..., which
-    // now contains the val from the other warp, add to it and 
-    // write back. So therefore, output[grid_size.x] will have the sum of
-    // the first row of the input
     if (simd_lane_id == 0) {
         atomic_fetch_add_explicit(&out[0], val, memory_order_relaxed);
     }
@@ -62,7 +50,7 @@ kernel void sum2d_dim1(device const float *x, device atomic_float *out,
     // warp. So after say the first warp completes, fetch
     // the value of output at index grid_size.x, add val to it and
     // write back, now after the second warp completes, 
-    // fetch the value of output at the same index ..., which
+    // fetch the value of output at the same index tid.y, which
     // now contains the val from the other warp, add to it and 
     // write back. So therefore, output[grid_size.x] will have the sum of
     // the first row of the input

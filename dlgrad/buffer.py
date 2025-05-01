@@ -88,10 +88,16 @@ class Buffer:
     def max(self, dim: int = -1) -> tuple[Buffer, Buffer]:
         out_shape = cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
 
+        # import time
+        # s = time.perf_counter()
         out, max_with_1s = dispatcher.dispatch(op=UnaryOps.MAX, device=self.device, x=self, dim=dim)
+        # e = time.perf_counter()
+        # print(f"dispatch {(e-s)*1e3}")
 
         out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
-        max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
+        max_with_1s_buf = None
+        if max_with_1s is not None:
+            max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
 
         return out_buf, max_with_1s_buf
 
