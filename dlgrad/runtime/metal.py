@@ -478,8 +478,8 @@ class MetalGPU:
         if x.ndim == 2:
             if dim == -1:
                 nelements_per_thread, nthreads_per_threadgroup = MetalGPU.cal(width=x.shape[-1])
-                print("nelements_per_thread", nelements_per_thread)
-                print("nthreads_per_threadgroup", nthreads_per_threadgroup)
+                # print("nelements_per_thread", nelements_per_thread)
+                # print("nthreads_per_threadgroup", nthreads_per_threadgroup)
 
                 nelements_per_thread_bytes = struct.pack('i', nelements_per_thread)
 
@@ -489,16 +489,24 @@ class MetalGPU:
                     MetalGPU.ffi.buffer(out_tmp_buf.ptr, out_tmp_buf.nbytes), out_tmp_buf.nbytes, Metal.MTLResourceStorageModeShared, None
                 )
 
+
+
                 computeEncoder.setComputePipelineState_(max2d_pso)
 
                 h = MetalGPU.cal_height(width=nthreads_per_threadgroup, height=x.shape[0])
-                print("h", h)
+                # print("h", h)
+
+                # tmp_ptr1 = MetalGPU.calloc(num=nthreads_per_threadgroup * h)
+                # out_tmp_buf1 = Buffer(data=tmp_ptr1, shape=(h, nthreads_per_threadgroup), dtype=DType.FLOAT32)
+                # tmp_buf1 = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+                #     MetalGPU.ffi.buffer(out_tmp_buf1.ptr, out_tmp_buf1.nbytes), out_tmp_buf1.nbytes, Metal.MTLResourceStorageModeShared, None
+                # )
 
                 threadsPerGrid = Metal.MTLSizeMake(nthreads_per_threadgroup, x.shape[0], 1) # the total number of threads in the grid
                 threadsPerThreadgroup = Metal.MTLSizeMake(nthreads_per_threadgroup, h, 1)
 
-                print("threadsPerGrid", (nthreads_per_threadgroup, x.shape[0], 1))
-                print("threadsPerThreadgroup", (nthreads_per_threadgroup, h, 1))
+                # print("threadsPerGrid", (nthreads_per_threadgroup, x.shape[0], 1))
+                # print("threadsPerThreadgroup", (nthreads_per_threadgroup, h, 1))
 
                 num_floats = nthreads_per_threadgroup * h
                 threadgroup_memory_bytes = num_floats * 4
@@ -508,8 +516,41 @@ class MetalGPU:
         computeEncoder.setBuffer_offset_atIndex_(tmp_buf, 0, 1)
         computeEncoder.setBuffer_offset_atIndex_(xshape_buf, 0, 2)
         computeEncoder.setBytes_length_atIndex_(nelements_per_thread_bytes, len(nelements_per_thread_bytes), 3)
+        # computeEncoder.setBuffer_offset_atIndex_(tmp_buf1, 0, 4)
 
         MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
+
+        # import numpy as np
+
+        # data = np.frombuffer(
+		# 	MetalGPU.ffi.buffer(out_tmp_buf1.ptr, out_tmp_buf1.numel * MetalGPU.ffi.sizeof("float")),
+		# 	count=-1,
+		# 	dtype=np.float32,
+		# )
+
+        # t = np.lib.stride_tricks.as_strided(
+		# 	data,
+		# 	out_tmp_buf1.shape,
+		# 	tuple(
+		# 		stride * DType.get_n_bytes(out_tmp_buf1.dtype) for stride in out_tmp_buf1.stride
+		# 	),
+		# )
+        # print(t)
+
+        # data = np.frombuffer(
+		# 	MetalGPU.ffi.buffer(out_tmp_buf.ptr, out_tmp_buf.numel * MetalGPU.ffi.sizeof("float")),
+		# 	count=-1,
+		# 	dtype=np.float32,
+		# )
+
+        # t = np.lib.stride_tricks.as_strided(
+		# 	data,
+		# 	out_tmp_buf.shape,
+		# 	tuple(
+		# 		stride * DType.get_n_bytes(out_tmp_buf.dtype) for stride in out_tmp_buf.stride
+		# 	),
+		# )
+        # print(t)
 
         out_ptr = CPU.max(x=out_tmp_buf, dim=-1)
 

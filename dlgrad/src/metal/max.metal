@@ -8,16 +8,17 @@ using namespace metal;
 
 
 
+// threadgroup float* tmp [[ threadgroup(0) ]]
 kernel void max2d(
     device const float *x [[ buffer(0) ]],
     device float *out_tmp [[ buffer(1) ]],
     device int *xshape [[ buffer(2) ]],
     constant int& nelements_per_thread_buf [[ buffer(3) ]],
+    device float *tmp [[ buffer(4) ]],
     uint2 threadgroup_size [[ threads_per_threadgroup ]],
     uint2 tid [[thread_position_in_threadgroup]],
     uint2 grid_size [[threads_per_grid]],
-    uint simd_lane_id [[thread_index_in_simdgroup]],
-    threadgroup float* tmp [[ threadgroup(0) ]]
+    uint simd_lane_id [[thread_index_in_simdgroup]]
 )
 {
     int nelements_per_thread = nelements_per_thread_buf;
@@ -28,7 +29,7 @@ kernel void max2d(
     float acc = ((float)(-INFINITY));
     for (int i=0; i<nelements_per_thread; i++) {
         int real_idx = start_idx + i;
-        if (real_idx < xshape[1]) {
+        if (real_idx < xshape[1]*xshape[0]) {
             float val = x[real_idx];
             acc = max(val, acc);
         }
@@ -40,8 +41,9 @@ kernel void max2d(
     if (tid.x == 0) {
         float acc = ((float)(-INFINITY));
         uint start = tid.y * threadgroup_size.x;
-        uint end = start + threadgroup_size.x;
-        for (uint i = start; i < end; i++) {
+        uint end = (start + threadgroup_size.x);
+        
+        for (uint i=start; i<end; i++) {
             float val = tmp[i];
             acc = max(val, acc);
         }
