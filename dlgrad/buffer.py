@@ -115,7 +115,7 @@ class Buffer:
         assert self.ndim == 2, "Only 2D Tensors can be transposed"
 
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=self.device, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=Device.CPU, x=self),
             shape=self.shape[::-1], device=self.device, dtype=self.dtype
         )
 

@@ -111,9 +111,6 @@ max2d_func_name = max_lib.newFunctionWithName_("max2d")
 max2d_pso = device.newComputePipelineStateWithFunction_error_(max2d_func_name, None)[0]
 max2d_dim1_func_name = max_lib.newFunctionWithName_("max2d_dim1")
 max2d_dim1_pso = device.newComputePipelineStateWithFunction_error_(max2d_dim1_func_name, None)[0]
-# max2d_dim0_func_name = max_lib.newFunctionWithName_("max2d_dim0")
-# max2d_dim0_pso = device.newComputePipelineStateWithFunction_error_(max2d_dim0_func_name, None)[0]
-
 
 # TODO OR NOTE: If the tensor dim is less than 32 (warp), getting wrong results for sum, what to do in this case ?
 #               Should I move these tensors to cpu or find a fix for this condition ?
@@ -146,6 +143,8 @@ class MetalGPU:
     @staticmethod
     def cal(width: int):  # noqa: ANN205, N805
         match int(math.log10(width)) + 1: # n digits
+            case 1:
+                return 1, width
             case 2:
                 nelements_per_thread = 4
                 if width % nelements_per_thread == 0:

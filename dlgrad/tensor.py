@@ -423,7 +423,11 @@ class Tensor:
 		Returns:
 			A tensor of the same shape as self.
 		"""
-		return ops.Max.execute(self, dim=dim)
+		if self.ndim == 2 and dim == 0:
+			self = Tensor.transpose(self)
+			dim = 1
+		t = ops.Max.execute(self, dim=dim)
+		return t.T
 
 	def exp(self) -> Tensor:
 		"""
