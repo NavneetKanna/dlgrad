@@ -14,7 +14,6 @@ from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, DType, Scalar
 from dlgrad.helpers import BinaryOps, UnaryOps, cal_sum_out_shape, prod_
-from dlgrad.runtime.cpu import CPU
 
 
 # TODO: Maybe create buffers during creation time ?
@@ -516,7 +515,8 @@ class MetalGPU:
         MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
 
         if dim == -1:
-            out_ptr = CPU.max(x=out_tmp_buf, dim=dim)
+            dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=out_tmp_buf, dim=dim)
+            # out_ptr = CPU.max(x=out_tmp_buf, dim=dim)
 
         return out_ptr, None
 
@@ -524,7 +524,7 @@ class MetalGPU:
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.METAL)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
-        out_ptr = CPU.malloc(num=x.shape[0]*y.shape[1])
+        out_ptr = MetalGPU.malloc(num=x.shape[0]*y.shape[1])
 
         x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
            MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
