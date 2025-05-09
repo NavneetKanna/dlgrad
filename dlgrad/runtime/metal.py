@@ -531,7 +531,7 @@ class MetalGPU:
         y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
            MetalGPU.ffi.buffer(y.ptr, y.nbytes), y.nbytes, Metal.MTLResourceStorageModeShared, None)
         out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-            MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+            MetalGPU.ffi.buffer(out_ptr, x.shape[0]*y.shape[1]*4), x.shape[0]*y.shape[1]*4, Metal.MTLResourceStorageModeShared, None)
 
         xshape_buf, _ = get_buffer_for_int_array(x.shape)
         yshape_buf, _ = get_buffer_for_int_array(y.shape)

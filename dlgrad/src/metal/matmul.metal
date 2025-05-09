@@ -6,6 +6,7 @@
 using namespace metal;
 
 
+// Tiled matmul
 kernel void matmul(
     device const float* x [[buffer(0)]],
     device const float* y [[buffer(1)]],
@@ -26,8 +27,16 @@ kernel void matmul(
     float sum = 0.0f;
 
     for (int i=0; i<xshape[1]; i+=32) {
-        x_shared[lid.y][lid.x] = x[row*xshape[1] + i + lid.x];
-        y_shared[lid.y][lid.x] = y[(i + lid.y) * yshape[1] + col];
+        if (row < xshape[0] && i + lid.x < xshape[1]) {
+            x_shared[lid.y][lid.x] = x[row*xshape[1] + i + lid.x];
+        } else {
+            x_shared[lid.y][lid.x] = 0.0f;
+        }
+        if (col < yshape[1] && i + lid.y < yshape[0]) {
+            y_shared[lid.y][lid.x] = y[(i + lid.y) * yshape[1] + col];
+        } else {
+            y_shared[lid.y][lid.x] = 0.0f;
+        }
 
         threadgroup_barrier(mem_flags::mem_threadgroup);
 
@@ -38,5 +47,7 @@ kernel void matmul(
         threadgroup_barrier(mem_flags::mem_threadgroup);
     }
 
-    out[row * yshape[1] + col] = sum;
+    if (row < xshape[0] && col < yshape[1]) {
+        out[row * yshape[1] + col] = sum;
+    }
 }

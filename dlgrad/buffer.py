@@ -146,7 +146,7 @@ class Buffer:
     @staticmethod
     def ce_forward(x: Buffer, y: Buffer) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=CustomOps.CE_FORWARD, device=x.device,
+            data=dispatcher.dispatch(op=CustomOps.CE_FORWARD, device=Device.CPU,
                                      x=x, y=y),
             shape=(1, x.shape[0]), device=x.device, dtype=x.dtype
         )
