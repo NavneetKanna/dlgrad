@@ -56,6 +56,9 @@ max_lib = device.newLibraryWithURL_error_(max_metallib_path, None)[0]
 matmul_metallib_path = f"{sysconfig.get_paths()['purelib']}/dlgrad/src/metal/matmul.metallib"
 matmul_lib = device.newLibraryWithURL_error_(matmul_metallib_path, None)[0]
 
+transpose_metallib_path = f"{sysconfig.get_paths()['purelib']}/dlgrad/src/metal/transpose.metallib"
+transpose_lib = device.newLibraryWithURL_error_(transpose_metallib_path, None)[0]
+
 add2d_func_name = arithmetic_lib.newFunctionWithName_("add2d")
 add2d_pso = device.newComputePipelineStateWithFunction_error_(add2d_func_name, None)[0]
 add3d_func_name = arithmetic_lib.newFunctionWithName_("add3d")
@@ -115,6 +118,9 @@ max2d_dim1_pso = device.newComputePipelineStateWithFunction_error_(max2d_dim1_fu
 
 matmul_func_name = matmul_lib.newFunctionWithName_("matmul")
 matmul_pso = device.newComputePipelineStateWithFunction_error_(matmul_func_name, None)[0]
+
+transpose_func_name = transpose_lib.newFunctionWithName_("transpose")
+transpose_pso = device.newComputePipelineStateWithFunction_error_(transpose_func_name, None)[0]
 
 # TODO OR NOTE: If the tensor dim is less than 32 (warp), getting wrong results for sum, what to do in this case ?
 #               Should I move these tensors to cpu or find a fix for this condition ?
@@ -520,7 +526,6 @@ class MetalGPU:
 
         return out_ptr, None
 
-    # TODO: Non multiples of 32
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.METAL)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
@@ -549,6 +554,34 @@ class MetalGPU:
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 2)
         computeEncoder.setBuffer_offset_atIndex_(xshape_buf, 0, 3)
         computeEncoder.setBuffer_offset_atIndex_(yshape_buf, 0, 4)
+
+        MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.TRANSPOSE, Device.METAL)
+    def transpose(x: Buffer) -> CDataPtr:
+        out_ptr = MetalGPU.malloc(num=prod_(x.shape))
+
+        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+           MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
+            MetalGPU.ffi.buffer(out_ptr, prod_(x.shape)*4), prod_(x.shape)*4, Metal.MTLResourceStorageModeShared, None)
+
+        xshape_buf, _ = get_buffer_for_int_array(x.shape)
+
+        commandBuffer = commandQueue.commandBuffer()
+        computeEncoder = commandBuffer.computeCommandEncoder()
+
+        if x.ndim == 2:
+            computeEncoder.setComputePipelineState_(transpose_pso)
+            threadsPerGrid = Metal.MTLSizeMake(x.shape[0], x.shape[1], 1)
+            threadsPerThreadgroup = Metal.MTLSizeMake(32, 32, 1)
+
+        computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
+        computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
+        computeEncoder.setBuffer_offset_atIndex_(xshape_buf, 0, 2)
 
         MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
 
