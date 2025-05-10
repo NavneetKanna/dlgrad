@@ -5,8 +5,6 @@
 #include <metal_math>
 using namespace metal;
 
-#define TILE_DIM 32
-
 kernel void transpose(
     device const float* x [[buffer(0)]],
     device float* out [[buffer(1)]],
