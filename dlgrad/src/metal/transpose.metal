@@ -5,7 +5,8 @@
 #include <metal_math>
 using namespace metal;
 
-// Tiled transpose
+#define TILE_DIM 32
+
 kernel void transpose(
     device const float* x [[buffer(0)]],
     device float* out [[buffer(1)]],
@@ -15,26 +16,9 @@ kernel void transpose(
     uint2 tid [[threadgroup_position_in_grid]]
 )
 {
-    threadgroup float x_shared[32][32];
+    int x_row = gid.x;
+    int x_col = gid.y;
 
-    uint row = gid.y;
-    uint col = gid.x;
-
-    float sum = 0.0f;
-
-    // Load a block to the shared memory
-    for (int i=0; i<xshape[1]; i+=32) {
-        if (row < xshape[0] && i + lid.x < xshape[1]) {
-            x_shared[lid.y][lid.x] = x[row*xshape[1] + i + lid.x];
-        } else {
-            x_shared[lid.y][lid.x] = 0.0f;
-        }
-    }
-
-    threadgroup_barrier(mem_flags::mem_threadgroup);
-
-    // Read a col from the shared memory and write it to a row in the output matrix
-    if (row < xshape[0] && col < xshape[1]) {
-        out[row * xshape[0] + col] = x_shared[col][row];
-    }
+    // out[col][row] = x[row][col]
+    out[x_row * xshape[0] + x_col] = x[x_col * xshape[1] + x_row];
 }

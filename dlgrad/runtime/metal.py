@@ -576,7 +576,7 @@ class MetalGPU:
 
         if x.ndim == 2:
             computeEncoder.setComputePipelineState_(transpose_pso)
-            threadsPerGrid = Metal.MTLSizeMake(x.shape[0], x.shape[1], 1)
+            threadsPerGrid = Metal.MTLSizeMake(x.shape[1], x.shape[0], 1)
             threadsPerThreadgroup = Metal.MTLSizeMake(32, 32, 1)
 
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
