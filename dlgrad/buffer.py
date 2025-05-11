@@ -133,7 +133,7 @@ class Buffer:
 
     def relu(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.RELU, device=self.device, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.RELU, device=Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
