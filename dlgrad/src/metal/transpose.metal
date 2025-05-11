@@ -18,5 +18,8 @@ kernel void transpose(
     int x_col = gid.y;
 
     // out[col][row] = x[row][col]
-    out[x_row * xshape[0] + x_col] = x[x_col * xshape[1] + x_row];
+    if (x_row < xshape[1] && x_col < xshape[0]) {
+        // out[x_row * xshape[0] + x_col] = x[x_col * xshape[1] + x_row];
+        out[x_col * xshape[0] + x_row] = x[x_row * xshape[1] + x_col];
+    }
 }

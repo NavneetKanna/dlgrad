@@ -71,9 +71,11 @@ class OP:
 		Returns:
 		    A Tensor which is the output of the op.
 		"""
+		# print("in exe")
 		ctx = cls(*data)
 		tensor = Tensor.__new__(Tensor)
 		tensor.data = ctx.forward(*[d.data for d in data], **kwargs)
+		# print("exe", tensor.shape, tensor.data.shape)
 		tensor.data.metadata.dtype = kwargs.get("dtype", data[0].dtype)
 		tensor.data.metadata.device = kwargs.get("device", data[0].device)
 		tensor.requires_grad = ctx.requires_grad
@@ -423,11 +425,18 @@ class Tensor:
 		Returns:
 			A tensor of the same shape as self.
 		"""
-		if self.ndim == 2 and dim == 0:
-			self = Tensor.transpose(self)
-			dim = 1
+		# if self.ndim == 2 and dim == 0:
+		# 	self = Tensor.transpose(self)
+		# 	dim = 1
+		# 	t = ops.Max.execute(self, dim=dim)
+		# 	print(t.numpy())
+		# 	return t.T
+		if self.device == Device.METAL:
+			raise NotImplementedError
+		# print("calling exe")
 		t = ops.Max.execute(self, dim=dim)
-		return t.T
+		# print("max", t.shape)
+		return t
 
 	def exp(self) -> Tensor:
 		"""

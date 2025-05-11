@@ -34,6 +34,7 @@ class Max(OP):
 		self.device = x.device
 		self.x = x
 		self.out, self.max_with_1s = x.max(dim=dim)
+		# print("ops", self.out.shape)
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:

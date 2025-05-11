@@ -492,16 +492,24 @@ class MetalGPU:
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
         if x.ndim == 2:
-            nelements_per_thread, nthreads_per_threadgroup = MetalGPU.cal(width=x.shape[-1])
+            nelements_per_thread, threadgroup_width = MetalGPU.cal(width=x.shape[-1])
 
             nelements_per_thread_bytes = struct.pack('i', nelements_per_thread)
 
-            h = MetalGPU.cal_height(width=nthreads_per_threadgroup, height=x.shape[0])
+            h = MetalGPU.cal_height(width=threadgroup_width, height=x.shape[0])
 
-            threadsPerGrid = Metal.MTLSizeMake(nthreads_per_threadgroup, x.shape[0], 1) # the total number of threads in the grid
-            threadsPerThreadgroup = Metal.MTLSizeMake(nthreads_per_threadgroup, h, 1)
+            threadsPerGrid = Metal.MTLSizeMake(threadgroup_width, x.shape[0], 1) # the total number of threads in the grid
+            threadsPerThreadgroup = Metal.MTLSizeMake(threadgroup_width, h, 1)
 
-            num_floats = nthreads_per_threadgroup * h
+            xshape_buf, _ = get_buffer_for_int_array(x.shape)
+
+            # print("x.shape", x.shape)
+            # print("nelements_per_thread", nelements_per_thread)
+            # print("threadgroup_width", threadgroup_width)
+            # print("threadsPerGrid", threadsPerGrid)
+            # print("threadsPerThreadgroup", threadsPerThreadgroup)
+
+            num_floats = threadgroup_width * h
             threadgroup_memory_bytes = num_floats * 4
             computeEncoder.setThreadgroupMemoryLength_atIndex_(threadgroup_memory_bytes, 0)
 
@@ -518,7 +526,6 @@ class MetalGPU:
                     MetalGPU.ffi.buffer(out_ptr, x.shape[0]*4), x.shape[0]*4, Metal.MTLResourceStorageModeShared, None
                 )
                 computeEncoder.setComputePipelineState_(max2d_dim1_pso)
-                pass
 
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(tmp_buf, 0, 1)
@@ -528,7 +535,7 @@ class MetalGPU:
         MetalGPU._run(computeEncoder=computeEncoder, commandBuffer=commandBuffer, threadsPerGrid=threadsPerGrid, threadsPerThreadgroup=threadsPerThreadgroup)
 
         if dim == -1:
-            dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=out_tmp_buf, dim=dim)
+            out_ptr = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=out_tmp_buf, dim=dim)
             # out_ptr = CPU.max(x=out_tmp_buf, dim=dim)
 
         return out_ptr, None
@@ -536,6 +543,9 @@ class MetalGPU:
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.METAL)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
+        def next_divisible_by_32(n):  # noqa: ANN001, ANN202
+            return n if n % 32 == 0 else n + (32 - n % 32)
+
         out_ptr = MetalGPU.malloc(num=x.shape[0]*y.shape[1])
 
         x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
@@ -553,7 +563,13 @@ class MetalGPU:
 
         if x.ndim == 2:
             computeEncoder.setComputePipelineState_(matmul_pso)
-            threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
+            # threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
+            output_rows = x.shape[0]
+            output_cols = y.shape[1]
+            output_rows = next_divisible_by_32(output_rows)
+            output_cols = next_divisible_by_32(output_cols)
+            threadsPerGrid = Metal.MTLSizeMake(output_cols, output_rows, 1)
+            # threadsPerGrid = Metal.MTLSizeMake(y.shape[1], x.shape[0], 1)
             threadsPerThreadgroup = Metal.MTLSizeMake(32, 32, 1)
 
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
@@ -583,7 +599,10 @@ class MetalGPU:
 
         if x.ndim == 2:
             computeEncoder.setComputePipelineState_(transpose_pso)
-            threadsPerGrid = Metal.MTLSizeMake(x.shape[1], x.shape[0], 1)
+            gridWidth = (x.shape[1] + 31) / 32 * 32
+            gridHeight = (x.shape[0] + 31) / 32 * 32
+            # threadsPerGrid = Metal.MTLSizeMake(x.shape[1], x.shape[0], 1)
+            threadsPerGrid = Metal.MTLSizeMake(gridWidth, gridHeight, 1)
             threadsPerThreadgroup = Metal.MTLSizeMake(32, 32, 1)
 
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)

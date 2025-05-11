@@ -60,6 +60,7 @@ kernel void max2d_dim1(
     uint2 tid [[thread_position_in_threadgroup]],
     uint2 grid_size [[threads_per_grid]],
     uint simd_lane_id [[thread_index_in_simdgroup]],
+    uint2 threadgroup_position_in_grid [[ threadgroup_position_in_grid ]],
     threadgroup float* tmp [[ threadgroup(0) ]]
 )
 {
@@ -82,7 +83,8 @@ kernel void max2d_dim1(
 
     if (tid.x == 0) {
         float acc = ((float)(-INFINITY));
-        uint start = tid.y * threadgroup_size.x;
+        // uint start = tid.y * threadgroup_size.x;
+        uint start = index;
         uint end = (start + threadgroup_size.x);
         
         for (uint i=start; i<end; i++) {
@@ -92,4 +94,5 @@ kernel void max2d_dim1(
 
         out_tmp[tid.y] = acc;
    }
+   
 }

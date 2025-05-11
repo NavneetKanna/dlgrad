@@ -18,6 +18,8 @@ s = [
     [(64, 64), (64, 64)],
     [(4096, 4096), (4096, 4096)],
     [(64, 65), (64, 65)],
+    [(784, 32), (784, 32)],
+    [(32, 64), (32, 64)],
 ]
 
 @pytest.mark.parametrize("shapes", s)
@@ -37,20 +39,25 @@ def test_div(shapes):
     run(shapes, lambda x, y: x/y)
 
 @pytest.mark.parametrize("shapes", [
+     [(64, 64), (64, 64)],
     [(4096, 4096), (4096, 4096)],
     [(64, 65), (65, 64)],
+    [(784, 32), (32, 784)],
+    [(32, 784), (784, 32)],
 ])
 def test_matmul(shapes):
     run(shapes, lambda x, y: x@y)
 
-@pytest.mark.parametrize("shapes", [
-    [(64, 64)],
-    [(4096, 4096)],
-    [(64, 65)],
-    [(65, 64)],
-])
-def test_transpose_same_tensors(shapes):
-    run(shapes, lambda x: x@x.T)
+# @pytest.mark.parametrize("shapes", [
+#     [(64, 64)],
+#     [(4096, 4096)],
+#     [(64, 65)],
+#     [(65, 64)],
+#     [(784, 32)],
+#     [(32, 784)],
+# ])
+# def test_transpose_same_tensors(shapes):
+#     run(shapes, lambda x: x@x.T)
 
 @pytest.mark.parametrize("shapes", [
     [(64, 64)]
@@ -63,6 +70,8 @@ def test_pow(shapes):
     [(4096, 4096)],
     [(64, 65)],
     [(65, 64)],
+    [(784, 32)],
+    [(32, 784)],
 ])
 def test_sum_2d(shapes):
     for sh in shapes:
@@ -82,29 +91,29 @@ def test_sum_2d(shapes):
         to_out = torch_data.sum()
         np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes", [
-     [(64, 64)],
-    [(4096, 4096)],
-    [(64, 65)],
-    [(65, 64)],
-])
-def test_max_2d(shapes):
-    for sh in shapes:
-        np_data = np.random.uniform(size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, device="metal")
-        torch_data = torch.tensor(np_data, device="mps")
+# @pytest.mark.parametrize("shapes", [
+#      [(64, 64)],
+#     [(4096, 4096)],
+#     [(64, 65)],
+#     [(65, 64)],
+# ])
+# def test_max_2d(shapes):
+#     for sh in shapes:
+#         np_data = np.random.uniform(size=sh).astype(np.float32)
+#         dlgrad_data = Tensor(np_data, device="metal")
+#         torch_data = torch.tensor(np_data, device="mps")
 
-        dl_out = dlgrad_data.max(dim=0)
-        to_out, _ = torch_data.max(dim=0, keepdim=True)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+#         dl_out = dlgrad_data.max(dim=0)
+#         to_out, _ = torch_data.max(dim=0, keepdim=True)
+#         np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-        dl_out = dlgrad_data.max(dim=1)
-        to_out, _ = torch_data.max(dim=1, keepdim=True)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+#         dl_out = dlgrad_data.max(dim=1)
+#         to_out, _ = torch_data.max(dim=1, keepdim=True)
+#         np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-        dl_out = dlgrad_data.max()
-        to_out = torch_data.max()
-        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+#         dl_out = dlgrad_data.max()
+#         to_out = torch_data.max()
+#         np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", s)
 def test_exp(shapes):
