@@ -433,6 +433,10 @@ class MetalGPU:
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.METAL)
     def sum(x: Buffer, dim: int) -> CDataPtr:
+        # simd_shuffle_down does not work if warp is not 32
+        def next_divisible_by_32(n):  # noqa: ANN001, ANN202
+            return n if n % 32 == 0 else n + (32 - n % 32)
+
         num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = MetalGPU.calloc(num=num)
 
@@ -451,12 +455,15 @@ class MetalGPU:
                 threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
                 threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sum2d_pso, xshape=x.shape))
             elif dim == 1:
+                xshape_buf, _ = get_buffer_for_int_array(x.shape)
                 nbytes = x.shape[0] * DType.get_n_bytes(x.dtype)
                 out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
                     MetalGPU.ffi.buffer(out_ptr, nbytes), nbytes, Metal.MTLResourceStorageModeShared, None
                 )
                 computeEncoder.setComputePipelineState_(sum2d_dim1_pso)
-                threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
+                computeEncoder.setBuffer_offset_atIndex_(xshape_buf, 0, 2)
+                # threadsPerGrid = Metal.MTLSizeMake(x.shape[1], x.shape[0], 1)
+                threadsPerGrid = Metal.MTLSizeMake(next_divisible_by_32(x.shape[1]), x.shape[0], 1)
                 threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sum2d_dim1_pso, xshape=x.shape))
             elif dim == 0:
                 nbytes = x.shape[1] * DType.get_n_bytes(x.dtype)

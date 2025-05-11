@@ -25,17 +25,21 @@ kernel void sum2d(device const float *x, device atomic_float *out,
 }
 
 
-kernel void sum2d_dim1(device const float *x, device atomic_float *out,
+kernel void sum2d_dim1(device const float *x [[ buffer(0) ]], device atomic_float *out [[ buffer(1) ]], device int *xshape [[ buffer(2) ]],
                       uint2 tid [[thread_position_in_grid]], uint2 grid_size [[threads_per_grid]], 
                       uint simd_size [[threads_per_simdgroup]], uint simd_lane_id [[thread_index_in_simdgroup]])
 {
-    uint index = tid.y * grid_size.x + tid.x;
+    if (tid.x >= xshape[1] || tid.y >= xshape[0]) {
+      float val = 0.0;
+      return;
+    }
+
+    uint index = tid.y * xshape[1] + tid.x;
     float val = x[index];
 
     // This is all we need, but it is slower than shuffle
     // atomic_fetch_add_explicit(&out[tid.y], val, memory_order_relaxed);
 
-    
     // Perform reduction for each warp
     for (uint offset=simd_size/2; offset>0; offset /= 2) {
         val += simd_shuffle_down(val, offset);
@@ -57,8 +61,6 @@ kernel void sum2d_dim1(device const float *x, device atomic_float *out,
     if (simd_lane_id == 0) {
         atomic_fetch_add_explicit(&out[tid.y], val, memory_order_relaxed);
     }
-    
-    
 }
 
 

@@ -181,7 +181,7 @@ class CPU:
         return out_ptr
 
     @staticmethod
-    # @dispatcher.register(UnaryOps.MAX, Device.CPU)
+    @dispatcher.register(UnaryOps.MAX, Device.CPU)
     def max(x: Buffer, dim: int, flag: bool = False) -> CDataPtr:
         num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
