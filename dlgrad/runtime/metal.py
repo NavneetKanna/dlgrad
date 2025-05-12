@@ -543,6 +543,7 @@ class MetalGPU:
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.METAL)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
+        # print("metal matmul called")
         def next_divisible_by_32(n):  # noqa: ANN001, ANN202
             return n if n % 32 == 0 else n + (32 - n % 32)
 

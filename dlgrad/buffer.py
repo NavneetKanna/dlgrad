@@ -72,7 +72,7 @@ class Buffer:
     @staticmethod
     def full(shape: tuple, fill_value: Scalar, device: Device, dtype: DType) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=BufferOps.FULL, device=device, shape=shape, fill_value=fill_value),
+            data=dispatcher.dispatch(op=BufferOps.FULL, device=Device.CPU, shape=shape, fill_value=fill_value),
             shape=shape, device=device, dtype=dtype
         )
 
@@ -100,6 +100,8 @@ class Buffer:
         if (self.shape[-1] != other.shape[0] and self.ndim != 2 and other.ndim != 2):
             raise ValueError("Either the Tensors shape dont match or is not 2D")
 
+        # print(self.shape, other.shape)
+        # print(self.device, other.device)
         return Buffer(
             data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other),
             shape=(self.shape[0], other.shape[1]), device=self.device, dtype=self.dtype
@@ -109,7 +111,7 @@ class Buffer:
         assert self.ndim == 2, "Only 2D Tensors can be transposed"
 
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=self.device, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=Device.CPU, x=self),
             shape=self.shape[::-1], device=self.device, dtype=self.dtype
         )
 
@@ -202,7 +204,7 @@ class Buffer:
 
     def __gt__(self, other: Scalar) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=BinaryOps.GT, device=self.device, x=self, y=other),
+            data=dispatcher.dispatch(op=BinaryOps.GT, device=Device.CPU, x=self, y=other),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -214,7 +216,7 @@ class Buffer:
 
     def __eq__(self, other: Buffer) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=BinaryOps.EQT, device=self.device, x=self, y=other),
+            data=dispatcher.dispatch(op=BinaryOps.EQT, device=Device.CPU, x=self, y=other),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 

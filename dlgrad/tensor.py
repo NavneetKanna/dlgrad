@@ -36,6 +36,7 @@ class OP:
 		raise RuntimeError(f"backward not implemented for {type(self)}")  # noqa: ANN201
 
 	def match_inp_shape(self, inp: Buffer, upstream_grad: Buffer, dim: int = 0) -> Buffer:
+		# print("match inp shape 1", upstream_grad.device)
 		inp_shape = inp.shape
 		ndim = resolve_ndim(inp_shape=inp_shape, grad_shape=upstream_grad.shape)
 		if not ndim:
@@ -49,6 +50,7 @@ class OP:
 			upstream_grad.metadata.stride = inp.stride
 			upstream_grad.metadata.numel = inp.numel
 
+		# print("match inp shape 2", upstream_grad.device)
 		return upstream_grad
 
 	@classmethod
@@ -282,7 +284,7 @@ class Tensor:
 			The sum of `x` and `y`
 		"""
 		if isinstance(y, Scalar):
-			y = Tensor(y)
+			y = Tensor(y, device=x.device)
 		return ops.Add.execute(x, y)
 
 	@staticmethod
@@ -300,7 +302,7 @@ class Tensor:
 			The product of `x` and `y`
 		"""
 		if isinstance(y, Scalar):
-			y = Tensor(y)
+			y = Tensor(y, device=x.device)
 		return ops.Mul.execute(x, y)
 
 	@staticmethod
@@ -317,7 +319,7 @@ class Tensor:
 			The difference of `x` and `y`
 		"""
 		if isinstance(y, Scalar):
-			y = Tensor(y)
+			y = Tensor(y, device=x.device)
 		return ops.Sub.execute(x, y)
 
 	@staticmethod
@@ -334,7 +336,7 @@ class Tensor:
 			The quotient of `x` and `y`
 		"""
 		if isinstance(y, Scalar):
-			y = Tensor(y)
+			y = Tensor(y, device=x.device)
 		return ops.Div.execute(x, y)
 
 	@staticmethod
@@ -534,15 +536,17 @@ class Tensor:
 
 		_topo_sort(self)
 
-		self.grad = Tensor(1.0)
+		self.grad = Tensor(1.0, device=self.device)
 
 		# TODO: del _ctx
 		for node in reversed(topo):
 			if not node.grad:
 				raise RuntimeError(f"Tensor {node} has no grad")
 			upstream_grads: tuple[Buffer] = node._ctx.backward(node.grad.data)
+			# for i in upstream_grads:
+				# print("i upstream grad", i.device)
 			upstream_grads: list[Tensor] = [
-				Tensor(g, requires_grad=False) for g in upstream_grads if g is not None
+				Tensor(g, requires_grad=False, device=g.device) for g in upstream_grads if g is not None
 			]
 			for p, g in zip(node._ctx.parents, upstream_grads):
 				p.grad = g if not p.grad else p.grad + g
@@ -557,7 +561,7 @@ class Tensor:
 
 			buf = Buffer(data=self.data.ptr+s, shape=ns, device=self.device, dtype=self.dtype)
 
-			return Tensor(data=buf, requires_grad=self.requires_grad)
+			return Tensor(data=buf, requires_grad=self.requires_grad, device=self.device)
 		else:
 			raise ValueError("dlgrad only supports slicing or start, stop are None")
 
