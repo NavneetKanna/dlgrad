@@ -611,5 +611,5 @@ Roadmap:
 - python slots
 - kernel fusion, ex, relu after matmul
 - functools cache in helpers
-
+- profile memory, how many allocations and free, if any freed obj is being used
 """

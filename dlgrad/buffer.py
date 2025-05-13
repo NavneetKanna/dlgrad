@@ -100,8 +100,6 @@ class Buffer:
         if (self.shape[-1] != other.shape[0] and self.ndim != 2 and other.ndim != 2):
             raise ValueError("Either the Tensors shape dont match or is not 2D")
 
-        # print(self.shape, other.shape)
-        # print(self.device, other.device)
         return Buffer(
             data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other),
             shape=(self.shape[0], other.shape[1]), device=self.device, dtype=self.dtype
@@ -149,7 +147,6 @@ class Buffer:
 
     @staticmethod
     def ce_backward(**kwargs) -> None:
-        # dispatcher.dispatch(op=kwargs.pop("op"), device=kwargs.pop("device"), **kwargs)
         kwargs.pop("device")
         dispatcher.dispatch(op=kwargs.pop("op"), device=Device.CPU, **kwargs)
 

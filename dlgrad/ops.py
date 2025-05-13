@@ -12,7 +12,6 @@ class Transpose(OP):
 		return x.transpose()
 
 	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
-		# print("transpose backward")
 		return (upstream_grad.transpose(),)
 
 
@@ -24,7 +23,6 @@ class Sum(OP):
 		return x.sum(dim=dim)
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		# print("sum backward")
 		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
 		return (t*upstream_grad,)
 
@@ -36,11 +34,9 @@ class Max(OP):
 		self.device = x.device
 		self.x = x
 		self.out, self.max_with_1s = x.max(dim=dim)
-		# print("ops", self.out.shape)
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		# print("max backward")
 		return (self.max_with_1s*upstream_grad,)
 
 
@@ -50,7 +46,6 @@ class Exp(OP):
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> Buffer:
-		# print("exp backward")
 		return (upstream_grad * self.out,)
 
 
@@ -60,7 +55,6 @@ class Log(OP):
 		return x.log()
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		# print("log backward")
 		return (upstream_grad / self.x,)
 
 
@@ -70,7 +64,6 @@ class Relu(OP):
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		# print("relu backward")
 		return ((self.out>0.0) * upstream_grad,)
 
 
@@ -80,7 +73,6 @@ class Sqrt(OP):
 		return self.out
 
 	def backward(self, grad_output: Buffer) -> tuple[Buffer]:
-		# print("sqrt backward")
 		return grad_output / (self.out*2)
 
 
@@ -95,7 +87,6 @@ class Add(OP):
 			return x + y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		# print("add backward")
 		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
 		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
@@ -108,7 +99,6 @@ class Sub(OP):
 			return x - y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		# print("sub backward")
 		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
 		  	   self.match_inp_shape(inp=self.y, upstream_grad=-upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
@@ -121,7 +111,6 @@ class Mul(OP):
 			return x*y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		# print("mul backward")
 		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad*self.y, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
 		  	    self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad*self.x, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
@@ -134,7 +123,6 @@ class Div(OP):
 			return x/y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		# print("div backward")
 		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad/self.y, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
 		  	   self.match_inp_shape(inp=self.y, upstream_grad=(-upstream_grad*self.x)/self.y**2, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
 
@@ -146,8 +134,6 @@ class MatMul(OP):
 		return x@y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		# print("matmul backward")
-		# print(upstream_grad.shape, upstream_grad.device)
 		t1 = self.x.T
 		t2 = self.y.T
 		return (upstream_grad@t2, t1@upstream_grad)
@@ -169,7 +155,6 @@ class CrossEntropy(OP):
 		return -tmp.sum()
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		# print("ce bacward")
 		tmp = self.log_softmax_output.exp()
 		Buffer.ce_backward(op=CustomOps.CE_BACKWARD, device=tmp.device, x=tmp, target=self.target)
 		return (tmp,)

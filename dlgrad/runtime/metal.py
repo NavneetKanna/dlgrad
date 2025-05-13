@@ -19,17 +19,10 @@ from dlgrad.helpers import BinaryOps, UnaryOps, cal_sum_out_shape, prod_
 # TODO: Maybe create buffers during creation time ?
 @functools.cache
 def get_buffer_for_int_array(arr: tuple) -> any:
-    # import time
-    # s = time.perf_counter()
     ffi_arr = MetalGPU.ffi.new("int[]", list(arr))
     size = len(arr) * MetalGPU.ffi.sizeof("int")
-    # ee = time.perf_counter()
-    # print(f"ffi buf {(ee-s)*1e3}")
-    # s = time.perf_counter()
     buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
         MetalGPU.ffi.buffer(ffi_arr), size, Metal.MTLResourceStorageModeShared, None)
-    # ee = time.perf_counter()
-    # print(f"xshae buf {(ee-s)*1e3}")
     return buf, ffi_arr
 
 
@@ -462,7 +455,6 @@ class MetalGPU:
                 )
                 computeEncoder.setComputePipelineState_(sum2d_dim1_pso)
                 computeEncoder.setBuffer_offset_atIndex_(xshape_buf, 0, 2)
-                # threadsPerGrid = Metal.MTLSizeMake(x.shape[1], x.shape[0], 1)
                 threadsPerGrid = Metal.MTLSizeMake(next_divisible_by_32(x.shape[1]), x.shape[0], 1)
                 threadsPerThreadgroup = Metal.MTLSizeMake(*MetalGPU._cal_threds_per_threadgroup(pso=sum2d_dim1_pso, xshape=x.shape))
             elif dim == 0:
@@ -503,12 +495,6 @@ class MetalGPU:
 
             xshape_buf, _ = get_buffer_for_int_array(x.shape)
 
-            # print("x.shape", x.shape)
-            # print("nelements_per_thread", nelements_per_thread)
-            # print("threadgroup_width", threadgroup_width)
-            # print("threadsPerGrid", threadsPerGrid)
-            # print("threadsPerThreadgroup", threadsPerThreadgroup)
-
             num_floats = threadgroup_width * h
             threadgroup_memory_bytes = num_floats * 4
             computeEncoder.setThreadgroupMemoryLength_atIndex_(threadgroup_memory_bytes, 0)
@@ -536,14 +522,12 @@ class MetalGPU:
 
         if dim == -1:
             out_ptr = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=out_tmp_buf, dim=dim)
-            # out_ptr = CPU.max(x=out_tmp_buf, dim=dim)
 
         return out_ptr, None
 
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.METAL)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
-        # print("metal matmul called")
         def next_divisible_by_32(n):  # noqa: ANN001, ANN202
             return n if n % 32 == 0 else n + (32 - n % 32)
 
@@ -564,13 +548,11 @@ class MetalGPU:
 
         if x.ndim == 2:
             computeEncoder.setComputePipelineState_(matmul_pso)
-            # threadsPerGrid = Metal.MTLSizeMake(x.shape[-1], x.shape[-2], 1)
             output_rows = x.shape[0]
             output_cols = y.shape[1]
             output_rows = next_divisible_by_32(output_rows)
             output_cols = next_divisible_by_32(output_cols)
             threadsPerGrid = Metal.MTLSizeMake(output_cols, output_rows, 1)
-            # threadsPerGrid = Metal.MTLSizeMake(y.shape[1], x.shape[0], 1)
             threadsPerThreadgroup = Metal.MTLSizeMake(32, 32, 1)
 
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
@@ -602,7 +584,6 @@ class MetalGPU:
             computeEncoder.setComputePipelineState_(transpose_pso)
             gridWidth = (x.shape[1] + 31) / 32 * 32
             gridHeight = (x.shape[0] + 31) / 32 * 32
-            # threadsPerGrid = Metal.MTLSizeMake(x.shape[1], x.shape[0], 1)
             threadsPerGrid = Metal.MTLSizeMake(gridWidth, gridHeight, 1)
             threadsPerThreadgroup = Metal.MTLSizeMake(32, 32, 1)
 

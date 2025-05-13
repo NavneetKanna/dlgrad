@@ -163,7 +163,6 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
-        # print("cpu matmul called")
         out_ptr = CPU.malloc(num=x.shape[0]*y.shape[1])
         _matmul.lib.matmul(x.ptr, y.ptr, out_ptr, x.shape[0], y.shape[1], y.shape[0], y.stride, x.stride)
         return out_ptr
@@ -193,7 +192,6 @@ class CPU:
             _max.lib.max_3d(x.ptr, out_ptr, tmp, max_with_1s, x.shape, x.stride, x.numel, dim)
         if x.ndim == 2:
             _max.lib.max_2d(x.ptr, out_ptr, tmp, max_with_1s, x.shape, x.stride, x.numel, dim)
-            # _max.lib.mmax_2d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
 
         return out_ptr, max_with_1s
 
