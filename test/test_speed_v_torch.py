@@ -8,7 +8,6 @@ import numpy as np
 import time
 from dlgrad import Tensor
 import tinygrad
-import math
 from dlgrad.helpers import get_color
 
 ITERATIONS = 8
@@ -25,17 +24,6 @@ def benchmark(func, data, use_tiny: bool = False) -> float:
 
 def convert_time(seconds: float) -> tuple[float, str]:
     return round(seconds * 1e3, 2), "ms"
-    # if seconds == 0:
-    #     return 0.0, "s"
-    # nzeros = abs(int(math.log10(abs(seconds))))
-    # if 0 <= nzeros <= 3:      # milliseconds
-    #     return round(seconds * 1e3, 2), "ms"
-    # elif 3 < nzeros <= 6:     # microseconds
-    #     return round(seconds * 1e6, 2), "µs"
-    # elif 6 < nzeros <= 9:     # nanoseconds
-    #     return round(seconds * 1e9, 2), "ns"
-    # else:
-    #     return round(seconds, 2), "s"
 
 def color_ratio(lib_time: float, dlgrad_time: float):
     if dlgrad_time == lib_time:
