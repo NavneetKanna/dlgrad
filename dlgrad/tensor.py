@@ -36,7 +36,6 @@ class OP:
 		raise RuntimeError(f"backward not implemented for {type(self)}")  # noqa: ANN201
 
 	def match_inp_shape(self, inp: Buffer, upstream_grad: Buffer, dim: int = 0) -> Buffer:
-		# print("match inp shape 1", upstream_grad.device)
 		inp_shape = inp.shape
 		ndim = resolve_ndim(inp_shape=inp_shape, grad_shape=upstream_grad.shape)
 		if not ndim:
@@ -50,7 +49,6 @@ class OP:
 			upstream_grad.metadata.stride = inp.stride
 			upstream_grad.metadata.numel = inp.numel
 
-		# print("match inp shape 2", upstream_grad.device)
 		return upstream_grad
 
 	@classmethod
@@ -73,11 +71,9 @@ class OP:
 		Returns:
 		    A Tensor which is the output of the op.
 		"""
-		# print("in exe")
 		ctx = cls(*data)
 		tensor = Tensor.__new__(Tensor)
 		tensor.data = ctx.forward(*[d.data for d in data], **kwargs)
-		# print("exe", tensor.shape, tensor.data.shape)
 		tensor.data.metadata.dtype = kwargs.get("dtype", data[0].dtype)
 		tensor.data.metadata.device = kwargs.get("device", data[0].device)
 		tensor.requires_grad = ctx.requires_grad
@@ -427,18 +423,7 @@ class Tensor:
 		Returns:
 			A tensor of the same shape as self.
 		"""
-		# if self.ndim == 2 and dim == 0:
-		# 	self = Tensor.transpose(self)
-		# 	dim = 1
-		# 	t = ops.Max.execute(self, dim=dim)
-		# 	print(t.numpy())
-		# 	return t.T
-		if self.device == Device.METAL:
-			raise NotImplementedError
-		# print("calling exe")
-		t = ops.Max.execute(self, dim=dim)
-		# print("max", t.shape)
-		return t
+		return ops.Max.execute(self, dim=dim)
 
 	def exp(self) -> Tensor:
 		"""
@@ -543,8 +528,6 @@ class Tensor:
 			if not node.grad:
 				raise RuntimeError(f"Tensor {node} has no grad")
 			upstream_grads: tuple[Buffer] = node._ctx.backward(node.grad.data)
-			# for i in upstream_grads:
-				# print("i upstream grad", i.device)
 			upstream_grads: list[Tensor] = [
 				Tensor(g, requires_grad=False, device=g.device) for g in upstream_grads if g is not None
 			]
