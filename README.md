@@ -72,7 +72,7 @@ print("test acc", test_acc)
 
 ## Things I'm Working On
 - [x] Speed comparision script
-- [ ] Metal Device
+- [x] Metal Device
  
 ## Tests
 
