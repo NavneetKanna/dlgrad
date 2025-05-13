@@ -25,18 +25,20 @@ from tqdm import tqdm
 BS, in_dim, HS, ncls = 128, 784, 64, 10
 STEPS = int(60000/BS) * 2
     
+d = "metal"
+
 class Model:
     def __init__(self):
         self.layers = [
-            nn.Linear(in_dim, HS, bias=True),
+            nn.Linear(in_dim, HS, bias=True, device=d),
             Tensor.relu,
-            nn.Linear(HS, ncls, bias=True)
+            nn.Linear(HS, ncls, bias=True, device=d)
         ]
     
     def __call__(self, x: Tensor) -> Tensor: 
         return x.sequential(self.layers)
 
-x_train_images, x_train_labels, x_test_images, x_test_labels = mnist()
+x_train_images, x_train_labels, x_test_images, x_test_labels = mnist(device=d)
 
 model = Model()
 
