@@ -100,6 +100,8 @@ class Tensor:
 		if str(type(data)) == "<class 'numpy.ndarray'>":
 			if str(data.dtype) != "float32":
 				raise ValueError("dlgrad only supports float32 dtype")
+			if str(data.ndim) > '3':
+				raise ValueError("dlgrad only supports upto 3D tensors")
 
 			shape = data.shape
 			ndim = data.ndim
