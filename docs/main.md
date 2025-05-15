@@ -27,3 +27,16 @@ Tensor.full((2, 3), fill_value=4) # Creates a tensor filled with 4
 Tensor.ones_like((2, 3)) # Creates a tensor filled with 1
 Tensor.zeros_like((2, 3)) # Creates a tensor filled with 0
 ```
+
+All of the above functions take ```dtype``` and ```device``` as arguments, the supported dtypes are
+
+| Dtype |
+| :---: |
+| float32 |
+
+and the supported devices are
+
+| Device |
+| :---: |
+| cpu |
+| metal |
