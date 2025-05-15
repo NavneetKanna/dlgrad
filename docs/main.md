@@ -40,3 +40,32 @@ and the supported devices are
 | :---: |
 | cpu |
 | metal |
+
+With the tensors created, any of the following ops can be performed on them
+
+| Ops |
+| :---: |
+| add |
+| sub |
+| mul |
+| div |
+| matmul |
+| transpose |
+| sum |
+| relu |
+| linear |
+| max |
+| exp |
+| log |
+| sqrt |
+| log_softmax |
+| cross_entropy_loss |
+
+For ops like transpose or matmul, you can use the symbols liek ```T```, ```@```. Other than these, dlgrad also supports the following operations
+
+
+| Ops | Left operand | Right operand |
+| :---: | :---: | :---: |
+| > (greater) | Tensor | Scalar |
+| ** (power) | Tensor | Scalar |
+| - (negate) | Tensor | - |
