@@ -61,7 +61,7 @@ With the tensors created, any of the following ops can be performed on them
 | log_softmax |
 | cross_entropy_loss |
 
-For ops like transpose or matmul, you can use the symbols liek ```T```, ```@```. Other than these, dlgrad also supports the following operations
+For ops like transpose or matmul, you can use the symbols like ```T```, ```@```. Other than these, dlgrad also supports the following operations
 
 
 | Ops | Left operand | Right operand |
