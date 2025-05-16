@@ -77,7 +77,7 @@ For ops like transpose or matmul, you can use the symbols like ```T```, ```@```.
 | ** (power) | Tensor | Scalar | &check; 2D, 3D | &check; 2D, 3D |
 | - (negate) | Tensor | - | &check; 2D, 3D | &check; 2D, 3D |
 
-### Modles
+### Models
 
 You can create neural networks models like so
 
