@@ -69,3 +69,57 @@ For ops like transpose or matmul, you can use the symbols like ```T```, ```@```.
 | > (greater) | Tensor | Scalar |
 | ** (power) | Tensor | Scalar |
 | - (negate) | Tensor | - |
+
+### Modles
+
+You can create neural networks models like so
+
+```python
+class Model:
+    def __init__(self):
+        self.layers = [
+            nn.Linear(in_dim, HS, bias=True),
+            Tensor.relu,
+            nn.Linear(HS, ncls, bias=True)
+        ]
+    
+    def __call__(self, x: Tensor) -> Tensor: 
+        return x.sequential(self.layers)
+```
+
+then we create an instance of the class and we can begin training.
+
+```python
+model = Model()
+```
+
+### Training
+
+dlgrad supports the following loss functions
+
+| Loss Functions |
+| :---: |
+| Cross-Entropy Loss |
+
+You can use it like so
+
+```python
+model_output.cross_entropy_loss(target=x_train_labels[s:h])
+```
+
+The following optimizers are supported
+
+| Optimizers |
+| :---: |
+| SGD |
+| Adam |
+
+and we can use them like this
+
+```python
+opt = nn.optim.Adam(params=nn.utils.get_parameters(model), lr=1e-3)
+```
+
+We can use ```nn.utils.get_parameters()``` to get all the trainable parameters of the defined model automatically.
+
+Finally, we can call the ```backward()``` function to propagate the loss and ```opt.step()``` to update the weights of the network.
