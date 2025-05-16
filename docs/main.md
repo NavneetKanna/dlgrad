@@ -41,25 +41,25 @@ and the supported devices are
 | cpu |
 | metal |
 
-With the tensors created, any of the following ops can be performed on them
+With the tensors created, any of the following ops can be performed on them, the table also shows which runtime supports which ops
 
-| Ops |
-| :---: |
-| add |
-| sub |
-| mul |
-| div |
-| matmul |
-| transpose |
-| sum |
-| relu |
-| linear |
-| max |
-| exp |
-| log |
-| sqrt |
-| log_softmax |
-| cross_entropy_loss |
+| Ops | CPU | Metal |
+| :---: | :---: | :---: |
+| add | &check; | &check;|
+| sub | &check; | &check; | 
+| mul | &check; | &check; |
+| div | &check; | &check; | 
+| matmul | &check; | &check; | 
+| transpose | &check; | &cross; |
+| sum | &check; | &check; |
+| relu | &check; | &cross; |
+| linear | &check; | - |
+| max | &check; | &cross; |
+| exp | &check; | &check; |
+| log | &check; | &check; |
+| sqrt | &check; | &check; |
+| log_softmax | &check; |  - |
+| cross_entropy_loss | &check; | - | 
 
 For ops like transpose or matmul, you can use the symbols like ```T```, ```@```. Other than these, dlgrad also supports the following operations
 
@@ -123,3 +123,4 @@ opt = nn.optim.Adam(params=nn.utils.get_parameters(model), lr=1e-3)
 We can use ```nn.utils.get_parameters()``` to get all the trainable parameters of the defined model automatically.
 
 Finally, we can call the ```backward()``` function to propagate the loss and ```opt.step()``` to update the weights of the network.
+
