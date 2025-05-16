@@ -47,7 +47,7 @@ dlgrad only supports 2D and 3D tensors, you can create 1D tensors but it is repr
 a = Tensor.rand((2,)) # a.shape will be (1, 2)
 ```
 
-With the tensors created, any of the following ops can be performed on them, the table also shows which runtime supports which ops
+With the tensors created, any of the following ops can be performed on them, the table also shows which runtime supports which ops and which dimensions
 
 | Ops | CPU | Metal |
 | :---: | :---: | :---: |
