@@ -41,34 +41,41 @@ and the supported devices are
 | cpu |
 | metal |
 
+dlgrad only supports 2D and 3D tensors, you can create 1D tensors but it is represented as 2D tensor
+
+```python
+a = Tensor.rand((2,)) # a.shape will be (1, 2)
+```
+
 With the tensors created, any of the following ops can be performed on them, the table also shows which runtime supports which ops
 
 | Ops | CPU | Metal |
 | :---: | :---: | :---: |
-| add | &check; | &check;|
-| sub | &check; | &check; | 
-| mul | &check; | &check; |
-| div | &check; | &check; | 
-| matmul | &check; | &check; | 
-| transpose | &check; | &cross; |
-| sum | &check; | &check; |
-| relu | &check; | &cross; |
-| linear | &check; | - |
-| max | &check; | &cross; |
-| exp | &check; | &check; |
-| log | &check; | &check; |
-| sqrt | &check; | &check; |
-| log_softmax | &check; |  - |
+| add | &check; 2D, 3D | &check; 2D, 3D |
+| sub | &check; 2D, 3D | &check; 2D, 3D | 
+| mul | &check; 2D, 3D | &check; 2D, 3D |
+| div | &check; 2D, 3D | &check; 2D, 3D | 
+| matmul | &check; 2D | &check; 2D | 
+| transpose | &check; 2D | &cross; |
+| sum | &check; 2D, 3D | &check; 2D |
+| relu | &check; 2D, 3D | &cross; |
+| linear | &check; 2D | - |
+| max | &check; 2D, 3D | &cross; |
+| exp | &check; 2D, 3D | &check; 2D, 3D |
+| log | &check; 2D, 3D | &check; 2D, 3D |
+| sqrt | &check; 2D, 3D | &check; 2D, 3D |
+| log_softmax | &check; 2D, 3D |  - |
 | cross_entropy_loss | &check; | - | 
+
 
 For ops like transpose or matmul, you can use the symbols like ```T```, ```@```. Other than these, dlgrad also supports the following operations
 
 
-| Ops | Left operand | Right operand |
-| :---: | :---: | :---: |
-| > (greater) | Tensor | Scalar |
-| ** (power) | Tensor | Scalar |
-| - (negate) | Tensor | - |
+| Ops | Left operand | Right operand | CPU | Metal
+| :---: | :---: | :---: |:---: | :---: |
+| > (greater) | Tensor | Scalar | &check; 2D, 3D | &cross;
+| ** (power) | Tensor | Scalar | &check; 2D, 3D | &check; 2D, 3D |
+| - (negate) | Tensor | - | &check; 2D, 3D | &check; 2D, 3D |
 
 ### Modles
 
@@ -124,3 +131,11 @@ We can use ```nn.utils.get_parameters()``` to get all the trainable parameters o
 
 Finally, we can call the ```backward()``` function to propagate the loss and ```opt.step()``` to update the weights of the network.
 
+### Indexing
+
+dlgrad only supports slicing indexing.
+
+```python
+a = Tensor.rand((2, 3))
+
+```
