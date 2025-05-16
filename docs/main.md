@@ -160,3 +160,16 @@ Every tensor has got the following properties
 - ndim
 - dtype
 - device
+
+
+### Dataloaders
+
+dlgrads comes with ```mnsit``` loader, to use them just import call the function
+
+```python
+from dlgrad.nn.datasets import mnist
+
+# (60000, 784), (60000, 1), (10000, 784), (10000, 1)
+x_train_images, x_train_labels, x_test_images, x_test_labels = mnist(device="metal")
+
+```
