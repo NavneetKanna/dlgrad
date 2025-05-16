@@ -136,6 +136,27 @@ Finally, we can call the ```backward()``` function to propagate the loss and ```
 dlgrad only supports slicing indexing.
 
 ```python
-a = Tensor.rand((2, 3))
-
+a = Tensor.rand((3, 2, 3))
+a[0:1]
+a[1:2]
 ```
+
+### Printing
+
+To print a tensor, you need to call the ```.numpy()``` method
+
+```python
+a = Tensor.rand((2, 3))
+print(a.numpy())
+```
+
+### Properties
+
+Every tensor has got the following properties
+
+- numel
+- shape
+- stride
+- ndim
+- dtype
+- device
