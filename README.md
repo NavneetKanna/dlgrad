@@ -16,7 +16,7 @@ You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Beh
 
 ## Docs
 
-Check out the docker in the docs [folder](docs/main.md).
+Check out the docker in the docs [folder](docs/README.md).
 ## MNIST Example
 
 ```python
