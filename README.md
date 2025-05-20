@@ -75,10 +75,6 @@ test_acc = (correct/total) * 100
 print("test acc", test_acc)
 ```
 
-## Things I'm Working On
-- [x] Speed comparision script
-- [x] Metal Device
- 
 ## Tests
 
 To run the tests (pytest is required)
