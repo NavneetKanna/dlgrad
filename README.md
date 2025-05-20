@@ -1,3 +1,5 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/NavneetKanna/dlgrad)
+
 # dlgrad
 
 dlgrad (*D*eep *L*earning auto*grad*): A Lightweight Autograd Engine for Deep Learning
