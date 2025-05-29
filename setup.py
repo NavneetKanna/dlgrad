@@ -1,59 +1,47 @@
 import os
+import platform
+import shutil
 import subprocess
+import sys
 
 from setuptools import find_packages, setup
 from setuptools.command.build import build as _build
 
+if platform.system() == 'Windows':
+    print("dlgrad does not support Windows. Please use a Unix-based system (macOS/Linux).")
+    sys.exit(1)
+
+
+METAL_FILES = [
+    'arithmetic', 'utils', 'sum', 'max', 'matmul', 'transpose'
+]
+
+def metal_tool_available(tool):  # noqa: ANN001, ANN201
+    return shutil.which(tool) is not None
 
 class BuildWithMetal(_build):
     def run(self):  # noqa: ANN201
         _build.run(self)
 
+        if not (metal_tool_available('xcrun') and metal_tool_available('metal')):
+            print("xcrun/metal not found — skipping Metal backend build.")
+            return
+
         package_dir = os.path.join(self.build_lib, 'dlgrad')
         metal_dir = os.path.join(package_dir, 'src', 'metal')
         os.makedirs(metal_dir, exist_ok=True)
 
-        metal_file = os.path.join('dlgrad', 'src', 'metal', 'arithmetic.metal')
-        ir_file = os.path.join(package_dir, 'arithmetic.ir')
-        metallib_file = os.path.join(metal_dir, 'arithmetic.metallib')
-        subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c',  metal_file])
-        subprocess.check_call(['xcrun',  '-sdk', 'macosx', 'metallib','-o', metallib_file, ir_file])
-        os.remove(ir_file)
+        build_temp = os.path.abspath(self.build_temp)
+        os.makedirs(build_temp, exist_ok=True)
 
-        metal_file = os.path.join('dlgrad', 'src', 'metal', 'utils.metal')
-        ir_file = os.path.join(package_dir, 'utils.ir')
-        metallib_file = os.path.join(metal_dir, 'utils.metallib')
-        subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c',  metal_file])
-        subprocess.check_call(['xcrun',  '-sdk', 'macosx', 'metallib','-o', metallib_file, ir_file])
-        os.remove(ir_file)
+        for name in ['arithmetic', 'utils', 'sum', 'max', 'matmul', 'transpose']:
+            metal_file = os.path.join('dlgrad', 'src', 'metal', f'{name}.metal')
+            ir_file = os.path.join(build_temp, f'{name}.ir')
+            metallib_file = os.path.join(metal_dir, f'{name}.metallib')
 
-        metal_file = os.path.join('dlgrad', 'src', 'metal', 'sum.metal')
-        ir_file = os.path.join(package_dir, 'sum.ir')
-        metallib_file = os.path.join(metal_dir, 'sum.metallib')
-        subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c',  metal_file])
-        subprocess.check_call(['xcrun',  '-sdk', 'macosx', 'metallib','-o', metallib_file, ir_file])
-        os.remove(ir_file)
-
-        metal_file = os.path.join('dlgrad', 'src', 'metal', 'max.metal')
-        ir_file = os.path.join(package_dir, 'max.ir')
-        metallib_file = os.path.join(metal_dir, 'max.metallib')
-        subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c',  metal_file])
-        subprocess.check_call(['xcrun',  '-sdk', 'macosx',  'metallib','-o', metallib_file, ir_file])
-        os.remove(ir_file)
-
-        metal_file = os.path.join('dlgrad', 'src', 'metal', 'matmul.metal')
-        ir_file = os.path.join(package_dir, 'matmul.ir')
-        metallib_file = os.path.join(metal_dir, 'matmul.metallib')
-        subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c',  metal_file])
-        subprocess.check_call(['xcrun',  '-sdk', 'macosx',  'metallib','-o', metallib_file, ir_file])
-        os.remove(ir_file)
-
-        metal_file = os.path.join('dlgrad', 'src', 'metal', 'transpose.metal')
-        ir_file = os.path.join(package_dir, 'transpose.ir')
-        metallib_file = os.path.join(metal_dir, 'transpose.metallib')
-        subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c',  metal_file])
-        subprocess.check_call(['xcrun',  '-sdk', 'macosx',  'metallib','-o', metallib_file, ir_file])
-        os.remove(ir_file)
+            subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metal', '-O2', '-o', ir_file, '-c', metal_file])
+            subprocess.check_call(['xcrun', '-sdk', 'macosx', 'metallib', '-o', metallib_file, ir_file])
+            os.remove(ir_file)
 
 setup(
     name='dlgrad',
