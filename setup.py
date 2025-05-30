@@ -23,6 +23,9 @@ class BuildWithMetal(_build):
     def run(self):  # noqa: ANN201
         _build.run(self)
 
+        if platform.system() != 'Darwin':
+            return
+
         if not (metal_tool_available('xcrun') and metal_tool_available('metal')):
             print("xcrun/metal not found — skipping Metal backend build.")
             return
