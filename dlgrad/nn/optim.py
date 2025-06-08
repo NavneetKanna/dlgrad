@@ -21,7 +21,8 @@ class Optimizer:
 class SGD(Optimizer):
     def __init__(self, params: list[Tensor], lr: int = 1e-3, momentum: float = 0.0) -> None:
         super().__init__(params, lr)
-        self.momentum = Tensor(momentum)
+        # self.momentum = Tensor(momentum)
+        self.momentum = momentum
         self.velocities = {id(param): Tensor.zeros_like(param.shape) for param in self.params}
 
     def step(self) -> None:

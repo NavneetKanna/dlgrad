@@ -38,7 +38,7 @@ def color_ratio(lib_time: float, dlgrad_time: float):
 def run_benchmark(shapes: tuple, func, op_name: str, nargs: int, device: str):
     np_data = [np.random.uniform(size=shapes).astype(np.float32) for _ in range(nargs)]
     dlgrad_data = [Tensor(data, device=device) for data in np_data]
-    tinygrad_data = [tinygrad.Tensor(data, device=device) for data in np_data]
+    tinygrad_data = [tinygrad.Tensor(data, device=device).realize() for data in np_data]
     if device == "metal":
         d = "mps"
     else:

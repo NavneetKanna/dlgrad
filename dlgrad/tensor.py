@@ -286,7 +286,7 @@ class Tensor:
 		return ops.Add.execute(x, y)
 
 	@staticmethod
-	def mul(x: Tensor, y: Tensor | Scalar) -> Tensor:
+	def mul(x: Tensor | Scalar, y: Tensor | Scalar) -> Tensor:
 		"""
 		Multiplies `x` and `y` tensors with broadcasting.
 
@@ -301,6 +301,8 @@ class Tensor:
 		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y, device=x.device)
+		elif isinstance(x, Scalar):
+			x = Tensor(x, device=y.device)
 		return ops.Mul.execute(x, y)
 
 	@staticmethod
@@ -568,7 +570,7 @@ class Tensor:
 		return Tensor.add(self, other)
 
 	# TODO: Support rmul, lmul
-	def __mul__(self, other: Tensor | Scalar) -> Tensor:
+	def __mul__(self: Tensor | Scalar, other: Tensor | Scalar) -> Tensor:
 		return Tensor.mul(self, other)
 
 	def __sub__(self, other: Tensor | Scalar) -> Tensor:
