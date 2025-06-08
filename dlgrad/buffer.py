@@ -145,6 +145,20 @@ class Buffer:
             shape=(1, x.shape[0]), device=x.device, dtype=x.dtype
         )
 
+    def argmax(self, axis: int) -> Buffer:
+        assert self.ndim == 2, "currently dlgrad supports argmax for 2d only"
+        if axis==0:
+            s = (1, self.shape[1])
+        elif axis==1:
+            s = (self.shape[0], 1)
+        else:
+            s = (1, 1)
+        return Buffer(
+            data=dispatcher.dispatch(op=UnaryOps.ARGMAX, device=Device.CPU,
+                                     x=self, axis=axis),
+            shape=s, device=self.device, dtype=self.dtype
+        )
+
     @staticmethod
     def ce_backward(**kwargs) -> None:
         kwargs.pop("device")

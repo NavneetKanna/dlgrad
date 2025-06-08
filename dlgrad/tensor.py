@@ -506,7 +506,7 @@ class Tensor:
 		return ops.CrossEntropy.execute(self, target)
 
 	def argmax(self, axis: int = -1) -> Tensor:
-		pass
+		return Tensor(data=self.data.argmax(axis))
 
 	def backward(self) -> None:
 		assert self.shape == (1, 1), "backward must be called on a scalar Tensor"

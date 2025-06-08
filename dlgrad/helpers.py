@@ -23,6 +23,7 @@ class UnaryOps(Enum):
     SQRT = auto()
     TRANSPOSE = auto()
     RELU = auto()
+    ARGMAX = auto()
 
 class BufferOps(Enum):
     CREATE = auto()

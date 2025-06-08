@@ -26,9 +26,9 @@ class BuildWithMetal(_build):
         if platform.system() != 'Darwin':
             return
 
-        if not (metal_tool_available('xcrun') and metal_tool_available('metal')):
-            print("xcrun/metal not found — skipping Metal backend build.")
-            return
+        # if not (metal_tool_available('xcrun') and metal_tool_available('metal')):
+        #     print("xcrun/metal not found — skipping Metal backend build.")
+        #     return
 
         package_dir = os.path.join(self.build_lib, 'dlgrad')
         metal_dir = os.path.join(package_dir, 'src', 'metal')

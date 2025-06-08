@@ -217,6 +217,19 @@ class CPU:
         return out_ptr
 
     @staticmethod
+    @dispatcher.register(UnaryOps.ARGMAX, Device.CPU)
+    def argmax(x: Buffer, axis: int) -> CDataPtr:
+        if axis==0:
+            n = x.shape[1]
+        elif axis==1:
+            n = x.shape[0]
+        else:
+            n = 1
+        out_ptr = CPU.malloc(num=n)
+        _utils.lib.argmax2d(x.ptr, out_ptr, x.shape, axis)
+        return out_ptr
+
+    @staticmethod
     @dispatcher.register(CustomOps.CE_FORWARD, Device.CPU)
     def ce_forward(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.shape[0])
