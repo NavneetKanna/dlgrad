@@ -73,11 +73,10 @@ for i in tqdm(range(STEPS)):
         s = 0
         h = s+BS
 
-y_pred = model(x=x_test_images).numpy().argmax(axis=1)
-tv = np.squeeze(x_test_labels.numpy())
-correct = np.sum(y_pred==tv)
-total = tv.size
-test_acc = (correct/total) * 100
+y_pred = model(x=x_test_images).argmax(axis=1)
+correct = (y_pred==x_test_labels).sum()
+total = float(x_test_labels.shape[0])
+test_acc = ((correct/total) * 100.0).numpy()[0][0]
 print("test acc", test_acc)
 ```
 

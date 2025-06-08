@@ -506,6 +506,7 @@ class Tensor:
 		return ops.CrossEntropy.execute(self, target)
 
 	def argmax(self, axis: int = -1) -> Tensor:
+		print("argmax called")
 		return Tensor(data=self.data.argmax(axis))
 
 	def backward(self) -> None:
@@ -584,6 +585,12 @@ class Tensor:
 
 	def __matmul__(self, other: Tensor) -> Tensor:
 		return Tensor.matmul(self, other)
+
+	def __eq__(self, other: Tensor) -> Tensor:
+		return Tensor(data=self.data==other.data)
+
+	def __hash__(self):  # noqa: ANN204
+		return id(self)
 
 	@property
 	def numel(self) -> int:

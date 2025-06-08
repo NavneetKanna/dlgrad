@@ -213,7 +213,7 @@ class CPU:
     @dispatcher.register(BinaryOps.EQT, Device.CPU)
     def eqt(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _cmp.lib.eqt(x.ptr, y, out_ptr, x.numel)
+        _cmp.lib.eqt(x.ptr, y.ptr, out_ptr, x.numel)
         return out_ptr
 
     @staticmethod
