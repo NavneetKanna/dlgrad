@@ -19,13 +19,12 @@ def mnist(device: Device = Device.CPU) -> list[Tensor]:
 
     for filename, is_image, magic_number, shape in datasets:
         file_url = f"{base_url}{filename}"
-        file_path = f"{CACHE_DIR}/downloads/{filename}"
-        unzipped_path = file_path.replace('.gz', '')
+        save_filename = filename.replace('.gz', '')
 
-        fetch(url=file_url, filename=file_path)
-        unzip(path=file_path, save_path=unzipped_path)
+        fetch(url=file_url, filename=filename)
+        unzip(filename=filename, save_filename=save_filename)
 
-        data = CPU.mnist_loader(images=is_image, path=unzipped_path, magic_number=magic_number)
+        data = CPU.mnist_loader(images=is_image, path=f"{CACHE_DIR}/downloads/{save_filename}", magic_number=magic_number)
         tensor = Tensor(
             data=Buffer(data=data, shape=shape, dtype=DType.FLOAT32, device=device),
             requires_grad=False, device=device

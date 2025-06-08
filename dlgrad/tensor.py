@@ -508,7 +508,6 @@ class Tensor:
 		return ops.CrossEntropy.execute(self, target)
 
 	def argmax(self, axis: int = -1) -> Tensor:
-		print("argmax called")
 		return Tensor(data=self.data.argmax(axis))
 
 	def backward(self) -> None:

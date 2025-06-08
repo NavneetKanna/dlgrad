@@ -162,13 +162,13 @@ def fetch(url: str, filename: str) -> None:
     else:
         print(f"{CACHE_DIR}/downloads/{filename} already exists")
 
-def unzip(path: str, save_path: str) -> None:
-    if not os.path.exists(save_path):
-        with gzip.open(path, 'rb') as fin:
-            with open(save_path, "wb") as fout:
+def unzip(filename: str, save_filename: str) -> None:
+    if not os.path.exists(f"{CACHE_DIR}/downloads/{save_filename}"):
+        with gzip.open(f"{CACHE_DIR}/downloads/{filename}", 'rb') as fin:
+            with open(f"{CACHE_DIR}/downloads/{save_filename}", "wb") as fout:
                 shutil.copyfileobj(fin, fout)
     else:
-        print(f"{save_path} already exists")
+        print(f"{save_filename} already exists")
 
 class Colors:
     GREEN = '\033[92m'
