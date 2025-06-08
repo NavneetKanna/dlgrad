@@ -69,7 +69,6 @@ setup(
         'dlgrad/builder/float_mnist_build.py:ffi',
         'dlgrad/builder/float_transpose_build.py:ffi',
     ],
-    setup_requires=['cffi>=1.17.1'],
     install_requires=['cffi>=1.0.0', 'requests', 'pyobjc-framework-Metal; sys_platform == "darwin"'],
     cmdclass={'build': BuildWithMetal},
 )

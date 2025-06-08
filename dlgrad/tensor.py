@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+import platform
 from functools import reduce
 
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
 from dlgrad.helpers import ffi, resolve_ndim
-from dlgrad.runtime import (
-	cpu,  # needed to register all the cpu runtime functions  # noqa: F401
-	metal,  # needed to register all the cpu runtime functions  # noqa: F401
-)
+from dlgrad.runtime import cpu  # needed to register all the cpu runtime functions  # noqa: F401
 
+if platform.system() == 'Darwin':
+    from dlgrad.runtime import metal  # needed to register all the metal runtime functions # noqa: F401
 
 class OP:
 	"""
