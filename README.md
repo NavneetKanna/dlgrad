@@ -22,7 +22,7 @@ You can read my [blog](https://navneetkanna.github.io/blog/2024/02/22/dlgrad-Beh
 
 ## Docs
 
-Check out the docs in the [folder](docs/README.md).
+Check out the docs in this [folder](docs/README.md).
 ## MNIST Example
 
 ```python
