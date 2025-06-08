@@ -13,6 +13,7 @@ Inspired by Andrej Karpathy's micrograd and George Hotz's tinygrad, dlgrad is my
 ## Installation
 
 ```bash
+python3 -m pip install --upgrade pip setuptools wheel
 python3 -m pip install git+https://github.com/NavneetKanna/dlgrad
 ```
 
