@@ -145,7 +145,6 @@ void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s, int *xshape, 
             }
         }
     }
-
     
     switch (dim)
     {
@@ -159,5 +158,34 @@ void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s, int *xshape, 
             maxs_with_1s[(int)tmp[i]] = 1.0f;
         }
         break;
+    }
+}
+
+void new_max(float *x, float *out, int *stride, int *shape, int numel, int dim) {
+    int out_ptr = -1;
+    int last_start = 0;
+    bool copy = true;
+    
+    for (int i=0; i<numel; i++) {
+        if (i % (stride[dim]*shape[dim]) == 0 && i != 0) {
+            last_start += stride[dim];
+            out_ptr = last_start;
+            copy = true;
+        } else if (i % stride[dim] == 0 && i != 0) {
+            out_ptr -= stride[dim] - 1;
+            copy = false;
+        } else {
+            out_ptr += 1;
+        }
+        
+        // printf("i %d out_ptr %d \n", i, out_ptr);
+
+        if (copy) {
+            out[out_ptr] = x[i];
+        } else {
+            if (x[i] > out[out_ptr]) {
+                out[out_ptr] = x[i];
+            }
+        }
     }
 }

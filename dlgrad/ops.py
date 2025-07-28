@@ -27,7 +27,6 @@ class Sum(OP):
 		return (t*upstream_grad,)
 
 
-# NOTE: Max backward does not work for 3d tensors :(
 class Max(OP):
 	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
 		self.inp_shape = x.shape
