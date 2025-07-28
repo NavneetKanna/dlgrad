@@ -1,41 +1,5 @@
 # ruff :noqa
 
-from dlgrad.buffer import Buffer
-
-# def max(x: Buffer, dim: int) -> str:
-#     code = f"""
-#     #include <stdlib.h>
-
-#     void maxx(float *x, float *out) {{
-#         int shape_dim = {x.shape[dim]};
-#         int stride_dim = {x.stride[dim]};
-#         int numel = {x.numel};
-
-#         int out_start = 0;
-#         for (int j = 0; j < numel; j += stride_dim) {{
-#             if ((j % (stride_dim * shape_dim)) == 0) {{
-#                 if (j != 0) {{
-#                     out_start += stride_dim;
-#                 }} else {{
-#                     out_start = 0;
-#                 }}
-#                 // copy
-#                 for (int i = 0; i < stride_dim; i++) {{
-#                     out[out_start + i] = x[j + i];
-#                 }}
-#             }} else {{
-#                 // max
-#                 for (int i = 0; i < stride_dim; i++) {{
-#                     float val = x[j + i];
-#                     if (val > out[out_start + i]) {{
-#                         out[out_start + i] = val;
-#                     }}
-#                 }}
-#             }}
-#         }}
-#     }}
-#     """
-#     return code
 
 # def sum(x: Buffer, dim: int) -> str:
 #     code = f"""

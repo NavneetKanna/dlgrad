@@ -9,8 +9,7 @@ def n_gen() -> Generator[str, Any, None]:
 
 
 @cache
-# def arithmetic(x: Buffer, y: Buffer, op: str) -> str:
-def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple, op: str) -> str:
+def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple, op: str) -> tuple[str, str]:
     gen = n_gen()
 
     code  = f"""
@@ -71,3 +70,39 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
     code += "}\n"
 
     return code, f"void {op}(float *x, float *y, float *out);"
+
+# TODO: id dim is None
+@cache
+def max(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
+    code  = f"""
+    void max(float *x, float *out) {{
+        int shape_dim = {x_shape[dim]};
+        int stride_dim = {x_stride[dim]};
+        int numel = {x_numel};
+
+        int out_start = 0;
+        for (int j = 0; j < numel; j += stride_dim) {{
+            if ((j % (stride_dim * shape_dim)) == 0) {{
+                if (j != 0) {{
+                    out_start += stride_dim;
+                }} else {{
+                    out_start = 0;
+                }}
+                // copy
+                for (int i = 0; i < stride_dim; i++) {{
+                    out[out_start + i] = x[j + i];
+                }}
+            }} else {{
+                // max
+                for (int i = 0; i < stride_dim; i++) {{
+                    float val = x[j + i];
+                    if (val > out[out_start + i]) {{
+                        out[out_start + i] = val;
+                    }}
+                }}
+            }}
+        }}
+    }}
+    """
+
+    return code, "void max(float *x, float *out);"
