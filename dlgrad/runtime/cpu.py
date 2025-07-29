@@ -24,7 +24,7 @@ from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
 from dlgrad.helpers import CACHE_DIR, BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, calculate_stride, prod_
 
-CFLAGS = ["-shared", "-fPIC", "-O2", "-march=native"]
+CFLAGS = ["-shared", "-fPIC", "-O2", "-march=native", "-ffast-math"]
 COMPILER = "clang"
 
 class CPU:
@@ -208,10 +208,18 @@ class CPU:
         num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = CPU.calloc(num=num)
 
-        # if x.ndim == 3:
-        #     _sum.lib.sum_3d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
-        # if x.ndim == 2:
-        #     _sum.lib.sum_2d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
+        c_code, cdef = cpu_kernel.sum(x.shape, x.stride, x.numel, dim)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"sum_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.sum(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -225,7 +233,7 @@ class CPU:
 
         c_code, cdef = cpu_kernel.max(x.shape, x.stride, x.numel, dim)
 
-        key   = CPU._hash_code(c_code)
+        key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"max_{key}.so"
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
@@ -235,11 +243,6 @@ class CPU:
         CPU._ensure_sig(cdef)
 
         lib.max(x.ptr, out_ptr)
-
-        # if x.ndim == 3:
-        #     _max.lib.max_3d(x.ptr, out_ptr, tmp, max_with_1s, x.shape, x.stride, x.numel, dim)
-        # if x.ndim == 2:
-        #     _max.lib.max_2d(x.ptr, out_ptr, tmp, max_with_1s, x.shape, x.stride, x.numel, dim)
 
         return out_ptr, max_with_1s
 
