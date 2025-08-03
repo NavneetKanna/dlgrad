@@ -167,6 +167,65 @@ def sum(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, s
 
     return code, "void sum(float *x, float *out);"
 
+@cache
+def transpose_given_axes(x_shape: tuple, axes: tuple) -> list:
+    ax = list(range(len(x_shape)))
+    # replace elements at positions in axes with elements of axes reversed
+    for i, pos in enumerate(axes):
+        ax[pos] = axes[-(i+1)]
+    return ax
+
+@cache
+def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int, axes: tuple) -> tuple[str, str]:
+    gen = n_gen()
+
+    ax = transpose_given_axes(x_shape, axes)
+
+    code = """
+    void transpose(float *x, float *out) {
+    int out_idx = 0;
+    int x_idx = 0;
+    """
+
+    var_str = []
+    for i in x_shape:
+        var = next(gen)
+        var_str.append(var)
+        code += f"""
+        for (int {var}=0; {var}<{i}; {var}++) {{
+        """
+
+    ts = "out_idx = "
+    for i, v in zip(out_stride, ax):
+        ts += f"{i}*{var_str[v]} + "
+    ts = ts[:-3]
+    ts += ";"
+
+    code += ts
+
+    code += "\n"
+
+    ts = "x_idx = "
+    for i, v in zip(x_stride, var_str):
+        ts += f"{i}*{v} + "
+    ts = ts[:-3]
+    ts += ";"
+
+    code += ts
+
+    code += "\n"
+
+    code += """
+    out[out_idx] = x[x_idx];
+    """
+
+    for i in range(len(var_str)):
+        code += "}\n"
+
+    code += "}\n"
+
+    return code, "void transpose(float *x, float *out);"
+
 
 """
 dim = 1

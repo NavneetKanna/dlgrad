@@ -12,7 +12,6 @@ import _full  # type: ignore
 import _loss  # type: ignore
 import _matmul  # type: ignore
 import _mnist_loader  # type: ignore
-import _transpose  # type: ignore
 import _uniform  # type: ignore
 import _utils  # type: ignore
 from cffi import FFI
@@ -22,7 +21,7 @@ from dlgrad.codegen.cpu import cpu_kernel
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
-from dlgrad.helpers import CACHE_DIR, BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, calculate_stride, prod_
+from dlgrad.helpers import CACHE_DIR, BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, prod_
 
 CFLAGS = ["-shared", "-fPIC", "-O2", "-march=native", "-ffast-math"]
 COMPILER = "clang"
@@ -162,9 +161,22 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.TRANSPOSE, Device.CPU)
-    def transpose(x: Buffer) -> CDataPtr:
+    def transpose(x: Buffer, out_shape: tuple, out_stride: tuple, axes: tuple) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _transpose.lib.transpose(x.ptr, out_ptr, x.shape[0], x.shape[1], x.stride, calculate_stride(x.shape[::-1]))
+
+        c_code, cdef = cpu_kernel.transpose(x.shape, x.stride, out_stride, x.numel, axes)
+
+        key   = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"transpose_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.transpose(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod

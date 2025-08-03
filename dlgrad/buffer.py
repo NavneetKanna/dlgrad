@@ -105,12 +105,21 @@ class Buffer:
             shape=(self.shape[0], other.shape[1]), device=self.device, dtype=self.dtype
         )
 
-    def transpose(self) -> Buffer:
-        assert self.ndim == 2, "Only 2D Tensors can be transposed"
+    @staticmethod
+    def swap_indices(inp: tuple, tmp: tuple) -> tuple:
+        lst = list(inp)
+        for i in range(0, len(tmp), 2):
+            if i+1 < len(tmp):
+                idx1, idx2 = tmp[i], tmp[i+1]
+                lst[idx1], lst[idx2] = lst[idx2], lst[idx1]
+            return tuple(lst)
+
+    def transpose(self, axes: tuple) -> Buffer:
+        # assert self.ndim == 2, "Only 2D Tensors can be transposed"
 
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=Device.CPU, x=self),
-            shape=self.shape[::-1], device=self.device, dtype=self.dtype
+            data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=Device.CPU, x=self, out_shape=Buffer.swap_indices(self.shape, axes), out_stride=calculate_stride(Buffer.swap_indices(self.shape, axes)), axes=axes),
+            shape=Buffer.swap_indices(self.shape, axes), device=self.device, dtype=self.dtype
         )
 
     def exp(self) -> Buffer:

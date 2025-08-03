@@ -8,8 +8,8 @@ from dlgrad.tensor import OP
 
 # TODO: Remove compulsory tuple return type in backward
 class Transpose(OP):
-	def forward(self, x: Buffer):  # noqa: ANN201
-		return x.transpose()
+	def forward(self, x: Buffer, axes: tuple):  # noqa: ANN201
+		return x.transpose(axes)
 
 	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
 		return (upstream_grad.transpose(),)
