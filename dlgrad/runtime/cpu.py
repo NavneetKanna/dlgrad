@@ -183,28 +183,80 @@ class CPU:
     @dispatcher.register(UnaryOps.EXP, Device.CPU)
     def exp(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _utils.lib.cexp(x.ptr, out_ptr, x.numel)
+
+        c_code, cdef = cpu_kernel.utils(x.numel, "exp")
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"exp_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.cexp(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.SQRT, Device.CPU)
     def sqrt(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _utils.lib.csqrt(x.ptr, out_ptr, x.numel)
+
+        c_code, cdef = cpu_kernel.utils(x.numel, "sqrt")
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"sqrt_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.csqrt(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.LOG, Device.CPU)
     def log(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _utils.lib.clog(x.ptr, out_ptr, x.numel)
+
+        c_code, cdef = cpu_kernel.utils(x.numel, "log")
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"log_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.cexp(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.POW, Device.CPU)
     def pow(x: Buffer, val: Scalar) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _utils.lib.cpow(x.ptr, out_ptr, val, x.numel)
+
+        c_code, cdef = cpu_kernel.utils(x.numel, "pow")
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"pow_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.cpow(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod

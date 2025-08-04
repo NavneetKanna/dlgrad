@@ -226,6 +226,75 @@ def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int,
 
     return code, "void transpose(float *x, float *out);"
 
+@cache
+def utils(x_numel: int, func: str) -> tuple[str, str]:
+    match func:
+        case "neg":
+            code = f"""
+            #include <math.h>
+
+            void neg(float *x, float *out)
+            {{
+                for (int i=0; i<{x_numel}; i++) {{
+                    out[i] = -1 * x[i];
+                }}
+            }}
+            """
+
+            return code, "void neg(float *x, float *out);"
+        case "exp":
+            code = f"""
+            #include <math.h>
+
+            void cexp(float *x, float *out)
+            {{
+                for (int i=0; i<{x_numel}; i++) {{
+                    out[i] = exp(x[i]);
+                }}
+            }}
+            """
+
+            return code, "void cexp(float *x, float *out);"
+        case "log":
+            code = f"""
+            #include <math.h>
+
+            void clog(float *x, float *out)
+            {{
+                for (int i=0; i<{x_numel}; i++) {{
+                    out[i] = log(x[i]);
+                }}
+            }}
+            """
+
+            return code, "void clog(float *x, float *out);"
+        case "pow":
+            code = f"""
+            #include <math.h>
+
+            void cpow(float *x, float *out)
+            {{
+                for (int i=0; i<{x_numel}; i++) {{
+                    out[i] = pow(x[i]);
+                }}
+            }}
+            """
+
+            return code, "void cpow(float *x, float *out);"
+        case "sqrt":
+            code = f"""
+            #include <math.h>
+
+            void csqrt(float *x, float *out)
+            {{
+                for (int i=0; i<{x_numel}; i++) {{
+                    out[i] = sqrtf(x[i]);
+                }}
+            }}
+            """
+
+            return code, "void csqrt(float *x, float *out);"
+
 
 """
 dim = 1
