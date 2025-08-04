@@ -295,6 +295,53 @@ def utils(x_numel: int, func: str) -> tuple[str, str]:
 
             return code, "void csqrt(float *x, float *out);"
 
+@cache
+def matmul(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple) -> tuple[str, str]:
+    c_code = f"""
+        void matmul(float *x, float *y, float *out) {{
+            float sum = 0.0;
+            for (int i=0; i<{x_shape[0]}; i++) {{
+                for (int j=0; j<{y_shape[1]}; j++) {{
+                    sum = 0.0;
+                    for (int k=0; k<{y_shape[0]}; k++) {{
+                        sum += x[i*{x_stride[0]} + k*{x_stride[1]}] * y[k*{y_stride[0]} + j*{y_stride[1]}];
+                    }}
+                    out[i*{y_shape[1]}+ j] = sum;
+                }}
+            }}
+        }}
+        """
+
+    return c_code, "void matmul(float *x, float *y, float *out);"
+
+@cache
+def ce_forward(n_rows: int, x_stride: tuple) -> tuple[str, str]:
+    c_code = f"""
+    void ce_forward(float *x, float *target, float *out)
+    {{
+        for (int i=0; i<{n_rows}; i++) {{
+            out[i] = x[(int)target[i]+({x_stride[0]}*i)];
+        }}
+    }}
+    """
+
+    return c_code, "void ce_forward(float *x, float *target, float *out);"
+
+@cache
+def ce_backward(x_shape: tuple, x_stride: tuple) -> tuple[str, str]:
+    c_code = f"""
+    void ce_backward(float *x, float *target, float *out)
+    {{
+        int rows = {x_shape[0]};
+        int cols = {x_shape[1]};
+
+        for (int i=0; i<rows; i++) {{
+            x[(int)target[i]+({x_stride[0]}*i)] -= 1;
+        }}
+    }}
+    """
+
+    return c_code, "void ce_backward(float *x, float *target, float *out);"
 
 """
 dim = 1

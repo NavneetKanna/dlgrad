@@ -9,7 +9,6 @@ import _af  # type: ignore
 import _allocate  # type: ignore
 import _cmp  # type: ignore
 import _full  # type: ignore
-import _loss  # type: ignore
 import _mnist_loader  # type: ignore
 import _uniform  # type: ignore
 import _utils  # type: ignore
@@ -263,34 +262,19 @@ class CPU:
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.shape[0]*y.shape[1])
 
-        # c_code, cdef = cpu_kernel.utils(x.numel, "pow")
-        c_code = f"""
-        void matmul(float *x, float *y, float *out) {{
-            float sum = 0.0;
-            for (int i=0; i<{x.shape[0]}; i++) {{
-                for (int j=0; j<{y.shape[1]}; j++) {{
-                    sum = 0.0;
-                    for (int k=0; k<{y.shape[0]}; k++) {{
-                        sum += x[i*{x.stride[0]} + k*{x.stride[1]}] * y[k*{y.stride[0]} + j*{y.stride[1]}];
-                    }}
-                    out[i*{y.shape[1]}+ j] = sum;
-                }}
-            }}
-        }}
-        """
+        c_code, cdef = cpu_kernel.matmul(x.shape, y.shape, x.stride, y.stride)
 
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"pow_{key}.so"
+        so_fp = pathlib.Path(CACHE_DIR) / f"matmul_{key}.so"
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
 
-        CPU._ensure_sig("void matmul(float *x, float *y, float *out);")
+        CPU._ensure_sig(cdef)
 
         lib.matmul(x.ptr, y.ptr, out_ptr)
 
-        # _matmul.lib.matmul(x.ptr, y.ptr, out_ptr, x.shape[0], y.shape[1], y.shape[0], y.stride, x.stride)
         return out_ptr
 
     @staticmethod
@@ -375,10 +359,34 @@ class CPU:
     @dispatcher.register(CustomOps.CE_FORWARD, Device.CPU)
     def ce_forward(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.shape[0])
-        _loss.lib.ce_forward(x.ptr, y.ptr, out_ptr, x.shape[0], x.stride)
+        # _loss.lib.ce_forward(x.ptr, y.ptr, out_ptr, x.shape[0], x.stride)
+        c_code, cdef = cpu_kernel.ce_forward(x.shape[0], x.stride)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"ce_forward_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.ce_forward(x.ptr, y.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(CustomOps.CE_BACKWARD, Device.CPU)
     def ce_backward(x: Buffer, target: Buffer) -> CDataPtr:
-        _loss.lib.ce_backward(x.ptr, target.ptr, x.shape, x.stride)
+        c_code, cdef = cpu_kernel.ce_backward(x.shape, x.stride)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"ce_backward_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.ce_backward(x.ptr, target.ptr)
