@@ -13,7 +13,7 @@ from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, DType, Scalar
-from dlgrad.helpers import BinaryOps, UnaryOps, cal_sum_out_shape, prod_
+from dlgrad.helpers import BinaryOps, UnaryOps, cal_sum_max_out_shape, prod_
 
 
 # TODO: Maybe create buffers during creation time ?
@@ -430,7 +430,7 @@ class MetalGPU:
         def next_divisible_by_32(n):  # noqa: ANN001, ANN202
             return n if n % 32 == 0 else n + (32 - n % 32)
 
-        num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = MetalGPU.calloc(num=num)
 
         x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(

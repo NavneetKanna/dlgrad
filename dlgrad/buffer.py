@@ -10,7 +10,7 @@ from dlgrad.helpers import (
     BufferOps,
     CustomOps,
     UnaryOps,
-    cal_sum_out_shape,
+    cal_sum_max_out_shape,
     calculate_stride,
     check_broadcast,
     ffi,
@@ -77,7 +77,7 @@ class Buffer:
         )
 
     def sum(self, dim: int = -1) -> Buffer:
-        out_shape = cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
+        out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
 
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim),
@@ -86,7 +86,7 @@ class Buffer:
         )
 
     def max(self, dim: int = -1) -> tuple[Buffer, Buffer]:
-        out_shape = cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
+        out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
 
         out, max_with_1s = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim)
 

@@ -21,7 +21,7 @@ from dlgrad.codegen.cpu import cpu_kernel
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
-from dlgrad.helpers import CACHE_DIR, BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, prod_
+from dlgrad.helpers import CACHE_DIR, BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_max_out_shape, prod_
 
 CFLAGS = ["-shared", "-fPIC", "-O2", "-march=native", "-ffast-math"]
 COMPILER = "clang"
@@ -217,7 +217,7 @@ class CPU:
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
     def sum(x: Buffer, dim: int) -> CDataPtr:
-        num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = CPU.calloc(num=num)
 
         c_code, cdef = cpu_kernel.sum(x.shape, x.stride, x.numel, dim)
@@ -238,7 +238,7 @@ class CPU:
     @staticmethod
     @dispatcher.register(UnaryOps.MAX, Device.CPU)
     def max(x: Buffer, dim: int) -> CDataPtr:
-        num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
         # tmp = CPU.malloc(num=num)
         max_with_1s = CPU.calloc(num=x.numel)
