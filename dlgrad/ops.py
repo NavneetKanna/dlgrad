@@ -12,7 +12,7 @@ class Transpose(OP):
 		return x.transpose(axes)
 
 	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
-		return (upstream_grad.transpose(),)
+		return (upstream_grad.transpose(tuple([i for i in range(upstream_grad.ndim)][::-1])),)
 
 
 class Sum(OP):
@@ -138,13 +138,38 @@ class MatMul(OP):
 		return (upstream_grad@t2, t1@upstream_grad)
 
 
+def pr(data):  # noqa: ANN001, ANN201
+	import numpy as np
+
+	from dlgrad.helpers import ffi
+
+	dataa = np.frombuffer(
+		ffi.buffer(data.ptr, data.numel * ffi.sizeof("float")),
+		count=-1,
+		dtype=np.float32,
+	)
+
+	t = np.lib.stride_tricks.as_strided(
+		dataa,
+		data.shape,
+		tuple(
+			stride * 4 for stride in data.stride
+		),
+	)
+
+	return t
+
 # TODO: Fuse all ops performed here in C ?
 class CrossEntropy(OP):
 	def forward(self, logits: Buffer, target: Buffer, dim: int = 1) -> Buffer:
 		assert logits.shape[0] == target.shape[0], f"logits shape[0] and target shape[0] does not match {logits.shape} != {target.shape}"  # noqa: E501
 
+		print("----")
+
+
 		self.target = target
 		t, _ = logits.max(dim=dim)
+		print(pr(t))
 		m = logits - t
 		e = m.exp()
 		ss = e.sum(dim=dim)

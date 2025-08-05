@@ -88,38 +88,87 @@ def max(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, s
 
         return code, "void max(float *x, float *out);"
 
-    code  = f"""
-    void max(float *x, float *out) {{
-        int shape_dim = {x_shape[dim]};
-        int stride_dim = {x_stride[dim]};
-        int numel = {x_numel};
+    # code  = f"""
+    # void max(float *x, float *out) {{
+    #     int shape_dim = {x_shape[dim]};
+    #     int stride_dim = {x_stride[dim]};
+    #     int numel = {x_numel};
 
-        int out_start = 0;
-        for (int j = 0; j < numel; j += stride_dim) {{
-            if ((j % (stride_dim * shape_dim)) == 0) {{
-                if (j != 0) {{
-                    out_start += stride_dim;
-                }} else {{
-                    out_start = 0;
-                }}
-                // copy
-                for (int i = 0; i < stride_dim; i++) {{
-                    out[out_start + i] = x[j + i];
-                }}
-            }} else {{
-                // max
-                for (int i = 0; i < stride_dim; i++) {{
-                    float val = x[j + i];
-                    if (val > out[out_start + i]) {{
-                        out[out_start + i] = val;
+    #     int out_start = 0;
+    #     for (int j = 0; j < numel; j += stride_dim) {{
+    #         if ((j % (stride_dim * shape_dim)) == 0) {{
+    #             if (j != 0) {{
+    #                 out_start += stride_dim;
+    #             }} else {{
+    #                 out_start = 0;
+    #             }}
+    #             // copy
+    #             for (int i = 0; i < stride_dim; i++) {{
+    #                 out[out_start + i] = x[j + i];
+    #             }}
+    #         }} else {{
+    #             // max
+    #             for (int i = 0; i < stride_dim; i++) {{
+    #                 float val = x[j + i];
+    #                 if (val > out[out_start + i]) {{
+    #                     out[out_start + i] = val;
+    #                     tmp[out_start + i] = x_idx;
+    #                 }}
+    #             }}
+    #         }}
+    #     }}
+    # }}
+    # """
+
+    code = f"""
+        void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s)
+        {{
+            int out_idx = 0;
+            int x_idx = 0;
+            int tmp_max = 0;
+
+            int nrows = {x_shape[0]};
+            int ncols = {x_shape[1]};
+
+            int row_stride = {x_stride[0]};
+            int col_stride = {x_stride[1]};
+
+            for (int row=0; row<nrows; row++) {{
+                for (int col=0; col<ncols; col++) {{
+                    x_idx = row*row_stride + col*col_stride;
+                    switch ({dim}) {{
+                        case 0:
+                            out_idx = col;
+                            break;
+                        case 1:
+                            out_idx = row;
+                            break;
+                    }}
+                    if (x[x_idx] > out[out_idx]) {{
+                        out[out_idx] = x[x_idx];
+                        tmp[out_idx] = x_idx;   // for backward pass
                     }}
                 }}
             }}
+
+            switch ({dim})
+            {{
+            case 0:
+                for (int i=0; i<ncols; i++) {{
+                    maxs_with_1s[(int)tmp[i]] = 1.0f;
+                }}
+                break;
+            case 1:
+                for (int i=0; i<nrows; i++) {{
+                    maxs_with_1s[(int)tmp[i]] = 1.0f;
+                }}
+                break;
+            }}
         }}
-    }}
     """
 
-    return code, "void max(float *x, float *out);"
+    # return code, "void max(float *x, float *out);"
+    return code, "void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s);"
 
 @cache
 def sum(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
@@ -272,15 +321,15 @@ def utils(x_numel: int, func: str) -> tuple[str, str]:
             code = f"""
             #include <math.h>
 
-            void cpow(float *x, float *out)
+            void c_pow(float *x, float *out)
             {{
                 for (int i=0; i<{x_numel}; i++) {{
-                    out[i] = pow(x[i]);
+                    out[i] = powf(x[i], 2.0f);
                 }}
             }}
             """
 
-            return code, "void cpow(float *x, float *out);"
+            return code, "void c_pow(float *x, float *out);"
         case "sqrt":
             code = f"""
             #include <math.h>
@@ -330,7 +379,7 @@ def ce_forward(n_rows: int, x_stride: tuple) -> tuple[str, str]:
 @cache
 def ce_backward(x_shape: tuple, x_stride: tuple) -> tuple[str, str]:
     c_code = f"""
-    void ce_backward(float *x, float *target, float *out)
+    void ce_backward(float *x, float *target)
     {{
         int rows = {x_shape[0]};
         int cols = {x_shape[1]};
@@ -341,7 +390,56 @@ def ce_backward(x_shape: tuple, x_stride: tuple) -> tuple[str, str]:
     }}
     """
 
-    return c_code, "void ce_backward(float *x, float *target, float *out);"
+    return c_code, "void ce_backward(float *x, float *target);"
+
+@cache
+def argmax(x_shape: tuple, axis: int) -> tuple[str, str]:
+    code = f"""
+        void argmax2d(float *x, float *out)
+        {{
+            int rows = {x_shape[0]};
+            int cols = {x_shape[1]};
+            if ({axis} == 1) {{
+                for (int i = 0; i < rows; i++) {{
+                    float max = x[i * cols + 0];
+                    int idx = 0;
+                    for (int j = 1; j < cols; j++) {{
+                        if (x[i * cols + j] > max) {{
+                            max = x[i * cols + j];
+                            idx = j;
+                        }}
+                    }}
+                    out[i] = idx;
+                }}
+            }} else if ({axis} == 0) {{
+                for (int j = 0; j < cols; j++) {{
+                    float max = x[0 * cols + j];
+                    int idx = 0;
+                    for (int i = 1; i < rows; i++) {{
+                        if (x[i * cols + j] > max) {{
+                            max = x[i * cols + j];
+                            idx = i;
+                        }}
+                    }}
+                    out[j] = idx;
+                }}
+            }} else {{
+                float max = -999;
+                int idx = 0;
+                for (int i=0; i<rows*cols; i++) {{
+                    if (x[i] > max) {{
+                        max = x[i];
+                        idx = i;
+                    }}
+                }}
+                out[0] = idx;
+            }}
+        }}
+    """
+
+    return code, "void argmax2d(float *x, float *out);"
+
+
 
 """
 dim = 1

@@ -375,6 +375,8 @@ class Tensor:
 		Returns:
 			The transposed tensor
 		"""
+		if isinstance(axes[0], tuple):
+			axes = axes[0]
 		return ops.Transpose.execute(x, axes=axes)
 
 	def sum(self, dim: int = -1) -> Tensor:
@@ -569,7 +571,7 @@ class Tensor:
 
 	@property
 	def T(self) -> Tensor:  # noqa: N802
-		return Tensor.transpose(self, self.shape[::-1])
+		return Tensor.transpose(self, tuple([i for i in range(self.ndim)][::-1]))
 
 	def __gt__(self, other: Scalar) -> Tensor:
 		return Tensor(data=self.data>other)

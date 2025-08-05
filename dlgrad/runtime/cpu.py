@@ -138,17 +138,17 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
     def sub(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
-        return CPU._binary_op(x, y, op_code=2)
+        return CPU._binary_op(x, y, op="sub")
 
     @staticmethod
     @dispatcher.register(BinaryOps.MUL, Device.CPU)
     def mul(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
-        return CPU._binary_op(x, y, op_code=1)
+        return CPU._binary_op(x, y, op="mul")
 
     @staticmethod
     @dispatcher.register(BinaryOps.DIV, Device.CPU)
     def div(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
-        return CPU._binary_op(x, y, op_code=3)
+        return CPU._binary_op(x, y, op="divv")
 
     @staticmethod
     @dispatcher.register(UnaryOps.NEG, Device.CPU)
@@ -253,7 +253,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.cpow(x.ptr, out_ptr)
+        lib.c_pow(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -303,7 +303,7 @@ class CPU:
     def max(x: Buffer, dim: int) -> CDataPtr:
         num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
-        # tmp = CPU.malloc(num=num)
+        tmp = CPU.malloc(num=num)
         max_with_1s = CPU.calloc(num=x.numel)
 
         c_code, cdef = cpu_kernel.max(x.shape, x.stride, x.numel, dim)
@@ -317,7 +317,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.max(x.ptr, out_ptr)
+        lib.max_2d(x.ptr, out_ptr, tmp, max_with_1s)
 
         return out_ptr, max_with_1s
 
@@ -352,14 +352,28 @@ class CPU:
         else:
             n = 1
         out_ptr = CPU.malloc(num=n)
-        _utils.lib.argmax2d(x.ptr, out_ptr, x.shape, axis)
+
+        c_code, cdef = cpu_kernel.argmax(x.shape, axis)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"argmax_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.argmax2d(x.ptr, out_ptr)
+
+        # _utils.lib.argmax2d(x.ptr, out_ptr, x.shape, axis)
         return out_ptr
 
     @staticmethod
     @dispatcher.register(CustomOps.CE_FORWARD, Device.CPU)
     def ce_forward(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.shape[0])
-        # _loss.lib.ce_forward(x.ptr, y.ptr, out_ptr, x.shape[0], x.stride)
+
         c_code, cdef = cpu_kernel.ce_forward(x.shape[0], x.stride)
 
         key = CPU._hash_code(c_code)
