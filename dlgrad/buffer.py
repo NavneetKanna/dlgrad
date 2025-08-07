@@ -85,15 +85,19 @@ class Buffer:
             ndim=self.ndim if self.ndim == 2 else self.ndim - 1, dtype=self.dtype
         )
 
-    def max(self, dim: int = -1) -> tuple[Buffer, Buffer]:
+    def max(self, dim: int = -1, backward: bool = False, out: Buffer = None) -> Buffer:
         out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
 
-        out, max_with_1s = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim)
+        if not backward:
+            out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward)
+        else:
+            out_shape = self.shape
+            out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward, out=out)
 
         out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
-        max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
+        # max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
 
-        return out_buf, max_with_1s_buf
+        return out_buf
 
     def matmul(self, other: Buffer) -> Buffer:
         assert self.ndim == 2 and other.ndim == 2, "dlgrad only supports 2d matrix multiplication"

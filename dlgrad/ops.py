@@ -31,12 +31,14 @@ class Max(OP):
 	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
 		self.inp_shape = x.shape
 		self.device = x.device
+		self.dim = dim
 		self.x = x
-		self.out, self.max_with_1s = x.max(dim=dim)
+		self.out = x.max(dim=dim)
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		return (self.max_with_1s*upstream_grad,)
+		max_with_1s = self.x.max(dim=self.dim, backward=True, out=self.out)
+		return (max_with_1s*upstream_grad,)
 
 
 class Exp(OP):
@@ -138,38 +140,34 @@ class MatMul(OP):
 		return (upstream_grad@t2, t1@upstream_grad)
 
 
-def pr(data):  # noqa: ANN001, ANN201
-	import numpy as np
+# def pr(data):  # noqa: ANN001, ANN201
+# 	import numpy as np
 
-	from dlgrad.helpers import ffi
+# 	from dlgrad.helpers import ffi
 
-	dataa = np.frombuffer(
-		ffi.buffer(data.ptr, data.numel * ffi.sizeof("float")),
-		count=-1,
-		dtype=np.float32,
-	)
+# 	dataa = np.frombuffer(
+# 		ffi.buffer(data.ptr, data.numel * ffi.sizeof("float")),
+# 		count=-1,
+# 		dtype=np.float32,
+# 	)
 
-	t = np.lib.stride_tricks.as_strided(
-		dataa,
-		data.shape,
-		tuple(
-			stride * 4 for stride in data.stride
-		),
-	)
+# 	t = np.lib.stride_tricks.as_strided(
+# 		dataa,
+# 		data.shape,
+# 		tuple(
+# 			stride * 4 for stride in data.stride
+# 		),
+# 	)
 
-	return t
+# 	return t
 
 # TODO: Fuse all ops performed here in C ?
 class CrossEntropy(OP):
 	def forward(self, logits: Buffer, target: Buffer, dim: int = 1) -> Buffer:
 		assert logits.shape[0] == target.shape[0], f"logits shape[0] and target shape[0] does not match {logits.shape} != {target.shape}"  # noqa: E501
 
-		print("----")
-
-
 		self.target = target
-		t, _ = logits.max(dim=dim)
-		print(pr(t))
+		t = logits.max(dim=dim)
 		m = logits - t
 		e = m.exp()
 		ss = e.sum(dim=dim)

@@ -522,7 +522,7 @@ class Tensor:
 		return Tensor(data=self.data.argmax(axis))
 
 	def backward(self) -> None:
-		assert self.shape == (1, 1), "backward must be called on a scalar Tensor"
+		assert all(item == 1 for item in self.shape), "backward must be called on a scalar Tensor"
 
 		topo: list[Tensor] = []
 		visited = set()

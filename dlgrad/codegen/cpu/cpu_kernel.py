@@ -59,7 +59,7 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
             code += """
                 out[x_off] = x[x_off] * y[y_off];
             """
-        case "div":
+        case "divv":
             code += """
                 out[x_off] = x[x_off] / y[y_off];
             """
@@ -70,6 +70,44 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
     code += "}\n"
 
     return code, f"void {op}(float *x, float *y, float *out);"
+
+@cache
+def max_backward(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
+    code  = f"""
+        void max_backward(float *x, float *out, float *max_with_1s) {{
+            int shape_dim = {x_shape[dim]};
+            int stride_dim = {x_stride[dim]};
+            int numel = {x_numel};
+
+            int out_start = 0;
+            for (int j = 0; j < numel; j += stride_dim) {{
+                if ((j % (stride_dim * shape_dim)) == 0) {{
+                    if (j != 0) {{
+                        out_start += stride_dim;
+                    }} else {{
+                        out_start = 0;
+                    }}
+                    for (int i = 0; i < stride_dim; i++) {{
+                        float val = x[j + i];
+                        float val2 = out[out_start + i];
+                        if (val == val2) {{
+                            max_with_1s[j+i] = 1.0f;
+                        }}
+                    }}
+                }} else {{
+                    for (int i = 0; i < stride_dim; i++) {{
+                        float val = x[j + i];
+                        float val2 = out[out_start + i];
+                        if (val == val2) {{
+                            max_with_1s[j+i] = 1.0f;
+                        }}
+                    }}
+                }}
+            }}
+        }}
+    """
+
+    return code, "void max_backward(float *x, float *out, float *max_with_1s);"
 
 @cache
 def max(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
@@ -88,87 +126,86 @@ def max(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, s
 
         return code, "void max(float *x, float *out);"
 
-    # code  = f"""
-    # void max(float *x, float *out) {{
-    #     int shape_dim = {x_shape[dim]};
-    #     int stride_dim = {x_stride[dim]};
-    #     int numel = {x_numel};
+    code  = f"""
+    void max(float *x, float *out) {{
+        int shape_dim = {x_shape[dim]};
+        int stride_dim = {x_stride[dim]};
+        int numel = {x_numel};
 
-    #     int out_start = 0;
-    #     for (int j = 0; j < numel; j += stride_dim) {{
-    #         if ((j % (stride_dim * shape_dim)) == 0) {{
-    #             if (j != 0) {{
-    #                 out_start += stride_dim;
-    #             }} else {{
-    #                 out_start = 0;
-    #             }}
-    #             // copy
-    #             for (int i = 0; i < stride_dim; i++) {{
-    #                 out[out_start + i] = x[j + i];
-    #             }}
-    #         }} else {{
-    #             // max
-    #             for (int i = 0; i < stride_dim; i++) {{
-    #                 float val = x[j + i];
-    #                 if (val > out[out_start + i]) {{
-    #                     out[out_start + i] = val;
-    #                     tmp[out_start + i] = x_idx;
+        int out_start = 0;
+        for (int j = 0; j < numel; j += stride_dim) {{
+            if ((j % (stride_dim * shape_dim)) == 0) {{
+                if (j != 0) {{
+                    out_start += stride_dim;
+                }} else {{
+                    out_start = 0;
+                }}
+                // copy
+                for (int i = 0; i < stride_dim; i++) {{
+                    out[out_start + i] = x[j + i];
+                }}
+            }} else {{
+                // max
+                for (int i = 0; i < stride_dim; i++) {{
+                    float val = x[j + i];
+                    if (val > out[out_start + i]) {{
+                        out[out_start + i] = val;
+                    }}
+                }}
+            }}
+        }}
+    }}
+    """
+
+    # code = f"""
+    #     void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s)
+    #     {{
+    #         int out_idx = 0;
+    #         int x_idx = 0;
+    #         int tmp_max = 0;
+
+    #         int nrows = {x_shape[0]};
+    #         int ncols = {x_shape[1]};
+
+    #         int row_stride = {x_stride[0]};
+    #         int col_stride = {x_stride[1]};
+
+    #         for (int row=0; row<nrows; row++) {{
+    #             for (int col=0; col<ncols; col++) {{
+    #                 x_idx = row*row_stride + col*col_stride;
+    #                 switch ({dim}) {{
+    #                     case 0:
+    #                         out_idx = col;
+    #                         break;
+    #                     case 1:
+    #                         out_idx = row;
+    #                         break;
+    #                 }}
+    #                 if (x[x_idx] > out[out_idx]) {{
+    #                     out[out_idx] = x[x_idx];
+    #                     tmp[out_idx] = x_idx;   // for backward pass
     #                 }}
     #             }}
     #         }}
+
+    #         switch ({dim})
+    #         {{
+    #         case 0:
+    #             for (int i=0; i<ncols; i++) {{
+    #                 maxs_with_1s[(int)tmp[i]] = 1.0f;
+    #             }}
+    #             break;
+    #         case 1:
+    #             for (int i=0; i<nrows; i++) {{
+    #                 maxs_with_1s[(int)tmp[i]] = 1.0f;
+    #             }}
+    #             break;
+    #         }}
     #     }}
-    # }}
     # """
 
-    code = f"""
-        void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s)
-        {{
-            int out_idx = 0;
-            int x_idx = 0;
-            int tmp_max = 0;
-
-            int nrows = {x_shape[0]};
-            int ncols = {x_shape[1]};
-
-            int row_stride = {x_stride[0]};
-            int col_stride = {x_stride[1]};
-
-            for (int row=0; row<nrows; row++) {{
-                for (int col=0; col<ncols; col++) {{
-                    x_idx = row*row_stride + col*col_stride;
-                    switch ({dim}) {{
-                        case 0:
-                            out_idx = col;
-                            break;
-                        case 1:
-                            out_idx = row;
-                            break;
-                    }}
-                    if (x[x_idx] > out[out_idx]) {{
-                        out[out_idx] = x[x_idx];
-                        tmp[out_idx] = x_idx;   // for backward pass
-                    }}
-                }}
-            }}
-
-            switch ({dim})
-            {{
-            case 0:
-                for (int i=0; i<ncols; i++) {{
-                    maxs_with_1s[(int)tmp[i]] = 1.0f;
-                }}
-                break;
-            case 1:
-                for (int i=0; i<nrows; i++) {{
-                    maxs_with_1s[(int)tmp[i]] = 1.0f;
-                }}
-                break;
-            }}
-        }}
-    """
-
-    # return code, "void max(float *x, float *out);"
-    return code, "void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s);"
+    return code, "void max(float *x, float *out);"
+    # return code, "void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s);"
 
 @cache
 def sum(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
@@ -276,7 +313,7 @@ def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int,
     return code, "void transpose(float *x, float *out);"
 
 @cache
-def utils(x_numel: int, func: str) -> tuple[str, str]:
+def utils(x_numel: int, func: str, val: float | int = 1.0) -> tuple[str, str]:
     match func:
         case "neg":
             code = f"""
@@ -324,7 +361,7 @@ def utils(x_numel: int, func: str) -> tuple[str, str]:
             void c_pow(float *x, float *out)
             {{
                 for (int i=0; i<{x_numel}; i++) {{
-                    out[i] = powf(x[i], 2.0f);
+                    out[i] = powf(x[i], {val});
                 }}
             }}
             """
