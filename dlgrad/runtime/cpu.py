@@ -96,6 +96,7 @@ class CPU:
             raise RuntimeError(f"Compilation failed:\n{res.stderr}")
 
     @staticmethod
+    @cache
     def _hash_code(code: str) -> str:
         return hashlib.sha256(code.encode()).hexdigest()
 
@@ -115,8 +116,9 @@ class CPU:
     def _binary_op(x: Buffer, y: Buffer | Scalar, op: str) -> CDataPtr:
         c_code, cdef = cpu_kernel.arithmetic(x.shape, x.stride, y.shape, y.stride, op)
 
-        key   = CPU._hash_code(c_code)
+        key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"{op}_{key}.so"
+
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
@@ -301,11 +303,6 @@ class CPU:
     @staticmethod
     @dispatcher.register(UnaryOps.MAX, Device.CPU)
     def max(x: Buffer, dim: int, backward: bool = False, out: Buffer = None) -> CDataPtr:
-        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
-        out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
-        # tmp_ptr = CPU.init_with_scalar(num=x.stride[dim], scalar=-999)
-        # tmp = CPU.malloc(num=num)
-        # max_with_1s = CPU.calloc(num=x.numel)
         if backward:
             max_with_1s = CPU.init_with_scalar(num=x.numel, scalar=0)
             c_code, cdef = cpu_kernel.max_backward(x.shape, x.stride, x.numel, dim)
@@ -322,6 +319,9 @@ class CPU:
 
             return max_with_1s
 
+        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
+
         c_code, cdef = cpu_kernel.max(x.shape, x.stride, x.numel, dim)
 
         key = CPU._hash_code(c_code)
@@ -333,7 +333,6 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        # lib.max_2d(x.ptr, out_ptr, tmp, max_with_1s)
         lib.max(x.ptr, out_ptr)
 
         return out_ptr

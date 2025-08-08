@@ -200,6 +200,7 @@ class Buffer:
             )
 
         x, y = (self, other) if self.numel >= other.numel else (other, self)
+
         return Buffer(
             data=dispatcher.dispatch(op=op, device=self.device, x=x, y=y),
             shape=output_shape, device=self.device, dtype=self.dtype
