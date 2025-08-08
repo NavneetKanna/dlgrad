@@ -1,26 +1,28 @@
+import hashlib
+import os
+import pathlib
 import struct
+import subprocess
+from functools import cache
 
 import _af  # type: ignore
 import _allocate  # type: ignore
-import _arithmetic  # type: ignore
 import _cmp  # type: ignore
 import _full  # type: ignore
-import _loss  # type: ignore
-import _matmul  # type: ignore
-import _max  # type: ignore
 import _mnist_loader  # type: ignore
-import _sum  # type: ignore
-import _transpose  # type: ignore
 import _uniform  # type: ignore
 import _utils  # type: ignore
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
+from dlgrad.codegen.cpu import cpu_kernel
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
-from dlgrad.helpers import BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_out_shape, calculate_stride, prod_
+from dlgrad.helpers import CACHE_DIR, BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_max_out_shape, prod_
 
+CFLAGS = ["-shared", "-fPIC", "-O2", "-march=native", "-ffast-math"]
+COMPILER = "clang"
 
 class CPU:
     """
@@ -84,39 +86,71 @@ class CPU:
         return out_ptr
 
     @staticmethod
-    def _binary_op(x: Buffer, y: Buffer | Scalar, op_code: int) -> CDataPtr:
-        out_ptr = CPU.malloc(num=x.numel)
-        if y.numel == 1:
-            _arithmetic.lib.with_scalar(x.ptr, out_ptr, y.ptr, x.numel, op_code)
-            return out_ptr
+    def _build_shared_object(source: str, so_path: pathlib.Path) -> None:
+        c_path = so_path.with_suffix(".c")
+        c_path.write_text(source)
 
-        match x.ndim:
-            case 3:
-                _arithmetic.lib.op_3d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, op_code)
-            case 2:
-                _arithmetic.lib.op_2d(x.ptr, y.ptr, out_ptr, x.shape, x.stride, y.shape, y.stride, op_code)
+        cmd = [COMPILER, *CFLAGS, "-o", str(so_path), str(c_path)]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode != 0:
+            raise RuntimeError(f"Compilation failed:\n{res.stderr}")
 
-        return out_ptr
+    @staticmethod
+    @cache
+    def _hash_code(code: str) -> str:
+        return hashlib.sha256(code.encode()).hexdigest()
+
+    @staticmethod
+    @cache
+    def _get_handle(so_path: str):  # noqa: ANN205
+        return CPU.ffi.dlopen(so_path)
+
+    @staticmethod
+    @cache
+    def _ensure_sig(cdef: str) -> bool:
+        CPU.ffi.cdef(cdef)
+        return True
+
+    # TODO: Cache malloc/out_ptr, reuse it, this should speed up
+    @staticmethod
+    def _binary_op(x: Buffer, y: Buffer | Scalar, op: str) -> CDataPtr:
+        c_code, cdef = cpu_kernel.arithmetic(x.shape, x.stride, y.shape, y.stride, op)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"{op}_{key}.so"
+
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        func = getattr(lib, op)
+        outptr = CPU.malloc(num=x.numel)
+        func(x.ptr, y.ptr, outptr)
+
+        return outptr
 
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
     def add(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
-        return CPU._binary_op(x, y, op_code=0)
+        return CPU._binary_op(x, y, op="add")
 
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
     def sub(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
-        return CPU._binary_op(x, y, op_code=2)
+        return CPU._binary_op(x, y, op="sub")
 
     @staticmethod
     @dispatcher.register(BinaryOps.MUL, Device.CPU)
     def mul(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
-        return CPU._binary_op(x, y, op_code=1)
+        return CPU._binary_op(x, y, op="mul")
 
     @staticmethod
     @dispatcher.register(BinaryOps.DIV, Device.CPU)
     def div(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
-        return CPU._binary_op(x, y, op_code=3)
+        return CPU._binary_op(x, y, op="divv")
 
     @staticmethod
     @dispatcher.register(UnaryOps.NEG, Device.CPU)
@@ -127,73 +161,181 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.TRANSPOSE, Device.CPU)
-    def transpose(x: Buffer) -> CDataPtr:
+    def transpose(x: Buffer, out_shape: tuple, out_stride: tuple, axes: tuple) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _transpose.lib.transpose(x.ptr, out_ptr, x.shape[0], x.shape[1], x.stride, calculate_stride(x.shape[::-1]))
+
+        c_code, cdef = cpu_kernel.transpose(x.shape, x.stride, out_stride, x.numel, axes)
+
+        key   = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"transpose_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.transpose(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.EXP, Device.CPU)
     def exp(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _utils.lib.cexp(x.ptr, out_ptr, x.numel)
+
+        c_code, cdef = cpu_kernel.utils(x.numel, "exp")
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"exp_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.cexp(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.SQRT, Device.CPU)
     def sqrt(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _utils.lib.csqrt(x.ptr, out_ptr, x.numel)
+
+        c_code, cdef = cpu_kernel.utils(x.numel, "sqrt")
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"sqrt_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.csqrt(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.LOG, Device.CPU)
     def log(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _utils.lib.clog(x.ptr, out_ptr, x.numel)
+
+        c_code, cdef = cpu_kernel.utils(x.numel, "log")
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"log_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.clog(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.POW, Device.CPU)
     def pow(x: Buffer, val: Scalar) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _utils.lib.cpow(x.ptr, out_ptr, val, x.numel)
+
+        c_code, cdef = cpu_kernel.utils(x.numel, "pow", val)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"pow_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.c_pow(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.shape[0]*y.shape[1])
-        _matmul.lib.matmul(x.ptr, y.ptr, out_ptr, x.shape[0], y.shape[1], y.shape[0], y.stride, x.stride)
+
+        c_code, cdef = cpu_kernel.matmul(x.shape, y.shape, x.stride, y.stride)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"matmul_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.matmul(x.ptr, y.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
     def sum(x: Buffer, dim: int) -> CDataPtr:
-        num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = CPU.calloc(num=num)
 
-        if x.ndim == 3:
-            _sum.lib.sum_3d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
-        if x.ndim == 2:
-            _sum.lib.sum_2d(x.ptr, out_ptr, x.shape, x.stride, x.numel, dim)
+        c_code, cdef = cpu_kernel.sum(x.shape, x.stride, x.numel, dim)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"sum_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.sum(x.ptr, out_ptr)
 
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.MAX, Device.CPU)
-    def max(x: Buffer, dim: int) -> CDataPtr:
-        num = prod_(cal_sum_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+    def max(x: Buffer, dim: int, backward: bool = False, out: Buffer = None) -> CDataPtr:
+        if backward:
+            max_with_1s = CPU.init_with_scalar(num=x.numel, scalar=0)
+            c_code, cdef = cpu_kernel.max_backward(x.shape, x.stride, x.numel, dim)
+            key = CPU._hash_code(c_code)
+            so_fp = pathlib.Path(CACHE_DIR) / f"max_backward_{key}.so"
+            if not os.path.exists(so_fp):
+                CPU._build_shared_object(c_code, so_fp)
+
+            lib = CPU._get_handle(str(so_fp))
+
+            CPU._ensure_sig(cdef)
+
+            lib.max_backward(x.ptr, out.ptr, max_with_1s)
+
+            return max_with_1s
+
+        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
         out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
-        tmp = CPU.malloc(num=num)
-        max_with_1s = CPU.calloc(num=x.numel)
 
-        if x.ndim == 3:
-            _max.lib.max_3d(x.ptr, out_ptr, tmp, max_with_1s, x.shape, x.stride, x.numel, dim)
-        if x.ndim == 2:
-            _max.lib.max_2d(x.ptr, out_ptr, tmp, max_with_1s, x.shape, x.stride, x.numel, dim)
+        c_code, cdef = cpu_kernel.max(x.shape, x.stride, x.numel, dim)
 
-        return out_ptr, max_with_1s
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"max_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.max(x.ptr, out_ptr)
+
+        return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.RELU, Device.CPU)
@@ -226,17 +368,55 @@ class CPU:
         else:
             n = 1
         out_ptr = CPU.malloc(num=n)
-        _utils.lib.argmax2d(x.ptr, out_ptr, x.shape, axis)
+
+        c_code, cdef = cpu_kernel.argmax(x.shape, axis)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"argmax_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.argmax2d(x.ptr, out_ptr)
+
+        # _utils.lib.argmax2d(x.ptr, out_ptr, x.shape, axis)
         return out_ptr
 
     @staticmethod
     @dispatcher.register(CustomOps.CE_FORWARD, Device.CPU)
     def ce_forward(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.shape[0])
-        _loss.lib.ce_forward(x.ptr, y.ptr, out_ptr, x.shape[0], x.stride)
+
+        c_code, cdef = cpu_kernel.ce_forward(x.shape[0], x.stride)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"ce_forward_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.ce_forward(x.ptr, y.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(CustomOps.CE_BACKWARD, Device.CPU)
     def ce_backward(x: Buffer, target: Buffer) -> CDataPtr:
-        _loss.lib.ce_backward(x.ptr, target.ptr, x.shape, x.stride)
+        c_code, cdef = cpu_kernel.ce_backward(x.shape, x.stride)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"ce_backward_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.ce_backward(x.ptr, target.ptr)

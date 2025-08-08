@@ -10,7 +10,7 @@ from dlgrad.helpers import (
     BufferOps,
     CustomOps,
     UnaryOps,
-    cal_sum_out_shape,
+    cal_sum_max_out_shape,
     calculate_stride,
     check_broadcast,
     ffi,
@@ -77,7 +77,7 @@ class Buffer:
         )
 
     def sum(self, dim: int = -1) -> Buffer:
-        out_shape = cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
+        out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
 
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim),
@@ -85,15 +85,19 @@ class Buffer:
             ndim=self.ndim if self.ndim == 2 else self.ndim - 1, dtype=self.dtype
         )
 
-    def max(self, dim: int = -1) -> tuple[Buffer, Buffer]:
-        out_shape = cal_sum_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
+    def max(self, dim: int = -1, backward: bool = False, out: Buffer = None) -> Buffer:
+        out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
 
-        out, max_with_1s = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim)
+        if not backward:
+            out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward)
+        else:
+            out_shape = self.shape
+            out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward, out=out)
 
         out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
-        max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
+        # max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
 
-        return out_buf, max_with_1s_buf
+        return out_buf
 
     def matmul(self, other: Buffer) -> Buffer:
         assert self.ndim == 2 and other.ndim == 2, "dlgrad only supports 2d matrix multiplication"
@@ -105,12 +109,21 @@ class Buffer:
             shape=(self.shape[0], other.shape[1]), device=self.device, dtype=self.dtype
         )
 
-    def transpose(self) -> Buffer:
-        assert self.ndim == 2, "Only 2D Tensors can be transposed"
+    @staticmethod
+    def swap_indices(inp: tuple, tmp: tuple) -> tuple:
+        lst = list(inp)
+        for i in range(0, len(tmp), 2):
+            if i+1 < len(tmp):
+                idx1, idx2 = tmp[i], tmp[i+1]
+                lst[idx1], lst[idx2] = lst[idx2], lst[idx1]
+            return tuple(lst)
+
+    def transpose(self, axes: tuple) -> Buffer:
+        # assert self.ndim == 2, "Only 2D Tensors can be transposed"
 
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=Device.CPU, x=self),
-            shape=self.shape[::-1], device=self.device, dtype=self.dtype
+            data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=Device.CPU, x=self, out_shape=Buffer.swap_indices(self.shape, axes), out_stride=calculate_stride(Buffer.swap_indices(self.shape, axes)), axes=axes),
+            shape=Buffer.swap_indices(self.shape, axes), device=self.device, dtype=self.dtype
         )
 
     def exp(self) -> Buffer:
@@ -187,6 +200,7 @@ class Buffer:
             )
 
         x, y = (self, other) if self.numel >= other.numel else (other, self)
+
         return Buffer(
             data=dispatcher.dispatch(op=op, device=self.device, x=x, y=y),
             shape=output_shape, device=self.device, dtype=self.dtype
@@ -236,7 +250,7 @@ class Buffer:
 
     @property
     def T(self) -> Buffer:  # noqa: N802
-        return self.transpose()
+        return self.transpose(tuple([i for i in range(self.ndim)][::-1]))
 
     @property
     def numel(self) -> int:

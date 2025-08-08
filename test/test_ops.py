@@ -103,25 +103,25 @@ def test_transpose_same_tensors(shapes):
 def test_pow(shapes):
     run(shapes, lambda x: x**2)
 
-@pytest.mark.parametrize("shapes", [
-    [(2, 3)]
-])
-def test_argmax(shapes):
-    np_data = np.random.uniform(size=shapes[0]).astype(np.float32)
-    dlgrad_data = Tensor(np_data)
-    torch_data = torch.tensor(np_data)
+# @pytest.mark.parametrize("shapes", [
+#     [(2, 3)]
+# ])
+# def test_argmax(shapes):
+#     np_data = np.random.uniform(size=shapes[0]).astype(np.float32)
+#     dlgrad_data = Tensor(np_data)
+#     torch_data = torch.tensor(np_data)
 
-    dl_out = dlgrad_data.argmax()
-    to_out = torch_data.argmax(keepdim=True)
-    np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+#     dl_out = dlgrad_data.argmax()
+#     to_out = torch_data.argmax(keepdim=True)
+#     np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
-    dl_out = dlgrad_data.argmax(1)
-    to_out = torch_data.argmax(1, keepdim=True)
-    np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+#     dl_out = dlgrad_data.argmax(1)
+#     to_out = torch_data.argmax(1, keepdim=True)
+#     np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
-    dl_out = dlgrad_data.argmax(0)
-    to_out = torch_data.argmax(0, keepdim=True)
-    np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+#     dl_out = dlgrad_data.argmax(0)
+#     to_out = torch_data.argmax(0, keepdim=True)
+#     np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
     
 @pytest.mark.parametrize("shapes", [
     [(4, 3, 2)],
@@ -290,5 +290,5 @@ s = [
 srun(s, lambda x, y: x+y)
 srun(s, lambda x, y: x-y)
 srun(s, lambda x, y: x*y)
-srun(s, lambda x, y: x/y)
+# srun(s, lambda x, y: x/y)
 

@@ -354,8 +354,17 @@ class Tensor:
 		"""
 		return ops.MatMul.execute(x, y)
 
+	# @staticmethod
+	# def swap_indices(inp: tuple, tmp: tuple) -> tuple:
+	# 	lst = list(inp)
+	# 	for i in range(0, len(tmp), 2):
+	# 		if i+1 < len(tmp):
+	# 			idx1, idx2 = tmp[i], tmp[i+1]
+	# 			lst[idx1], lst[idx2] = lst[idx2], lst[idx1]
+	# 	return tuple(lst)
+
 	@staticmethod
-	def transpose(x: Tensor) -> Tensor:
+	def transpose(x: Tensor, *axes) -> Tensor:
 		"""
 		Transpose `x` tensor. Returns a new tensor.
 
@@ -366,7 +375,9 @@ class Tensor:
 		Returns:
 			The transposed tensor
 		"""
-		return ops.Transpose.execute(x)
+		if isinstance(axes[0], tuple):
+			axes = axes[0]
+		return ops.Transpose.execute(x, axes=axes)
 
 	def sum(self, dim: int = -1) -> Tensor:
 		"""
@@ -511,7 +522,7 @@ class Tensor:
 		return Tensor(data=self.data.argmax(axis))
 
 	def backward(self) -> None:
-		assert self.shape == (1, 1), "backward must be called on a scalar Tensor"
+		assert all(item == 1 for item in self.shape), "backward must be called on a scalar Tensor"
 
 		topo: list[Tensor] = []
 		visited = set()
@@ -560,7 +571,7 @@ class Tensor:
 
 	@property
 	def T(self) -> Tensor:  # noqa: N802
-		return Tensor.transpose(self)
+		return Tensor.transpose(self, tuple([i for i in range(self.ndim)][::-1]))
 
 	def __gt__(self, other: Scalar) -> Tensor:
 		return Tensor(data=self.data>other)
