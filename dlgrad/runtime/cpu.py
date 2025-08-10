@@ -6,11 +6,9 @@ import subprocess
 from functools import cache
 
 import _allocate  # type: ignore
-import _cmp  # type: ignore
 import _full  # type: ignore
 import _mnist_loader  # type: ignore
 import _uniform  # type: ignore
-import _utils  # type: ignore
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
@@ -155,7 +153,20 @@ class CPU:
     @dispatcher.register(UnaryOps.NEG, Device.CPU)
     def neg(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _utils.lib.neg(x.ptr, out_ptr, x.numel)
+
+        c_code, cdef = cpu_kernel.utils(x.numel, "neg")
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"neg_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.neg(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
@@ -360,14 +371,40 @@ class CPU:
     @dispatcher.register(BinaryOps.GT, Device.CPU)
     def gt(x: Buffer, y: int | float) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _cmp.lib.gt_with_scalar(x.ptr, out_ptr, y, x.numel)
+
+        c_code, cdef = cpu_kernel.gt(x.numel, y)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"gt_with_scalar_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.gt_with_scalar(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
     @dispatcher.register(BinaryOps.EQT, Device.CPU)
     def eqt(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _cmp.lib.eqt(x.ptr, y.ptr, out_ptr, x.numel)
+
+        c_code, cdef = cpu_kernel.eqt(x.numel)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"eqt_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.eqt(x.ptr, y.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod

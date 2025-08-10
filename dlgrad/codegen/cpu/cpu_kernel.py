@@ -445,6 +445,39 @@ def relu(x_numel: int) -> tuple[str, str]:
 
     return code, "void relu(float *arr, float *out);"
 
+@cache
+def gt(x_numel: int, val: int | float) -> tuple[str, str]:
+    code = f"""
+        void gt_with_scalar(float *arr, float *out)
+        {{
+            for (int i=0; i<{x_numel}; i++) {{
+                if (arr[i] > {val})
+                    out[i] = 1.0;
+                else
+                    out[i] = 0.0;
+            }}
+        }}
+    """
+
+    return code, "void gt_with_scalar(float *arr, float *out);"
+
+@cache
+def eqt(x_numel: int) -> tuple[str, str]:
+    code = f"""
+        void eqt(float *x, float *y, float *out)
+        {{
+            for (int i=0; i<{x_numel}; i++) {{
+                if (x[i] == y[i]) {{
+                    out[i] = 1.0;
+                }} else {{
+                    out[i] = 0.0;
+                }}
+            }}
+        }}
+    """
+
+    return code, "void eqt(float *x, float *y, float *out);"
+
 """
 dim = 1
 
