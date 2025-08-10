@@ -3,6 +3,7 @@ from functools import cache
 from typing import Any
 
 
+# NOTE: Assumes max 4D tensor
 def n_gen() -> Generator[str, Any, None]:
     a = ["i", "j", "k", "l"]
     yield from a
@@ -157,55 +158,7 @@ def max(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, s
     }}
     """
 
-    # code = f"""
-    #     void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s)
-    #     {{
-    #         int out_idx = 0;
-    #         int x_idx = 0;
-    #         int tmp_max = 0;
-
-    #         int nrows = {x_shape[0]};
-    #         int ncols = {x_shape[1]};
-
-    #         int row_stride = {x_stride[0]};
-    #         int col_stride = {x_stride[1]};
-
-    #         for (int row=0; row<nrows; row++) {{
-    #             for (int col=0; col<ncols; col++) {{
-    #                 x_idx = row*row_stride + col*col_stride;
-    #                 switch ({dim}) {{
-    #                     case 0:
-    #                         out_idx = col;
-    #                         break;
-    #                     case 1:
-    #                         out_idx = row;
-    #                         break;
-    #                 }}
-    #                 if (x[x_idx] > out[out_idx]) {{
-    #                     out[out_idx] = x[x_idx];
-    #                     tmp[out_idx] = x_idx;   // for backward pass
-    #                 }}
-    #             }}
-    #         }}
-
-    #         switch ({dim})
-    #         {{
-    #         case 0:
-    #             for (int i=0; i<ncols; i++) {{
-    #                 maxs_with_1s[(int)tmp[i]] = 1.0f;
-    #             }}
-    #             break;
-    #         case 1:
-    #             for (int i=0; i<nrows; i++) {{
-    #                 maxs_with_1s[(int)tmp[i]] = 1.0f;
-    #             }}
-    #             break;
-    #         }}
-    #     }}
-    # """
-
     return code, "void max(float *x, float *out);"
-    # return code, "void max_2d(float *x, float *out, float *tmp, float *maxs_with_1s);"
 
 @cache
 def sum(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
@@ -476,7 +429,21 @@ def argmax(x_shape: tuple, axis: int) -> tuple[str, str]:
 
     return code, "void argmax2d(float *x, float *out);"
 
+@cache
+def relu(x_numel: int) -> tuple[str, str]:
+    code = f"""
+        void relu(float *arr, float *out) {{
+            for (int i=0; i<{x_numel}; i++) {{
+                if (arr[i] <= 0) {{
+                    out[i] = 0.0;
+                }} else {{
+                    out[i] = arr[i];
+                }}
+            }}
+        }}
+    """
 
+    return code, "void relu(float *arr, float *out);"
 
 """
 dim = 1

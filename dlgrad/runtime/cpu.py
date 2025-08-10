@@ -5,7 +5,6 @@ import struct
 import subprocess
 from functools import cache
 
-import _af  # type: ignore
 import _allocate  # type: ignore
 import _cmp  # type: ignore
 import _full  # type: ignore
@@ -341,7 +340,20 @@ class CPU:
     @dispatcher.register(UnaryOps.RELU, Device.CPU)
     def relu(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
-        _af.lib.relu(x.ptr, out_ptr, x.numel)
+
+        c_code, cdef = cpu_kernel.relu(x.numel)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"relu_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.relu(x.ptr, out_ptr)
+
         return out_ptr
 
     @staticmethod
@@ -382,7 +394,6 @@ class CPU:
 
         lib.argmax2d(x.ptr, out_ptr)
 
-        # _utils.lib.argmax2d(x.ptr, out_ptr, x.shape, axis)
         return out_ptr
 
     @staticmethod
