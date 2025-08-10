@@ -57,7 +57,6 @@ setup(
     cffi_modules=[
         'dlgrad/builder/float_rand_build.py:ffi',
         'dlgrad/builder/float_full_build.py:ffi',
-        'dlgrad/builder/float_comparision_build.py:ffi',
         'dlgrad/builder/float_allocate_build.py:ffi',
         'dlgrad/builder/float_mnist_build.py:ffi',
     ],
