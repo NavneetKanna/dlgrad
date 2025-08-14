@@ -112,6 +112,7 @@ class CPU:
     @staticmethod
     def _binary_op(x: Buffer, y: Buffer | Scalar, op: str) -> CDataPtr:
         c_code, cdef = cpu_kernel.arithmetic(x.shape, x.stride, y.shape, y.stride, op)
+        print(c_code)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"{op}_{key}.so"

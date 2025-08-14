@@ -45,7 +45,7 @@ class Buffer:
     def from_scalar(val: Scalar) -> Buffer:
         float_arr = ffi.new("float[]", 1)
         float_arr[0] = val
-        return Buffer(data=float_arr, shape=(1, 1), device=Device.CPU, dtype=DType.FLOAT32)
+        return Buffer(data=float_arr, shape=(), device=Device.CPU, dtype=DType.FLOAT32)
 
     @staticmethod
     def uniform(shape: tuple, device: Device, dtype: DType | str, **kwargs) -> Buffer:
@@ -58,8 +58,6 @@ class Buffer:
             raise NotImplementedError("dlgrad only supports float32")
         if not isinstance(shape, tuple):
             raise ValueError("Shape must be a tuple")
-        if len(shape) == 1:
-            shape = (1,) + shape
 
         # All data creation is done on cpu
         return Buffer(
@@ -82,7 +80,8 @@ class Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim),
             shape=out_shape, device=self.device,
-            ndim=self.ndim if self.ndim == 2 else self.ndim - 1, dtype=self.dtype
+            # ndim=self.ndim if self.ndim == 2 else self.ndim - 1, dtype=self.dtype
+            ndim=self.ndim - 1, dtype=self.dtype
         )
 
     def max(self, dim: int = -1, backward: bool = False, out: Buffer = None) -> Buffer:
@@ -94,8 +93,8 @@ class Buffer:
             out_shape = self.shape
             out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward, out=out)
 
-        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
-        # max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
+        # out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
+        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim-1, dtype=self.dtype)  # noqa: E501
 
         return out_buf
 
@@ -122,7 +121,14 @@ class Buffer:
         # assert self.ndim == 2, "Only 2D Tensors can be transposed"
 
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=Device.CPU, x=self, out_shape=Buffer.swap_indices(self.shape, axes), out_stride=calculate_stride(Buffer.swap_indices(self.shape, axes)), axes=axes),
+            data=dispatcher.dispatch(
+                op=UnaryOps.TRANSPOSE,
+                device=Device.CPU,
+                x=self,
+                out_shape=Buffer.swap_indices(self.shape, axes),
+                out_stride=calculate_stride(Buffer.swap_indices(self.shape, axes)),
+                axes=axes
+            ),
             shape=Buffer.swap_indices(self.shape, axes), device=self.device, dtype=self.dtype
         )
 

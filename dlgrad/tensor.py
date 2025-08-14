@@ -35,6 +35,24 @@ class OP:
 	def backward(self, *args, **kwargs) -> None:
 		raise RuntimeError(f"backward not implemented for {type(self)}")  # noqa: ANN201
 
+	def reduce_grad_for_broadcasting(self, grad: Buffer, target_shape: tuple) -> Buffer:
+		"""Reduce gradient to match target shape by summing over broadcasted dimensions"""
+
+		current_shape = grad.shape
+
+		# Handle different number of dimensions
+		ndim_diff = len(current_shape) - len(target_shape)
+
+		# Sum over extra dimensions
+		for _ in range(ndim_diff):
+			grad = grad.sum(dim=0)
+
+		for i, (grad_dim, target_dim) in enumerate(zip(grad.shape, target_shape)):
+			if target_dim == 1 and grad_dim > 1:
+				grad = grad.sum(dim=i, keepdim=True)
+
+		return grad
+
 	def match_inp_shape(self, inp: Buffer, upstream_grad: Buffer, dim: int = 0) -> Buffer:
 		inp_shape = inp.shape
 		ndim = resolve_ndim(inp_shape=inp_shape, grad_shape=upstream_grad.shape)
@@ -105,11 +123,6 @@ class Tensor:
 
 			shape = data.shape
 			ndim = data.ndim
-			if len(data.shape) == 1:
-				shape = (1,) + data.shape
-			elif not shape:
-				shape = (1, 1)
-				ndim = 2
 
 			self.data = Buffer(
 				data=ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False),
@@ -269,74 +282,64 @@ class Tensor:
 		return Tensor.full(shape, 0.0, device, dtype, requires_grad)
 
 	@staticmethod
-	def add(x: Tensor, y: Tensor | Scalar) -> Tensor:
+	def add(x: Tensor, y: Tensor) -> Tensor:
 		"""
 		Adds `x` and `y` tensors with broadcasting.
 
 		Parameters
 		----------
 		x : Tensor
-		y : Tensor | Scalar
+		y : Tensor
 
 		Returns:
 			The sum of `x` and `y`
 		"""
-		if isinstance(y, Scalar):
-			y = Tensor(y, device=x.device)
 		return ops.Add.execute(x, y)
 
 	@staticmethod
-	def mul(x: Tensor | Scalar, y: Tensor | Scalar) -> Tensor:
+	def mul(x: Tensor, y: Tensor) -> Tensor:
 		"""
 		Multiplies `x` and `y` tensors with broadcasting.
 
 		Parameters
 		----------
 		x : Tensor
-		y : Tensor | Scalar
+		y : Tensor
 
 
 		Returns:
 			The product of `x` and `y`
 		"""
-		if isinstance(y, Scalar):
-			y = Tensor(y, device=x.device)
-		elif isinstance(x, Scalar):
-			x = Tensor(x, device=y.device)
 		return ops.Mul.execute(x, y)
 
 	@staticmethod
-	def sub(x: Tensor, y: Tensor | Scalar) -> Tensor:
+	def sub(x: Tensor, y: Tensor) -> Tensor:
 		"""
 		Subtracts `x` and `y` tensors with broadcasting.
 
 		Parameters
 		----------
 		x : Tensor
-		y : Tensor | Scalar
+		y : Tensor
 
 		Returns:
 			The difference of `x` and `y`
 		"""
-		if isinstance(y, Scalar):
-			y = Tensor(y, device=x.device)
 		return ops.Sub.execute(x, y)
 
 	@staticmethod
-	def div(x: Tensor, y: Tensor | Scalar) -> Tensor:
+	def div(x: Tensor, y: Tensor) -> Tensor:
 		"""
 		Divides `x` and `y` tensors with broadcasting.
 
 		Parameters
 		----------
 		x : Tensor
-		y :  Tensor | Scalar
+		y :  Tensor
 
 		Returns:
 			The quotient of `x` and `y`
 		"""
-		if isinstance(y, Scalar):
-			y = Tensor(y, device=x.device)
 		return ops.Div.execute(x, y)
 
 	@staticmethod
@@ -353,15 +356,6 @@ class Tensor:
 			The matmul product of `x` and `y`
 		"""
 		return ops.MatMul.execute(x, y)
-
-	# @staticmethod
-	# def swap_indices(inp: tuple, tmp: tuple) -> tuple:
-	# 	lst = list(inp)
-	# 	for i in range(0, len(tmp), 2):
-	# 		if i+1 < len(tmp):
-	# 			idx1, idx2 = tmp[i], tmp[i+1]
-	# 			lst[idx1], lst[idx2] = lst[idx2], lst[idx1]
-	# 	return tuple(lst)
 
 	@staticmethod
 	def transpose(x: Tensor, *axes) -> Tensor:
@@ -522,6 +516,7 @@ class Tensor:
 		return Tensor(data=self.data.argmax(axis))
 
 	def backward(self) -> None:
+		print("self.shape", self.shape)
 		assert all(item == 1 for item in self.shape), "backward must be called on a scalar Tensor"
 
 		topo: list[Tensor] = []
@@ -540,6 +535,7 @@ class Tensor:
 		_topo_sort(self)
 
 		self.grad = Tensor(1.0, device=self.device)
+		print("self.grad.shape", self.grad.shape)
 
 		# TODO: del _ctx
 		for node in reversed(topo):

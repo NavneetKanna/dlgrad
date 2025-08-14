@@ -96,9 +96,6 @@ def calculate_stride(shape: tuple|int) -> tuple:
     if not shape:
         return tuple()
 
-    if isinstance(shape, int):
-        return (1,)
-
     stride = []
     stride_value = 1
     for dim in reversed(shape):
@@ -124,6 +121,12 @@ def resolve_ndim(inp_shape: tuple, grad_shape: tuple) -> int:
     return ndim
 
 def cal_sum_max_out_shape(ndim: int, dim: int, inp_shape: tuple) -> tuple:
+    if dim == -1:
+        return ()
+    t = list(inp_shape)
+    t.pop(dim)
+    return tuple(t)
+
     if dim == -1:
         return tuple(1 for _ in range(ndim))
     else:

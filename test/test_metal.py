@@ -80,11 +80,13 @@ def test_sum_2d(shapes):
         torch_data = torch.tensor(np_data, device="mps")
 
         dl_out = dlgrad_data.sum(dim=0)
-        to_out = torch_data.sum(dim=0, keepdim=True)
+        # to_out = torch_data.sum(dim=0, keepdim=True)
+        to_out = torch_data.sum(dim=0)
         np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
         dl_out = dlgrad_data.sum(dim=1)
-        to_out = torch_data.sum(dim=1, keepdim=True)
+        # to_out = torch_data.sum(dim=1, keepdim=True)
+        to_out = torch_data.sum(dim=1)
         np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
         dl_out = dlgrad_data.sum()

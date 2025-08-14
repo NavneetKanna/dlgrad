@@ -20,10 +20,16 @@ class Sum(OP):
 		self.inp_shape = x.shape
 		self.device = x.device
 		self.dtype = x.dtype
+		self.dim = dim if dim >= 0 else x.ndim + dim
 		return x.sum(dim=dim)
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
+		grad_shape = list(upstream_grad.shape)
+		grad_shape.insert(self.dim, 1)
+		# upstream_grad.metadata.shape = grad_shape
+		print("sum backward", t.shape, upstream_grad.shape, tuple(grad_shape))
+		# print("sum backward", t.shape, upstream_grad.shape)
 		return (t*upstream_grad,)
 
 
@@ -38,6 +44,7 @@ class Max(OP):
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		max_with_1s = self.x.max(dim=self.dim, backward=True, out=self.out)
+		print("max backward", max_with_1s.shape, upstream_grad.shape)
 		return (max_with_1s*upstream_grad,)
 
 
@@ -139,27 +146,6 @@ class MatMul(OP):
 		t2 = self.y.T
 		return (upstream_grad@t2, t1@upstream_grad)
 
-
-# def pr(data):  # noqa: ANN001, ANN201
-# 	import numpy as np
-
-# 	from dlgrad.helpers import ffi
-
-# 	dataa = np.frombuffer(
-# 		ffi.buffer(data.ptr, data.numel * ffi.sizeof("float")),
-# 		count=-1,
-# 		dtype=np.float32,
-# 	)
-
-# 	t = np.lib.stride_tricks.as_strided(
-# 		dataa,
-# 		data.shape,
-# 		tuple(
-# 			stride * 4 for stride in data.stride
-# 		),
-# 	)
-
-# 	return t
 
 # TODO: Fuse all ops performed here in C ?
 class CrossEntropy(OP):
