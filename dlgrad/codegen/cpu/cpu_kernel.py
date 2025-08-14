@@ -10,14 +10,14 @@ def n_gen() -> Generator[str, Any, None]:
 
 
 @cache
-def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple, op: str) -> tuple[str, str]:
+def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple, op: str) -> tuple[str, str]:  # noqa: C901
     gen = n_gen()
 
     code  = f"""
     #include <stdlib.h>
 
-    int x_off, y_off;
     void {op}(float *x, float *y, float *out) {{
+        int x_off, y_off;
     """
 
     var_str = []
@@ -38,12 +38,15 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
 
     code += "\n"
 
-    ts = "y_off = "
-    for idx, (i, j) in enumerate(zip(x_shape, y_shape)):
-        if i==j and i != 1 and j != 1:
-            ts += f"{y_stride[idx]}*{var_str[idx]} + "
-    ts = ts[:-3]
-    ts += ";"
+    if not y_shape:
+        ts = "y_off = 0;"
+    else:
+        ts = "y_off = "
+        for idx, (i, j) in enumerate(zip(x_shape, y_shape)):
+            if i==j and i != 1 and j != 1:
+                ts += f"{y_stride[idx]}*{var_str[idx]} + "
+        ts = ts[:-3]
+        ts += ";"
 
     code += ts
 
