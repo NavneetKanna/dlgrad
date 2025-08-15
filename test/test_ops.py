@@ -4,6 +4,7 @@ import torch
 from dlgrad import Tensor
 
 # TODO: Test NaN's
+# TODO: Check ops with (1,)
 
 # Thanks to tinygrad for the template
 def run(shapes: list[tuple], func):

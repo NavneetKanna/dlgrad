@@ -21,28 +21,34 @@ class Sum(OP):
 		self.inp_shape = x.shape
 		self.device = x.device
 		self.dtype = x.dtype
-		self.dim = dim if dim >= 0 else x.ndim + dim
+		self.keepdim = keepdim
+		self.dim = dim
 		return x.sum(dim=dim, keepdim=keepdim)
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
+		if not self.keepdim:
+			upstream_grad.unsqueeze(self.dim)
 		return (t*upstream_grad,)
 
-
+# done
 class Max(OP):
 	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
 		self.inp_shape = x.shape
 		self.device = x.device
 		self.dim = dim
 		self.x = x
+		self.keepdim = keepdim
 		self.out = x.max(dim=dim, keepdim=keepdim)
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		# TODO: Can we replace this with self.x == self.out ?
 		max_with_1s = self.x.max(dim=self.dim, backward=True, out=self.out)
-		return (max_with_1s*upstream_grad,)
+		if not self.keepdim:
+			upstream_grad.unsqueeze(self.dim)
 
+		return (max_with_1s*upstream_grad,)
 
 # done
 class Exp(OP):
@@ -88,7 +94,7 @@ class Sqrt(OP):
 
 # TODO: Redundant calls to find_broadcast_dim
 class Add(OP):
-	def forward(self, x: Buffer, y: Buffer | Scalar) -> Buffer:
+	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
 		self.y = y
 		if check_broadcast(x.shape, y.shape):

@@ -74,6 +74,19 @@ class Buffer:
             shape=shape, device=device, dtype=dtype
         )
 
+    # TODO: Add cache
+    def unsqueeze(self, dim: int) -> None:
+        if dim == -1:
+            dim = 0
+        assert dim <= len(self.shape), f"Cannot unsqueeze {dim} from {self.shape}"
+
+        new_shape = list(self.shape)
+        new_shape.insert(dim, 1)
+        self.metadata.shape = tuple(new_shape)
+        self.metadata.numel = prod_(new_shape)
+        self.metadata.stride = calculate_stride(new_shape)
+        self.metadata.ndim = len(new_shape)
+
     def sum(self, dim: int = -1, keepdim: bool = True) -> Buffer:
         out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape, keepdim=keepdim)
 
