@@ -39,6 +39,7 @@ class Max(OP):
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+		# TODO: Can we replace this with self.x == self.out ?
 		max_with_1s = self.x.max(dim=self.dim, backward=True, out=self.out)
 		return (max_with_1s*upstream_grad,)
 
