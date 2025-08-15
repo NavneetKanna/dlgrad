@@ -120,17 +120,15 @@ def resolve_ndim(inp_shape: tuple, grad_shape: tuple) -> int:
 
     return ndim
 
-def cal_sum_max_out_shape(ndim: int, dim: int, inp_shape: tuple) -> tuple:
+def cal_sum_max_out_shape(ndim: int, dim: int, inp_shape: tuple, keepdim: bool = False) -> tuple:
     if dim == -1:
-        return ()
+        return inp_shape if keepdim else ()
     t = list(inp_shape)
-    t.pop(dim)
-    return tuple(t)
-
-    if dim == -1:
-        return tuple(1 for _ in range(ndim))
+    if keepdim:
+        t[dim] = 1
     else:
-        return tuple(1 if i == dim else inp_shape[i] for i in range(ndim))
+        t.pop(dim)
+    return tuple(t)
 
 OSX = platform.system() == "Darwin"
 CACHE_DIR = os.path.expanduser("~/Library/Caches/dlgrad" if OSX else "~/.cache/dlgrad")

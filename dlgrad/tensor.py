@@ -373,7 +373,7 @@ class Tensor:
 			axes = axes[0]
 		return ops.Transpose.execute(x, axes=axes)
 
-	def sum(self, dim: int = -1) -> Tensor:
+	def sum(self, dim: int = -1, keepdim: bool = False) -> Tensor:
 		"""
 		Sum a tensor along dimension `dim`. keepdim is by default True.
 		Which means the returned tensor shape is the same as the input tensor shape.
@@ -387,7 +387,7 @@ class Tensor:
 		Returns:
 			A tensor of the same shape as self.
 		"""
-		return ops.Sum.execute(self, dim=dim)
+		return ops.Sum.execute(self, dim=dim, keepdim=keepdim)
 
 	def relu(self) -> Tensor:
 		"""

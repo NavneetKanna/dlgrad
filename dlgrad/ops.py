@@ -16,12 +16,12 @@ class Transpose(OP):
 
 
 class Sum(OP):
-	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
+	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
 		self.inp_shape = x.shape
 		self.device = x.device
 		self.dtype = x.dtype
 		self.dim = dim if dim >= 0 else x.ndim + dim
-		return x.sum(dim=dim)
+		return x.sum(dim=dim, keepdim=keepdim)
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
