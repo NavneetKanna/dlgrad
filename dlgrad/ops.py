@@ -15,6 +15,7 @@ class Transpose(OP):
 		return (upstream_grad.transpose(tuple([i for i in range(upstream_grad.ndim)][::-1])),)
 
 
+# done
 class Sum(OP):
 	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
 		self.inp_shape = x.shape
@@ -25,29 +26,24 @@ class Sum(OP):
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
-		grad_shape = list(upstream_grad.shape)
-		grad_shape.insert(self.dim, 1)
-		# upstream_grad.metadata.shape = grad_shape
-		print("sum backward", t.shape, upstream_grad.shape, tuple(grad_shape))
-		# print("sum backward", t.shape, upstream_grad.shape)
 		return (t*upstream_grad,)
 
 
 class Max(OP):
-	def forward(self, x: Buffer, dim: int = -1) -> Buffer:
+	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
 		self.inp_shape = x.shape
 		self.device = x.device
 		self.dim = dim
 		self.x = x
-		self.out = x.max(dim=dim)
+		self.out = x.max(dim=dim, keepdim=keepdim)
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		max_with_1s = self.x.max(dim=self.dim, backward=True, out=self.out)
-		print("max backward", max_with_1s.shape, upstream_grad.shape)
 		return (max_with_1s*upstream_grad,)
 
 
+# done
 class Exp(OP):
 	def forward(self, x: Buffer) -> Buffer:
 		self.out = x.exp()
@@ -57,6 +53,7 @@ class Exp(OP):
 		return (upstream_grad * self.out,)
 
 
+# done
 class Log(OP):
 	def forward(self, x: Buffer) -> Buffer:
 		self.x = x
@@ -66,6 +63,7 @@ class Log(OP):
 		return (upstream_grad / self.x,)
 
 
+# done
 class Relu(OP):
 	def forward(self, x: Buffer) -> Buffer:
 		self.out = x.relu()
@@ -75,6 +73,7 @@ class Relu(OP):
 		return ((self.out>0.0) * upstream_grad,)
 
 
+# done
 class Sqrt(OP):
 	def forward(self, x: Buffer) -> Buffer:
 		self.out = x.sqrt()

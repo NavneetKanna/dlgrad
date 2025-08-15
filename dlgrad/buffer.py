@@ -83,7 +83,7 @@ class Buffer:
             if dim == -1:
                 ndim = 0
             else:
-                ndim - self.ndim - 1
+                ndim = self.ndim - 1
 
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim),
@@ -91,8 +91,8 @@ class Buffer:
             ndim=ndim, dtype=self.dtype
         )
 
-    def max(self, dim: int = -1, backward: bool = False, out: Buffer = None) -> Buffer:
-        out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
+    def max(self, dim: int = -1, backward: bool = False, out: Buffer = None, keepdim: bool = False) -> Buffer:
+        out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape, keepdim=keepdim)
 
         if not backward:
             out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward)
@@ -100,8 +100,15 @@ class Buffer:
             out_shape = self.shape
             out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward, out=out)
 
-        # out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
-        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim-1, dtype=self.dtype)  # noqa: E501
+        if keepdim:
+            ndim = self.ndim
+        else:
+            if dim == -1:
+                ndim = 0
+            else:
+                ndim = self.ndim - 1
+
+        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=ndim, dtype=self.dtype)  # noqa: E501
 
         return out_buf
 

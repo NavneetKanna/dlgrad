@@ -418,7 +418,7 @@ class Tensor:
 		"""
 		return self @ weight.T + bias if bias else self @ weight.T
 
-	def max(self, dim: int = -1) -> Tensor:
+	def max(self, dim: int = -1, keepdim: bool = False) -> Tensor:
 		"""
 		Find maximum of a tensor along dimension `dim`. keepdim is by default True.
 		Which means the returned tensor shape is the same as the input tensor shape.
@@ -432,7 +432,7 @@ class Tensor:
 		Returns:
 			A tensor of the same shape as self.
 		"""
-		return ops.Max.execute(self, dim=dim)
+		return ops.Max.execute(self, dim=dim, keepdim=keepdim)
 
 	def exp(self) -> Tensor:
 		"""
@@ -516,7 +516,6 @@ class Tensor:
 		return Tensor(data=self.data.argmax(axis))
 
 	def backward(self) -> None:
-		print("self.shape", self.shape)
 		assert all(item == 1 for item in self.shape), "backward must be called on a scalar Tensor"
 
 		topo: list[Tensor] = []
@@ -535,7 +534,6 @@ class Tensor:
 		_topo_sort(self)
 
 		self.grad = Tensor(1.0, device=self.device)
-		print("self.grad.shape", self.grad.shape)
 
 		# TODO: del _ctx
 		for node in reversed(topo):
