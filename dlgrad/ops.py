@@ -1,18 +1,20 @@
 
 from dlgrad.buffer import Buffer
 from dlgrad.dtype import Scalar
-from dlgrad.helpers import CustomOps, check_broadcast, find_broadcast_dim
+from dlgrad.helpers import CustomOps, check_broadcast
 from dlgrad.tensor import OP
 
 # ------------ Unary Ops -----------
 
-# TODO: Remove compulsory tuple return type in backward
+# done
 class Transpose(OP):
 	def forward(self, x: Buffer, axes: tuple):  # noqa: ANN201
+		self.axes = axes
 		return x.transpose(axes)
 
 	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
-		return (upstream_grad.transpose(tuple([i for i in range(upstream_grad.ndim)][::-1])),)
+		return (upstream_grad.transpose(self.axes),)
+		# return (upstream_grad.transpose(tuple([i for i in range(upstream_grad.ndim)][::-1])),)
 
 
 # done
@@ -94,25 +96,21 @@ class Sqrt(OP):
 
 # ------------ Binary Ops -----------
 
-# TODO: Redundant calls to find_broadcast_dim
+# done
 class Add(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
 		self.y = y
-		# print("add forward", self.x.shape, self.y.shape)
 		if check_broadcast(x.shape, y.shape):
 			return x + y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		# print("add backward")
-		# print("upstream_grad", upstream_grad.shape)
-		# print("self.y.shape", self.y.shape)
 		grad_x = self.reduce_grad_for_broadcasting(upstream_grad, self.x.shape) if self.req_grad[0] else None
 		grad_y = self.reduce_grad_for_broadcasting(upstream_grad, self.y.shape) if self.req_grad[1] else None
-		# print("grad_y.shape", grad_y.shape)
 		return grad_x, grad_y
 
 
+# done
 class Sub(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
@@ -121,10 +119,12 @@ class Sub(OP):
 			return x - y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
-		  	   self.match_inp_shape(inp=self.y, upstream_grad=-upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
+		grad_x = self.reduce_grad_for_broadcasting(upstream_grad, self.x.shape) if self.req_grad[0] else None
+		grad_y = self.reduce_grad_for_broadcasting(-upstream_grad, self.y.shape) if self.req_grad[1] else None
+		return grad_x, grad_y
 
 
+# done
 class Mul(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
@@ -133,10 +133,12 @@ class Mul(OP):
 			return x*y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad*self.y, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
-		  	    self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad*self.x, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
+		grad_x = self.reduce_grad_for_broadcasting(upstream_grad*self.y, self.x.shape) if self.req_grad[0] else None
+		grad_y = self.reduce_grad_for_broadcasting(upstream_grad*self.x, self.y.shape) if self.req_grad[1] else None
+		return grad_x, grad_y
 
 
+# done
 class Div(OP):
 	def forward(self, x: Buffer, y: Buffer | Scalar) -> Buffer:
 		self.x = x
@@ -145,8 +147,9 @@ class Div(OP):
 			return x/y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad/self.y, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
-		  	   self.match_inp_shape(inp=self.y, upstream_grad=(-upstream_grad*self.x)/self.y**2, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
+		grad_x = self.reduce_grad_for_broadcasting(upstream_grad/self.y, self.x.shape) if self.req_grad[0] else None
+		grad_y = self.reduce_grad_for_broadcasting((-upstream_grad*self.x)/self.y**2, self.y.shape) if self.req_grad[1] else None
+		return grad_x, grad_y
 
 
 class MatMul(OP):

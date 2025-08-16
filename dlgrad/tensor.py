@@ -6,7 +6,7 @@ from functools import reduce
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import ffi, resolve_ndim
+from dlgrad.helpers import ffi
 from dlgrad.runtime import cpu  # needed to register all the cpu runtime functions  # noqa: F401
 
 if platform.system() == 'Darwin':
@@ -37,9 +37,6 @@ class OP:
 
 	def reduce_grad_for_broadcasting(self, grad: Buffer, target_shape: tuple) -> Buffer:
 		"""Reduce gradient to match target shape by summing over broadcasted dimensions"""
-		# print(" -- reduce_grad_for_broadcasting --")
-		# print("grad", grad.shape)
-		# print("target_shape", target_shape)
 
 		current_shape = grad.shape
 
@@ -50,30 +47,27 @@ class OP:
 		for _ in range(ndim_diff):
 			grad = grad.sum(dim=0)
 
-		# print(grad.shape)
 		for i, (grad_dim, target_dim) in enumerate(zip(grad.shape, target_shape)):
 			if target_dim == 1 and grad_dim > 1:
 				grad = grad.sum(dim=i, keepdim=True)
 
-		# print(grad.shape)
-		# print("-- --")
 		return grad
 
-	def match_inp_shape(self, inp: Buffer, upstream_grad: Buffer, dim: int = 0) -> Buffer:
-		inp_shape = inp.shape
-		ndim = resolve_ndim(inp_shape=inp_shape, grad_shape=upstream_grad.shape)
-		if not ndim:
-			return upstream_grad
+	# def match_inp_shape(self, inp: Buffer, upstream_grad: Buffer, dim: int = 0) -> Buffer:
+	# 	inp_shape = inp.shape
+	# 	ndim = resolve_ndim(inp_shape=inp_shape, grad_shape=upstream_grad.shape)
+	# 	if not ndim:
+	# 		return upstream_grad
 
-		for _ in range(ndim):
-			upstream_grad = upstream_grad.sum(dim=dim)
+	# 	for _ in range(ndim):
+	# 		upstream_grad = upstream_grad.sum(dim=dim)
 
-		if upstream_grad.shape != inp_shape:
-			upstream_grad.metadata.shape = inp_shape
-			upstream_grad.metadata.stride = inp.stride
-			upstream_grad.metadata.numel = inp.numel
+	# 	if upstream_grad.shape != inp_shape:
+	# 		upstream_grad.metadata.shape = inp_shape
+	# 		upstream_grad.metadata.stride = inp.stride
+	# 		upstream_grad.metadata.numel = inp.numel
 
-		return upstream_grad
+	# 	return upstream_grad
 
 	@classmethod
 	def execute(cls: type[OP], *data: Tensor, **kwargs) -> Tensor:
