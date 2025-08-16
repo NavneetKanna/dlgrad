@@ -37,6 +37,9 @@ class OP:
 
 	def reduce_grad_for_broadcasting(self, grad: Buffer, target_shape: tuple) -> Buffer:
 		"""Reduce gradient to match target shape by summing over broadcasted dimensions"""
+		# print(" -- reduce_grad_for_broadcasting --")
+		# print("grad", grad.shape)
+		# print("target_shape", target_shape)
 
 		current_shape = grad.shape
 
@@ -47,10 +50,13 @@ class OP:
 		for _ in range(ndim_diff):
 			grad = grad.sum(dim=0)
 
+		# print(grad.shape)
 		for i, (grad_dim, target_dim) in enumerate(zip(grad.shape, target_shape)):
 			if target_dim == 1 and grad_dim > 1:
 				grad = grad.sum(dim=i, keepdim=True)
 
+		# print(grad.shape)
+		# print("-- --")
 		return grad
 
 	def match_inp_shape(self, inp: Buffer, upstream_grad: Buffer, dim: int = 0) -> Buffer:

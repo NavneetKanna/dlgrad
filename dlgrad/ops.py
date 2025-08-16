@@ -23,12 +23,14 @@ class Sum(OP):
 		self.dtype = x.dtype
 		self.keepdim = keepdim
 		self.dim = dim
+		print("sum forward", self.inp_shape)
 		return x.sum(dim=dim, keepdim=keepdim)
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
 		if not self.keepdim:
 			upstream_grad.unsqueeze(self.dim)
+		print("sum backward", self.inp_shape)
 		return (t*upstream_grad,)
 
 # done
@@ -97,16 +99,22 @@ class Add(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
 		self.y = y
+		# print("add forward", self.x.shape, self.y.shape)
 		if check_broadcast(x.shape, y.shape):
 			return x + y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		return self.match_inp_shape(inp=self.x, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[0] else None, \
-		  	   self.match_inp_shape(inp=self.y, upstream_grad=upstream_grad, dim=find_broadcast_dim(self.x.shape, self.y.shape)) if self.req_grad[1] else None  # noqa: E501
+		# print("add backward")
+		# print("upstream_grad", upstream_grad.shape)
+		# print("self.y.shape", self.y.shape)
+		grad_x = self.reduce_grad_for_broadcasting(upstream_grad, self.x.shape) if self.req_grad[0] else None
+		grad_y = self.reduce_grad_for_broadcasting(upstream_grad, self.y.shape) if self.req_grad[1] else None
+		# print("grad_y.shape", grad_y.shape)
+		return grad_x, grad_y
 
 
 class Sub(OP):
-	def forward(self, x: Buffer, y: Buffer | Scalar) -> Buffer:
+	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
 		self.y = y
 		if check_broadcast(x.shape, y.shape):
@@ -118,7 +126,7 @@ class Sub(OP):
 
 
 class Mul(OP):
-	def forward(self, x: Buffer, y: Buffer | Scalar) -> Buffer:
+	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
 		self.y = y
 		if check_broadcast(x.shape, y.shape):

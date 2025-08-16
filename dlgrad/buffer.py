@@ -74,7 +74,6 @@ class Buffer:
             shape=shape, device=device, dtype=dtype
         )
 
-    # TODO: Add cache
     def unsqueeze(self, dim: int) -> None:
         if dim == -1:
             dim = 0
@@ -87,7 +86,19 @@ class Buffer:
         self.metadata.stride = calculate_stride(new_shape)
         self.metadata.ndim = len(new_shape)
 
-    def sum(self, dim: int = -1, keepdim: bool = True) -> Buffer:
+    def squeeze(self, dim: list[int]) -> None:
+        for idx in dim:
+            if self.shape[idx] != 1:
+                continue
+
+            new_shape = list(self.shape)
+            new_shape.pop(idx)
+            self.metadata.shape = tuple(new_shape)
+            self.metadata.numel = prod_(new_shape)
+            self.metadata.stride = calculate_stride(new_shape)
+            self.metadata.ndim = len(new_shape)
+
+    def sum(self, dim: int = -1, keepdim: bool = False) -> Buffer:
         out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape, keepdim=keepdim)
 
         if keepdim:
@@ -211,12 +222,6 @@ class Buffer:
         dispatcher.dispatch(op=kwargs.pop("op"), device=Device.CPU, **kwargs)
 
     def _binary_op(self, other: Buffer | Scalar, op: BinaryOps) -> Buffer:
-        if isinstance(other, Scalar):
-            return Buffer(
-                data=dispatcher.dispatch(op=op, device=self.device, x=self, y=other),
-                shape=self.shape, device=self.device, dtype=self.dtype
-            )
-
         if not check_broadcast(self.shape, other.shape):
             raise ValueError(f"Cannot broadcast {other.shape} to {self.shape}")
 
@@ -234,10 +239,25 @@ class Buffer:
 
         x, y = (self, other) if self.numel >= other.numel else (other, self)
 
-        return Buffer(
+        # if y.shape is different from x.shape, for example, (2, 3, 4) & (3, 4)
+        # unsqueeze y.shape to (1, 3, 4) and squeeze it back to (3, 4)
+        tmp = []
+        org_yshape = y.shape
+        if len(x.shape) != len(y.shape):
+            shape_diff = len(x.shape) - len(y.shape)
+            for i in range(shape_diff):
+                tmp.append(i)
+                y.unsqueeze(0)
+
+        t = Buffer(
             data=dispatcher.dispatch(op=op, device=self.device, x=x, y=y),
             shape=output_shape, device=self.device, dtype=self.dtype
         )
+
+        if len(x.shape) != len(org_yshape):
+            y.squeeze(tmp)
+
+        return t
 
     def __add__(self, other: Buffer | Scalar) -> Buffer:
         return self._binary_op(other, BinaryOps.ADD)

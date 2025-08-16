@@ -110,8 +110,9 @@ class CPU:
 
     # TODO: Cache malloc/out_ptr, reuse it, this should speed up
     @staticmethod
-    def _binary_op(x: Buffer, y: Buffer | Scalar, op: str) -> CDataPtr:
+    def _binary_op(x: Buffer, y: Buffer, op: str) -> CDataPtr:
         c_code, cdef = cpu_kernel.arithmetic(x.shape, x.stride, y.shape, y.stride, op)
+        print(c_code)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"{op}_{key}.so"
@@ -131,22 +132,22 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BinaryOps.ADD, Device.CPU)
-    def add(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
+    def add(x: Buffer, y: Buffer) -> CDataPtr:
         return CPU._binary_op(x, y, op="add")
 
     @staticmethod
     @dispatcher.register(BinaryOps.SUB, Device.CPU)
-    def sub(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
+    def sub(x: Buffer, y: Buffer) -> CDataPtr:
         return CPU._binary_op(x, y, op="sub")
 
     @staticmethod
     @dispatcher.register(BinaryOps.MUL, Device.CPU)
-    def mul(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
+    def mul(x: Buffer, y: Buffer) -> CDataPtr:
         return CPU._binary_op(x, y, op="mul")
 
     @staticmethod
     @dispatcher.register(BinaryOps.DIV, Device.CPU)
-    def div(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
+    def div(x: Buffer, y: Buffer) -> CDataPtr:
         return CPU._binary_op(x, y, op="divv")
 
     @staticmethod
