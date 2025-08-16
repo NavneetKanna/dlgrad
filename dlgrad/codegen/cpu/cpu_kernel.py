@@ -38,7 +38,7 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
 
     code += "\n"
 
-    if not y_shape: # scalars
+    if not y_shape or all([1==i for i in y_shape]): # scalars
         ts = "y_off = 0;"
     else:
         ts = "y_off = "
