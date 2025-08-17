@@ -127,9 +127,9 @@ def test_transpose_same_tensors(shapes, device):
         pytest.skip()
     run(shapes, device, lambda x: x@x.T)
 
-@pytest.mark.parametrize("shapes", [(4, 3, 2, 4), (4, 3, 2), (4, 3)])
+@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(4, 3)]])
 def test_pow(shapes, device):
-    if device == 'metal' and len(shapes) == 4:
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
         pytest.skip()
     
     for sh in shapes:
@@ -149,9 +149,9 @@ def test_pow(shapes, device):
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
     
 # TODO: Sum 1d ?
-@pytest.mark.parametrize("shapes", [(4, 3, 2, 4), (4, 3, 2), (4, 3)])
+@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(4, 3)]])
 def test_sum(shapes, device):
-    if device == 'metal' and len(shapes) == 4:
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes) or any(len(shape) == 3 for shape in shapes):
         pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
@@ -170,9 +170,9 @@ def test_sum(shapes, device):
 
             np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes",[(4, 3, 2, 4), (4, 3, 2), (3, 2)])
+@pytest.mark.parametrize("shapes",[[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]])
 def test_max(shapes, device):
-    if device == 'metal' and len(shapes) == 4:
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
         pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
@@ -191,11 +191,11 @@ def test_max(shapes, device):
 
             np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
-s = [(4, 3, 2, 4), (4, 3, 2), (3, 2)]
+s = [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]]
 
 @pytest.mark.parametrize("shapes", s)
 def test_relu(shapes, device):
-    if device == 'metal' and len(shapes) == 4:
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
         pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
@@ -215,7 +215,7 @@ def test_relu(shapes, device):
 
 @pytest.mark.parametrize("shapes", s)
 def test_exp(shapes, device):
-    if device == 'metal' and len(shapes) == 4:
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
         pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
@@ -235,7 +235,7 @@ def test_exp(shapes, device):
 
 @pytest.mark.parametrize("shapes", s)
 def test_log(shapes, device):
-    if device == 'metal' and len(shapes) == 4:
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
         pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
@@ -255,7 +255,7 @@ def test_log(shapes, device):
 
 @pytest.mark.parametrize("shapes", s)
 def test_sqrt(shapes, device):
-    if device == 'metal' and len(shapes) == 4:
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
         pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
@@ -275,7 +275,7 @@ def test_sqrt(shapes, device):
 
 @pytest.mark.parametrize("shapes", s)
 def test_logsoftmax(shapes, device):
-    if device == 'metal' and len(shapes) == 4:
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
         pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
