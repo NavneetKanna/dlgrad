@@ -53,22 +53,6 @@ class OP:
 
 		return grad
 
-	# def match_inp_shape(self, inp: Buffer, upstream_grad: Buffer, dim: int = 0) -> Buffer:
-	# 	inp_shape = inp.shape
-	# 	ndim = resolve_ndim(inp_shape=inp_shape, grad_shape=upstream_grad.shape)
-	# 	if not ndim:
-	# 		return upstream_grad
-
-	# 	for _ in range(ndim):
-	# 		upstream_grad = upstream_grad.sum(dim=dim)
-
-	# 	if upstream_grad.shape != inp_shape:
-	# 		upstream_grad.metadata.shape = inp_shape
-	# 		upstream_grad.metadata.stride = inp.stride
-	# 		upstream_grad.metadata.numel = inp.numel
-
-	# 	return upstream_grad
-
 	@classmethod
 	def execute(cls: type[OP], *data: Tensor, **kwargs) -> Tensor:
 		"""
@@ -118,8 +102,8 @@ class Tensor:
 		if str(type(data)) == "<class 'numpy.ndarray'>":
 			if str(data.dtype) != "float32":
 				raise ValueError("dlgrad only supports float32 dtype")
-			if str(data.ndim) > '3':
-				raise ValueError("dlgrad only supports upto 3D tensors")
+			if str(data.ndim) > '4':
+				raise ValueError("dlgrad only supports upto 4D tensors")
 
 			shape = data.shape
 			ndim = data.ndim

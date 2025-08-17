@@ -25,14 +25,12 @@ class Sum(OP):
 		self.dtype = x.dtype
 		self.keepdim = keepdim
 		self.dim = dim
-		print("sum forward", self.inp_shape)
 		return x.sum(dim=dim, keepdim=keepdim)
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
 		if not self.keepdim:
 			upstream_grad.unsqueeze(self.dim)
-		print("sum backward", self.inp_shape)
 		return (t*upstream_grad,)
 
 # done
