@@ -471,10 +471,10 @@ class Tensor:
 		Returns:
 			A tensor of the same shape as self.
 		"""
-		t = self.max(dim=dim)
+		t = self.max(dim=dim, keepdim=True)
 		m = self - t
 		e = m.exp()
-		ss = e.sum(dim=dim)
+		ss = e.sum(dim=dim, keepdim=True)
 		return m - ss.log()
 
 	def sequential(self, layers: list[callable[Tensor]]) -> None:

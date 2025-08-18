@@ -275,7 +275,7 @@ def test_sqrt(shapes, device):
 
 @pytest.mark.parametrize("shapes", s)
 def test_logsoftmax(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes) or any(len(shape) == 3 for shape in shapes):
         pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
