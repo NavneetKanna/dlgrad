@@ -31,6 +31,7 @@ class Sum(OP):
 		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
 		if not self.keepdim:
 			upstream_grad.unsqueeze(self.dim)
+		print("sum backward", t.shape, upstream_grad.shape)
 		return (t*upstream_grad,)
 
 # done
@@ -168,10 +169,10 @@ class CrossEntropy(OP):
 		assert logits.shape[0] == target.shape[0], f"logits shape[0] and target shape[0] does not match {logits.shape} != {target.shape}"  # noqa: E501
 
 		self.target = target
-		t = logits.max(dim=dim)
+		t = logits.max(dim=dim, keepdim=True)
 		m = logits - t
 		e = m.exp()
-		ss = e.sum(dim=dim)
+		ss = e.sum(dim=dim, keepdim=True)
 		self.log_softmax_output = m - ss.log()
 		tmp = Buffer.ce_forward(self.log_softmax_output, self.target)
 

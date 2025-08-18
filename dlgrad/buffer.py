@@ -243,7 +243,7 @@ class Buffer:
         # unsqueeze y.shape to (1, 3, 4) and squeeze it back to (3, 4)
         tmp = []
         org_yshape = y.shape
-        if len(x.shape) != len(y.shape):
+        if len(x.shape) != len(y.shape) and y.ndim != 1:
             shape_diff = len(x.shape) - len(y.shape)
             for i in range(shape_diff):
                 tmp.append(i)
@@ -254,7 +254,7 @@ class Buffer:
             shape=output_shape, device=self.device, dtype=self.dtype
         )
 
-        if len(x.shape) != len(org_yshape):
+        if len(x.shape) != len(org_yshape) and y.ndim != 1:
             y.squeeze(tmp)
 
         return t

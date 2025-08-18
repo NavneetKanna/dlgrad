@@ -21,14 +21,12 @@ def run(shapes: list[tuple], device, func):
         device = "mps"
     torch_data = [torch.tensor(data, device=device) for data in np_data]
 
-    dlgrad_result = func(*dlgrad_data).numpy()
+    dlgrad_result = func(*dlgrad_data)
     torch_result = func(*torch_data)
     if device == "mps":
-        torch_result = torch_result.cpu().numpy()
-    else:
-        torch_result = torch_result.numpy()
+        torch_result = torch_result.cpu()
 
-    np.testing.assert_allclose(dlgrad_result, torch_result, atol=1e-6, rtol=1e-3)
+    np.testing.assert_allclose(dlgrad_result.numpy(), torch_result.numpy(), atol=1e-6, rtol=1e-3)
 
 def generate_broadcastable_shapes(shape, reverse: bool = False):
     options = [(1, d) for d in shape]
@@ -48,15 +46,14 @@ def generate_broadcastable_shapes(shape, reverse: bool = False):
 
 s = generate_broadcastable_shapes((2, 3, 4, 5))
 s += generate_broadcastable_shapes((2, 3, 4))
-s += generate_broadcastable_shapes((1, 3))
+s += generate_broadcastable_shapes((2, 3))
 
 rs = generate_broadcastable_shapes((2, 3, 4, 5), reverse=True)
 rs += generate_broadcastable_shapes((2, 3, 4), reverse=True)
-rs += generate_broadcastable_shapes((1, 3), reverse=True)
+rs += generate_broadcastable_shapes((2, 3), reverse=True)
 
 @pytest.mark.parametrize("shapes", s)
 def test_add(shapes, device):
-    # Skip test for 4D shapes when device is 'metal'
     if device == 'metal' and any(len(shape) == 4 for shape in shapes):
         pytest.skip()
     run(shapes, device, lambda x, y: x+y)
