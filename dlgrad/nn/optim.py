@@ -49,9 +49,11 @@ class SGD(Optimizer):
 class Adam(Optimizer):
     def __init__(self, params: list[Tensor], lr: float = 1e-3,
                  betas: tuple[float, float] = (0.9, 0.999), eps: float = 1e-8) -> None:
-        self.lr = lr
+        self.lr = Tensor(lr)
         self.beta1, self.beta2 = betas
-        self.eps = eps
+        self.beta1 = Tensor(self.beta1)
+        self.beta2 = Tensor(self.beta2)
+        self.eps = Tensor(eps)
         self.m = {id(p): Tensor.zeros_like(p.shape) for p in params}
         self.v = {id(p): Tensor.zeros_like(p.shape) for p in params}
         self.t = 0
@@ -62,10 +64,10 @@ class Adam(Optimizer):
         for param in self.params:
             pid = id(param)
             g = param.grad
-            self.m[pid] = (self.m[pid] * self.beta1) + (g * (1 - self.beta1))
-            self.v[pid] = (self.v[pid] * self.beta2) + ((g ** 2) * (1 - self.beta2))
+            self.m[pid] = (self.m[pid] * self.beta1) + (g * (Tensor(1.0) - self.beta1))
+            self.v[pid] = (self.v[pid] * self.beta2) + ((g ** 2.0) * (Tensor(1.0) - self.beta2))
 
-            m_hat = self.m[pid] / (1 - self.beta1 ** self.t)
-            v_hat = self.v[pid] / (1 - self.beta2 ** self.t)
+            m_hat = self.m[pid] / (Tensor(1.0) - self.beta1 ** self.t)
+            v_hat = self.v[pid] / (Tensor(1.0) - self.beta2 ** self.t)
 
             param.data = (param - (m_hat / (v_hat.sqrt() + self.eps)) * self.lr).data

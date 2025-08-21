@@ -221,7 +221,7 @@ class Buffer:
         kwargs.pop("device")
         dispatcher.dispatch(op=kwargs.pop("op"), device=Device.CPU, **kwargs)
 
-    def _binary_op(self, other: Buffer | Scalar, op: BinaryOps) -> Buffer:
+    def _binary_op(self, other: Buffer, op: BinaryOps) -> Buffer:
         if not check_broadcast(self.shape, other.shape):
             raise ValueError(f"Cannot broadcast {other.shape} to {self.shape}")
 
@@ -243,7 +243,7 @@ class Buffer:
         # unsqueeze y.shape to (1, 3, 4) and squeeze it back to (3, 4)
         tmp = []
         org_yshape = y.shape
-        if len(x.shape) != len(y.shape) and y.ndim != 1:
+        if len(x.shape) != len(y.shape) and y.ndim != 1 and y.ndim != 0:
             shape_diff = len(x.shape) - len(y.shape)
             for i in range(shape_diff):
                 tmp.append(i)
@@ -254,21 +254,21 @@ class Buffer:
             shape=output_shape, device=self.device, dtype=self.dtype
         )
 
-        if len(x.shape) != len(org_yshape) and y.ndim != 1:
+        if len(x.shape) != len(org_yshape) and y.ndim != 1 and y.ndim != 0:
             y.squeeze(tmp)
 
         return t
 
-    def __add__(self, other: Buffer | Scalar) -> Buffer:
+    def __add__(self, other: Buffer) -> Buffer:
         return self._binary_op(other, BinaryOps.ADD)
 
-    def __sub__(self, other: Buffer | Scalar) -> Buffer:
+    def __sub__(self, other: Buffer) -> Buffer:
         return self._binary_op(other, BinaryOps.SUB)
 
-    def __mul__(self, other: Buffer | Scalar) -> Buffer:
+    def __mul__(self, other: Buffer) -> Buffer:
         return self._binary_op(other, BinaryOps.MUL)
 
-    def __truediv__(self, other: Buffer | Scalar) -> Buffer:
+    def __truediv__(self, other: Buffer) -> Buffer:
         if self.numel >= other.numel:
             return self._binary_op(other, BinaryOps.DIV)
         else:
