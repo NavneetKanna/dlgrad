@@ -266,7 +266,7 @@ class Tensor:
 		return Tensor.full(shape, 0.0, device, dtype, requires_grad)
 
 	@staticmethod
-	def add(x: Tensor, y: Tensor) -> Tensor:
+	def add(x: Tensor, y: Tensor | Scalar) -> Tensor:
 		"""
 		Adds `x` and `y` tensors with broadcasting.
 
@@ -278,10 +278,14 @@ class Tensor:
 		Returns:
 			The sum of `x` and `y`
 		"""
+		if isinstance(y, Scalar):
+			y = Tensor(y, device=x.device)
+		elif isinstance(x, Scalar):
+			x = Tensor(x, device=y.device)
 		return ops.Add.execute(x, y)
 
 	@staticmethod
-	def mul(x: Tensor, y: Tensor) -> Tensor:
+	def mul(x: Tensor | Tensor, y: Tensor | Scalar) -> Tensor:
 		"""
 		Multiplies `x` and `y` tensors with broadcasting.
 
@@ -294,10 +298,14 @@ class Tensor:
 		Returns:
 			The product of `x` and `y`
 		"""
+		if isinstance(y, Scalar):
+			y = Tensor(y, device=x.device)
+		elif isinstance(x, Scalar):
+			x = Tensor(x, device=y.device)
 		return ops.Mul.execute(x, y)
 
 	@staticmethod
-	def sub(x: Tensor, y: Tensor) -> Tensor:
+	def sub(x: Tensor, y: Tensor | Scalar) -> Tensor:
 		"""
 		Subtracts `x` and `y` tensors with broadcasting.
 
@@ -309,10 +317,14 @@ class Tensor:
 		Returns:
 			The difference of `x` and `y`
 		"""
+		if isinstance(y, Scalar):
+			y = Tensor(y, device=x.device)
+		elif isinstance(x, Scalar):
+			x = Tensor(x, device=y.device)
 		return ops.Sub.execute(x, y)
 
 	@staticmethod
-	def div(x: Tensor, y: Tensor) -> Tensor:
+	def div(x: Tensor, y: Tensor | Scalar) -> Tensor:
 		"""
 		Divides `x` and `y` tensors with broadcasting.
 
@@ -324,6 +336,10 @@ class Tensor:
 		Returns:
 			The quotient of `x` and `y`
 		"""
+		if isinstance(y, Scalar):
+			y = Tensor(y, device=x.device)
+		elif isinstance(x, Scalar):
+			x = Tensor(x, device=y.device)
 		return ops.Div.execute(x, y)
 
 	@staticmethod

@@ -1,4 +1,3 @@
-
 from dlgrad.buffer import Buffer
 from dlgrad.dtype import Scalar
 from dlgrad.helpers import CustomOps, check_broadcast
@@ -10,14 +9,13 @@ from dlgrad.tensor import OP
 class Transpose(OP):
 	def forward(self, x: Buffer, axes: tuple):  # noqa: ANN201
 		self.axes = axes
+
 		return x.transpose(axes)
 
 	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
 		return (upstream_grad.transpose(self.axes),)
-		# return (upstream_grad.transpose(tuple([i for i in range(upstream_grad.ndim)][::-1])),)
 
 
-# done
 class Sum(OP):
 	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
 		self.inp_shape = x.shape
@@ -25,16 +23,16 @@ class Sum(OP):
 		self.dtype = x.dtype
 		self.keepdim = keepdim
 		self.dim = dim
+
 		return x.sum(dim=dim, keepdim=keepdim)
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
 		if not self.keepdim:
 			upstream_grad.unsqueeze(self.dim)
-		print("sum backward", t.shape, upstream_grad.shape)
+
 		return (t*upstream_grad,)
 
-# done
 class Max(OP):
 	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
 		self.inp_shape = x.shape
@@ -43,6 +41,7 @@ class Max(OP):
 		self.x = x
 		self.keepdim = keepdim
 		self.out = x.max(dim=dim, keepdim=keepdim)
+
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
@@ -53,7 +52,6 @@ class Max(OP):
 
 		return (max_with_1s*upstream_grad,)
 
-# done
 class Exp(OP):
 	def forward(self, x: Buffer) -> Buffer:
 		self.out = x.exp()
@@ -63,7 +61,6 @@ class Exp(OP):
 		return (upstream_grad * self.out,)
 
 
-# done
 class Log(OP):
 	def forward(self, x: Buffer) -> Buffer:
 		self.x = x
@@ -73,7 +70,6 @@ class Log(OP):
 		return (upstream_grad / self.x,)
 
 
-# done
 class Relu(OP):
 	def forward(self, x: Buffer) -> Buffer:
 		self.out = x.relu()
@@ -83,7 +79,6 @@ class Relu(OP):
 		return ((self.out>0.0) * upstream_grad,)
 
 
-# done
 class Sqrt(OP):
 	def forward(self, x: Buffer) -> Buffer:
 		self.out = x.sqrt()
@@ -95,7 +90,6 @@ class Sqrt(OP):
 
 # ------------ Binary Ops -----------
 
-# done
 class Add(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
@@ -106,10 +100,10 @@ class Add(OP):
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
 		grad_x = self.reduce_grad_for_broadcasting(upstream_grad, self.x.shape) if self.req_grad[0] else None
 		grad_y = self.reduce_grad_for_broadcasting(upstream_grad, self.y.shape) if self.req_grad[1] else None
+
 		return grad_x, grad_y
 
 
-# done
 class Sub(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
@@ -120,10 +114,10 @@ class Sub(OP):
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
 		grad_x = self.reduce_grad_for_broadcasting(upstream_grad, self.x.shape) if self.req_grad[0] else None
 		grad_y = self.reduce_grad_for_broadcasting(-upstream_grad, self.y.shape) if self.req_grad[1] else None
+
 		return grad_x, grad_y
 
 
-# done
 class Mul(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
@@ -134,10 +128,10 @@ class Mul(OP):
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
 		grad_x = self.reduce_grad_for_broadcasting(upstream_grad*self.y, self.x.shape) if self.req_grad[0] else None
 		grad_y = self.reduce_grad_for_broadcasting(upstream_grad*self.x, self.y.shape) if self.req_grad[1] else None
+
 		return grad_x, grad_y
 
 
-# done
 class Div(OP):
 	def forward(self, x: Buffer, y: Buffer | Scalar) -> Buffer:
 		self.x = x
@@ -148,6 +142,7 @@ class Div(OP):
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
 		grad_x = self.reduce_grad_for_broadcasting(upstream_grad/self.y, self.x.shape) if self.req_grad[0] else None
 		grad_y = self.reduce_grad_for_broadcasting((-upstream_grad*self.x)/self.y**2, self.y.shape) if self.req_grad[1] else None
+
 		return grad_x, grad_y
 
 
@@ -155,15 +150,16 @@ class MatMul(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
 		self.y = y
+
 		return x@y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		t1 = self.x.T
 		t2 = self.y.T
+
 		return (upstream_grad@t2, t1@upstream_grad)
 
 
-# TODO: Fuse all ops performed here in C ?
 class CrossEntropy(OP):
 	def forward(self, logits: Buffer, target: Buffer, dim: int = 1) -> Buffer:
 		assert logits.shape[0] == target.shape[0], f"logits shape[0] and target shape[0] does not match {logits.shape} != {target.shape}"  # noqa: E501

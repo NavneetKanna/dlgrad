@@ -1,4 +1,3 @@
-
 from dlgrad.tensor import Tensor
 
 
@@ -21,7 +20,6 @@ class Optimizer:
 class SGD(Optimizer):
     def __init__(self, params: list[Tensor], lr: int = 1e-3, momentum: float = 0.0) -> None:
         super().__init__(params, lr)
-        # self.momentum = Tensor(momentum)
         self.momentum = momentum
         self.velocities = {id(param): Tensor.zeros_like(param.shape) for param in self.params}
 
@@ -49,25 +47,22 @@ class SGD(Optimizer):
 class Adam(Optimizer):
     def __init__(self, params: list[Tensor], lr: float = 1e-3,
                  betas: tuple[float, float] = (0.9, 0.999), eps: float = 1e-8) -> None:
-        self.lr = Tensor(lr)
+        self.lr = lr
         self.beta1, self.beta2 = betas
-        self.beta1 = Tensor(self.beta1)
-        self.beta2 = Tensor(self.beta2)
-        self.eps = Tensor(eps)
+        self.eps = eps
         self.m = {id(p): Tensor.zeros_like(p.shape) for p in params}
         self.v = {id(p): Tensor.zeros_like(p.shape) for p in params}
         self.t = 0
         self.params = params
+        self.tensor_one = Tensor(1.0)
 
     def step(self) -> None:
         self.t += 1
         for param in self.params:
             pid = id(param)
             g = param.grad
-            self.m[pid] = (self.m[pid] * self.beta1) + (g * (Tensor(1.0) - self.beta1))
-            self.v[pid] = (self.v[pid] * self.beta2) + ((g ** 2.0) * (Tensor(1.0) - self.beta2))
-
-            m_hat = self.m[pid] / (Tensor(1.0) - self.beta1 ** self.t)
-            v_hat = self.v[pid] / (Tensor(1.0) - self.beta2 ** self.t)
-
+            self.m[pid] = (self.m[pid] * self.beta1) + (g * (1.0 - self.beta1))
+            self.v[pid] = (self.v[pid] * self.beta2) + ((g ** 2.0) * (1.0 - self.beta2))
+            m_hat = self.m[pid] / (1.0 - self.beta1 ** self.t)
+            v_hat = self.v[pid] / (1.0 - self.beta2 ** self.t)
             param.data = (param - (m_hat / (v_hat.sqrt() + self.eps)) * self.lr).data

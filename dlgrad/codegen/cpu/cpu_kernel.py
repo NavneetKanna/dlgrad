@@ -269,7 +269,7 @@ def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int,
     return code, "void transpose(float *x, float *out);"
 
 @cache
-def utils(x_numel: int, func: str, val: float | int = 1.0) -> tuple[str, str]:
+def utils(x_numel: int, func: str) -> tuple[str, str]:
     match func:
         case "neg":
             code = f"""
@@ -314,15 +314,15 @@ def utils(x_numel: int, func: str, val: float | int = 1.0) -> tuple[str, str]:
             code = f"""
             #include <math.h>
 
-            void c_pow(float *x, float *out)
+            void c_pow(float *x, float *out, int val)
             {{
                 for (int i=0; i<{x_numel}; i++) {{
-                    out[i] = powf(x[i], {val});
+                    out[i] = powf(x[i], val);
                 }}
             }}
             """
 
-            return code, "void c_pow(float *x, float *out);"
+            return code, "void c_pow(float *x, float *out, int val);"
         case "sqrt":
             code = f"""
             #include <math.h>
@@ -480,6 +480,296 @@ def eqt(x_numel: int) -> tuple[str, str]:
     """
 
     return code, "void eqt(float *x, float *y, float *out);"
+
+@cache
+def uninitialized_memory() -> tuple[str, str]:
+    c_code = """
+        #include <stdlib.h>
+
+        // dlgrad only supports float, hence it is ok to have the return type as float
+        float *uninitialized_memory(size_t nbytes)
+        {
+            float *out = malloc(nbytes);
+            if (out == NULL) {
+                return NULL;
+            }
+
+            return out;
+        }
+    """
+
+    return c_code, "float *uninitialized_memory(size_t nbytes);"
+
+@cache
+def initialized_memory() -> tuple[str, str]:
+    c_code = """
+        #include <stdlib.h>
+
+        float *initialized_memory(size_t num, size_t size)
+        {
+            float *out = calloc(num, size);
+            if (out == NULL) {
+                return NULL;
+            }
+
+            return out;
+        }
+    """
+
+    return c_code, "float *initialized_memory(size_t num, size_t size);"
+
+@cache
+def init_with_scalar() -> tuple[str, str]:
+    c_code = """
+        #include <stdlib.h>
+
+        float *init_with_scalar(size_t nbytes, int numel, int scalar)
+        {
+            float *out = malloc(nbytes);
+            if (out == NULL) {
+                return NULL;
+            }
+
+            for (int i=0; i<numel; i++) {
+                out[i] = scalar;
+            }
+
+            return out;
+        }
+    """
+
+    return c_code, "float *init_with_scalar(size_t nbytes, int numel, int scalar);"
+
+@cache
+def free_ptr() -> tuple[str, str]:
+    c_code = """
+        #include <stdlib.h>
+
+        void free_ptr(float *ptr)
+        {
+            free(ptr);
+        }
+    """
+
+    return c_code, "void free_ptr(float *ptr);"
+
+@cache
+def full(x_numel: int, fill_value: int) -> tuple[str, str]:
+    c_code = f"""
+        #include <stdlib.h>
+
+        void full(float *out)
+        {{
+            for (int i=0; i<{x_numel}; i++) {{
+                out[i] = {fill_value};
+            }}
+        }}
+    """
+
+    return c_code, "void full(float *out);"
+
+@cache
+def uniform(x_numel: int, low: int, high: int) -> tuple[str, str]:
+    c_code = f"""
+        /*
+        * PCG Random Number Generation for C.
+        *
+        * Copyright 2014 Melissa O'Neill <oneill@pcg-random.org>
+        *
+        * Licensed under the Apache License, Version 2.0 (the "License");
+        * you may not use this file except in compliance with the License.
+        * You may obtain a copy of the License at
+        *
+        *     http://www.apache.org/licenses/LICENSE-2.0
+        *
+        * Unless required by applicable law or agreed to in writing, software
+        * distributed under the License is distributed on an "AS IS" BASIS,
+        * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+        * See the License for the specific language governing permissions and
+        * limitations under the License.
+        *
+        * For additional information about the PCG random number generation scheme,
+        * including its license and other licensing options, visit
+        *
+        *     http://www.pcg-random.org
+        */
+
+        /*
+        * This code is derived from the full C implementation, which is in turn
+        * derived from the canonical C++ PCG implementation. The C++ version
+        * has many additional features and is preferable if you can use C++ in
+        * your project.
+        */
+
+        #include <inttypes.h>
+        #include <stdlib.h>
+        #include <time.h>
+        #include <math.h>
+        #include <fcntl.h>
+        #include <unistd.h>
+        #include <stdint.h>
+
+        struct pcg_state_setseq_64 {{    // Internals are *Private*.
+            uint64_t state;             // RNG state.  All values are possible.
+            uint64_t inc;               // Controls which RNG sequence (stream) is
+                                        // selected. Must *always* be odd.
+        }};
+        typedef struct pcg_state_setseq_64 pcg32_random_t;
+
+        uint32_t pcg32_random_r(pcg32_random_t* rng)
+        {{
+            uint64_t oldstate = rng->state;
+            rng->state = oldstate * 6364136223846793005ULL + rng->inc;
+            uint32_t xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
+            uint32_t rot = oldstate >> 59u;
+            return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
+        }}
+
+        void pcg32_srandom_r(pcg32_random_t* rng, uint64_t initstate, uint64_t initseq)
+        {{
+            rng->state = 0U;
+            rng->inc = (initseq << 1u) | 1u;
+            pcg32_random_r(rng);
+            rng->state += initstate;
+            pcg32_random_r(rng);
+        }}
+
+        pcg32_random_t rng;
+
+        int uniform(float *out)
+        {{
+            int fd = open("/dev/random", O_RDONLY);
+            if (fd < 0) {{
+                return -1;
+            }}
+
+            uint64_t seed;
+            ssize_t bytes_read = read(fd, &seed, sizeof(seed));
+            if (bytes_read != sizeof(seed)) {{
+                return -1;
+            }}
+
+            close(fd);
+
+            pcg32_srandom_r(&rng, seed, (intptr_t)&rng);
+
+            for (int i= 0; i < {x_numel}; i++) {{
+                double d = ldexp(pcg32_random_r(&rng), -32);
+                float f = (float) d;
+
+                if ({low} == 0.0f && {high} == 1.0f) {{
+                    out[i] = f;
+                }} else {{
+                    out[i] = {low} + ({high} - {low}) * f;
+                }}
+            }}
+
+            return 0;
+        }}
+    """
+
+    return c_code, "int uniform(float *out);"
+
+@cache
+def mnist_loader() -> tuple[str, str]:
+    c_code = """
+        #include <stdio.h>
+        #include <stdlib.h>
+        #include <arpa/inet.h>
+
+        // https://web.archive.org/web/20160828233817/http://yann.lecun.com/exdb/mnist/index.html
+        float *mnist_images_loader(char *path, uint32_t magic_number)
+        {
+            FILE *fp = fopen(path, "rb");
+            if (!fp) {
+                printf("Failed to open file\\n");
+                return NULL;
+            }
+
+            uint32_t magic_num, num_images, num_rows, num_cols;
+
+            fread(&magic_num, 1, 4, fp);
+
+            magic_num = ntohl(magic_num);
+
+            if (magic_num != magic_number) {
+                printf("Invalid magic number\\n");
+                fclose(fp);
+                return NULL;
+            }
+
+            fread(&num_images, 1, 4, fp);
+            fread(&num_rows, 1, 4, fp);
+            fread(&num_cols, 1, 4, fp);
+            num_images = ntohl(num_images);
+            num_rows = ntohl(num_rows);
+            num_cols = ntohl(num_cols);
+
+        int out_size = num_images * num_rows * num_cols;
+
+            float *out = (float*)malloc(out_size * sizeof(float));
+            if (!out) {
+                printf("Failed to allocate memory\\n");
+                fclose(fp);
+                return NULL;
+            }
+
+            unsigned char pixel;
+            for (int i=0; i<out_size; i++) {
+                fread(&pixel, 1, 1, fp);
+                out[i] = (float)pixel / 255.0f;
+            }
+
+            fclose(fp);
+
+            return out;
+        }
+
+        float *mnist_labels_loader(char *path, uint32_t magic_number)
+        {
+            FILE *fp = fopen(path, "rb");
+            if (!fp) {
+                printf("Failed to open file\\n");
+                return NULL;
+            }
+
+            uint32_t magic_num, num_images;
+
+            fread(&magic_num, 1, 4, fp);
+
+            magic_num = ntohl(magic_num);
+
+            if (magic_num != magic_number) {
+                printf("Invalid magic number\\n");
+                fclose(fp);
+                return NULL;
+            }
+
+            fread(&num_images, 1, 4, fp);
+            num_images = ntohl(num_images);
+
+            int out_size = num_images;
+
+            float *out = (float*)malloc(out_size * sizeof(float));
+            if (!out) {
+                printf("Failed to allocate memory\\n");
+                fclose(fp);
+                return NULL;
+            }
+
+            unsigned char labels;
+            for (int i=0; i<out_size; i++) {
+                fread(&labels, 1, 1, fp);
+                out[i] = (float)labels;
+            }
+
+            fclose(fp);
+
+            return out;
+        }
+    """
+    return c_code, "float *mnist_images_loader(char *path, uint32_t magic_number);float *mnist_labels_loader(char *path, uint32_t magic_number);"
+
 
 """
 dim = 1

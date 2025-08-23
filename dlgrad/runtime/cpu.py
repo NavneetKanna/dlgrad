@@ -5,10 +5,6 @@ import struct
 import subprocess
 from functools import cache
 
-import _allocate  # type: ignore
-import _full  # type: ignore
-import _mnist_loader  # type: ignore
-import _uniform  # type: ignore
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
@@ -21,6 +17,8 @@ from dlgrad.helpers import CACHE_DIR, BinaryOps, BufferOps, CustomOps, UnaryOps,
 CFLAGS = ["-shared", "-fPIC", "-O2", "-march=native", "-ffast-math"]
 COMPILER = "clang"
 
+# TODO: Cache malloc/out_ptr, reuse it, this should speed up
+
 class CPU:
     """
     Main CPU runtime class which handles the logic of calling the compiled C source files.
@@ -28,59 +26,6 @@ class CPU:
     This class uses CFFI (C Foreign Function Interface) to interact with C code.
     """
     ffi = FFI()
-
-    # TODO: Cache struct.calcsize('f')
-    @staticmethod
-    def malloc(num: int, size: int = struct.calcsize('f')) -> CDataPtr:
-        ptr = CPU.ffi.gc(_allocate.lib.uninitialized_memory(num*size), _allocate.lib.free_ptr)
-        if ptr == CPU.ffi.NULL:
-            raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
-        return ptr
-
-    @staticmethod
-    def calloc(num: int, size: int = struct.calcsize('f')) -> CDataPtr:
-        ptr = CPU.ffi.gc(_allocate.lib.initialized_memory(num, size), _allocate.lib.free_ptr)
-        if ptr == CPU.ffi.NULL:
-            raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
-        return ptr
-
-    @staticmethod
-    def mnist_loader(images: bool, path: str, magic_number: int) -> CDataPtr:
-        if images:
-            ptr = CPU.ffi.gc(_mnist_loader.lib.mnist_images_loader(path.encode('ascii'), magic_number), _allocate.lib.free_ptr)  # noqa: E501
-        else:
-            ptr = CPU.ffi.gc(_mnist_loader.lib.mnist_labels_loader(path.encode('ascii'), magic_number), _allocate.lib.free_ptr)  # noqa: E501
-
-        if ptr == CPU.ffi.NULL:
-            raise MemoryError("Error when loading MNIST data")
-        return ptr
-
-    @staticmethod
-    def init_with_scalar(num: int, scalar: int, size: int = struct.calcsize('f')) -> CDataPtr:
-        ptr = CPU.ffi.gc(_allocate.lib.init_with_scalar(num*size, num, scalar), _allocate.lib.free_ptr)
-        if ptr == CPU.ffi.NULL:
-            raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
-        return ptr
-
-    @staticmethod
-    @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
-    def uniform(shape: tuple, low: float, high: float) -> CDataPtr:
-        out_ptr = CPU.malloc(num=prod_(shape))
-
-        status = _uniform.lib.uniform(out_ptr, prod_(shape), low, high)
-        if status == -1:
-            raise MemoryError("Failed to create random values")
-
-        return out_ptr
-
-    @staticmethod
-    @dispatcher.register(BufferOps.FULL, Device.CPU)
-    def full(shape: tuple, fill_value: Scalar) -> CDataPtr:
-        out_ptr = CPU.malloc(num=prod_(shape))
-
-        _full.lib.full(out_ptr, prod_(shape), fill_value)
-
-        return out_ptr
 
     @staticmethod
     def _build_shared_object(source: str, so_path: pathlib.Path) -> None:
@@ -108,7 +53,162 @@ class CPU:
         CPU.ffi.cdef(cdef)
         return True
 
-    # TODO: Cache malloc/out_ptr, reuse it, this should speed up
+    # TODO: Cache struct.calcsize('f')
+    @staticmethod
+    def malloc(num: int, size: int = struct.calcsize('f')) -> CDataPtr:
+        c_code, cdef = cpu_kernel.uninitialized_memory()
+        c_code2, cdef2 = cpu_kernel.free_ptr()
+
+        key = CPU._hash_code(c_code)
+        key2 = CPU._hash_code(c_code2)
+        so_fp = pathlib.Path(CACHE_DIR) / f"unintialized_memory_{key}.so"
+        so_fp2 = pathlib.Path(CACHE_DIR) / f"free_{key2}.so"
+
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+        if not os.path.exists(so_fp2):
+            CPU._build_shared_object(c_code2, so_fp2)
+
+        lib = CPU._get_handle(str(so_fp))
+        lib2 = CPU._get_handle(str(so_fp2))
+
+        CPU._ensure_sig(cdef)
+        CPU._ensure_sig(cdef2)
+
+        ptr = CPU.ffi.gc(lib.uninitialized_memory(num*size), lib2.free_ptr)
+
+        if ptr == CPU.ffi.NULL:
+            raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
+
+        return ptr
+
+    @staticmethod
+    def calloc(num: int, size: int = struct.calcsize('f')) -> CDataPtr:
+        c_code, cdef = cpu_kernel.initialized_memory()
+        c_code2, cdef2 = cpu_kernel.free_ptr()
+
+        key = CPU._hash_code(c_code)
+        key2 = CPU._hash_code(c_code2)
+        so_fp = pathlib.Path(CACHE_DIR) / f"initialized_memory_{key}.so"
+        so_fp2 = pathlib.Path(CACHE_DIR) / f"free_{key2}.so"
+
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+        if not os.path.exists(so_fp2):
+            CPU._build_shared_object(c_code2, so_fp2)
+
+        lib = CPU._get_handle(str(so_fp))
+        lib2 = CPU._get_handle(str(so_fp2))
+
+        CPU._ensure_sig(cdef)
+        CPU._ensure_sig(cdef2)
+
+        ptr = CPU.ffi.gc(lib.initialized_memory(num, size), lib2.free_ptr)
+
+        if ptr == CPU.ffi.NULL:
+            raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
+        return ptr
+
+    @staticmethod
+    def mnist_loader(images: bool, path: str, magic_number: int) -> CDataPtr:
+        c_code, cdef = cpu_kernel.mnist_loader()
+        c_code2, cdef2 = cpu_kernel.free_ptr()
+
+        key = CPU._hash_code(c_code)
+        key2 = CPU._hash_code(c_code2)
+        so_fp = pathlib.Path(CACHE_DIR) / f"mnist_loader_{key}.so"
+        so_fp2 = pathlib.Path(CACHE_DIR) / f"free_{key2}.so"
+
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+        if not os.path.exists(so_fp2):
+            CPU._build_shared_object(c_code2, so_fp2)
+
+        lib = CPU._get_handle(str(so_fp))
+        lib2 = CPU._get_handle(str(so_fp2))
+
+        CPU._ensure_sig(cdef)
+        CPU._ensure_sig(cdef2)
+
+        if images:
+            ptr = CPU.ffi.gc(lib.mnist_images_loader(path.encode('ascii'), magic_number), lib2.free_ptr)  # noqa: E501
+        else:
+            ptr = CPU.ffi.gc(lib.mnist_labels_loader(path.encode('ascii'), magic_number), lib2.free_ptr)  # noqa: E501
+
+        if ptr == CPU.ffi.NULL:
+            raise MemoryError("Error when loading MNIST data")
+        return ptr
+
+    @staticmethod
+    def init_with_scalar(num: int, scalar: int, size: int = struct.calcsize('f')) -> CDataPtr:
+        c_code, cdef = cpu_kernel.init_with_scalar()
+        c_code2, cdef2 = cpu_kernel.free_ptr()
+
+        key = CPU._hash_code(c_code)
+        key2 = CPU._hash_code(c_code2)
+        so_fp = pathlib.Path(CACHE_DIR) / f"init_with_scalar_{key}.so"
+        so_fp2 = pathlib.Path(CACHE_DIR) / f"free_{key2}.so"
+
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+        if not os.path.exists(so_fp2):
+            CPU._build_shared_object(c_code2, so_fp2)
+
+        lib = CPU._get_handle(str(so_fp))
+        lib2 = CPU._get_handle(str(so_fp2))
+
+        CPU._ensure_sig(cdef)
+        CPU._ensure_sig(cdef2)
+
+        ptr = CPU.ffi.gc(lib.init_with_scalar(num*size, num, scalar), lib2.free_ptr)
+
+        if ptr == CPU.ffi.NULL:
+            raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
+        return ptr
+
+    @staticmethod
+    @dispatcher.register(BufferOps.UNIFORM, Device.CPU)
+    def uniform(shape: tuple, low: float, high: float) -> CDataPtr:
+        out_ptr = CPU.malloc(num=prod_(shape))
+
+        c_code, cdef = cpu_kernel.uniform(prod_(shape), low, high)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"uniform_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        status = lib.uniform(out_ptr)
+
+        if status == -1:
+            raise MemoryError("Failed to create random values")
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(BufferOps.FULL, Device.CPU)
+    def full(shape: tuple, fill_value: Scalar) -> CDataPtr:
+        out_ptr = CPU.malloc(num=prod_(shape))
+
+        c_code, cdef = cpu_kernel.full(prod_(shape), fill_value)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"full_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.full(out_ptr)
+
+        return out_ptr
+
     @staticmethod
     def _binary_op(x: Buffer, y: Buffer, op: str) -> CDataPtr:
         c_code, cdef = cpu_kernel.arithmetic(x.shape, x.stride, y.shape, y.stride, op)
@@ -254,7 +354,8 @@ class CPU:
     def pow(x: Buffer, val: Scalar) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils(x.numel, "pow", val)
+        c_code, cdef = cpu_kernel.utils(x.numel, "pow")
+        # print(c_code)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"pow_{key}.so"
@@ -265,7 +366,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_pow(x.ptr, out_ptr)
+        lib.c_pow(x.ptr, out_ptr, int(val))
 
         return out_ptr
 
