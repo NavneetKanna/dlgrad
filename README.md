@@ -33,9 +33,10 @@ import numpy as np
 from tqdm import tqdm
 
 BS, in_dim, HS, ncls = 128, 784, 64, 10
-STEPS = int(60000/BS) * 2
+EPOCHS = 2
+STEPS = int(60000/BS) * EPOCHS
     
-d = "metal"
+d = "cpu" # or metal
 
 class Model:
     def __init__(self):

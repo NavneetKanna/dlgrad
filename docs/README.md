@@ -41,30 +41,24 @@ and the supported devices are
 | cpu |
 | metal |
 
-dlgrad only supports 2D and 3D tensors, you can create 1D tensors but it is represented as 2D tensor
-
-```python
-a = Tensor.rand((2,)) # a.shape will be (1, 2)
-```
-
 With the tensors created, any of the following ops can be performed on them, the table also shows which runtime supports which ops and which dimensions
 
 | Ops | CPU | Metal |
 | :---: | :---: | :---: |
-| add | &check; 2D, 3D | &check; 2D, 3D |
-| sub | &check; 2D, 3D | &check; 2D, 3D | 
-| mul | &check; 2D, 3D | &check; 2D, 3D |
-| div | &check; 2D, 3D | &check; 2D, 3D | 
+| add | &check | &check; 2D, 3D |
+| sub | &check | &check; 2D, 3D | 
+| mul | &check | &check; 2D, 3D |
+| div | &check | &check; 2D, 3D | 
 | matmul | &check; 2D | &check; 2D | 
-| transpose | &check; 2D | &cross; |
-| sum | &check; 2D, 3D | &check; 2D |
-| relu | &check; 2D, 3D | &cross; |
+| transpose | &check | &cross; |
+| sum | &check | &check; 2D |
+| relu | &check | &cross; |
 | linear | &check; 2D | - |
-| max | &check; 2D, 3D | &cross; |
-| exp | &check; 2D, 3D | &check; 2D, 3D |
-| log | &check; 2D, 3D | &check; 2D, 3D |
-| sqrt | &check; 2D, 3D | &check; 2D, 3D |
-| log_softmax | &check; 2D, 3D |  - |
+| max | &check | &cross; |
+| exp | &check | &check; 2D, 3D |
+| log | &check | &check; 2D, 3D |
+| sqrt | &check | &check; 2D, 3D |
+| log_softmax | &check |  - |
 | cross_entropy_loss | &check; | - | 
 
 
@@ -73,9 +67,9 @@ For ops like transpose or matmul, you can use the symbols like ```T```, ```@```.
 
 | Ops | Left operand | Right operand | CPU | Metal
 | :---: | :---: | :---: |:---: | :---: |
-| > (greater) | Tensor | Scalar | &check; 2D, 3D | &cross;
-| ** (power) | Tensor | Scalar | &check; 2D, 3D | &check; 2D, 3D |
-| - (negate) | Tensor | - | &check; 2D, 3D | &check; 2D, 3D |
+| > (greater) | Tensor | Scalar | &check| &cross;
+| ** (power) | Tensor | Scalar | &check | &check; 2D, 3D |
+| - (negate) | Tensor | - | &check | &check; 2D, 3D |
 
 ### Models
 

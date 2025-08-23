@@ -6,7 +6,7 @@ from functools import reduce
 from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import ffi, resolve_ndim
+from dlgrad.helpers import ffi
 from dlgrad.runtime import cpu  # needed to register all the cpu runtime functions  # noqa: F401
 
 if platform.system() == 'Darwin':
@@ -35,21 +35,23 @@ class OP:
 	def backward(self, *args, **kwargs) -> None:
 		raise RuntimeError(f"backward not implemented for {type(self)}")  # noqa: ANN201
 
-	def match_inp_shape(self, inp: Buffer, upstream_grad: Buffer, dim: int = 0) -> Buffer:
-		inp_shape = inp.shape
-		ndim = resolve_ndim(inp_shape=inp_shape, grad_shape=upstream_grad.shape)
-		if not ndim:
-			return upstream_grad
+	def reduce_grad_for_broadcasting(self, grad: Buffer, target_shape: tuple) -> Buffer:
+		"""Reduce gradient to match target shape by summing over broadcasted dimensions"""
 
-		for _ in range(ndim):
-			upstream_grad = upstream_grad.sum(dim=dim)
+		current_shape = grad.shape
 
-		if upstream_grad.shape != inp_shape:
-			upstream_grad.metadata.shape = inp_shape
-			upstream_grad.metadata.stride = inp.stride
-			upstream_grad.metadata.numel = inp.numel
+		# Handle different number of dimensions
+		ndim_diff = len(current_shape) - len(target_shape)
 
-		return upstream_grad
+		# Sum over extra dimensions
+		for _ in range(ndim_diff):
+			grad = grad.sum(dim=0)
+
+		for i, (grad_dim, target_dim) in enumerate(zip(grad.shape, target_shape)):
+			if target_dim == 1 and grad_dim > 1:
+				grad = grad.sum(dim=i, keepdim=True)
+
+		return grad
 
 	@classmethod
 	def execute(cls: type[OP], *data: Tensor, **kwargs) -> Tensor:
@@ -100,16 +102,11 @@ class Tensor:
 		if str(type(data)) == "<class 'numpy.ndarray'>":
 			if str(data.dtype) != "float32":
 				raise ValueError("dlgrad only supports float32 dtype")
-			if str(data.ndim) > '3':
-				raise ValueError("dlgrad only supports upto 3D tensors")
+			if str(data.ndim) > '4':
+				raise ValueError("dlgrad only supports upto 4D tensors")
 
 			shape = data.shape
 			ndim = data.ndim
-			if len(data.shape) == 1:
-				shape = (1,) + data.shape
-			elif not shape:
-				shape = (1, 1)
-				ndim = 2
 
 			self.data = Buffer(
 				data=ffi.from_buffer(cdecl="float *", python_buffer=data, require_writable=False),
@@ -276,24 +273,26 @@ class Tensor:
 		Parameters
 		----------
 		x : Tensor
-		y : Tensor | Scalar
+		y : Tensor
 
 		Returns:
 			The sum of `x` and `y`
 		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y, device=x.device)
+		elif isinstance(x, Scalar):
+			x = Tensor(x, device=y.device)
 		return ops.Add.execute(x, y)
 
 	@staticmethod
-	def mul(x: Tensor | Scalar, y: Tensor | Scalar) -> Tensor:
+	def mul(x: Tensor | Tensor, y: Tensor | Scalar) -> Tensor:
 		"""
 		Multiplies `x` and `y` tensors with broadcasting.
 
 		Parameters
 		----------
 		x : Tensor
-		y : Tensor | Scalar
+		y : Tensor
 
 
 		Returns:
@@ -313,13 +312,15 @@ class Tensor:
 		Parameters
 		----------
 		x : Tensor
-		y : Tensor | Scalar
+		y : Tensor
 
 		Returns:
 			The difference of `x` and `y`
 		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y, device=x.device)
+		elif isinstance(x, Scalar):
+			x = Tensor(x, device=y.device)
 		return ops.Sub.execute(x, y)
 
 	@staticmethod
@@ -330,13 +331,15 @@ class Tensor:
 		Parameters
 		----------
 		x : Tensor
-		y :  Tensor | Scalar
+		y :  Tensor
 
 		Returns:
 			The quotient of `x` and `y`
 		"""
 		if isinstance(y, Scalar):
 			y = Tensor(y, device=x.device)
+		elif isinstance(x, Scalar):
+			x = Tensor(x, device=y.device)
 		return ops.Div.execute(x, y)
 
 	@staticmethod
@@ -354,15 +357,6 @@ class Tensor:
 		"""
 		return ops.MatMul.execute(x, y)
 
-	# @staticmethod
-	# def swap_indices(inp: tuple, tmp: tuple) -> tuple:
-	# 	lst = list(inp)
-	# 	for i in range(0, len(tmp), 2):
-	# 		if i+1 < len(tmp):
-	# 			idx1, idx2 = tmp[i], tmp[i+1]
-	# 			lst[idx1], lst[idx2] = lst[idx2], lst[idx1]
-	# 	return tuple(lst)
-
 	@staticmethod
 	def transpose(x: Tensor, *axes) -> Tensor:
 		"""
@@ -379,7 +373,7 @@ class Tensor:
 			axes = axes[0]
 		return ops.Transpose.execute(x, axes=axes)
 
-	def sum(self, dim: int = -1) -> Tensor:
+	def sum(self, dim: int = -1, keepdim: bool = False) -> Tensor:
 		"""
 		Sum a tensor along dimension `dim`. keepdim is by default True.
 		Which means the returned tensor shape is the same as the input tensor shape.
@@ -393,7 +387,7 @@ class Tensor:
 		Returns:
 			A tensor of the same shape as self.
 		"""
-		return ops.Sum.execute(self, dim=dim)
+		return ops.Sum.execute(self, dim=dim, keepdim=keepdim)
 
 	def relu(self) -> Tensor:
 		"""
@@ -424,7 +418,7 @@ class Tensor:
 		"""
 		return self @ weight.T + bias if bias else self @ weight.T
 
-	def max(self, dim: int = -1) -> Tensor:
+	def max(self, dim: int = -1, keepdim: bool = False) -> Tensor:
 		"""
 		Find maximum of a tensor along dimension `dim`. keepdim is by default True.
 		Which means the returned tensor shape is the same as the input tensor shape.
@@ -438,7 +432,7 @@ class Tensor:
 		Returns:
 			A tensor of the same shape as self.
 		"""
-		return ops.Max.execute(self, dim=dim)
+		return ops.Max.execute(self, dim=dim, keepdim=keepdim)
 
 	def exp(self) -> Tensor:
 		"""
@@ -493,10 +487,10 @@ class Tensor:
 		Returns:
 			A tensor of the same shape as self.
 		"""
-		t = self.max(dim=dim)
+		t = self.max(dim=dim, keepdim=True)
 		m = self - t
 		e = m.exp()
-		ss = e.sum(dim=dim)
+		ss = e.sum(dim=dim, keepdim=True)
 		return m - ss.log()
 
 	def sequential(self, layers: list[callable[Tensor]]) -> None:

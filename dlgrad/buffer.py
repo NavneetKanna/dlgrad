@@ -45,7 +45,7 @@ class Buffer:
     def from_scalar(val: Scalar) -> Buffer:
         float_arr = ffi.new("float[]", 1)
         float_arr[0] = val
-        return Buffer(data=float_arr, shape=(1, 1), device=Device.CPU, dtype=DType.FLOAT32)
+        return Buffer(data=float_arr, shape=(), device=Device.CPU, dtype=DType.FLOAT32)
 
     @staticmethod
     def uniform(shape: tuple, device: Device, dtype: DType | str, **kwargs) -> Buffer:
@@ -58,8 +58,6 @@ class Buffer:
             raise NotImplementedError("dlgrad only supports float32")
         if not isinstance(shape, tuple):
             raise ValueError("Shape must be a tuple")
-        if len(shape) == 1:
-            shape = (1,) + shape
 
         # All data creation is done on cpu
         return Buffer(
@@ -76,17 +74,49 @@ class Buffer:
             shape=shape, device=device, dtype=dtype
         )
 
-    def sum(self, dim: int = -1) -> Buffer:
-        out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
+    def unsqueeze(self, dim: int) -> None:
+        if dim == -1:
+            dim = 0
+        assert dim <= len(self.shape), f"Cannot unsqueeze {dim} from {self.shape}"
+
+        new_shape = list(self.shape)
+        new_shape.insert(dim, 1)
+        self.metadata.shape = tuple(new_shape)
+        self.metadata.numel = prod_(new_shape)
+        self.metadata.stride = calculate_stride(new_shape)
+        self.metadata.ndim = len(new_shape)
+
+    def squeeze(self, dim: list[int]) -> None:
+        for idx in dim:
+            if self.shape[idx] != 1:
+                continue
+
+            new_shape = list(self.shape)
+            new_shape.pop(idx)
+            self.metadata.shape = tuple(new_shape)
+            self.metadata.numel = prod_(new_shape)
+            self.metadata.stride = calculate_stride(new_shape)
+            self.metadata.ndim = len(new_shape)
+
+    def sum(self, dim: int = -1, keepdim: bool = False) -> Buffer:
+        out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape, keepdim=keepdim)
+
+        if keepdim:
+            ndim = self.ndim
+        else:
+            if dim == -1:
+                ndim = 0
+            else:
+                ndim = self.ndim - 1
 
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim),
             shape=out_shape, device=self.device,
-            ndim=self.ndim if self.ndim == 2 else self.ndim - 1, dtype=self.dtype
+            ndim=ndim, dtype=self.dtype
         )
 
-    def max(self, dim: int = -1, backward: bool = False, out: Buffer = None) -> Buffer:
-        out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape)
+    def max(self, dim: int = -1, backward: bool = False, out: Buffer = None, keepdim: bool = False) -> Buffer:
+        out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape, keepdim=keepdim)
 
         if not backward:
             out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward)
@@ -94,8 +124,15 @@ class Buffer:
             out_shape = self.shape
             out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward, out=out)
 
-        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
-        # max_with_1s_buf = Buffer(data=max_with_1s, shape=self.shape, device=self.device, ndim=self.ndim, dtype=self.dtype)  # noqa: E501
+        if keepdim:
+            ndim = self.ndim
+        else:
+            if dim == -1:
+                ndim = 0
+            else:
+                ndim = self.ndim - 1
+
+        out_buf = Buffer(data=out, shape=out_shape, device=self.device, ndim=ndim, dtype=self.dtype)  # noqa: E501
 
         return out_buf
 
@@ -122,7 +159,14 @@ class Buffer:
         # assert self.ndim == 2, "Only 2D Tensors can be transposed"
 
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.TRANSPOSE, device=Device.CPU, x=self, out_shape=Buffer.swap_indices(self.shape, axes), out_stride=calculate_stride(Buffer.swap_indices(self.shape, axes)), axes=axes),
+            data=dispatcher.dispatch(
+                op=UnaryOps.TRANSPOSE,
+                device=Device.CPU,
+                x=self,
+                out_shape=Buffer.swap_indices(self.shape, axes),
+                out_stride=calculate_stride(Buffer.swap_indices(self.shape, axes)),
+                axes=axes
+            ),
             shape=Buffer.swap_indices(self.shape, axes), device=self.device, dtype=self.dtype
         )
 
@@ -177,13 +221,7 @@ class Buffer:
         kwargs.pop("device")
         dispatcher.dispatch(op=kwargs.pop("op"), device=Device.CPU, **kwargs)
 
-    def _binary_op(self, other: Buffer | Scalar, op: BinaryOps) -> Buffer:
-        if isinstance(other, Scalar):
-            return Buffer(
-                data=dispatcher.dispatch(op=op, device=self.device, x=self, y=other),
-                shape=self.shape, device=self.device, dtype=self.dtype
-            )
-
+    def _binary_op(self, other: Buffer, op: BinaryOps) -> Buffer:
         if not check_broadcast(self.shape, other.shape):
             raise ValueError(f"Cannot broadcast {other.shape} to {self.shape}")
 
@@ -201,21 +239,36 @@ class Buffer:
 
         x, y = (self, other) if self.numel >= other.numel else (other, self)
 
-        return Buffer(
+        # if y.shape is different from x.shape, for example, (2, 3, 4) & (3, 4)
+        # unsqueeze y.shape to (1, 3, 4) and squeeze it back to (3, 4)
+        tmp = []
+        org_yshape = y.shape
+        if len(x.shape) != len(y.shape) and y.ndim != 1 and y.ndim != 0:
+            shape_diff = len(x.shape) - len(y.shape)
+            for i in range(shape_diff):
+                tmp.append(i)
+                y.unsqueeze(0)
+
+        t = Buffer(
             data=dispatcher.dispatch(op=op, device=self.device, x=x, y=y),
             shape=output_shape, device=self.device, dtype=self.dtype
         )
 
-    def __add__(self, other: Buffer | Scalar) -> Buffer:
+        if len(x.shape) != len(org_yshape) and y.ndim != 1 and y.ndim != 0:
+            y.squeeze(tmp)
+
+        return t
+
+    def __add__(self, other: Buffer) -> Buffer:
         return self._binary_op(other, BinaryOps.ADD)
 
-    def __sub__(self, other: Buffer | Scalar) -> Buffer:
+    def __sub__(self, other: Buffer) -> Buffer:
         return self._binary_op(other, BinaryOps.SUB)
 
-    def __mul__(self, other: Buffer | Scalar) -> Buffer:
+    def __mul__(self, other: Buffer) -> Buffer:
         return self._binary_op(other, BinaryOps.MUL)
 
-    def __truediv__(self, other: Buffer | Scalar) -> Buffer:
+    def __truediv__(self, other: Buffer) -> Buffer:
         if self.numel >= other.numel:
             return self._binary_op(other, BinaryOps.DIV)
         else:

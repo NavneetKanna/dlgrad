@@ -2,293 +2,330 @@ import numpy as np
 import pytest
 import torch
 from dlgrad import Tensor
+from itertools import product
 
 # TODO: Test NaN's
+# TODO: Check ops with (1,)
+
+@pytest.fixture(params=['cpu', 'metal'])
+def device(request):
+    if request.param == 'metal' and not torch.backends.mps.is_available():
+        pytest.skip("Apple Metal GPU not available")
+    return request.param
 
 # Thanks to tinygrad for the template
-def run(shapes: list[tuple], func):
+def run(shapes: list[tuple], device, func):
     np_data = [np.random.uniform(size=sh).astype(np.float32) for sh in shapes]
-    dlgrad_data = [Tensor(data) for data in np_data]
-    torch_data = [torch.tensor(data) for data in np_data]
+    dlgrad_data = [Tensor(data, device=device) for data in np_data]
+    if device == "metal":
+        device = "mps"
+    torch_data = [torch.tensor(data, device=device) for data in np_data]
 
-    np.testing.assert_allclose(func(*dlgrad_data).numpy(), func(*torch_data).numpy(), atol=1e-6, rtol=1e-3)
+    dlgrad_result = func(*dlgrad_data)
+    torch_result = func(*torch_data)
+    if device == "mps":
+        torch_result = torch_result.cpu()
 
+    np.testing.assert_allclose(dlgrad_result.numpy(), torch_result.numpy(), atol=1e-6, rtol=1e-3)
 
-s = [
-    [(2, 3, 4), (1, 3, 4)],
-    [(2, 3, 4), (2, 1, 4)],
-    [(2, 3, 4), (2, 3, 1)],
-    [(2, 3, 4), (1, 1, 4)],
-    [(2, 3, 4), (1, 3, 1)],
-    [(2, 3, 4), (2, 1, 1)],
-    [(2, 3, 4), (2, 3, 4)],
-    [(2, 3), (1, 3)],
-    [(2, 3), (2, 1)],
-    [(2, 3), (2, 3)]
-]
-rs = [
-    [(1, 3, 4), (2, 3, 4)],
-    [(2, 1, 4), (2, 3, 4)],
-    [(2, 3, 1), (2, 3, 4)],
-    [(1, 1, 4), (2, 3, 4)],
-    [(1, 3, 1), (2, 3, 4)],
-    [(2, 1, 1), (2, 3, 4)],
-    [(2, 3, 4), (2, 3, 4)],
-    [(1, 3), (2, 3)],
-    [(2, 1), (2, 3)],
-    [(2, 3), (2, 3)]
-]
+def generate_broadcastable_shapes(shape, reverse: bool = False):
+    options = [(1, d) for d in shape]
+    result = []
+    for dims in product(*options):
+        if dims == shape:
+            if not reverse:
+                result.append((shape, dims))
+            else:
+                result.append((dims, shape))
+        else:
+            if not reverse:
+                result.append((shape, dims))
+            else:
+                result.append((dims, shape))
+    return result
 
-@pytest.mark.parametrize("shapes", s)
-def test_add(shapes):
-    run(shapes, lambda x, y: x+y)
+s = generate_broadcastable_shapes((2, 3, 4, 5))
+s += generate_broadcastable_shapes((2, 3, 4))
+s += generate_broadcastable_shapes((2, 3))
 
-@pytest.mark.parametrize("shapes", rs)
-def test_add_diff_shape_reverse(shapes):
-    run(shapes, lambda x, y: x+y)
+rs = generate_broadcastable_shapes((2, 3, 4, 5), reverse=True)
+rs += generate_broadcastable_shapes((2, 3, 4), reverse=True)
+rs += generate_broadcastable_shapes((2, 3), reverse=True)
 
 @pytest.mark.parametrize("shapes", s)
-def test_sub(shapes):
-    run(shapes, lambda x, y: x-y)
+def test_add(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    run(shapes, device, lambda x, y: x+y)
 
 @pytest.mark.parametrize("shapes", rs)
-def test_sub_diff_shape_reverse(shapes):
-    run(shapes, lambda x, y: x-y)
+def test_add_diff_shape_reverse(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    run(shapes, device, lambda x, y: x+y)
 
 @pytest.mark.parametrize("shapes", s)
-def test_mul(shapes):
-    run(shapes, lambda x, y: x*y)
+def test_sub(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    run(shapes, device, lambda x, y: x-y)
 
 @pytest.mark.parametrize("shapes", rs)
-def test_mul_diff_shape_reverse(shapes):
-    run(shapes, lambda x, y: x*y)
+def test_sub_diff_shape_reverse(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    run(shapes, device, lambda x, y: x-y)
 
 @pytest.mark.parametrize("shapes", s)
-def test_div(shapes):
-    run(shapes, lambda x, y: x/y)
+def test_mul(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    run(shapes, device, lambda x, y: x*y)
 
 @pytest.mark.parametrize("shapes", rs)
-def test_div_diff_shape_reverse(shapes):
-    run(shapes, lambda x, y: x/y)
+def test_mul_diff_shape_reverse(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    run(shapes, device, lambda x, y: x*y)
 
-@pytest.mark.parametrize("shapes", [
-    [(2, 3), (3, 2)],
-    [(100, 100), (100, 100)],
-])
-def test_matmul(shapes):
-    run(shapes, lambda x, y: x@y)
+@pytest.mark.parametrize("shapes", s)
+def test_div(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    run(shapes, device, lambda x, y: x/y)
 
-@pytest.mark.parametrize("shapes", [
-    [(2, 3), (2, 3)],
-    [(78, 91), (66, 91)],
-])
-def test_transpose_diff_tensors(shapes):
-    run(shapes, lambda x, y: x@y.T)
+@pytest.mark.parametrize("shapes", rs)
+def test_div_diff_shape_reverse(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    run(shapes, device, lambda x, y: x/y)
 
-@pytest.mark.parametrize("shapes", [
-    [(66, 91), (66, 78)],
-])
-def test_transpose_diff_tensors_reverse(shapes):
-    run(shapes, lambda x, y: x.T@y)
+@pytest.mark.parametrize("shapes", [[(2, 3), (3, 2)]])
+def test_matmul(shapes, device):
+    if device == 'metal' and len(shapes) == 4:
+        pytest.skip()
+    run(shapes, device, lambda x, y: x@y)
 
-@pytest.mark.parametrize("shapes", [
-    [(2, 3)],
-])
-def test_transpose_same_tensors(shapes):
-    run(shapes, lambda x: x@x.T)
+@pytest.mark.parametrize("shapes", [[(2, 3), (2, 3)]])
+def test_transpose_diff_tensors(shapes, device):
+    if device == 'metal' and len(shapes) == 4:
+        pytest.skip()
+    run(shapes, device, lambda x, y: x@y.T)
 
-@pytest.mark.parametrize("shapes", [
-    [(2, 3)]
-])
-def test_pow(shapes):
-    run(shapes, lambda x: x**2)
+@pytest.mark.parametrize("shapes", [[(2, 3), (2, 3)]])
+def test_transpose_diff_tensors_reverse(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    run(shapes, device, lambda x, y: x.T@y)
 
-# @pytest.mark.parametrize("shapes", [
-#     [(2, 3)]
-# ])
-# def test_argmax(shapes):
-#     np_data = np.random.uniform(size=shapes[0]).astype(np.float32)
-#     dlgrad_data = Tensor(np_data)
-#     torch_data = torch.tensor(np_data)
+@pytest.mark.parametrize("shapes", [[(4, 3)]])
+def test_transpose_same_tensors(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    run(shapes, device, lambda x: x@x.T)
 
-#     dl_out = dlgrad_data.argmax()
-#     to_out = torch_data.argmax(keepdim=True)
-#     np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-#     dl_out = dlgrad_data.argmax(1)
-#     to_out = torch_data.argmax(1, keepdim=True)
-#     np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-#     dl_out = dlgrad_data.argmax(0)
-#     to_out = torch_data.argmax(0, keepdim=True)
-#     np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(4, 3)]])
+def test_pow(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
     
-@pytest.mark.parametrize("shapes", [
-    [(4, 3, 2)],
-])
-def test_sum_3d(shapes):
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data)
-        torch_data = torch.tensor(np_data)
+        dlgrad_data = Tensor(np_data, device=device)
 
-        dl_out = dlgrad_data.sum(dim=0)
-        to_out = torch_data.sum(dim=0, keepdim=True)
+        if device == "metal":
+            device = "mps"
+
+        torch_data = torch.tensor(np_data, device=device)
+
+        dl_out = dlgrad_data**2
+        to_out = torch_data**2
+        if device == "mps":
+            to_out = to_out.cpu()
+
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-        dl_out = dlgrad_data.sum(dim=1)
-        to_out = torch_data.sum(dim=1, keepdim=True)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-        dl_out = dlgrad_data.sum(dim=2)
-        to_out = torch_data.sum(dim=2, keepdim=True)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-        dl_out = dlgrad_data.sum()
-        to_out = torch_data.sum()
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-@pytest.mark.parametrize("shapes", [
-    [(4, 3)],
-])
-def test_sum_2d(shapes):
+    
+# TODO: Sum 1d ?
+@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(4, 3)]])
+def test_sum(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes) or any(len(shape) == 3 for shape in shapes):
+        pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data)
-        torch_data = torch.tensor(np_data)
+        dlgrad_data = Tensor(np_data, device=device)
 
-        dl_out = dlgrad_data.sum(dim=0)
-        to_out = torch_data.sum(dim=0, keepdim=True)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+        if device == "metal":
+            device = "mps"
 
-        dl_out = dlgrad_data.sum(dim=1)
-        to_out = torch_data.sum(dim=1, keepdim=True)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+        torch_data = torch.tensor(np_data, device=device)
 
-        dl_out = dlgrad_data.sum()
-        to_out = torch_data.sum()
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+        for dim in range(len(sh)):
+            dl_out = dlgrad_data.sum(dim=dim)
+            to_out = torch_data.sum(dim=dim)
+            if device == "mps":
+                to_out = to_out.cpu()
 
-@pytest.mark.parametrize("shapes", [
-    [(4, 3, 2)],
-])
-def test_max_3d(shapes):
+            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes",[[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]])
+def test_max(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data)
-        torch_data = torch.tensor(np_data)
+        dlgrad_data = Tensor(np_data, device=device)
 
-        dl_out = dlgrad_data.max(dim=0)
-        to_out, _ = torch_data.max(dim=0, keepdim=True)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+        if device == "metal":
+            device = "mps"
 
-        dl_out = dlgrad_data.max(dim=1)
-        to_out, _ = torch_data.max(dim=1, keepdim=True)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+        torch_data = torch.tensor(np_data, device=device)
 
-        dl_out = dlgrad_data.max(dim=2)
-        to_out, _ = torch_data.max(dim=2, keepdim=True)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+        for dim in range(len(sh)):
+            dl_out = dlgrad_data.max(dim=dim)
+            to_out, _ = torch_data.max(dim=dim)
+            if device == "mps":
+                to_out = to_out.cpu()
 
-        dl_out = dlgrad_data.max()
-        to_out = torch_data.max()
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes", [
-    [(4, 3)],
-])
-def test_max_2d(shapes):
-    for sh in shapes:
-        np_data = np.random.uniform(size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data)
-        torch_data = torch.tensor(np_data)
-
-        dl_out = dlgrad_data.max(dim=0)
-        to_out, _ = torch_data.max(dim=0, keepdim=True)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-        dl_out = dlgrad_data.max(dim=1)
-        to_out, _ = torch_data.max(dim=1, keepdim=True)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-        dl_out = dlgrad_data.max()
-        to_out = torch_data.max()
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-s = [
-    [(2, 3)],
-    [(4, 10, 2)]
-]
+s = [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]]
 
 @pytest.mark.parametrize("shapes", s)
-def test_relu(shapes):
+def test_relu(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data)
-        torch_data = torch.tensor(np_data)
+        dlgrad_data = Tensor(np_data, device=device)
+
+        if device == "metal":
+            device = "mps"
+
+        torch_data = torch.tensor(np_data, device=device)
 
         dl_out = dlgrad_data.relu()
         to_out = torch_data.relu()
+        if device == "mps":
+            to_out = to_out.cpu()
+
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", s)
-def test_exp(shapes):
+def test_exp(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data)
-        torch_data = torch.tensor(np_data)
+        dlgrad_data = Tensor(np_data, device=device)
+
+        if device == "metal":
+            device = "mps"
+
+        torch_data = torch.tensor(np_data, device=device)
 
         dl_out = dlgrad_data.exp()
         to_out = torch_data.exp()
+        if device == "mps":
+            to_out = to_out.cpu()
+
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", s)
-def test_log(shapes):
+def test_log(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data)
-        torch_data = torch.tensor(np_data)
+        dlgrad_data = Tensor(np_data, device=device)
+
+        if device == "metal":
+            device = "mps"
+
+        torch_data = torch.tensor(np_data, device=device)
 
         dl_out = dlgrad_data.log()
         to_out = torch_data.log()
+        if device == "mps":
+            to_out = to_out.cpu()
+
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", s)
-def test_sqrt(shapes):
+def test_sqrt(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data)
-        torch_data = torch.tensor(np_data)
+        dlgrad_data = Tensor(np_data, device=device)
+
+        if device == "metal":
+            device = "mps"
+
+        torch_data = torch.tensor(np_data, device=device)
 
         dl_out = dlgrad_data.sqrt()
         to_out = torch_data.sqrt()
+        if device == "mps":
+            to_out = to_out.cpu()
+
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", s)
-def test_logsoftmax(shapes):
+def test_logsoftmax(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes) or any(len(shape) == 3 for shape in shapes):
+        pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data)
-        torch_data = torch.tensor(np_data)
+        dlgrad_data = Tensor(np_data, device=device)
+
+        if device == "metal":
+            device = "mps"
+
+        torch_data = torch.tensor(np_data, device=device)
 
         dl_out = dlgrad_data.log_softmax()
         m = torch.nn.LogSoftmax(dim=1)
         to_out = m(torch_data)
+        if device == "mps":
+            to_out = to_out.cpu()
+
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
-def srun(shapes: list[tuple], func):
-    np_data = np.random.uniform(size=shapes[0]).astype(np.float32)
-    dlgrad_data = [Tensor(np_data), Tensor(shapes[1])]
-    torch_data = [torch.tensor(np_data), torch.tensor(shapes[1])]
-
-    np.testing.assert_allclose(func(*dlgrad_data).numpy(), func(*torch_data).numpy(), atol=1e-6, rtol=1e-3)
-
 s = [
-    (2, 3), (2.0)
+    [(4, 3, 2, 1)],
+    [(4, 3, 2)]
 ]
+@pytest.mark.parametrize("shapes", s)
+def test_transpose(shapes, device):
+    if device == 'metal':
+        pytest.skip()
+    for sh in shapes:
+        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, device=device)
+        torch_data = torch.tensor(np_data, device=device)
 
-srun(s, lambda x, y: x+y)
-srun(s, lambda x, y: x-y)
-srun(s, lambda x, y: x*y)
-# srun(s, lambda x, y: x/y)
+        dl_out = Tensor.transpose(dlgrad_data, (0, 1))
+        to_out = torch.transpose(torch_data, 0, 1)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+        if len(sh) == 4:
+            dl_out = Tensor.transpose(dlgrad_data, (0, 3))
+            to_out = torch.transpose(torch_data, 0, 3)
+            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+            dl_out = Tensor.transpose(dlgrad_data, (1, 2))
+            to_out = torch.transpose(torch_data, 1, 2)
+            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+            dl_out = Tensor.transpose(dlgrad_data, (2, 3))
+            to_out = torch.transpose(torch_data, 2, 3)
+            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+        elif len(sh) == 3:
+            dl_out = Tensor.transpose(dlgrad_data, (1, 2))
+            to_out = torch.transpose(torch_data, 1, 2)
+            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+            dl_out = Tensor.transpose(dlgrad_data, (0, 2))
+            to_out = torch.transpose(torch_data, 0, 2)
+            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
