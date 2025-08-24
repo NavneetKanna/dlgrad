@@ -11,7 +11,6 @@ if platform.system() == 'Windows':
     print("dlgrad does not support Windows. Please use a Unix-based system (macOS/Linux).")
     sys.exit(1)
 
-
 METAL_FILES = [
     'arithmetic', 'utils', 'sum', 'max', 'matmul', 'transpose'
 ]
@@ -54,12 +53,6 @@ setup(
     version='0.5',
     packages=find_packages(),
     python_requires='>=3.10',
-    cffi_modules=[
-        'dlgrad/builder/float_rand_build.py:ffi',
-        'dlgrad/builder/float_full_build.py:ffi',
-        'dlgrad/builder/float_allocate_build.py:ffi',
-        'dlgrad/builder/float_mnist_build.py:ffi',
-    ],
     install_requires=['cffi>=1.0.0', 'requests', 'pyobjc-framework-Metal; sys_platform == "darwin"'],
     cmdclass={'build': BuildWithMetal},
 )
