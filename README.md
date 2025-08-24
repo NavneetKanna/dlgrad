@@ -78,7 +78,7 @@ for i in tqdm(range(STEPS)):
 y_pred = model(x=x_test_images).argmax(axis=1)
 correct = (y_pred==x_test_labels).sum()
 total = float(x_test_labels.shape[0])
-test_acc = ((correct/total) * 100.0).numpy()[0][0]
+test_acc = ((correct/total) * 100.0).numpy()
 print("test acc", test_acc)
 ```
 
