@@ -126,6 +126,7 @@ class Mul(OP):
 			return x*y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
+		print("mul backward called")
 		grad_x = self.reduce_grad_for_broadcasting(upstream_grad*self.y, self.x.shape) if self.req_grad[0] else None
 		grad_y = self.reduce_grad_for_broadcasting(upstream_grad*self.x, self.y.shape) if self.req_grad[1] else None
 

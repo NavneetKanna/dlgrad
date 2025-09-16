@@ -515,6 +515,9 @@ class Tensor:
 	def argmax(self, axis: int = -1) -> Tensor:
 		return Tensor(data=self.data.argmax(axis))
 
+	def detach(self) -> Tensor:
+		return Tensor(data=self.data, requires_grad=False, device=self.device)
+
 	def backward(self) -> None:
 		assert all(item == 1 for item in self.shape), "backward must be called on a scalar Tensor"
 
