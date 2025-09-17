@@ -402,6 +402,19 @@ class Tensor:
 		"""
 		return ops.Relu.execute(self)
 
+	def tanh(self) -> Tensor:
+		"""
+		Applies Tanh activation to tensor.
+
+		Parameters
+		----------
+		self : Tensor
+
+		Returns:
+			A tensor with Tanh activation applied
+		"""
+		return ops.Tanh.execute(self)
+
 	def linear(self, weight: Tensor, bias: Tensor | None) -> Tensor:
 		"""
 		Applies a linear transformation to `self` using `weight` and `bias`.

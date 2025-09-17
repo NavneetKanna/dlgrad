@@ -78,6 +78,15 @@ class Relu(OP):
 		return ((self.out>0.0) * upstream_grad,)
 
 
+class Tanh(OP):
+	def forward(self, x: Buffer) -> Buffer:
+		self.out = x.tanh()
+		return self.out
+
+	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+		return ((1.0 - self.out**2) * upstream_grad,)
+
+
 class Sqrt(OP):
 	def forward(self, x: Buffer) -> Buffer:
 		self.out = x.sqrt()

@@ -194,6 +194,13 @@ class Buffer:
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
+    def tanh(self) -> Buffer:
+        out = (self.exp() - (-self).exp()) / (self.exp() + (-self).exp())
+        return Buffer(
+            data=out.ptr,
+            shape=self.shape, device=self.device, dtype=self.dtype
+        )
+
     @staticmethod
     def ce_forward(x: Buffer, y: Buffer) -> Buffer:
         return Buffer(
