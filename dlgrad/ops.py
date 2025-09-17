@@ -84,7 +84,7 @@ class Tanh(OP):
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		return ((1.0 - self.out**2) * upstream_grad,)
+		return ((Buffer.full(self.out.shape, 1.0, self.out.device, self.out.dtype) - self.out**2) * upstream_grad,)
 
 
 class Sqrt(OP):
