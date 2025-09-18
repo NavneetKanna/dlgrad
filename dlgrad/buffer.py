@@ -190,7 +190,7 @@ class Buffer:
 
     def relu(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.RELU, device=Device.CPU, x=self),
+            data=self.where(inp=self, other=0.0).ptr,
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 

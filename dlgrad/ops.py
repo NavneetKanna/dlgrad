@@ -75,7 +75,7 @@ class Relu(OP):
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		return ((self.out>0.0) * upstream_grad,)
+		return ((self.out.where(inp=1.0, other=0.0)) * upstream_grad,)
 
 
 class LeakyRelu(OP):
