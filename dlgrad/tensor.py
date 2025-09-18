@@ -402,6 +402,19 @@ class Tensor:
 		"""
 		return ops.Relu.execute(self)
 
+	def leaky_relu(self, neg_slope: Scalar = 0.01) -> Tensor:
+		"""
+		Applies Leaky ReLU activation to tensor.
+
+		Parameters
+		----------
+		self : Tensor
+
+		Returns:
+			A tensor with Leaky ReLU activation applied
+		"""
+		return ops.LeakyRelu.execute(self, neg_slope=neg_slope)
+
 	def tanh(self) -> Tensor:
 		"""
 		Applies Tanh activation to tensor.
@@ -530,6 +543,10 @@ class Tensor:
 
 	def detach(self) -> Tensor:
 		return Tensor(data=self.data, requires_grad=False, device=self.device)
+
+	@staticmethod
+	def where(cond: Tensor, inp: Tensor | Scalar, other: Tensor | Scalar) -> Tensor:
+		return Tensor(data=cond.data.where(inp=inp if isinstance(inp, Scalar) else inp.data, other=other if isinstance(other, Scalar) else other.data), requires_grad=cond.requires_grad, device=cond.device)
 
 	def backward(self) -> None:
 		assert all(item == 1 for item in self.shape), "backward must be called on a scalar Tensor"

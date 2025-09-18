@@ -105,6 +105,29 @@ def test_relu_backward(shapes, device):
         np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", s)
+def test_leaky_relu_backward(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    for sh in shapes:
+        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, requires_grad=True)
+
+        if device == "metal":
+            device = "mps"
+
+        torch_data = torch.tensor(np_data, device=device, requires_grad=True)
+        m = torch.nn.LeakyReLU()
+
+        dlgrad_data.leaky_relu().sum().backward()
+        m(torch_data).sum().backward()
+        if device == "mps":
+            torch_data = torch_data.grad.cpu()
+        else:
+            torch_data = torch_data.grad
+
+        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes", s)
 def test_tanh_backward(shapes, device):
     if device == 'metal' and any(len(shape) == 4 for shape in shapes):
         pytest.skip()

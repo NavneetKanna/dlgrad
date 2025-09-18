@@ -465,6 +465,39 @@ def gt(x_numel: int, val: int | float) -> tuple[str, str]:
     return code, "void gt_with_scalar(float *arr, float *out);"
 
 @cache
+def where(x_numel: int, inp: bool, other: bool) -> tuple[str, str]:
+    # if inp or other is True it is scalar
+    s = ""
+
+    code = f"""
+        void where(float *arr, float *out, float *inp, float *other)
+        {{
+            for (int i=0; i<{x_numel}; i++) {{
+                if (arr[i] > 0.0)
+    """
+    code = s + code
+    if inp:
+        ss = "out[i] = inp[0];"
+    else:
+        ss = "out[i] = inp[i];"
+
+    code += ss
+
+    code += "\nelse\n"
+
+    if other:
+        ss = "out[i] = other[0];"
+    else:
+        ss = "out[i] = other[i];"
+
+    code += ss
+
+    code += "}"
+    code += "}"
+
+    return code, "void where(float *arr, float *out, float *inp, float *other);"
+
+@cache
 def eqt(x_numel: int) -> tuple[str, str]:
     code = f"""
         void eqt(float *x, float *y, float *out)

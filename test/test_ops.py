@@ -191,6 +191,33 @@ def test_max(shapes, device):
 s = [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]]
 
 @pytest.mark.parametrize("shapes", s)
+def test_where(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    for sh in shapes:
+        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, device=device)
+
+        if device == "metal":
+            device = "mps"
+
+        torch_data = torch.tensor(np_data, device=device)
+
+        dl_out = Tensor.where(dlgrad_data>0.0, 1.0, 0.0)
+        to_out = torch.where(torch_data>0.0, 1.0, 0.0)
+        if device == "mps":
+            to_out = to_out.cpu()
+
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+        dl_out = Tensor.where(dlgrad_data>0.0, dlgrad_data, 0.0)
+        to_out = torch.where(torch_data>0.0, torch_data, 0.0)
+        if device == "mps":
+            to_out = to_out.cpu()
+
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes", s)
 def test_relu(shapes, device):
     if device == 'metal' and any(len(shape) == 4 for shape in shapes):
         pytest.skip()
@@ -205,6 +232,27 @@ def test_relu(shapes, device):
 
         dl_out = dlgrad_data.relu()
         to_out = torch_data.relu()
+        if device == "mps":
+            to_out = to_out.cpu()
+
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes", s)
+def test_leaky_relu(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    for sh in shapes:
+        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, device=device)
+
+        if device == "metal":
+            device = "mps"
+
+        torch_data = torch.tensor(np_data, device=device)
+
+        dl_out = dlgrad_data.leaky_relu()
+        m = torch.nn.LeakyReLU()
+        to_out = m(torch_data)
         if device == "mps":
             to_out = to_out.cpu()
 

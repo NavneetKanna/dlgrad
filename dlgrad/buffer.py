@@ -194,6 +194,12 @@ class Buffer:
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
+    def leaky_relu(self, neg_slope: Scalar = 0.01) -> Buffer:
+        return Buffer(
+            data=self.where(inp=self, other=self*neg_slope).ptr,
+            shape=self.shape, device=self.device, dtype=self.dtype
+        )
+
     def tanh(self) -> Buffer:
         out = (self.exp() - (-self).exp()) / (self.exp() + (-self).exp())
         return Buffer(
@@ -221,6 +227,17 @@ class Buffer:
             data=dispatcher.dispatch(op=UnaryOps.ARGMAX, device=Device.CPU,
                                      x=self, axis=axis),
             shape=s, device=self.device, dtype=self.dtype
+        )
+
+    def where(self, inp: Buffer | Scalar, other: Buffer | Scalar) -> Buffer:
+        if isinstance(inp, Scalar):
+            inp = Buffer.from_scalar(inp)
+        if isinstance(other, Scalar):
+            other = Buffer.from_scalar(other)
+        return Buffer(
+            data=dispatcher.dispatch(op=UnaryOps.WHERE, device=Device.CPU,
+                                    x=self, inp=inp, other=other),
+            shape=self.shape, device=self.device, dtype=self.dtype
         )
 
     @staticmethod
@@ -272,7 +289,9 @@ class Buffer:
     def __sub__(self, other: Buffer) -> Buffer:
         return self._binary_op(other, BinaryOps.SUB)
 
-    def __mul__(self, other: Buffer) -> Buffer:
+    def __mul__(self, other: Buffer | Scalar) -> Buffer:
+        if isinstance(other, Scalar):
+            other = Buffer(data=Buffer.from_scalar(other).ptr, shape=(), device=Device.CPU, dtype=DType.FLOAT32)
         return self._binary_op(other, BinaryOps.MUL)
 
     def __truediv__(self, other: Buffer) -> Buffer:

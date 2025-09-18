@@ -24,6 +24,7 @@ class UnaryOps(Enum):
     TRANSPOSE = auto()
     RELU = auto()
     ARGMAX = auto()
+    WHERE = auto()
 
 class BufferOps(Enum):
     CREATE = auto()

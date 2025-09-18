@@ -355,7 +355,6 @@ class CPU:
         out_ptr = CPU.malloc(num=x.numel)
 
         c_code, cdef = cpu_kernel.utils(x.numel, "pow")
-        # print(c_code)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"pow_{key}.so"
@@ -485,6 +484,26 @@ class CPU:
         CPU._ensure_sig(cdef)
 
         lib.gt_with_scalar(x.ptr, out_ptr)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.WHERE, Device.CPU)
+    def where(x: Buffer, inp: Buffer, other: Buffer) -> CDataPtr:
+        out_ptr = CPU.malloc(num=x.numel)
+
+        c_code, cdef = cpu_kernel.where(x.numel, inp=True if inp.ndim == 0 else False, other=True if other.ndim == 0 else False)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"where_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.where(x.ptr, out_ptr, inp.ptr, other.ptr)
 
         return out_ptr
 

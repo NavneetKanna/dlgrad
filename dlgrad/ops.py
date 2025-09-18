@@ -78,14 +78,24 @@ class Relu(OP):
 		return ((self.out>0.0) * upstream_grad,)
 
 
+class LeakyRelu(OP):
+	def forward(self, x: Buffer, neg_slope: Scalar = 0.01) -> Buffer:
+		self.neg_slope = neg_slope
+		self.out = x.leaky_relu(neg_slope=neg_slope)
+		return self.out
+
+	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+		return ((self.out.where(inp=1.0, other=self.neg_slope)) * upstream_grad,)
+
+
 class Tanh(OP):
 	def forward(self, x: Buffer) -> Buffer:
 		self.out = x.tanh()
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+		# TODO: Remove buffer.full() and add support for scalar in buffer sub
 		return ((Buffer.full(self.out.shape, 1.0, self.out.device, self.out.dtype) - self.out**2) * upstream_grad,)
-
 
 class Sqrt(OP):
 	def forward(self, x: Buffer) -> Buffer:
