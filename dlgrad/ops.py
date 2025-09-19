@@ -78,6 +78,15 @@ class Relu(OP):
 		return ((self.out.where(inp=1.0, other=0.0)) * upstream_grad,)
 
 
+class Sigmoid(OP):
+	def forward(self, x: Buffer) -> Buffer:
+		self.out = x.sigmoid()
+		return self.out
+
+	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+		return ((self.out * -(self.out - 1.0)) * upstream_grad,)
+
+
 class LeakyRelu(OP):
 	def forward(self, x: Buffer, neg_slope: Scalar = 0.01) -> Buffer:
 		self.neg_slope = neg_slope

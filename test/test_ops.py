@@ -259,6 +259,26 @@ def test_leaky_relu(shapes, device):
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", s)
+def test_sigmoid(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        pytest.skip()
+    for sh in shapes:
+        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, device=device)
+
+        if device == "metal":
+            device = "mps"
+
+        torch_data = torch.tensor(np_data, device=device)
+
+        dl_out = dlgrad_data.sigmoid()
+        to_out = torch_data.sigmoid()
+        if device == "mps":
+            to_out = to_out.cpu()
+
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes", s)
 def test_tanh(shapes, device):
     if device == 'metal' and any(len(shape) == 4 for shape in shapes):
         pytest.skip()

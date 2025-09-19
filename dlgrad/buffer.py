@@ -194,6 +194,13 @@ class Buffer:
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
+    def sigmoid(self) -> Buffer:
+        out = self.exp() / (self.exp() + 1.0)
+        return Buffer(
+            data=out.ptr,
+            shape=self.shape, device=self.device, dtype=self.dtype
+        )
+
     def leaky_relu(self, neg_slope: Scalar = 0.01) -> Buffer:
         return Buffer(
             data=self.where(inp=self, other=self*neg_slope).ptr,
@@ -283,10 +290,14 @@ class Buffer:
 
         return t
 
-    def __add__(self, other: Buffer) -> Buffer:
+    def __add__(self, other: Buffer | Scalar) -> Buffer:
+        if isinstance(other, Scalar):
+            other = Buffer(data=Buffer.from_scalar(other).ptr, shape=(), device=Device.CPU, dtype=DType.FLOAT32)
         return self._binary_op(other, BinaryOps.ADD)
 
-    def __sub__(self, other: Buffer) -> Buffer:
+    def __sub__(self, other: Buffer | Scalar) -> Buffer:
+        if isinstance(other, Scalar):
+            other = Buffer(data=Buffer.from_scalar(other).ptr, shape=(), device=Device.CPU, dtype=DType.FLOAT32)
         return self._binary_op(other, BinaryOps.SUB)
 
     def __mul__(self, other: Buffer | Scalar) -> Buffer:
@@ -294,7 +305,10 @@ class Buffer:
             other = Buffer(data=Buffer.from_scalar(other).ptr, shape=(), device=Device.CPU, dtype=DType.FLOAT32)
         return self._binary_op(other, BinaryOps.MUL)
 
-    def __truediv__(self, other: Buffer) -> Buffer:
+    def __truediv__(self, other: Buffer | Scalar) -> Buffer:
+        if isinstance(other, Scalar):
+            other = Buffer(data=Buffer.from_scalar(other).ptr, shape=(), device=Device.CPU, dtype=DType.FLOAT32)
+
         if self.numel >= other.numel:
             return self._binary_op(other, BinaryOps.DIV)
         else:

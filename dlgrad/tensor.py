@@ -428,6 +428,19 @@ class Tensor:
 		"""
 		return ops.Tanh.execute(self)
 
+	def sigmoid(self) -> Tensor:
+		"""
+		Applies Sigmoid activation to tensor.
+
+		Parameters
+		----------
+		self : Tensor
+
+		Returns:
+			A tensor with Sigmoid activation applied
+		"""
+		return ops.Sigmoid.execute(self)
+
 	def linear(self, weight: Tensor, bias: Tensor | None) -> Tensor:
 		"""
 		Applies a linear transformation to `self` using `weight` and `bias`.
@@ -611,6 +624,7 @@ class Tensor:
 		return Tensor.mul(self, other)
 
 	def __sub__(self, other: Tensor | Scalar) -> Tensor:
+		print("sub called")
 		return Tensor.sub(self, other)
 
 	def __truediv__(self, other: Tensor | Scalar) -> Tensor:
