@@ -210,6 +210,56 @@ def sum(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, s
     return code, "void sum(float *x, float *out);"
 
 @cache
+def mean(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int, out_numel: int) -> tuple[str, str]:
+    if dim == -1:
+        code = f"""
+            void mean(float *x, float *out) {{
+                float s = 0.0;
+                for (int i=0; i<{x_numel}; i++) {{
+                    s += x[i];
+                }}
+                out[0] = s / {x_numel};
+            }}
+        """
+
+        return code, "void mean(float *x, float *out);"
+
+    code  = f"""
+    void mean(float *x, float *out) {{
+        int shape_dim = {x_shape[dim]};
+        int stride_dim = {x_stride[dim]};
+        int numel = {x_numel};
+
+        int out_start = 0;
+        for (int j = 0; j < numel; j += stride_dim) {{
+            if ((j % (stride_dim * shape_dim)) == 0) {{
+                if (j != 0) {{
+                    out_start += stride_dim;
+                }} else {{
+                    out_start = 0;
+                }}
+                // copy
+                for (int i = 0; i < stride_dim; i++) {{
+                    out[out_start + i] = x[j + i];
+                }}
+            }} else {{
+                // mean
+                for (int i = 0; i < stride_dim; i++) {{
+                    float val = x[j + i];
+                    out[out_start + i] += val;
+                }}
+            }}
+        }}
+
+        for (int i=0; i<{out_numel}; i++) {{
+            out[i] = out[i] / shape_dim;
+        }}
+    }}
+    """
+
+    return code, "void mean(float *x, float *out);"
+
+@cache
 def transpose_given_axes(x_shape: tuple, axes: tuple) -> list:
     ax = list(range(len(x_shape)))
     # replace elements at positions in axes with elements of axes reversed
@@ -807,8 +857,8 @@ def mnist_loader() -> tuple[str, str]:
 """
 dim = 1
 
-(4, 3, 2)
-(6, 2, 1)
+shape = (4, 3, 2)
+stride = (6, 2, 1)
 
 [[[0.40329522 0.7129083 ]
   [0.2902877  0.9216182 ]

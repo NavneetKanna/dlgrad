@@ -25,6 +25,7 @@ class UnaryOps(Enum):
     RELU = auto()
     ARGMAX = auto()
     WHERE = auto()
+    MEAN = auto()
 
 class BufferOps(Enum):
     CREATE = auto()

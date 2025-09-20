@@ -375,8 +375,7 @@ class Tensor:
 
 	def sum(self, dim: int = -1, keepdim: bool = False) -> Tensor:
 		"""
-		Sum a tensor along dimension `dim`. keepdim is by default True.
-		Which means the returned tensor shape is the same as the input tensor shape.
+		Sum a tensor along dimension `dim`. keepdim is by default False.
 
 		Parameters
 		----------
@@ -385,9 +384,24 @@ class Tensor:
 			Dimension along which to sum, -1 means it sums all elements.
 
 		Returns:
-			A tensor of the same shape as self.
+			A tensor.
 		"""
 		return ops.Sum.execute(self, dim=dim, keepdim=keepdim)
+
+	def mean(self, dim: int = -1, keepdim: bool = False) -> Tensor:
+		"""
+		Find mean of a tensor along dimension `dim`. keepdim is by default False.
+
+		Parameters
+		----------
+		self : Tensor
+		dim : int
+			Dimension along which to sum, -1 means it finds mean of all elements.
+
+		Returns:
+			A tensor.
+		"""
+		return ops.Mean.execute(self, dim=dim, keepdim=keepdim)
 
 	def relu(self) -> Tensor:
 		"""
@@ -624,7 +638,6 @@ class Tensor:
 		return Tensor.mul(self, other)
 
 	def __sub__(self, other: Tensor | Scalar) -> Tensor:
-		print("sub called")
 		return Tensor.sub(self, other)
 
 	def __truediv__(self, other: Tensor | Scalar) -> Tensor:

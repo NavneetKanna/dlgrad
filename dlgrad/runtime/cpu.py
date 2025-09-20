@@ -411,6 +411,28 @@ class CPU:
         return out_ptr
 
     @staticmethod
+    @dispatcher.register(UnaryOps.MEAN, Device.CPU)
+    def mean(x: Buffer, dim: int) -> CDataPtr:
+        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        out_ptr = CPU.calloc(num=num)
+
+        c_code, cdef = cpu_kernel.mean(x.shape, x.stride, x.numel, dim, num)
+        # print(c_code)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"mean_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.mean(x.ptr, out_ptr)
+
+        return out_ptr
+
+    @staticmethod
     @dispatcher.register(UnaryOps.MAX, Device.CPU)
     def max(x: Buffer, dim: int, backward: bool = False, out: Buffer = None) -> CDataPtr:
         if backward:

@@ -167,6 +167,22 @@ def test_sum(shapes, device):
 
             np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
+@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(4, 3)]])
+def test_mean(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes) or any(len(shape) == 3 for shape in shapes) or any(len(shape) == 2 for shape in shapes):
+        pytest.skip()
+    for sh in shapes:
+        np_data = np.random.uniform(size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, device=device)
+
+        torch_data = torch.tensor(np_data, device=device)
+
+        for dim in range(len(sh)):
+            dl_out = dlgrad_data.mean(dim=dim)
+            to_out = torch_data.mean(dim=dim)
+
+            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
 @pytest.mark.parametrize("shapes",[[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]])
 def test_max(shapes, device):
     if device == 'metal' and any(len(shape) == 4 for shape in shapes):

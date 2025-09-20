@@ -32,6 +32,19 @@ class Sum(OP):
 
 		return (t*upstream_grad,)
 
+class Mean(OP):
+	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
+		self.inp_shape = x.shape
+		self.device = x.device
+		self.dtype = x.dtype
+		self.keepdim = keepdim
+		self.dim = dim
+
+		return x.mean(dim=dim, keepdim=keepdim)
+
+	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+		return (*upstream_grad,)
+
 class Max(OP):
 	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
 		self.inp_shape = x.shape
