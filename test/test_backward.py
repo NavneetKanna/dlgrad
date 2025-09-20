@@ -217,6 +217,28 @@ def test_sum_backward(shapes, device):
 
             np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.numpy(), atol=1e-6, rtol=1e-3)
 
+@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]])
+def test_mean_backward(shapes, device):
+    if device == 'metal' and any(len(shape) == 4 for shape in shapes) or any(len(shape) == 3 for shape in shapes) or any(len(shape) == 2 for shape in shapes):
+        pytest.skip()
+    for sh in shapes:
+        np_data = np.random.uniform(size=sh).astype(np.float32)
+
+        if device == "metal":
+            device = "mps"
+
+        for dim in range(len(sh)):
+            dlgrad_data = Tensor(np_data, requires_grad=True)
+            torch_data = torch.tensor(np_data, device=device, requires_grad=True)
+            dlgrad_data.mean(dim=dim).mean().backward()
+            torch_data.mean(dim=dim).mean().backward()
+            if device == "mps":
+                torch_data = torch_data.grad.cpu()
+            else:
+                torch_data = torch_data.grad
+
+            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.numpy(), atol=1e-6, rtol=1e-3)
+
 @pytest.mark.parametrize("shapes", [[(2, 3)]])
 def test_ce_backward(shapes):
     for sh in shapes:

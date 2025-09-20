@@ -14,7 +14,7 @@ class Transpose(OP):
 	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
 		return (upstream_grad.transpose(self.axes),)
 
-
+# TODO: Maube add expand/broadcast_to instead of buffer.full in backward
 class Sum(OP):
 	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
 		self.inp_shape = x.shape
@@ -22,14 +22,12 @@ class Sum(OP):
 		self.dtype = x.dtype
 		self.keepdim = keepdim
 		self.dim = dim
-
 		return x.sum(dim=dim, keepdim=keepdim)
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
 		if not self.keepdim:
 			upstream_grad.unsqueeze(self.dim)
-
 		return (t*upstream_grad,)
 
 class Mean(OP):
@@ -39,11 +37,18 @@ class Mean(OP):
 		self.dtype = x.dtype
 		self.keepdim = keepdim
 		self.dim = dim
-
+		if dim == -1:  # reduce over ALL elements
+			self.N = x.numel
+		else:
+			self.N = x.shape[dim]
 		return x.mean(dim=dim, keepdim=keepdim)
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		return (*upstream_grad,)
+		scale = 1.0 / self.N
+		grad = Buffer.full(self.inp_shape, fill_value=scale, device=self.device, dtype=self.dtype)
+		if not self.keepdim:
+			upstream_grad.unsqueeze(self.dim)
+			return (grad * upstream_grad,)
 
 class Max(OP):
 	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
