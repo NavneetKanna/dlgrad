@@ -546,6 +546,9 @@ class Tensor:
 		ss = e.sum(dim=dim, keepdim=True)
 		return m - ss.log()
 
+	def clamp(self, min: int | None = None, max: int | None = None) -> Tensor:
+		return ops.Clamp.execute(self, min=min, max=max)
+
 	def sequential(self, layers: list[callable[Tensor]]) -> None:
 		return reduce(lambda inp, layer: layer(inp), layers, self)
 
@@ -564,6 +567,38 @@ class Tensor:
 		if isinstance(target, Scalar):
 			target = Tensor(target)
 		return ops.CrossEntropy.execute(self, target)
+
+	def bceloss(self, target: Tensor) -> Tensor:
+		"""
+		Finds the binary cross-entropy loss between `self` and `target`.
+
+		Parameters
+		----------
+		self : Tensor
+		target: Tensor
+
+		Returns:
+			A tensor of shape (1, 1).
+		"""
+		if isinstance(target, Scalar):
+			target = Tensor(target)
+		return ops.BCELoss.execute(self, target)
+
+	def bcewithlogitsloss(self, target: Tensor) -> Tensor:
+		"""
+		Finds the binary cross-entropy logits loss between `self` and `target`.
+
+		Parameters
+		----------
+		self : Tensor
+		target: Tensor
+
+		Returns:
+			A tensor of shape (1, 1).
+		"""
+		if isinstance(target, Scalar):
+			target = Tensor(target)
+		return ops.BCEWithLogitsLoss.execute(self, target)
 
 	def argmax(self, axis: int = -1) -> Tensor:
 		return Tensor(data=self.data.argmax(axis))

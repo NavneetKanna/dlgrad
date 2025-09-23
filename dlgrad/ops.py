@@ -130,7 +130,17 @@ class Sqrt(OP):
 		return self.out
 
 	def backward(self, grad_output: Buffer) -> tuple[Buffer]:
-		return grad_output / (self.out*2)
+		return (grad_output / (self.out*2),)
+
+class Clamp(OP):
+	def forward(self, x: Buffer, min: int | None, max: int | None) -> Buffer:
+		self.min = min
+		self.max = max
+		self.out = x.clamp(min, max)
+		return self.out
+
+	def backward(self, grad_output: Buffer) -> tuple[Buffer]:
+		return (grad_output.clamp(self.min, self.max))
 
 
 # ------------ Binary Ops -----------
@@ -223,3 +233,19 @@ class CrossEntropy(OP):
 		tmp = self.log_softmax_output.exp()
 		Buffer.ce_backward(op=CustomOps.CE_BACKWARD, device=tmp.device, x=tmp, target=self.target)
 		return (tmp,)
+
+# https://publish.obsidian.md/kamilelukosiute/pytorch/What+does+BCEWithLogits+actually+do%3F
+class BCEWithLogitsLoss(OP):
+	def forward(self, probs: Buffer, target: Buffer) -> Buffer:
+		assert probs.shape == target.shape, f"shape mismatch {probs.shape} vs {target.shape}"
+
+		max_val = (-probs).clamp(min=0) # or (-probs).relu()
+		self.probs = probs
+		self.target = target
+		self.loss = ((1.0-target) * probs) + max_val + ((-max_val).exp() + (-(probs+max_val)).exp()).log()
+		return self.loss.mean()
+
+	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+		N = self.probs.numel
+		grad = ((self.probs.sigmoid() - self.target) * upstream_grad) / float(N)
+		return (grad,)

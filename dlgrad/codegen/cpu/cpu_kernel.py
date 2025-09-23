@@ -388,6 +388,48 @@ def utils(x_numel: int, func: str) -> tuple[str, str]:
             return code, "void csqrt(float *x, float *out);"
 
 @cache
+def clamp(x_numel: int, min_val: int, max_val: int) -> tuple[str, str]:
+    c_code = f"""
+void clamp(float *x, float *out) {{
+    for (int i=0; i<{x_numel}; i++) {{
+"""
+    if min_val is not None and max_val is not None:
+        c_code += f"""
+        if (x[i] < {min_val}) {{
+            out[i] = {min_val};
+        }} else if (x[i] > {max_val}) {{
+            out[i] = {max_val};
+        }} else {{
+            out[i] = x[i];
+        }}
+"""
+    elif min_val is not None:
+        c_code += f"""
+        if (x[i] < {min_val}) {{
+            out[i] = {min_val};
+        }} else {{
+            out[i] = x[i];
+        }}
+"""
+    elif max_val is not None:
+        c_code += f"""
+        if (x[i] > {max_val}) {{
+            out[i] = {max_val};
+        }} else {{
+            out[i] = x[i];
+        }}
+"""
+    else:
+        c_code += """
+        out[i] = x[i];
+"""
+    c_code += """
+    }
+}
+"""
+    return c_code, "void clamp(float *x, float *out);"
+
+@cache
 def matmul(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple) -> tuple[str, str]:
     c_code = f"""
         void matmul(float *x, float *y, float *out) {{

@@ -127,7 +127,7 @@ class Buffer:
                 ndim = self.ndim - 1
 
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.MEAN, device=self.device, x=self, dim=dim),
+            data=dispatcher.dispatch(op=UnaryOps.MEAN, device=Device.CPU, x=self, dim=dim),
             shape=out_shape, device=self.device,
             ndim=ndim, dtype=self.dtype
         )
@@ -196,6 +196,12 @@ class Buffer:
     def sqrt(self) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.SQRT, device=self.device, x=self),
+            shape=self.shape, device=self.device, dtype=self.dtype
+        )
+
+    def clamp(self, min: int | None = None, max: int | None = None) -> Buffer:
+        return Buffer(
+            data=dispatcher.dispatch(op=UnaryOps.CLAMP, device=Device.CPU, x=self, min=min, max=max),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -313,6 +319,7 @@ class Buffer:
         return self._binary_op(other, BinaryOps.ADD)
 
     def __sub__(self, other: Buffer | Scalar) -> Buffer:
+        print("sub called", self, other)
         if isinstance(other, Scalar):
             other = Buffer(data=Buffer.from_scalar(other).ptr, shape=(), device=Device.CPU, dtype=DType.FLOAT32)
         return self._binary_op(other, BinaryOps.SUB)
@@ -330,6 +337,12 @@ class Buffer:
             return self._binary_op(other, BinaryOps.DIV)
         else:
             return self._binary_op(other**-1, BinaryOps.MUL)
+
+    def __rsub__(self: Buffer, other: Scalar) -> Buffer:
+        if isinstance(other, Scalar):
+            other = Buffer(data=Buffer.from_scalar(other).ptr, shape=(), device=Device.CPU, dtype=DType.FLOAT32)
+
+        return -(self._binary_op(other, BinaryOps.SUB))
 
     def __pow__(self, val: Scalar) -> Buffer:
         return Buffer(
