@@ -319,7 +319,6 @@ class Buffer:
         return self._binary_op(other, BinaryOps.ADD)
 
     def __sub__(self, other: Buffer | Scalar) -> Buffer:
-        print("sub called", self, other)
         if isinstance(other, Scalar):
             other = Buffer(data=Buffer.from_scalar(other).ptr, shape=(), device=Device.CPU, dtype=DType.FLOAT32)
         return self._binary_op(other, BinaryOps.SUB)

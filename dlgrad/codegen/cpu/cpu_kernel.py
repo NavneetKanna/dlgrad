@@ -842,7 +842,7 @@ def mnist_loader() -> tuple[str, str]:
             unsigned char pixel;
             for (int i=0; i<out_size; i++) {
                 fread(&pixel, 1, 1, fp);
-                out[i] = (float)pixel / 255.0f;
+                out[i] = (float)pixel;
             }
 
             fclose(fp);
