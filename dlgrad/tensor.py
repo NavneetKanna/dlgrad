@@ -552,6 +552,12 @@ class Tensor:
 	def sequential(self, layers: list[callable[Tensor]]) -> None:
 		return reduce(lambda inp, layer: layer(inp), layers, self)
 
+	def squeeze(self, dim: list[int] | int) -> Tensor:
+		return ops.Squeeze.execute(self, dim=dim)
+
+	def unsqueeze(self, dim: list[int] | int) -> Tensor:
+		return ops.Unsqueeze.execute(self, dim=dim)
+
 	def cross_entropy_loss(self, target: Tensor) -> Tensor:
 		"""
 		Finds the cross-entropy loss between `self` and `target`.
@@ -567,22 +573,6 @@ class Tensor:
 		if isinstance(target, Scalar):
 			target = Tensor(target)
 		return ops.CrossEntropy.execute(self, target)
-
-	def bceloss(self, target: Tensor) -> Tensor:
-		"""
-		Finds the binary cross-entropy loss between `self` and `target`.
-
-		Parameters
-		----------
-		self : Tensor
-		target: Tensor
-
-		Returns:
-			A tensor of shape (1, 1).
-		"""
-		if isinstance(target, Scalar):
-			target = Tensor(target)
-		return ops.BCELoss.execute(self, target)
 
 	def bcewithlogitsloss(self, target: Tensor) -> Tensor:
 		"""

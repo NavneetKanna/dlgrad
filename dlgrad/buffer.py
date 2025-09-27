@@ -74,19 +74,28 @@ class Buffer:
             shape=shape, device=device, dtype=dtype
         )
 
-    def unsqueeze(self, dim: int) -> None:
+    def unsqueeze(self, dim: list[int] | int) -> None:
         if dim == -1:
             dim = 0
-        assert dim <= len(self.shape), f"Cannot unsqueeze {dim} from {self.shape}"
+        if isinstance(dim, int):
+            dim = [dim]
+        if len(set(dim)) != len(dim):
+            raise AssertionError(f"duplicate dims not allowed in unsqueeze: {dim}")
+        for i in dim:
+            assert i <= len(self.shape), f"Cannot unsqueeze {dim} from {self.shape}"
 
         new_shape = list(self.shape)
-        new_shape.insert(dim, 1)
+        for d in sorted(dim, reverse=True):
+            new_shape.insert(d, 1)
+
         self.metadata.shape = tuple(new_shape)
         self.metadata.numel = prod_(new_shape)
         self.metadata.stride = calculate_stride(new_shape)
         self.metadata.ndim = len(new_shape)
 
-    def squeeze(self, dim: list[int]) -> None:
+    def squeeze(self, dim: list[int] | int) -> None:
+        if isinstance(dim, int):
+            dim = [dim]
         for idx in dim:
             if self.shape[idx] != 1:
                 continue

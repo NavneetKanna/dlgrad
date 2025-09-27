@@ -142,6 +142,25 @@ class Clamp(OP):
 	def backward(self, grad_output: Buffer) -> tuple[Buffer]:
 		return (grad_output.clamp(self.min, self.max))
 
+class Squeeze(OP):
+	def forward(self, x: Buffer, dim: list[int] | int) -> Buffer:
+		self.dim = dim
+		x.squeeze(dim)
+		return x
+
+	def backward(self, grad_output: Buffer) -> tuple[Buffer]:
+		grad_output.unsqueeze(self.dim)
+		return (grad_output,)
+
+class Unsqueeze(OP):
+	def forward(self, x: Buffer, dim: list[int] | int) -> Buffer:
+		self.dim = dim
+		x.unsqueeze(dim)
+		return x
+
+	def backward(self, grad_output: Buffer) -> tuple[Buffer]:
+		grad_output.squeeze(self.dim)
+		return (grad_output,)
 
 # ------------ Binary Ops -----------
 
