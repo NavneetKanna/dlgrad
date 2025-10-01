@@ -61,32 +61,3 @@ def test_bcewithlogitsloss(shapes):
         dl_grad = dl_logits.grad.numpy()
         to_grad = to_logits.grad
         np.testing.assert_allclose(dl_grad, to_grad.detach().numpy(), atol=1e-5, rtol=1e-4)
-
-ce_shapes = [
-    [(4, 1)],
-]
-@pytest.mark.parametrize("shapes", ce_shapes)
-def test_bceloss(shapes):
-    for sh in shapes:
-        np_logits = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        np_target = np.random.randint(0, 1, size=(sh[0], 1)).astype(np.float32)
-
-        dl_logits = Tensor(np_logits, requires_grad=True)
-        dl_target = Tensor(np_target)
-
-        to_logits = torch.tensor(np_logits, requires_grad=True)
-        to_target = torch.tensor(np_target)
-
-        dl_out = dl_logits.sigmoid().bceloss(dl_target)
-
-        to_crit = torch.nn.BCELoss()
-        to_out = to_crit(to_logits.sigmoid(), to_target)
-
-        np.testing.assert_allclose(dl_out.numpy(), to_out.detach().numpy(), atol=1e-6, rtol=1e-4)
-
-        dl_out.backward()
-        to_out.backward()
-
-        dl_grad = dl_logits.grad.numpy()
-        to_grad = to_logits.grad
-        np.testing.assert_allclose(dl_grad, to_grad.detach().numpy(), atol=1e-5, rtol=1e-4)

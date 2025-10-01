@@ -291,6 +291,16 @@ class Buffer:
         output_shape = self.shape if self.numel >= other.numel else other.shape
 
         if op == BinaryOps.SUB and self.numel < other.numel:
+            x, y = (self, other) if self.numel >= other.numel else (other, self)
+            # if y.shape is different from x.shape, for example, (2, 3, 4) & (3, 4)
+            # unsqueeze y.shape to (1, 3, 4) and squeeze it back to (3, 4)
+            tmp = []
+            org_yshape = y.shape
+            if len(x.shape) != len(y.shape) and y.ndim != 1 and y.ndim != 0:
+                shape_diff = len(x.shape) - len(y.shape)
+                for i in range(shape_diff):
+                    tmp.append(i)
+                    y.unsqueeze(0)
             tmp = Buffer(
                 data=dispatcher.dispatch(op=BinaryOps.SUB, device=self.device, x=other, y=self),
                 shape=other.shape, device=self.device, dtype=self.dtype

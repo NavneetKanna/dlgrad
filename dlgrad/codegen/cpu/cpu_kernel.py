@@ -8,72 +8,65 @@ def n_gen() -> Generator[str, Any, None]:
     a = ["i", "j", "k", "l"]
     yield from a
 
-
 @cache
 def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple, op: str) -> tuple[str, str]:  # noqa: C901
     gen = n_gen()
 
-    code  = f"""
-    #include <stdlib.h>
-
-    void {op}(float *x, float *y, float *out) {{
-        int x_off, y_off;
+    c_code = f"""
+        #include <stdlib.h>
+        void {op}(float *x, float *y, float *out) {{
     """
-
     var_str = []
     for i in x_shape:
         var = next(gen)
         var_str.append(var)
-        code += f"""
+        c_code += f"""
         for (int {var}=0; {var}<{i}; {var}++) {{
         """
 
-    ts = "x_off = "
+    if not y_shape or all([1==i for i in y_shape]): # scalar
+        yo = "0"
+    else:
+        yo = ""
+        for j, k, l in zip(y_shape, var_str, y_stride):  # noqa: E741
+            if j == 1:
+                yo += f"0*{k} + "
+            else:
+                yo += f"{l}*{k} + "
+        yo = yo[:-3]
+
+    ts = ""
     for i, v in zip(x_stride, var_str):
         ts += f"{i}*{v} + "
     ts = ts[:-3]
-    ts += ";"
 
-    code += ts
-
-    code += "\n"
-
-    if not y_shape or all([1==i for i in y_shape]): # scalars
-        ts = "y_off = 0;"
-    else:
-        ts = "y_off = "
-        for idx, (i, j) in enumerate(zip(x_shape, y_shape)):
-            if i==j and i != 1 and j != 1:
-                ts += f"{y_stride[idx]}*{var_str[idx]} + "
-        ts = ts[:-3]
-        ts += ";"
-
-    code += ts
+    if not x_shape:
+        ts = "0"
 
     match op:
         case "add":
-            code += """
-                out[x_off] = x[x_off] + y[y_off];
+            c_code += f"""
+                out[{ts}] = x[{ts}] + y[{yo}];
             """
         case "sub":
-            code += """
-                out[x_off] = x[x_off] - y[y_off];
+            c_code += f"""
+                out[{ts}] = x[{ts}] - y[{yo}];
             """
         case "mul":
-            code += """
-                out[x_off] = x[x_off] * y[y_off];
+            c_code += f"""
+                out[{ts}] = x[{ts}] * y[{yo}];
             """
         case "divv":
-            code += """
-                out[x_off] = x[x_off] / y[y_off];
+            c_code += f"""
+                out[{ts}] = x[{ts}] / y[{yo}];
             """
 
     for i in range(len(var_str)):
-        code += "}\n"
+        c_code += "}\n"
 
-    code += "}\n"
+    c_code += "}\n"
 
-    return code, f"void {op}(float *x, float *y, float *out);"
+    return c_code, f"void {op}(float *x, float *y, float *out);"
 
 @cache
 def max_backward(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
@@ -432,19 +425,17 @@ void clamp(float *x, float *out) {{
 @cache
 def matmul(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple) -> tuple[str, str]:
     c_code = f"""
-        void matmul(float *x, float *y, float *out) {{
-            float sum = 0.0;
-            for (int i=0; i<{x_shape[0]}; i++) {{
+    void matmul(float *x, float *y, float *out) {{
+        for (int i=0; i<{x_shape[0]}; i++) {{
+            for (int k=0; k<{x_shape[1]}; k++) {{
+                float a = x[i*{x_stride[0]} + k*{x_stride[1]}];
                 for (int j=0; j<{y_shape[1]}; j++) {{
-                    sum = 0.0;
-                    for (int k=0; k<{y_shape[0]}; k++) {{
-                        sum += x[i*{x_stride[0]} + k*{x_stride[1]}] * y[k*{y_stride[0]} + j*{y_stride[1]}];
-                    }}
-                    out[i*{y_shape[1]}+ j] = sum;
+                    out[i*{y_shape[1]} + j] += a * y[k*{y_stride[0]} + j*{y_stride[1]}];
                 }}
             }}
         }}
-        """
+    }}
+    """
 
     return c_code, "void matmul(float *x, float *y, float *out);"
 

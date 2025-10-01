@@ -100,7 +100,7 @@ def test_div_diff_shape_reverse(shapes, device):
         pytest.skip()
     run(shapes, device, lambda x, y: x/y)
 
-@pytest.mark.parametrize("shapes", [[(2, 3), (3, 2)]])
+@pytest.mark.parametrize("shapes", [[(2, 3), (3, 2)], [(20, 20), (20, 20)]])
 def test_matmul(shapes, device):
     if device == 'metal' and len(shapes) == 4:
         pytest.skip()
