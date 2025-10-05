@@ -22,28 +22,15 @@ def generate_binary_op_kernel(x_shape: tuple, x_stride: tuple, y_shape: tuple, y
     """
     var_str = []
     metal_code += "uint temp = tid;\n"
-    t = ""
-    for i in y_shape[::-1]:
+    for i in x_shape[::-1]:
         var = next(gen)
         var_str.append(var)
-        if i == 1:
-            continue
-        t += f"uint {var} = temp % {i}; "
-        t += f"temp = temp / {i};"
-        t += "\n"
+        metal_code += f"uint {var} = temp % {i}; temp = temp / {i};\n"
     
-    last_semicolon = t.rfind(';')
-    second_last_semicolon = t.rfind(';', 0, last_semicolon)
-    t = t[:second_last_semicolon + 1]
-    t += "\n"
-    metal_code += t
-
     t = "uint y_idx = "
     for i, j, k in zip(y_stride, var_str[::-1], y_shape):
-        if k == 1:
-            continue
-        else:
-            t += f"{j} * {i} + "
+        if k != 1:
+            t += f"{j}*{i} + "
 
     t = t[:-3]
     t += ";\n"

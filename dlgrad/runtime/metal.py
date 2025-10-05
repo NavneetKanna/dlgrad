@@ -1,6 +1,5 @@
 # ruff: noqa
 
-# https://dougallj.github.io/applegpu/docs.html
 import functools
 import math
 import struct
@@ -86,6 +85,7 @@ class MetalGPU:
         computeEncoder = commandBuffer.computeCommandEncoder()
 
         src = metal_kernel.generate_binary_op_kernel(x.shape, x.stride, y.shape, y.stride, op=op)
+        # print(src)
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_pipeline(src, "binary_op", x.numel)
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
@@ -114,4 +114,4 @@ class MetalGPU:
     @staticmethod
     @dispatcher.register(BinaryOps.DIV, Device.METAL)
     def div(x: Buffer, y: Buffer | Scalar) -> CDataPtr:
-        return MetalGPU._binary_op(x, y, "mul")
+        return MetalGPU._binary_op(x, y, "div")
