@@ -18,16 +18,6 @@ from dlgrad.dtype import CDataPtr, DType, Scalar
 from dlgrad.helpers import BinaryOps, UnaryOps, cal_sum_max_out_shape, prod_
 
 
-# TODO: Maybe create buffers during creation time ?
-@functools.cache
-def get_buffer_for_int_array(arr: tuple) -> any:
-    ffi_arr = MetalGPU.ffi.new("int[]", list(arr))
-    size = len(arr) * MetalGPU.ffi.sizeof("int")
-    buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(
-        MetalGPU.ffi.buffer(ffi_arr), size, Metal.MTLResourceStorageModeShared, None)
-    return buf, ffi_arr
-
-
 device = Metal.MTLCreateSystemDefaultDevice()
 commandQueue = device.newCommandQueue()
 
@@ -56,11 +46,13 @@ class MetalGPU:
     @staticmethod
     @cache
     def build_pipeline(src: str, func_name: str, numel: int):
-        lib, _ = device.newLibraryWithSource_options_error_(src, None, None)
+        options = Metal.MTLCompileOptions.alloc().init()
+        lib, _ = device.newLibraryWithSource_options_error_(src, options, None)
         fn = lib.newFunctionWithName_(func_name)
         pso = device.newComputePipelineStateWithFunction_error_(fn, None)[0]
 
-        w = pso.threadExecutionWidth()
+        # w = pso.threadExecutionWidth()
+        w = pso.maxTotalThreadsPerThreadgroup()
         threadsPerGrid = Metal.MTLSizeMake(numel, 1, 1)
         threadsPerThreadgroup = Metal.MTLSizeMake(min(w, numel), 1, 1)
 
@@ -80,20 +72,21 @@ class MetalGPU:
         x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
         y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(y.ptr, y.nbytes), y.nbytes, Metal.MTLResourceStorageModeShared, None)
         out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
-
+        
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-
+        
         src = metal_kernel.generate_binary_op_kernel(x.shape, x.stride, y.shape, y.stride, op=op)
         # print(src)
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_pipeline(src, "binary_op", x.numel)
+        
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(y_buf, 0, 1)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 2)
 
         MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
-
+        
         return out_ptr
 
     @staticmethod

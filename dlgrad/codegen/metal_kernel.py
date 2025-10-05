@@ -20,21 +20,24 @@ def generate_binary_op_kernel(x_shape: tuple, x_stride: tuple, y_shape: tuple, y
             uint tid                [[ thread_position_in_grid ]]) 
         {
     """
-    var_str = []
-    metal_code += "uint temp = tid;\n"
-    for i in x_shape[::-1]:
-        var = next(gen)
-        var_str.append(var)
-        metal_code += f"uint {var} = temp % {i}; temp = temp / {i};\n"
-    
-    t = "uint y_idx = "
-    for i, j, k in zip(y_stride, var_str[::-1], y_shape):
-        if k != 1:
-            t += f"{j}*{i} + "
+    if x_shape == y_shape:
+        metal_code += "uint y_idx = tid;\n"
+    else:
+        var_str = []
+        metal_code += "uint temp = tid;\n"
+        for i in x_shape[::-1]:
+            var = next(gen)
+            var_str.append(var)
+            metal_code += f"uint {var} = temp % {i}; temp = temp / {i};\n"
+        
+        t = "uint y_idx = "
+        for i, j, k in zip(y_stride, var_str[::-1], y_shape):
+            if k != 1:
+                t += f"{j}*{i} + "
 
-    t = t[:-3]
-    t += ";\n"
-    metal_code += t
+        t = t[:-3]
+        t += ";\n"
+        metal_code += t
 
     match op:
         case "add":
