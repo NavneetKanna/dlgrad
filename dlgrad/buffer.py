@@ -145,7 +145,7 @@ class Buffer:
         out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape, keepdim=keepdim)
 
         if not backward:
-            out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward)
+            out = dispatcher.dispatch(op=UnaryOps.MAX, device=self.device, x=self, dim=dim, backward=backward)
         else:
             out_shape = self.shape
             out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward, out=out)
