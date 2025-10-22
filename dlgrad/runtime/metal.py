@@ -167,12 +167,16 @@ class MetalGPU:
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
         
-        src = metal_kernel.max(x.shape, x.stride, dim, x.numel, calculate_stride(out_shape))
-        # print(src)
-        pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=out_shape[-1], h=prod_(out_shape[:-1]))
+        if x.ndim == 4 and dim == 0:
+            src = metal_kernel.max(x.shape, x.stride, dim, x.numel, along_batch=True)
+        elif (x.ndim == 4 or x.ndim == 3) and (dim == 0 or dim == 1):
+            src = metal_kernel.max(x.shape, x.stride, dim, x.numel, along_channel=True)
+
+        print(src)
+        # pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=out_shape[-1], h=prod_(out_shape[:-1]))
         # print("threadsPerGrid", threadsPerGrid)
         # print("threadsPerThreadgroup", threadsPerThreadgroup)
-        # exit()
+        exit()
         
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)

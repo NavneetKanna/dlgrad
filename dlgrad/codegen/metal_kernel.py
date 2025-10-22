@@ -78,35 +78,34 @@ def matmul(x_shape: tuple, y_shape: tuple):
 
     return metal_code
 
-@cache
-def max(x_shape: tuple, x_stride: tuple, dim: int, x_numel: int, out_stride: tuple, along_batch: bool = True):
-    if along_batch:
-        metal_code = f"""
-            #include <metal_math>
-            #include <metal_stdlib>
-            using namespace metal;
-            kernel void max(
-                const device float* x  [[ buffer(0) ]],
-                device float* out      [[ buffer(1) ]],
-                uint2 tid              [[ thread_position_in_grid ]],
-                uint2 gid              [[ threadgroup_position_in_grid ]],
-                uint2 lid              [[ thread_position_in_threadgroup ]],
-                uint2 threadgroup_size [[ threads_per_threadgroup ]],
-                uint simd_size         [[ threads_per_simdgroup ]],
-                uint simd_lane_id      [[ thread_index_in_simdgroup ]],
-                uint simd_group_id     [[ simdgroup_index_in_threadgroup ]])
-            {{
-                uint row = tid.y;
-                uint col = tid.x;
-                uint x_idx = row*{x_stride[-2]} + col;
-                float max_val = -FLT_MAX;
-                for(uint i=0; i<{x_shape[dim]}; i++) {{
-                    max_val = fmax(x[x_idx], max_val);
-                    x_idx += {x_stride[dim]};
-                }}
-
-                out[row*{out_stride[-2]} + col] = max_val;
+def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
+    metal_code = """
+        #include <metal_math>
+        #include <metal_stdlib>
+        using namespace metal;
+        kernel void max(
+            const device float* x  [[ buffer(0) ]],
+            device float* out      [[ buffer(1) ]],
+            uint2 tid              [[ thread_position_in_grid ]],
+            uint2 gid              [[ threadgroup_position_in_grid ]],
+            uint2 lid              [[ thread_position_in_threadgroup ]],
+            uint2 threadgroup_size [[ threads_per_threadgroup ]],
+            uint simd_size         [[ threads_per_simdgroup ]],
+            uint simd_lane_id      [[ thread_index_in_simdgroup ]],
+            uint simd_group_id     [[ simdgroup_index_in_threadgroup ]])
+        {{
+            uint out_row = tid.y;
+            uint out_col = tid.x;\n
+    """
+    if dim == 0:
+        m = f"""
+            uint x_idx = out_row*{x_shape[-1]} + out_col;
+            float max_val = -FLT_MAX;
+            for(uint i=0; i<{x_shape[dim]}; i++) {{
+                max_val = fmax(x[x_idx], max_val);
+                x_idx += {x_stride[-2]};
             }}
+            out[out_row*{x_shape[-1]} + out_col] = max_val;
         """
-
-        return metal_code
+    elif dim == 1:
+        pass
