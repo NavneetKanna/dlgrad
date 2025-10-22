@@ -75,10 +75,12 @@ def matmul(x_shape: tuple, y_shape: tuple):
             out[row * {x_shape[0]} + col] = tmp;
         }}
     """
-
     return metal_code
 
+# Wasted a lot of time in trying to come up with a generic algo for all ndim, hence writing a separate one for each
+@cache
 def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
+    gen = n_gen()
     metal_code = """
         #include <metal_math>
         #include <metal_stdlib>
@@ -93,7 +95,7 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
             uint simd_size         [[ threads_per_simdgroup ]],
             uint simd_lane_id      [[ thread_index_in_simdgroup ]],
             uint simd_group_id     [[ simdgroup_index_in_threadgroup ]])
-        {{
+        {
             uint out_row = tid.y;
             uint out_col = tid.x;\n
     """
@@ -106,6 +108,34 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
                 x_idx += {x_stride[-2]};
             }}
             out[out_row*{x_shape[-1]} + out_col] = max_val;
+        }}
         """
+        metal_code += m
+        return metal_code
     elif dim == 1:
-        pass
+        metal_code += f"""
+            uint batch = out_row / {x_shape[dim]};
+            uint row = out_row % {x_shape[dim]};
+            uint col = out_col;
+            float max_val = -FLT_MAX;
+            for (uint channel=0; channel<{x_shape[dim]}; channel++) {{\n
+        """
+
+        var_str = []
+        t = "uint x_idx = "
+        for i in x_stride[::-1]:
+            var = next(gen)
+            var_str.append(var)
+            t += f"{i}*{var} + "
+        t = t[:-3]
+        t += ";\n"
+        metal_code += t
+
+        t = f"""
+                max_val = fmax(x[x_idx], max_val); 
+            }}
+            out[out_row*{x_shape[-1]} + out_col] = max_val;
+            }}
+        """
+        metal_code += t
+        return metal_code
