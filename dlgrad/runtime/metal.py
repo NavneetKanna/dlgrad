@@ -168,12 +168,9 @@ class MetalGPU:
         computeEncoder = commandBuffer.computeCommandEncoder()
         
         if x.ndim == 4:
-            if dim == 0:
-                src = metal_kernel.max_4d(x.shape, x.stride, dim=dim)
-            elif dim == 1:
-                src = metal_kernel.max_4d(x.shape, x.stride, dim=dim)
+            src = metal_kernel.max_4d(x.shape, x.stride, dim=dim)
 
-        # print(src)
+        print(src)
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=out_shape[-1], h=prod_(out_shape[:-1]))
         # print("threadsPerGrid", threadsPerGrid)
         # print("threadsPerThreadgroup", threadsPerThreadgroup)

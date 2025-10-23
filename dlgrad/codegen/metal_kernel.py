@@ -114,11 +114,38 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
         return metal_code
     elif dim == 1:
         metal_code += f"""
-            uint batch = out_row / {x_shape[dim]};
-            uint row = out_row % {x_shape[dim]};
+            uint batch = out_row / {x_shape[2]};
+            uint row = out_row % {x_shape[2]};
             uint col = out_col;
             float max_val = -FLT_MAX;
             for (uint channel=0; channel<{x_shape[dim]}; channel++) {{\n
+        """
+
+        var_str = []
+        t = "uint x_idx = "
+        for i in x_stride[::-1]:
+            var = next(gen)
+            var_str.append(var)
+            t += f"{i}*{var} + "
+        t = t[:-3]
+        t += ";\n"
+        metal_code += t
+
+        t = f"""
+                max_val = fmax(x[x_idx], max_val); 
+            }}
+            out[out_row*{x_shape[-1]} + out_col] = max_val;
+            }}
+        """
+        metal_code += t
+        return metal_code
+    elif dim == 2:
+        metal_code += f"""
+            uint batch = out_row / {x_shape[1]};
+            uint channel = out_row % {x_shape[1]};
+            uint col = out_col;
+            float max_val = -FLT_MAX;
+            for (uint row=0; row<{x_shape[dim]}; row++) {{\n
         """
 
         var_str = []
