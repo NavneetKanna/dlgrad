@@ -180,13 +180,13 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
 
                 float local_max = -INFINITY;
                 float v;
-                for (int column=col; column<{x_shape[-1]}; column+=1024) {{
-                    v = x[row*{x_shape[3]} + col];
-                    local_max = fmax(local_max, v);
+                for (uint i=col; i<{x_shape[3]}; i+=1024) {{
+                    v = x[row*{x_shape[3]} + i];
+                    local_max = max(local_max, v);
                 }}
 
                 for (int offset = 16; offset > 0; offset >>= 1)
-                    local_max = fmax(local_max, simd_shuffle_down(local_max, offset));
+                    local_max = max(local_max, simd_shuffle_down(local_max, offset));
 
                 if (col % 32 == 0)
                     tmp[col / 32] = local_max;
@@ -197,7 +197,7 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
                     float max_val = tmp[col];
                     float val;
                     for (int offset = 16; offset > 0; offset >>= 1)
-                        val = fmax(max_val, simd_shuffle_down(max_val, offset));
+                        val = max(max_val, simd_shuffle_down(max_val, offset));
                     if (lid.x == 0)
                         out[row] = val;
                 }}
