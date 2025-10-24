@@ -66,7 +66,7 @@ class MetalGPU:
     def build_2d_pipeline(src: str, func_name: str, w: int, h: int):
         options = Metal.MTLCompileOptions.alloc().init()
         lib, _ = device.newLibraryWithSource_options_error_(src, options, None)
-        # print(_)
+        print(_)
         fn = lib.newFunctionWithName_(func_name)
         pso = device.newComputePipelineStateWithFunction_error_(fn, None)[0]
 
@@ -169,13 +169,15 @@ class MetalGPU:
         
         if x.ndim == 4:
             src = metal_kernel.max_4d(x.shape, x.stride, dim=dim)
+            # print(src)
+            if dim == 3:
+                pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=x.shape[-1], h=prod_(x.shape[:-1]))
+                threadsPerThreadgroup = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], 1, 1)
+                # print("threadsPerGrid", threadsPerGrid)
+                # print("threadsPerThreadgroup", threadsPerThreadgroup)
+            else:
+                pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=out_shape[-1], h=prod_(out_shape[:-1]))
 
-        print(src)
-        pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=out_shape[-1], h=prod_(out_shape[:-1]))
-        # print("threadsPerGrid", threadsPerGrid)
-        # print("threadsPerThreadgroup", threadsPerThreadgroup)
-        # exit()
-        
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)

@@ -166,3 +166,48 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
         """
         metal_code += t
         return metal_code
+    elif dim == 3:
+        metal_code = f"""
+            #include <metal_math>
+            #include <metal_stdlib>
+            using namespace metal;
+            kernel void max(
+                const device float* x  [[ buffer(0) ]],
+                device float* out      [[ buffer(1) ]],
+                uint2 tid              [[ thread_position_in_grid ]],
+                uint2 gid              [[ threadgroup_position_in_grid ]],
+                uint2 lid              [[ thread_position_in_threadgroup ]])
+            {{
+                uint row = tid.y;
+                uint col = tid.x;
+
+                threadgroup float tmp[32];
+                for (uint i=0; i<32; i++) 
+                    tmp[i] = -INFINITY;
+
+                float local_max = -INFINITY;
+                float v;
+                for (int column=col; column<{x_shape[-1]}; column+=1024) {{
+                    v = x[row*{x_shape[3]} + col];
+                    local_max = fmax(local_max, v);
+                }}
+
+                for (int offset = 16; offset > 0; offset >>= 1)
+                    local_max = fmax(local_max, simd_shuffle_down(local_max, offset));
+
+                if (col % 32 == 0)
+                    tmp[col / 32] = local_max;
+
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                if (col < 32) {{
+                    float max_val = tmp[col];
+                    float val;
+                    for (int offset = 16; offset > 0; offset >>= 1)
+                        val = fmax(max_val, simd_shuffle_down(max_val, offset));
+                    if (lid.x == 0)
+                        out[row] = val;
+                }}
+            }}
+        """
+        return metal_code
