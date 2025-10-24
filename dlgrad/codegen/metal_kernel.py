@@ -89,12 +89,6 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
             const device float* x  [[ buffer(0) ]],
             device float* out      [[ buffer(1) ]],
             uint2 tid              [[ thread_position_in_grid ]],
-            uint2 gid              [[ threadgroup_position_in_grid ]],
-            uint2 lid              [[ thread_position_in_threadgroup ]],
-            uint2 threadgroup_size [[ threads_per_threadgroup ]],
-            uint simd_size         [[ threads_per_simdgroup ]],
-            uint simd_lane_id      [[ thread_index_in_simdgroup ]],
-            uint simd_group_id     [[ simdgroup_index_in_threadgroup ]])
         {
             uint out_row = tid.y;
             uint out_col = tid.x;\n
@@ -175,7 +169,6 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
                 const device float* x  [[ buffer(0) ]],
                 device float* out      [[ buffer(1) ]],
                 uint2 tid              [[ thread_position_in_grid ]],
-                uint2 gid              [[ threadgroup_position_in_grid ]],
                 uint2 lid              [[ thread_position_in_threadgroup ]])
             {{
                 uint row = tid.y;
