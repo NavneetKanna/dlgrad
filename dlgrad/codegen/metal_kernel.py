@@ -88,7 +88,7 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
         kernel void max(
             const device float* x  [[ buffer(0) ]],
             device float* out      [[ buffer(1) ]],
-            uint2 tid              [[ thread_position_in_grid ]],
+            uint2 tid              [[ thread_position_in_grid ]])
         {
             uint out_row = tid.y;
             uint out_col = tid.x;\n
@@ -135,30 +135,15 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
         return metal_code
     elif dim == 2:
         metal_code += f"""
-            uint batch = out_row / {x_shape[1]};
-            uint channel = out_row % {x_shape[1]};
-            uint col = out_col;
             float max_val = -FLT_MAX;
+            uint x_idx = out_row*{x_stride[1]} + out_col;
             for (uint row=0; row<{x_shape[dim]}; row++) {{\n
-        """
-
-        var_str = []
-        t = "uint x_idx = "
-        for i in x_stride[::-1]:
-            var = next(gen)
-            var_str.append(var)
-            t += f"{i}*{var} + "
-        t = t[:-3]
-        t += ";\n"
-        metal_code += t
-
-        t = f"""
-                max_val = fmax(x[x_idx], max_val); 
+                max_val = fmax(x[x_idx], max_val);
+                x_idx += {x_stride[dim]};
             }}
             out[out_row*{x_shape[-1]} + out_col] = max_val;
             }}
         """
-        metal_code += t
         return metal_code
     elif dim == 3:
         metal_code = f"""
