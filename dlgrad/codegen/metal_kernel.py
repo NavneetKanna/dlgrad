@@ -2,7 +2,7 @@
 from collections.abc import Generator
 from typing import Any
 from functools import cache
-
+import math
 
 def n_gen() -> Generator[str, Any, None]:
     a = ["batch", "channel", "row", "col"][::-1]
@@ -154,14 +154,22 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
                 const device float* x  [[ buffer(0) ]],
                 device float* out      [[ buffer(1) ]],
                 uint2 tid              [[ thread_position_in_grid ]],
-                uint2 lid              [[ thread_position_in_threadgroup ]])
+                uint2 lid              [[ thread_position_in_threadgroup ]],
+                uint simd_size         [[threads_per_simdgroup]],
+                uint simd_lane_id      [[thread_index_in_simdgroup]],
+                uint simd_group_id     [[simdgroup_index_in_threadgroup]])
             {{
                 uint row = tid.y;
                 uint col = tid.x;
+                const uint PARTIALS = {math.ceil(x_shape[-1]/32)};
 
-                threadgroup float tmp[32];
-                for (uint i=0; i<32; i++) 
-                    tmp[i] = -INFINITY;
+                threadgroup float tmp[PARTIALS];
+                if (lid.x < PARTIALS) {{
+                    tmp[lid.x] = -INFINITY;
+                }}
+
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
 
                 float local_max = -INFINITY;
                 float v;
@@ -173,18 +181,17 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
                 for (int offset = 16; offset > 0; offset >>= 1)
                     local_max = max(local_max, simd_shuffle_down(local_max, offset));
 
-                if (col % 32 == 0)
-                    tmp[col / 32] = local_max;
+                if (simd_lane_id == 0)
+                    tmp[simd_group_id] = local_max;
 
                 threadgroup_barrier(mem_flags::mem_threadgroup);
 
-                if (col < 32) {{
-                    float max_val = tmp[col];
-                    float val;
+                if (simd_group_id == 0) {{
+                    float max_val = (simd_lane_id < PARTIALS) ? tmp[simd_lane_id] : -INFINITY;
                     for (int offset = 16; offset > 0; offset >>= 1)
-                        val = max(max_val, simd_shuffle_down(max_val, offset));
-                    if (lid.x == 0)
-                        out[row] = val;
+                        max_val = max(max_val, simd_shuffle_down(max_val, offset));
+                    if (simd_lane_id == 0)
+                        out[row] = max_val;
                 }}
             }}
         """
@@ -254,14 +261,21 @@ def max_3d(x_shape: tuple, x_stride: tuple, dim: int):
                 const device float* x  [[ buffer(0) ]],
                 device float* out      [[ buffer(1) ]],
                 uint2 tid              [[ thread_position_in_grid ]],
-                uint2 lid              [[ thread_position_in_threadgroup ]])
+                uint2 lid              [[ thread_position_in_threadgroup ]],
+                uint simd_size         [[threads_per_simdgroup]],
+                uint simd_lane_id      [[thread_index_in_simdgroup]],
+                uint simd_group_id     [[simdgroup_index_in_threadgroup]])
             {{
                 uint row = tid.y;
                 uint col = tid.x;
+                const uint PARTIALS = {math.ceil(x_shape[-1]/32)};
 
-                threadgroup float tmp[32];
-                for (uint i=0; i<32; i++) 
-                    tmp[i] = -INFINITY;
+                threadgroup float tmp[PARTIALS];
+                if (lid.x < PARTIALS) {{
+                    tmp[lid.x] = -INFINITY;
+                }}
+
+                threadgroup_barrier(mem_flags::mem_threadgroup);
 
                 float local_max = -INFINITY;
                 float v;
@@ -273,20 +287,97 @@ def max_3d(x_shape: tuple, x_stride: tuple, dim: int):
                 for (int offset = 16; offset > 0; offset >>= 1)
                     local_max = max(local_max, simd_shuffle_down(local_max, offset));
 
-                if (col % 32 == 0)
-                    tmp[col / 32] = local_max;
+                if (simd_lane_id == 0)
+                    tmp[simd_group_id] = local_max;
 
                 threadgroup_barrier(mem_flags::mem_threadgroup);
 
-                if (col < 32) {{
-                    float max_val = tmp[col];
-                    float val;
+                if (simd_group_id == 0) {{
+                    float max_val = (simd_lane_id < PARTIALS) ? tmp[simd_lane_id] : -INFINITY;
                     for (int offset = 16; offset > 0; offset >>= 1)
-                        val = max(max_val, simd_shuffle_down(max_val, offset));
-                    if (lid.x == 0)
-                        out[row] = val;
+                        max_val = max(max_val, simd_shuffle_down(max_val, offset));
+                    if (simd_lane_id == 0)
+                        out[row] = max_val;
                 }}
             }}
         """
         return metal_code
+
+@cache
+def max_2d(x_shape: tuple, x_stride: tuple, dim: int):
+    metal_code = """
+        #include <metal_math>
+        #include <metal_stdlib>
+        using namespace metal;
+        kernel void max(
+            const device float* x  [[ buffer(0) ]],
+            device float* out      [[ buffer(1) ]],
+            uint2 tid              [[ thread_position_in_grid ]])
+        {
+            uint out_row = tid.y;
+            uint out_col = tid.x;\n
+    """
+    if dim == 0:
+        metal_code += f"""
+            float max_val = -FLT_MAX;
+            uint x_idx = out_row*{x_shape[-1]} + out_col;
+            for (uint row=0; row<{x_shape[dim]}; row++) {{\n
+                max_val = fmax(x[x_idx], max_val);
+                x_idx += {x_stride[dim]};
+            }}
+            out[out_row*{x_shape[-1]} + out_col] = max_val;
+            }}
+        """
+        return metal_code
+    elif dim == 1:
+        metal_code = f"""
+            #include <metal_math>
+            #include <metal_stdlib>
+            using namespace metal;
+            kernel void max(
+                const device float* x  [[ buffer(0) ]],
+                device float* out      [[ buffer(1) ]],
+                uint2 tid              [[ thread_position_in_grid ]],
+                uint2 lid              [[ thread_position_in_threadgroup ]],
+                uint simd_size         [[threads_per_simdgroup]],
+                uint simd_lane_id      [[thread_index_in_simdgroup]],
+                uint simd_group_id     [[simdgroup_index_in_threadgroup]])
+            {{
+                uint row = tid.y;
+                uint col = tid.x;
+                const uint PARTIALS = {math.ceil(x_shape[-1]/32)};
+
+                threadgroup float tmp[PARTIALS];
+                if (lid.x < PARTIALS) {{
+                    tmp[lid.x] = -INFINITY;
+                }}
+
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                float local_max = -INFINITY;
+                float v;
+                for (uint i=col; i<{x_shape[-1]}; i+=1024) {{
+                    v = x[row*{x_shape[-1]} + i];
+                    local_max = max(local_max, v);
+                }}
+
+                for (int offset = 16; offset > 0; offset >>= 1)
+                    local_max = max(local_max, simd_shuffle_down(local_max, offset));
+
+                if (simd_lane_id == 0)
+                    tmp[simd_group_id] = local_max;
+
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                if (simd_group_id == 0) {{
+                    float max_val = (simd_lane_id < PARTIALS) ? tmp[simd_lane_id] : -INFINITY;
+                    for (int offset = 16; offset > 0; offset >>= 1)
+                        max_val = max(max_val, simd_shuffle_down(max_val, offset));
+                    if (simd_lane_id == 0)
+                        out[row] = max_val;
+                }}
+            }}
+        """
+        return metal_code
+
 
