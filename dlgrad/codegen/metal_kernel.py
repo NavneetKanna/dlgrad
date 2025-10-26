@@ -165,8 +165,8 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
 
                 float local_max = -INFINITY;
                 float v;
-                for (uint i=col; i<{x_shape[3]}; i+=1024) {{
-                    v = x[row*{x_shape[3]} + i];
+                for (uint i=col; i<{x_shape[-1]}; i+=1024) {{
+                    v = x[row*{x_shape[-1]} + i];
                     local_max = max(local_max, v);
                 }}
 
@@ -242,6 +242,50 @@ def max_3d(x_shape: tuple, x_stride: tuple, dim: int):
                 x_idx += {x_stride[dim]};
             }}
             out[out_row*{x_shape[-1]} + out_col] = max_val;
+            }}
+        """
+        return metal_code
+    elif dim == 2:
+        metal_code = f"""
+            #include <metal_math>
+            #include <metal_stdlib>
+            using namespace metal;
+            kernel void max(
+                const device float* x  [[ buffer(0) ]],
+                device float* out      [[ buffer(1) ]],
+                uint2 tid              [[ thread_position_in_grid ]],
+                uint2 lid              [[ thread_position_in_threadgroup ]])
+            {{
+                uint row = tid.y;
+                uint col = tid.x;
+
+                threadgroup float tmp[32];
+                for (uint i=0; i<32; i++) 
+                    tmp[i] = -INFINITY;
+
+                float local_max = -INFINITY;
+                float v;
+                for (uint i=col; i<{x_shape[-1]}; i+=1024) {{
+                    v = x[row*{x_shape[-1]} + i];
+                    local_max = max(local_max, v);
+                }}
+
+                for (int offset = 16; offset > 0; offset >>= 1)
+                    local_max = max(local_max, simd_shuffle_down(local_max, offset));
+
+                if (col % 32 == 0)
+                    tmp[col / 32] = local_max;
+
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                if (col < 32) {{
+                    float max_val = tmp[col];
+                    float val;
+                    for (int offset = 16; offset > 0; offset >>= 1)
+                        val = max(max_val, simd_shuffle_down(max_val, offset));
+                    if (lid.x == 0)
+                        out[row] = val;
+                }}
             }}
         """
         return metal_code
