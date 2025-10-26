@@ -173,8 +173,14 @@ class MetalGPU:
             if dim == 3:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=x.shape[-1], h=prod_(x.shape[:-1]))
                 threadsPerThreadgroup = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], 1, 1)
-                # print("threadsPerGrid", threadsPerGrid)
-                # print("threadsPerThreadgroup", threadsPerThreadgroup)
+            else:
+                pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=out_shape[-1], h=prod_(out_shape[:-1]))
+        elif x.ndim == 3:
+            src = metal_kernel.max_3d(x.shape, x.stride, dim=dim)
+            # print(src)
+            if dim == 2:
+                pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=x.shape[-1], h=prod_(x.shape[:-1]))
+                threadsPerThreadgroup = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], 1, 1)
             else:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=out_shape[-1], h=prod_(out_shape[:-1]))
 
