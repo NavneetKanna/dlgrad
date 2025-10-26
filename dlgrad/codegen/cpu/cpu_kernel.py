@@ -111,8 +111,8 @@ def max(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, s
     if dim == -1:
         code = f"""
             void max(float *x, float *out) {{
-                float m = 0.0;
-                for (int i=0; i<{x_numel}; i++) {{
+                float m = x[0];
+                for (int i=1; i<{x_numel}; i++) {{
                     if (x[i] > m) {{
                         m = x[i];
                     }}

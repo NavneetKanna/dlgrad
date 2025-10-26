@@ -99,7 +99,7 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
             float max_val = -FLT_MAX;
             for(uint i=0; i<{x_shape[dim]}; i++) {{
                 max_val = fmax(x[x_idx], max_val);
-                x_idx += {x_stride[-2]};
+                x_idx += {x_stride[dim]};
             }}
             out[out_row*{x_shape[-1]} + out_col] = max_val;
         }}

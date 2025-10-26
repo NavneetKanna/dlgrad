@@ -1,12 +1,6 @@
 # ruff: noqa
 
-import functools
-import os
-import hashlib
-import math
-import pathlib
 import struct
-import sysconfig
 from functools import cache
 
 import _allocate  # type: ignore
@@ -18,9 +12,9 @@ from dlgrad.codegen import metal_kernel
 from dlgrad.runtime.cpu import CPU
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
-from dlgrad.dtype import CDataPtr, DType, Scalar
-from dlgrad.helpers import BinaryOps, UnaryOps, cal_sum_max_out_shape, prod_, CACHE_DIR, calculate_stride
-
+from dlgrad.dtype import CDataPtr, DType
+from dlgrad.helpers import BinaryOps, UnaryOps, cal_sum_max_out_shape, prod_
+from dlgrad.buffer import Buffer
 
 device = Metal.MTLCreateSystemDefaultDevice()
 commandQueue = device.newCommandQueue()
@@ -66,7 +60,7 @@ class MetalGPU:
     def build_2d_pipeline(src: str, func_name: str, w: int, h: int):
         options = Metal.MTLCompileOptions.alloc().init()
         lib, _ = device.newLibraryWithSource_options_error_(src, options, None)
-        print(_)
+        # print(_)
         fn = lib.newFunctionWithName_(func_name)
         pso = device.newComputePipelineStateWithFunction_error_(fn, None)[0]
 
@@ -96,7 +90,6 @@ class MetalGPU:
         computeEncoder = commandBuffer.computeCommandEncoder()
         
         src = metal_kernel.generate_binary_op_kernel(x.shape, x.stride, y.shape, y.stride, op=op)
-        # print(src)
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_1d_pipeline(src, "binary_op", x.numel)
         
         computeEncoder.setComputePipelineState_(pso)
@@ -141,8 +134,6 @@ class MetalGPU:
         computeEncoder = commandBuffer.computeCommandEncoder()
         
         src = metal_kernel.matmul(x.shape, y.shape)
-        # print(x.shape, y.shape)
-        # print(src)
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "matmul", w=x.shape[0], h=y.shape[1])
         
         computeEncoder.setComputePipelineState_(pso)
@@ -157,34 +148,42 @@ class MetalGPU:
     @staticmethod
     @dispatcher.register(UnaryOps.MAX, Device.METAL)
     def max(x: Buffer, dim: int, backward: bool = False, out: Buffer = None):
-        out_shape = cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape)
-        num = prod_(out_shape)
-        out_ptr = CPU.init_with_scalar(num=num, scalar=0)
+        if dim == -1:
+            out_shape = cal_sum_max_out_shape(ndim=x.ndim, dim=len(x.shape) - 1, inp_shape=x.shape)
+            num = prod_(out_shape)
+            out_ptr = CPU.init_with_scalar(num=num, scalar=0)
+        else:
+            out_shape = cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape)
+            num = prod_(out_shape)
+            out_ptr = CPU.init_with_scalar(num=num, scalar=0)
 
         x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
-        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(out_ptr, num*4), num*4, Metal.MTLResourceStorageModeShared, None)
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
         
         if x.ndim == 4:
-            src = metal_kernel.max_4d(x.shape, x.stride, dim=dim)
-            if dim == 3:
+            src = metal_kernel.max_4d(x.shape, x.stride, dim=dim if dim != -1 else 3)
+            if dim == 3 or dim == -1:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=x.shape[-1], h=prod_(x.shape[:-1]))
+                threadsPerGrid = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], prod_(x.shape[:-1]), 1)
                 threadsPerThreadgroup = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], 1, 1)
             else:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=out_shape[-1], h=prod_(out_shape[:-1]))
         elif x.ndim == 3:
-            src = metal_kernel.max_3d(x.shape, x.stride, dim=dim)
-            if dim == 2:
+            src = metal_kernel.max_3d(x.shape, x.stride, dim=dim if dim != -1 else 2)
+            if dim == 2 or dim == -1:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=x.shape[-1], h=prod_(x.shape[:-1]))
+                threadsPerGrid = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], prod_(x.shape[:-1]), 1)
                 threadsPerThreadgroup = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], 1, 1)
             else:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=out_shape[-1], h=prod_(out_shape[:-1]))
         elif x.ndim == 2:
-            src = metal_kernel.max_2d(x.shape, x.stride, dim=dim)
-            if dim == 1:
+            src = metal_kernel.max_2d(x.shape, x.stride, dim=dim if dim != -1 else 1)
+            if dim == 1 or dim == -1:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=x.shape[-1], h=prod_(x.shape[:-1]))
+                threadsPerGrid = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], prod_(x.shape[:-1]), 1)
                 threadsPerThreadgroup = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], 1, 1)
             else:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=out_shape[-1], h=prod_(out_shape[:-1]))
@@ -194,5 +193,8 @@ class MetalGPU:
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
 
         MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
+
+        if dim == -1:
+            out_ptr = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=Buffer(out_ptr, out_shape, x.device, x.dtype), dim=-1)
 
         return out_ptr
