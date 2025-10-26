@@ -79,29 +79,40 @@ def matmul(x_shape: tuple, y_shape: tuple):
 
 # Wasted a lot of time in trying to come up with a generic algo for all ndim, hence writing a separate one for each
 @cache
-def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
+def reduce_4d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
     gen = n_gen()
-    metal_code = """
+    metal_code = f"""
         #include <metal_math>
         #include <metal_stdlib>
         using namespace metal;
-        kernel void max(
+        kernel void {op}(
             const device float* x  [[ buffer(0) ]],
             device float* out      [[ buffer(1) ]],
             uint2 tid              [[ thread_position_in_grid ]])
-        {
+        {{
             uint out_row = tid.y;
             uint out_col = tid.x;\n
     """
+    if op == "max":
+        t = "float val = -FLT_MAX;"
+    elif op == "sum":
+        t = "float val = 0.0;"
+    
+    metal_code += t
+
     if dim == 0:
+        if op == "max":
+            t = "val = fmax(x[x_idx], val);"
+        elif op == "sum":
+            t = "val += x[x_idx];"
         m = f"""
             uint x_idx = out_row*{x_shape[-1]} + out_col;
-            float max_val = -FLT_MAX;
+            
             for(uint i=0; i<{x_shape[dim]}; i++) {{
-                max_val = fmax(x[x_idx], max_val);
+                {t}
                 x_idx += {x_stride[dim]};
             }}
-            out[out_row*{x_shape[-1]} + out_col] = max_val;
+            out[out_row*{x_shape[-1]} + out_col] = val;
         }}
         """
         metal_code += m

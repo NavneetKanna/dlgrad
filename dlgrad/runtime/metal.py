@@ -146,8 +146,7 @@ class MetalGPU:
         return out_ptr
 
     @staticmethod
-    @dispatcher.register(UnaryOps.MAX, Device.METAL)
-    def max(x: Buffer, dim: int, backward: bool = False, out: Buffer = None):
+    def reduce(x: Buffer, dim: int, op: str):
         if dim == -1:
             out_shape = cal_sum_max_out_shape(ndim=x.ndim, dim=len(x.shape) - 1, inp_shape=x.shape)
             num = prod_(out_shape)
@@ -164,13 +163,14 @@ class MetalGPU:
         computeEncoder = commandBuffer.computeCommandEncoder()
         
         if x.ndim == 4:
-            src = metal_kernel.max_4d(x.shape, x.stride, dim=dim if dim != -1 else 3)
+            src = metal_kernel.reduce_4d(x.shape, x.stride, dim=dim if dim != -1 else 3, op=op)
+            # print(src)
             if dim == 3 or dim == -1:
-                pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=x.shape[-1], h=prod_(x.shape[:-1]))
+                pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, op, w=x.shape[-1], h=prod_(x.shape[:-1]))
                 threadsPerGrid = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], prod_(x.shape[:-1]), 1)
                 threadsPerThreadgroup = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], 1, 1)
             else:
-                pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "max", w=out_shape[-1], h=prod_(out_shape[:-1]))
+                pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, op, w=out_shape[-1], h=prod_(out_shape[:-1]))
         elif x.ndim == 3:
             src = metal_kernel.max_3d(x.shape, x.stride, dim=dim if dim != -1 else 2)
             if dim == 2 or dim == -1:
@@ -198,3 +198,13 @@ class MetalGPU:
             out_ptr = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=Buffer(out_ptr, out_shape, x.device, x.dtype), dim=-1)
 
         return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.MAX, Device.METAL)
+    def max(x: Buffer, dim: int, backward: bool = False, out: Buffer = None):
+        return MetalGPU.reduce(x, dim, "max")
+        
+    @staticmethod
+    @dispatcher.register(UnaryOps.SUM, Device.METAL)
+    def sum(x: Buffer, dim: int):
+        return MetalGPU.reduce(x, dim, "sum")
