@@ -136,7 +136,7 @@ def max_4d(x_shape: tuple, x_stride: tuple, dim: int):
     elif dim == 2:
         metal_code += f"""
             float max_val = -FLT_MAX;
-            uint x_idx = out_row*{x_stride[1]} + out_col;
+            uint x_idx = out_row*{x_stride[-3]} + out_col;
             for (uint row=0; row<{x_shape[dim]}; row++) {{\n
                 max_val = fmax(x[x_idx], max_val);
                 x_idx += {x_stride[dim]};
@@ -236,7 +236,7 @@ def max_3d(x_shape: tuple, x_stride: tuple, dim: int):
     elif dim == 1:
         metal_code += f"""
             float max_val = -FLT_MAX;
-            uint x_idx = out_row*{x_stride[1]} + out_col;
+            uint x_idx = out_row*{x_stride[-3]} + out_col;
             for (uint row=0; row<{x_shape[dim]}; row++) {{\n
                 max_val = fmax(x[x_idx], max_val);
                 x_idx += {x_stride[dim]};
