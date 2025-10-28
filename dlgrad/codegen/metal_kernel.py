@@ -77,7 +77,6 @@ def matmul(x_shape: tuple, y_shape: tuple):
     """
     return metal_code
 
-
 @cache
 def reduce_along_rows(x_shape: tuple, op: str) -> str:
     if op == "max":
@@ -259,15 +258,15 @@ def reduce_4d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
 @cache
 def max_3d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
     gen = n_gen()
-    metal_code = """
+    metal_code = f"""
         #include <metal_math>
         #include <metal_stdlib>
         using namespace metal;
-        kernel void max(
+        kernel void {op}(
             const device float* x  [[ buffer(0) ]],
             device float* out      [[ buffer(1) ]],
             uint2 tid              [[ thread_position_in_grid ]])
-        {
+        {{
             uint out_row = tid.y;
             uint out_col = tid.x;\n
     """
@@ -326,15 +325,15 @@ def max_3d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
 
 @cache
 def max_2d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
-    metal_code = """
+    metal_code = f"""
         #include <metal_math>
         #include <metal_stdlib>
         using namespace metal;
-        kernel void max(
+        kernel void {op}(
             const device float* x  [[ buffer(0) ]],
             device float* out      [[ buffer(1) ]],
             uint2 tid              [[ thread_position_in_grid ]])
-        {
+        {{
             uint out_row = tid.y;
             uint out_col = tid.x;\n
     """

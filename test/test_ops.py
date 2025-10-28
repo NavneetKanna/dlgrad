@@ -54,8 +54,6 @@ rs += generate_broadcastable_shapes((2, 3), reverse=True)
 
 @pytest.mark.parametrize("shapes", s)
 def test_add(shapes, device):
-    # if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-    #     pytest.skip()
     run(shapes, device, lambda x, y: x+y)
 
 @pytest.mark.parametrize("shapes", rs)
@@ -66,8 +64,6 @@ def test_add_diff_shape_reverse(shapes, device):
 
 @pytest.mark.parametrize("shapes", s)
 def test_sub(shapes, device):
-    # if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-    #     pytest.skip()
     run(shapes, device, lambda x, y: x-y)
 
 @pytest.mark.parametrize("shapes", rs)
@@ -78,8 +74,6 @@ def test_sub_diff_shape_reverse(shapes, device):
 
 @pytest.mark.parametrize("shapes", s)
 def test_mul(shapes, device):
-    # if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-    #     pytest.skip()
     run(shapes, device, lambda x, y: x*y)
 
 @pytest.mark.parametrize("shapes", rs)
@@ -90,8 +84,6 @@ def test_mul_diff_shape_reverse(shapes, device):
 
 @pytest.mark.parametrize("shapes", s)
 def test_div(shapes, device):
-    # if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-    #     pytest.skip()
     run(shapes, device, lambda x, y: x/y)
 
 @pytest.mark.parametrize("shapes", rs)
@@ -102,8 +94,8 @@ def test_div_diff_shape_reverse(shapes, device):
 
 @pytest.mark.parametrize("shapes", [[(2, 3), (3, 2)], [(20, 20), (20, 20)]])
 def test_matmul(shapes, device):
-    if device == 'metal':
-        pytest.skip()
+    # if device == 'metal':
+        # pytest.skip()
     run(shapes, device, lambda x, y: x@y)
 
 @pytest.mark.parametrize("shapes", [[(2, 3), (2, 3)]])
@@ -146,10 +138,10 @@ def test_pow(shapes, device):
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
     
 # TODO: Sum 1d ?
-@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(4, 3)]])
+@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(4, 3)], [(1000, 1000)]])
 def test_sum(shapes, device):
-    if device == 'metal':
-        pytest.skip()
+    # if device == 'metal':
+        # pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
         dlgrad_data = Tensor(np_data, device=device)
@@ -183,10 +175,10 @@ def test_mean(shapes, device):
 
             np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes",[[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]])
+@pytest.mark.parametrize("shapes",[[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)], [(1000, 1000)]])
 def test_max(shapes, device):
-    if device == 'metal':
-        pytest.skip()
+    # if device == 'metal':
+        # pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
         dlgrad_data = Tensor(np_data, device=device)
