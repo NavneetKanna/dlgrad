@@ -60,7 +60,7 @@ class MetalGPU:
     def build_2d_pipeline(src: str, func_name: str, w: int, h: int):
         options = Metal.MTLCompileOptions.alloc().init()
         lib, _ = device.newLibraryWithSource_options_error_(src, options, None)
-        # print(_)
+        print(_)
         fn = lib.newFunctionWithName_(func_name)
         pso = device.newComputePipelineStateWithFunction_error_(fn, None)[0]
 
@@ -164,11 +164,13 @@ class MetalGPU:
         
         if x.ndim == 4:
             src = metal_kernel.reduce_4d(x.shape, x.stride, dim=dim if dim != -1 else 3, op=op)
-            # print(src)
+            print(src)
             if dim == 3 or dim == -1:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, op, w=x.shape[-1], h=prod_(x.shape[:-1]))
                 threadsPerGrid = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], prod_(x.shape[:-1]), 1)
                 threadsPerThreadgroup = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], 1, 1)
+                print("threadsPerGrid", threadsPerGrid)
+                print("threadsPerThreadgroup", threadsPerThreadgroup)
             else:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, op, w=out_shape[-1], h=prod_(out_shape[:-1]))
         elif x.ndim == 3:
