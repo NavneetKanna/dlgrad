@@ -9,7 +9,7 @@ from itertools import product
 
 @pytest.fixture(params=['cpu', 'metal'])
 def device(request):
-    if request.param == 'metal' and not torch.backends.mps.is_available():
+    if not torch.backends.mps.is_available():
         pytest.skip("Apple Metal GPU not available")
     return request.param
 
@@ -47,6 +47,7 @@ def generate_broadcastable_shapes(shape, reverse: bool = False):
 s = generate_broadcastable_shapes((2, 3, 4, 5))
 s += generate_broadcastable_shapes((2, 3, 4))
 s += generate_broadcastable_shapes((2, 3))
+s += generate_broadcastable_shapes((784, 64))
 
 rs = generate_broadcastable_shapes((2, 3, 4, 5), reverse=True)
 rs += generate_broadcastable_shapes((2, 3, 4), reverse=True)
@@ -92,7 +93,19 @@ def test_div_diff_shape_reverse(shapes, device):
         pytest.skip()
     run(shapes, device, lambda x, y: x/y)
 
-@pytest.mark.parametrize("shapes", [[(2, 3), (3, 2)], [(20, 20), (20, 20)]])
+@pytest.mark.parametrize("shapes", [
+    [(2, 3), (3, 2)],
+    [(20, 20), (20, 20)],
+    [(32, 8), (8, 16)],
+    [(128, 784), (784, 64)],
+    [(128, 64), (64, 10)],
+    [(128, 10), (10, 64)],
+    [(64, 128), (128, 10)],
+    [(128, 64), (64, 784)],
+    [(784, 128), (128, 64)],
+    [(10000, 784), (784, 64)],
+    [(10000, 64), (64, 10)]
+])
 def test_matmul(shapes, device):
     # if device == 'metal':
         # pytest.skip()
@@ -158,6 +171,13 @@ def test_sum(shapes, device):
                 to_out = to_out.cpu()
 
             np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+        
+        dl_out = dlgrad_data.sum()
+        to_out = torch_data.sum()
+        if device == "mps":
+            to_out = to_out.cpu()
+
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(4, 3)]])
 def test_mean(shapes, device):
@@ -195,6 +215,13 @@ def test_max(shapes, device):
                 to_out = to_out.cpu()
 
             np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
+
+        dl_out = dlgrad_data.max()
+        to_out = torch_data.max()
+        if device == "mps":
+            to_out = to_out.cpu()
+
+        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
 s = [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]]
 

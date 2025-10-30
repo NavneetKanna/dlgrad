@@ -55,29 +55,30 @@ def generate_broadcastable_shapes(shape, reverse: bool = False):
 s = generate_broadcastable_shapes((2, 3, 4, 5))
 s += generate_broadcastable_shapes((2, 3, 4))
 s += generate_broadcastable_shapes((2, 3))
+s += generate_broadcastable_shapes((784, 64))
 
 @pytest.mark.parametrize("shapes", s)
 def test_add_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
+    # if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        # pytest.skip()
     run(shapes, device, lambda x, y: x+y)
 
 @pytest.mark.parametrize("shapes", s)
 def test_sub_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
+    # if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        # pytest.skip()
     run(shapes, device, lambda x, y: x-y)
 
 @pytest.mark.parametrize("shapes", s)
 def test_mul_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
+    # if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        # pytest.skip()
     run(shapes, device, lambda x, y: x*y)
 
 @pytest.mark.parametrize("shapes", s)
 def test_div_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
+    # if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        # pytest.skip()
     run(shapes, device,lambda x, y: x/y)
 
 s = [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]]
@@ -173,8 +174,8 @@ def test_tanh_backward(shapes, device):
 
 @pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]])
 def test_max_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
+    # # if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+    #     pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
 
@@ -196,8 +197,8 @@ def test_max_backward(shapes, device):
 
 @pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]])
 def test_sum_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
+    # if device == 'metal' and any(len(shape) == 4 for shape in shapes):
+        # pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
 
@@ -281,8 +282,8 @@ def test_log_sft_backward(shapes, device):
 
 @pytest.mark.parametrize("shapes", [[(2, 3), (3, 2)]])
 def test_matmul_backward(shapes, device):
-    if device == 'metal' and len(shapes) == 4:
-        pytest.skip()
+    # if device == 'metal' and len(shapes) == 4:
+        # pytest.skip()
     run(shapes, device, lambda x, y: x@y)
     
 s = [

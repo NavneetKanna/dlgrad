@@ -67,12 +67,14 @@ def matmul(x_shape: tuple, y_shape: tuple):
             uint row = tid.y;
             uint col = tid.x;
 
+            if (row >= {x_shape[0]} || col >= {y_shape[1]}) return;   // M = rows of out, N = cols of out
+
             float tmp = 0.0;
             for (int k=0; k<{x_shape[1]}; k++) {{
                 tmp += x[row * {x_shape[1]} + k] * y[k*{y_shape[1]} + col];
             }}
 
-            out[row * {x_shape[0]} + col] = tmp;
+            out[row * {y_shape[1]} + col] = tmp;
         }}
     """
     return metal_code

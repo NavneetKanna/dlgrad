@@ -60,7 +60,7 @@ class MetalGPU:
     def build_2d_pipeline(src: str, func_name: str, w: int, h: int):
         options = Metal.MTLCompileOptions.alloc().init()
         lib, _ = device.newLibraryWithSource_options_error_(src, options, None)
-        print(_)
+        # print(_)
         fn = lib.newFunctionWithName_(func_name)
         pso = device.newComputePipelineStateWithFunction_error_(fn, None)[0]
 
@@ -128,13 +128,17 @@ class MetalGPU:
 
         x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
         y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(y.ptr, y.nbytes), y.nbytes, Metal.MTLResourceStorageModeShared, None)
-        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(out_ptr, x.shape[0]*y.shape[1]*4), x.shape[0]*y.shape[1]*4, Metal.MTLResourceStorageModeShared, None)
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
         
         src = metal_kernel.matmul(x.shape, y.shape)
-        pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "matmul", w=x.shape[0], h=y.shape[1])
+        # print(src)
+        pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "matmul", w=y.shape[1], h=x.shape[0])
+        # print("threadsPerGrid", threadsPerGrid)
+        # print("threadsPerThreadgroup", threadsPerThreadgroup)
+        # print("out_shape", y.shape[1], x.shape[0])
         
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
@@ -194,7 +198,7 @@ class MetalGPU:
         MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
 
         if dim == -1:
-            out_ptr = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=Buffer(out_ptr, out_shape, x.device, x.dtype), dim=-1)
+            out_ptr = dispatcher.dispatch(op=UnaryOps.MAX if op == "max" else UnaryOps.SUM, device=Device.CPU, x=Buffer(out_ptr, out_shape, x.device, x.dtype), dim=-1)
 
         return out_ptr
 

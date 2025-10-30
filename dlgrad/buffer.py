@@ -167,6 +167,7 @@ class Buffer:
         if (self.shape[-1] != other.shape[0] and self.ndim != 2 and other.ndim != 2):
             raise ValueError("Either the Tensors shape dont match or is not 2D")
 
+        # print(self.shape, other.shape)
         return Buffer(
             data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other),
             shape=(self.shape[0], other.shape[1]), device=self.device, dtype=self.dtype
@@ -198,7 +199,7 @@ class Buffer:
 
     def exp(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.EXP, device=self.device, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.EXP, device=Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -216,7 +217,7 @@ class Buffer:
 
     def log(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.LOG, device=self.device, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.LOG, device=Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -306,7 +307,7 @@ class Buffer:
                 shape=other.shape, device=self.device, dtype=self.dtype
             )
             return Buffer(
-                data=dispatcher.dispatch(op=UnaryOps.NEG, device=self.device, x=tmp),
+                data=dispatcher.dispatch(op=UnaryOps.NEG, device=Device.CPU, x=tmp),
                 shape=tmp.shape, device=tmp.device, dtype=self.dtype
             )
 
@@ -364,7 +365,7 @@ class Buffer:
 
     def __pow__(self, val: Scalar) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.POW, device=self.device, x=self, val=val),
+            data=dispatcher.dispatch(op=UnaryOps.POW, device=Device.CPU, x=self, val=val),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -376,7 +377,7 @@ class Buffer:
 
     def __neg__(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.NEG, device=self.device, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.NEG, device=Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
