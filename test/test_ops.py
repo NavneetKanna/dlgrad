@@ -254,8 +254,6 @@ def test_where(shapes, device):
 
 @pytest.mark.parametrize("shapes", s)
 def test_relu(shapes, device):
-    if device == 'metal':
-        pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
         dlgrad_data = Tensor(np_data, device=device)

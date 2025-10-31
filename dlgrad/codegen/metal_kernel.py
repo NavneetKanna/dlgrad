@@ -366,5 +366,44 @@ def max_2d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
     elif dim == 1:
         return reduce_along_rows(x_shape, op)
         
+@cache
+def where(x_shape: tuple, inp: bool, other: bool):
+    metal_code = f"""
+        #include <metal_math>
+        #include <metal_stdlib>
+        using namespace metal;
+        kernel void where(
+            const device float* x  [[ buffer(0) ]],
+            device float* out      [[ buffer(1) ]],
+            device float* inp      [[ buffer(2) ]],
+            device float* other    [[ buffer(3) ]],
+            uint2 tid              [[ thread_position_in_grid ]])
+        {{
+            uint row = tid.y;
+            uint col = tid.x;\n
+
+            uint idx = row*{x_shape[-1]} + col;
+            if (x[idx] > 0.0)
+    """
+
+    if inp:
+        ss = "out[idx] = inp[0];"
+    else:
+        ss = "out[idx] = inp[idx];"
+
+    metal_code += ss
+
+    metal_code += "\nelse\n"
+
+    if other:
+        ss = "out[idx] = other[0];"
+    else:
+        ss = "out[idx] = other[idx];"
+
+    metal_code += ss
+
+    metal_code += "}"
+
+    return metal_code
 
 

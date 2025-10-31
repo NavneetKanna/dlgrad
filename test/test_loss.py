@@ -54,11 +54,12 @@ def test_cross_entropy(shapes, device):
 ce_shapes = [
     [(4, 1), (1000, 1000)],
 ]
+
 @pytest.mark.parametrize("shapes", ce_shapes)
 def test_bcewithlogitsloss(shapes, device):
     for sh in shapes:
         np_logits = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        np_target = np.random.randint(sh[0], size=(sh[0], 1)).astype(np.float32)
+        np_target = np.random.randint(2, size=sh).astype(np.float32)
 
         dl_logits = Tensor(np_logits, device=device, requires_grad=True)
         dl_target = Tensor(np_target, device=device)

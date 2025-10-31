@@ -275,7 +275,7 @@ class Buffer:
         if isinstance(other, Scalar):
             other = Buffer.from_scalar(other)
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.WHERE, device=Device.CPU,
+            data=dispatcher.dispatch(op=UnaryOps.WHERE, device=self.device,
                                     x=self, inp=inp, other=other),
             shape=self.shape, device=self.device, dtype=self.dtype
         )

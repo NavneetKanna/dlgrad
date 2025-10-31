@@ -8,7 +8,7 @@ from functools import cache
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
-from dlgrad.codegen.cpu import cpu_kernel
+from dlgrad.codegen import cpu_kernel
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
