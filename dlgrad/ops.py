@@ -6,13 +6,11 @@ from dlgrad.tensor import OP
 # ------------ Unary Ops -----------
 
 class Transpose(OP):
-	def forward(self, x: Buffer, axes: tuple):  # noqa: ANN201
-		self.axes = axes
-
-		return x.transpose(axes)
+	def forward(self, x: Buffer):  # noqa: ANN201
+		return x.transpose()
 
 	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
-		return (upstream_grad.transpose(self.axes),)
+		return (upstream_grad.transpose(),)
 
 # TODO: Maube add expand/broadcast_to instead of buffer.full in backward
 class Sum(OP):

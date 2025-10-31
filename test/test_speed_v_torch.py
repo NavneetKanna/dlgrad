@@ -1,7 +1,7 @@
 import os
-os.environ["MKL_NUM_THREADS"] = "1"
-os.environ["NUMEXPR_NUM_THREADS"] = "1"
-os.environ["OMP_NUM_THREADS"] = "1"
+# os.environ["MKL_NUM_THREADS"] = "1"
+# os.environ["NUMEXPR_NUM_THREADS"] = "1"
+# os.environ["OMP_NUM_THREADS"] = "1"
 import torch
 torch.set_num_threads(1)
 import numpy as np
@@ -123,7 +123,8 @@ def test_all_operations() -> None:
         # (lambda x: x.log(), "log", 1),
         # (lambda x: x.sqrt(), "sqrt", 1),
         # (lambda x: x**2, "pow", 1),
-        # (lambda x: x.sum(), "sum", 1),
+        (lambda x: x.max(), "max", 1),
+        (lambda x: x.sum(), "sum", 1),
         (lambda x, y: x@y, "matmul", 2),
     ] 
 

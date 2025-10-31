@@ -21,16 +21,16 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
         {
     """
     if x_shape == y_shape:
-        metal_code += "uint y_idx = tid;\n"
+        metal_code += "int y_idx = tid;\n"
     else:
         var_str = []
-        metal_code += "uint temp = tid;\n"
+        metal_code += "int temp = tid;\n"
         for i in x_shape[::-1]:
             var = next(gen)
             var_str.append(var)
-            metal_code += f"uint {var} = temp % {i}; temp = temp / {i};\n"
+            metal_code += f"int {var} = temp % {i}; temp = temp / {i};\n"
         
-        t = "uint y_idx = "
+        t = "int y_idx = "
         for i, j, k in zip(y_stride, var_str[::-1], y_shape):
             if k != 1:
                 t += f"{j}*{i} + "
@@ -64,8 +64,8 @@ def matmul(x_shape: tuple, y_shape: tuple):
             uint2 gid              [[ threadgroup_position_in_grid ]],
             uint2 lid              [[ thread_position_in_threadgroup ]])
         {{
-            uint row = tid.y;
-            uint col = tid.x;
+            int row = tid.y;
+            int col = tid.x;
 
             if (row >= {x_shape[0]} || col >= {y_shape[1]}) return;   // M = rows of out, N = cols of out
 
@@ -98,8 +98,8 @@ def reduce_along_rows(x_shape: tuple, op: str) -> str:
             uint simd_lane_id      [[ thread_index_in_simdgroup ]],
             uint simd_group_id     [[ simdgroup_index_in_threadgroup ]])
         {{
-            uint row = tid.y;
-            uint col = tid.x;
+            int row = tid.y;
+            int col = tid.x;
             
             if (col >= {x_shape[-1]}) return;
     """
@@ -110,7 +110,7 @@ def reduce_along_rows(x_shape: tuple, op: str) -> str:
         t = "tmp[lid.x] = 0.0;"
 
     metal_code += f"""
-            const uint PARTIALS = {math.ceil(x_shape[-1]/32)};
+            const int PARTIALS = {math.ceil(x_shape[-1]/32)};
 
             threadgroup float tmp[PARTIALS];
             if (lid.x < PARTIALS) {{
@@ -134,7 +134,7 @@ def reduce_along_rows(x_shape: tuple, op: str) -> str:
 
     metal_code += f"""
             float v;
-            for (uint i=col; i<{x_shape[-1]}; i+={x_shape[-1]}) {{
+            for (int i=col; i<{x_shape[-1]}; i+=1024) {{
                 v = x[row*{x_shape[-1]} + i];
                 {opt}
             }}
@@ -189,8 +189,8 @@ def reduce_4d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
             device float* out      [[ buffer(1) ]],
             uint2 tid              [[ thread_position_in_grid ]])
         {{
-            uint out_row = tid.y;
-            uint out_col = tid.x;\n
+            int out_row = tid.y;
+            int out_col = tid.x;\n
     """
     if op == "max":
         t = "float val = -FLT_MAX;"
@@ -206,9 +206,9 @@ def reduce_4d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
 
     if dim == 0:
         m = f"""
-            uint x_idx = out_row*{x_shape[-1]} + out_col;
+            int x_idx = out_row*{x_shape[-1]} + out_col;
             
-            for(uint i=0; i<{x_shape[dim]}; i++) {{
+            for(int i=0; i<{x_shape[dim]}; i++) {{
                 {opt}
                 x_idx += {x_stride[dim]};
             }}
@@ -219,14 +219,14 @@ def reduce_4d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
         return metal_code
     elif dim == 1:
         metal_code += f"""
-            uint batch = out_row / {x_shape[2]};
-            uint row = out_row % {x_shape[2]};
-            uint col = out_col;
-            for (uint channel=0; channel<{x_shape[dim]}; channel++) {{\n
+            int batch = out_row / {x_shape[2]};
+            int row = out_row % {x_shape[2]};
+            int col = out_col;
+            for (int channel=0; channel<{x_shape[dim]}; channel++) {{\n
         """
 
         var_str = []
-        t = "uint x_idx = "
+        t = "int x_idx = "
         for i in x_stride[::-1]:
             var = next(gen)
             var_str.append(var)
@@ -245,8 +245,8 @@ def reduce_4d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
         return metal_code
     elif dim == 2:
         metal_code += f"""
-            uint x_idx = out_row*{x_stride[-3]} + out_col;
-            for (uint row=0; row<{x_shape[dim]}; row++) {{\n
+            int x_idx = out_row*{x_stride[-3]} + out_col;
+            for (int row=0; row<{x_shape[dim]}; row++) {{\n
                 {opt}
                 x_idx += {x_stride[dim]};
             }}
@@ -269,8 +269,8 @@ def max_3d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
             device float* out      [[ buffer(1) ]],
             uint2 tid              [[ thread_position_in_grid ]])
         {{
-            uint out_row = tid.y;
-            uint out_col = tid.x;\n
+            int out_row = tid.y;
+            int out_col = tid.x;\n
     """
 
     if op == "max":
@@ -287,14 +287,14 @@ def max_3d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
 
     if dim == 0:
         metal_code += f"""
-            uint batch = out_row / {x_shape[1]};
-            uint row = out_row % {x_shape[1]};
-            uint col = out_col;
-            for (uint channel=0; channel<{x_shape[dim]}; channel++) {{\n
+            int batch = out_row / {x_shape[1]};
+            int row = out_row % {x_shape[1]};
+            int col = out_col;
+            for (int channel=0; channel<{x_shape[dim]}; channel++) {{\n
         """
 
         var_str = []
-        t = "uint x_idx = "
+        t = "int x_idx = "
         for i in x_stride[::-1]:
             var = next(gen)
             var_str.append(var)
@@ -313,8 +313,8 @@ def max_3d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
         return metal_code
     elif dim == 1:
         metal_code += f"""
-            uint x_idx = out_row*{x_stride[-3]} + out_col;
-            for (uint row=0; row<{x_shape[dim]}; row++) {{\n
+            int x_idx = out_row*{x_stride[-3]} + out_col;
+            for (int row=0; row<{x_shape[dim]}; row++) {{\n
                 {opt}
                 x_idx += {x_stride[dim]};
             }}
@@ -336,8 +336,8 @@ def max_2d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
             device float* out      [[ buffer(1) ]],
             uint2 tid              [[ thread_position_in_grid ]])
         {{
-            uint out_row = tid.y;
-            uint out_col = tid.x;\n
+            int out_row = tid.y;
+            int out_col = tid.x;\n
     """
 
     if op == "max":
@@ -354,8 +354,8 @@ def max_2d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
 
     if dim == 0:
         metal_code += f"""
-            uint x_idx = out_row*{x_shape[-1]} + out_col;
-            for (uint row=0; row<{x_shape[dim]}; row++) {{\n
+            int x_idx = out_row*{x_shape[-1]} + out_col;
+            for (int row=0; row<{x_shape[dim]}; row++) {{\n
                 {opt}
                 x_idx += {x_stride[dim]};
             }}
@@ -379,10 +379,10 @@ def where(x_shape: tuple, inp: bool, other: bool):
             device float* other    [[ buffer(3) ]],
             uint2 tid              [[ thread_position_in_grid ]])
         {{
-            uint row = tid.y;
-            uint col = tid.x;\n
+            int row = tid.y;
+            int col = tid.x;\n
 
-            uint idx = row*{x_shape[-1]} + col;
+            int idx = row*{x_shape[-1]} + col;
             if (x[idx] > 0.0)
     """
 
@@ -406,4 +406,32 @@ def where(x_shape: tuple, inp: bool, other: bool):
 
     return metal_code
 
+@cache
+def transpose(x_shape: tuple):
+    metal_code = f"""
+        #include <metal_stdlib>
+        using namespace metal;
 
+        kernel void transpose(
+            device const float* x    [[ buffer(0) ]],
+            device float* out        [[ buffer(1) ]],
+            uint2 tid                [[ thread_position_in_grid ]],
+            uint2 tw                 [[ dispatch_threads_per_threadgroup ]],
+            uint2 lid                [[ thread_position_in_threadgroup ]])
+        {{ 
+            int row = tid.y;
+            int col = tid.x;
+
+            threadgroup float ldata[32][32];
+
+            // each thread loads its respective element into shared memory
+            int idx = row*{x_shape[-1]} + col;
+            ldata[lid.y][lid.x] = x[idx];
+
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+
+            out[col*{x_shape[0]} + row] = ldata[lid.y][lid.x];
+            //out[idx] = ldata[lid.x][lid.y];
+        }}
+    """
+    return metal_code

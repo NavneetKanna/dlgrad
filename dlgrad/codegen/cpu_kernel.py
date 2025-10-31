@@ -253,18 +253,8 @@ def mean(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int, out_numel: int
     return code, "void mean(float *x, float *out);"
 
 @cache
-def transpose_given_axes(x_shape: tuple, axes: tuple) -> list:
-    ax = list(range(len(x_shape)))
-    # replace elements at positions in axes with elements of axes reversed
-    for i, pos in enumerate(axes):
-        ax[pos] = axes[-(i+1)]
-    return ax
-
-@cache
-def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int, axes: tuple) -> tuple[str, str]:
+def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int) -> tuple[str, str]:
     gen = n_gen()
-
-    ax = transpose_given_axes(x_shape, axes)
 
     code = """
     void transpose(float *x, float *out) {
@@ -281,8 +271,8 @@ def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int,
         """
 
     ts = "out_idx = "
-    for i, v in zip(out_stride, ax):
-        ts += f"{i}*{var_str[v]} + "
+    for i, v in zip(out_stride, var_str[::-1]):
+        ts += f"{i}*{v} + "
     ts = ts[:-3]
     ts += ";"
 

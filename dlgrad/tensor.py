@@ -358,7 +358,7 @@ class Tensor:
 		return ops.MatMul.execute(x, y)
 
 	@staticmethod
-	def transpose(x: Tensor, *axes) -> Tensor:
+	def transpose(x: Tensor) -> Tensor:
 		"""
 		Transpose `x` tensor. Returns a new tensor.
 
@@ -369,9 +369,7 @@ class Tensor:
 		Returns:
 			The transposed tensor
 		"""
-		if isinstance(axes[0], tuple):
-			axes = axes[0]
-		return ops.Transpose.execute(x, axes=axes)
+		return ops.Transpose.execute(x)
 
 	def sum(self, dim: int = -1, keepdim: bool = False) -> Tensor:
 		"""
@@ -650,7 +648,7 @@ class Tensor:
 
 	@property
 	def T(self) -> Tensor:  # noqa: N802
-		return Tensor.transpose(self, tuple([i for i in range(self.ndim)][::-1]))
+		return Tensor.transpose(self)
 
 	def __gt__(self, other: Scalar) -> Tensor:
 		return Tensor(data=self.data>other)

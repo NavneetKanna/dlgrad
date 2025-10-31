@@ -271,10 +271,10 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.TRANSPOSE, Device.CPU)
-    def transpose(x: Buffer, out_shape: tuple, out_stride: tuple, axes: tuple) -> CDataPtr:
+    def transpose(x: Buffer, out_stride: tuple) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.transpose(x.shape, x.stride, out_stride, x.numel, axes)
+        c_code, cdef = cpu_kernel.transpose(x.shape, x.stride, out_stride, x.numel)
 
         key   = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"transpose_{key}.so"

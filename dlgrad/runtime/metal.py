@@ -234,3 +234,30 @@ class MetalGPU:
         MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
 
         return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.TRANSPOSE, Device.METAL)
+    def transpose(x: Buffer, out_stride: tuple):
+        out_ptr = CPU.malloc(num=x.numel)
+
+        x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+        out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+
+        commandBuffer = commandQueue.commandBuffer()
+        computeEncoder = commandBuffer.computeCommandEncoder()
+        
+        src = metal_kernel.transpose(x.shape)
+        # print(src)
+        pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "transpose", w=x.shape[1], h=x.shape[0])
+        # print("threadsPerGrid", threadsPerGrid)
+        # print("threadsPerThreadgroup", threadsPerThreadgroup)
+        # exit()
+        
+        computeEncoder.setComputePipelineState_(pso)
+        computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
+        computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
+        # computeEncoder.setThreadgroupMemoryLength_atIndex_(threadsPerThreadgroup.width*threadsPerThreadgroup.height*4, 0)
+
+        MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
+
+        return out_ptr

@@ -287,51 +287,20 @@ def test_matmul_backward(shapes, device):
     run(shapes, device, lambda x, y: x@y)
     
 s = [
-    [(4, 3, 2, 1)],
-    [(4, 3, 2)]
+    [(4, 3)],
+    [(100, 200)]
 ]
 @pytest.mark.parametrize("shapes", s)
 def test_transpose_backward(shapes, device):
-    if device == 'metal':
-        pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
         dlgrad_data = Tensor(np_data, device=device, requires_grad=True)
+        if device == "metal":
+            device = "mps"
         torch_data = torch.tensor(np_data, device=device, requires_grad=True)
 
-        dl_out = Tensor.transpose(dlgrad_data, (0, 1))
-        to_out = torch.transpose(torch_data, 0, 1)
+        dl_out = dlgrad_data.T
+        to_out = torch_data.T
         dl_out.sum().backward()
         to_out.sum().backward()
-        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
-
-        if len(sh) == 4:
-            dl_out = Tensor.transpose(dlgrad_data, (0, 3))
-            to_out = torch.transpose(torch_data, 0, 3)
-            dl_out.sum().backward()
-            to_out.sum().backward()
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
-
-            dl_out = Tensor.transpose(dlgrad_data, (1, 2))
-            to_out = torch.transpose(torch_data, 1, 2)
-            dl_out.sum().backward()
-            to_out.sum().backward()
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
-
-            dl_out = Tensor.transpose(dlgrad_data, (2, 3))
-            to_out = torch.transpose(torch_data, 2, 3)
-            dl_out.sum().backward()
-            to_out.sum().backward()
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
-        elif len(sh) == 3:
-            dl_out = Tensor.transpose(dlgrad_data, (1, 2))
-            to_out = torch.transpose(torch_data, 1, 2)
-            dl_out.sum().backward()
-            to_out.sum().backward()
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
-
-            dl_out = Tensor.transpose(dlgrad_data, (0, 2))
-            to_out = torch.transpose(torch_data, 0, 2)
-            dl_out.sum().backward()
-            to_out.sum().backward()
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
+        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.cpu().detach().numpy(), atol=1e-6, rtol=1e-3)

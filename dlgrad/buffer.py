@@ -182,19 +182,18 @@ class Buffer:
                 lst[idx1], lst[idx2] = lst[idx2], lst[idx1]
             return tuple(lst)
 
-    def transpose(self, axes: tuple) -> Buffer:
-        # assert self.ndim == 2, "Only 2D Tensors can be transposed"
+    def transpose(self) -> Buffer:
+        assert self.ndim == 2, "Only 2D Tensors can be transposed"
 
+        out_shape = (self.shape[1], self.shape[0])
         return Buffer(
             data=dispatcher.dispatch(
                 op=UnaryOps.TRANSPOSE,
-                device=Device.CPU,
+                device=self.device,
                 x=self,
-                out_shape=Buffer.swap_indices(self.shape, axes),
-                out_stride=calculate_stride(Buffer.swap_indices(self.shape, axes)),
-                axes=axes
+                out_stride=calculate_stride(out_shape),
             ),
-            shape=Buffer.swap_indices(self.shape, axes), device=self.device, dtype=self.dtype
+            shape=out_shape, device=self.device, dtype=self.dtype
         )
 
     def exp(self) -> Buffer:
@@ -392,7 +391,7 @@ class Buffer:
 
     @property
     def T(self) -> Buffer:  # noqa: N802
-        return self.transpose(tuple([i for i in range(self.ndim)][::-1]))
+        return self.transpose()
 
     @property
     def numel(self) -> int:

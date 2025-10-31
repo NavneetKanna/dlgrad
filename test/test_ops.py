@@ -151,7 +151,7 @@ def test_pow(shapes, device):
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
     
 # TODO: Sum 1d ?
-@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(4, 3)], [(1000, 1000)]])
+@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(4, 3)], [(1000, 1000)], [(4096, 4096)]])
 def test_sum(shapes, device):
     # if device == 'metal':
         # pytest.skip()
@@ -195,7 +195,7 @@ def test_mean(shapes, device):
 
             np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes",[[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)], [(1000, 1000)]])
+@pytest.mark.parametrize("shapes",[[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)], [(1000, 1000)], [(4096, 4096)]])
 def test_max(shapes, device):
     # if device == 'metal':
         # pytest.skip()
@@ -413,40 +413,18 @@ def test_logsoftmax(shapes, device):
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
 
 s = [
-    [(4, 3, 2, 1)],
-    [(4, 3, 2)]
+    [(4, 3)],
+    [(100, 200)]
 ]
 @pytest.mark.parametrize("shapes", s)
 def test_transpose(shapes, device):
-    if device == 'metal':
-        pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
         dlgrad_data = Tensor(np_data, device=device)
+        if device == "metal":
+            device = "mps"
         torch_data = torch.tensor(np_data, device=device)
 
-        dl_out = Tensor.transpose(dlgrad_data, (0, 1))
-        to_out = torch.transpose(torch_data, 0, 1)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-        if len(sh) == 4:
-            dl_out = Tensor.transpose(dlgrad_data, (0, 3))
-            to_out = torch.transpose(torch_data, 0, 3)
-            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-            dl_out = Tensor.transpose(dlgrad_data, (1, 2))
-            to_out = torch.transpose(torch_data, 1, 2)
-            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-            dl_out = Tensor.transpose(dlgrad_data, (2, 3))
-            to_out = torch.transpose(torch_data, 2, 3)
-            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-        elif len(sh) == 3:
-            dl_out = Tensor.transpose(dlgrad_data, (1, 2))
-            to_out = torch.transpose(torch_data, 1, 2)
-            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
-            dl_out = Tensor.transpose(dlgrad_data, (0, 2))
-            to_out = torch.transpose(torch_data, 0, 2)
-            np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-
+        dl_out = dlgrad_data.T
+        to_out = torch_data.T
+        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
