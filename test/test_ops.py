@@ -131,8 +131,8 @@ def test_transpose_same_tensors(shapes, device):
 
 @pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(4, 3)]])
 def test_pow(shapes, device):
-    if device == 'metal':
-        pytest.skip()
+    # if device == 'metal':
+        # pytest.skip()
     
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
@@ -227,8 +227,8 @@ s = [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]]
 
 @pytest.mark.parametrize("shapes", s)
 def test_where(shapes, device):
-    if device == 'metal':
-        pytest.skip()
+    # if device == 'metal':
+        # pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
         dlgrad_data = Tensor(np_data, device=device)
@@ -333,8 +333,8 @@ def test_tanh(shapes, device):
 
 @pytest.mark.parametrize("shapes", s)
 def test_exp(shapes, device):
-    if device == 'metal':
-        pytest.skip()
+    # if device == 'metal':
+        # pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
         dlgrad_data = Tensor(np_data, device=device)
@@ -353,8 +353,8 @@ def test_exp(shapes, device):
 
 @pytest.mark.parametrize("shapes", s)
 def test_log(shapes, device):
-    if device == 'metal':
-        pytest.skip()
+    # if device == 'metal':
+        # pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
         dlgrad_data = Tensor(np_data, device=device)
@@ -373,8 +373,8 @@ def test_log(shapes, device):
 
 @pytest.mark.parametrize("shapes", s)
 def test_sqrt(shapes, device):
-    if device == 'metal':
-        pytest.skip()
+    # if device == 'metal':
+        # pytest.skip()
     for sh in shapes:
         np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
         dlgrad_data = Tensor(np_data, device=device)

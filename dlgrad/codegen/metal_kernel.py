@@ -3,6 +3,7 @@ from collections.abc import Generator
 from typing import Any
 from functools import cache
 import math
+from dlgrad.dtype import Scalar
 
 def n_gen() -> Generator[str, Any, None]:
     a = ["batch", "channel", "row", "col"][::-1]
@@ -435,3 +436,104 @@ def transpose(x_shape: tuple):
         }}
     """
     return metal_code
+
+@cache
+def utils(x_shape: tuple, func: str, val: Scalar = None):
+    match func:
+        case "neg":
+            metal_code = f"""
+                #include <metal_stdlib>
+                using namespace metal;
+
+                kernel void neg(
+                    device const float* x    [[ buffer(0) ]],
+                    device float* out        [[ buffer(1) ]],
+                    uint2 tid                [[ thread_position_in_grid ]])
+                {{ 
+                    int row = tid.y;
+                    int col = tid.x;
+
+                    int idx = row*{x_shape[-1]} + col;
+                    out[idx] = -x[idx];
+                }}
+            """
+            return metal_code
+        case "exp":
+            metal_code = f"""
+                #include <metal_stdlib>
+                #include <metal_math>
+                using namespace metal;
+
+                kernel void exp(
+                    device const float* x    [[ buffer(0) ]],
+                    device float* out        [[ buffer(1) ]],
+                    uint2 tid                [[ thread_position_in_grid ]])
+                {{ 
+                    int row = tid.y;
+                    int col = tid.x;
+
+                    int idx = row*{x_shape[-1]} + col;
+                    out[idx] = exp(x[idx]);
+                }}
+            """
+            return metal_code
+        case "log":
+            metal_code = f"""
+                #include <metal_stdlib>
+                #include <metal_math>
+                using namespace metal;
+
+                kernel void log(
+                    device const float* x    [[ buffer(0) ]],
+                    device float* out        [[ buffer(1) ]],
+                    uint2 tid                [[ thread_position_in_grid ]])
+                {{ 
+                    int row = tid.y;
+                    int col = tid.x;
+
+                    int idx = row*{x_shape[-1]} + col;
+                    out[idx] = log(x[idx]);
+                }}
+            """
+            return metal_code
+        case "pow":
+            metal_code = f"""
+                #include <metal_stdlib>
+                #include <metal_math>
+                using namespace metal;
+
+                kernel void pow(
+                    device const float* x    [[ buffer(0) ]],
+                    device float* out        [[ buffer(1) ]],
+                    uint2 tid                [[ thread_position_in_grid ]])
+                {{ 
+                    int row = tid.y;
+                    int col = tid.x;
+
+                    int idx = row*{x_shape[-1]} + col;
+                    out[idx] = pow(x[idx], {val});
+                }}
+            """
+            return metal_code
+        case "sqrt":
+            metal_code = f"""
+                #include <metal_stdlib>
+                #include <metal_math>
+                using namespace metal;
+
+                kernel void sqrt(
+                    device const float* x    [[ buffer(0) ]],
+                    device float* out        [[ buffer(1) ]],
+                    uint2 tid                [[ thread_position_in_grid ]])
+                {{ 
+                    int row = tid.y;
+                    int col = tid.x;
+
+                    int idx = row*{x_shape[-1]} + col;
+                    out[idx] = sqrt(x[idx]);
+                }}
+            """
+            return metal_code
+            
+
+

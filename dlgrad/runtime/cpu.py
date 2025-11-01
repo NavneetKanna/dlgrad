@@ -374,7 +374,7 @@ class CPU:
     def pow(x: Buffer, val: Scalar) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils(x.numel, "pow")
+        c_code, cdef = cpu_kernel.utils(x.numel, "pow", int(val))
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"pow_{key}.so"
@@ -385,7 +385,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_pow(x.ptr, out_ptr, int(val))
+        lib.c_pow(x.ptr, out_ptr)
 
         return out_ptr
 

@@ -2,6 +2,8 @@ from collections.abc import Generator
 from functools import cache
 from typing import Any
 
+from dlgrad.dtype import Scalar
+
 
 # NOTE: Assumes max 4D tensor
 def n_gen() -> Generator[str, Any, None]:
@@ -302,7 +304,7 @@ def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int)
     return code, "void transpose(float *x, float *out);"
 
 @cache
-def utils(x_numel: int, func: str) -> tuple[str, str]:
+def utils(x_numel: int, func: str, val: Scalar = None) -> tuple[str, str]:
     match func:
         case "neg":
             code = f"""
@@ -347,15 +349,15 @@ def utils(x_numel: int, func: str) -> tuple[str, str]:
             code = f"""
             #include <math.h>
 
-            void c_pow(float *x, float *out, int val)
+            void c_pow(float *x, float *out)
             {{
                 for (int i=0; i<{x_numel}; i++) {{
-                    out[i] = powf(x[i], val);
+                    out[i] = powf(x[i], {val});
                 }}
             }}
             """
 
-            return code, "void c_pow(float *x, float *out, int val);"
+            return code, "void c_pow(float *x, float *out);"
         case "sqrt":
             code = f"""
             #include <math.h>

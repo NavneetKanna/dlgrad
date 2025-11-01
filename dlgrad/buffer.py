@@ -198,13 +198,13 @@ class Buffer:
 
     def exp(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.EXP, device=Device.CPU, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.EXP, device=self.device if self.ndim !=0 else Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
     def sqrt(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.SQRT, device=self.device, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.SQRT, device=self.device if self.ndim !=0 else Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -216,7 +216,7 @@ class Buffer:
 
     def log(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.LOG, device=Device.CPU, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.LOG, device=self.device if self.ndim !=0 else Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -364,7 +364,7 @@ class Buffer:
 
     def __pow__(self, val: Scalar) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.POW, device=Device.CPU, x=self, val=val),
+            data=dispatcher.dispatch(op=UnaryOps.POW, device=self.device if self.ndim !=0 else Device.CPU, x=self, val=val),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -376,7 +376,7 @@ class Buffer:
 
     def __neg__(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.NEG, device=Device.CPU, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.NEG, device=self.device if self.ndim !=0 else Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
