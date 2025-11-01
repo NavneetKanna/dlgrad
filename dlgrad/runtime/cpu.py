@@ -1,6 +1,7 @@
 import hashlib
 import os
 import pathlib
+import shutil
 import struct
 import subprocess
 from functools import cache
@@ -15,7 +16,7 @@ from dlgrad.dtype import CDataPtr, Scalar
 from dlgrad.helpers import CACHE_DIR, BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_max_out_shape, prod_
 
 CFLAGS = ["-shared", "-fPIC", "-O2", "-march=native", "-ffast-math"]
-COMPILER = "clang"
+COMPILER = "clang" if shutil.which('clang') else "gcc"
 
 # TODO: Cache malloc/out_ptr, reuse it, this should speed up
 
