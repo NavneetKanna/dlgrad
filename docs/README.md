@@ -23,7 +23,7 @@ or from one of the data creation methods
 ```python
 Tensor.uniform((2, 3), low=-1, high=1) # Creates a tensor filled with random numbers from a uniform distribution on the interval [low, high)
 Tensor.rand((2, 3)) # Creates a tensor filled with random numbers from a uniform distribution on the interval [0, 1)
-Tensor.full((2, 3), fill_value=4) # Creates a tensor filled with 4
+Tensor.full((2, 3), fill_value=4) # Creates a tensor from a uniform distribution filled with 4
 Tensor.ones_like((2, 3)) # Creates a tensor filled with 1
 Tensor.zeros_like((2, 3)) # Creates a tensor filled with 0
 ```
@@ -43,23 +43,23 @@ and the supported devices are
 
 With the tensors created, any of the following ops can be performed on them, the table also shows which runtime supports which ops and which dimensions
 
-| Ops | CPU | Metal |
-| :---: | :---: | :---: |
-| add | &check | &check; 2D, 3D |
-| sub | &check | &check; 2D, 3D | 
-| mul | &check | &check; 2D, 3D |
-| div | &check | &check; 2D, 3D | 
-| matmul | &check; 2D | &check; 2D | 
-| transpose | &check | &cross; |
-| sum | &check | &check; 2D |
-| relu | &check | &cross; |
-| linear | &check; 2D | - |
-| max | &check | &cross; |
-| exp | &check | &check; 2D, 3D |
-| log | &check | &check; 2D, 3D |
-| sqrt | &check | &check; 2D, 3D |
-| log_softmax | &check |  - |
-| cross_entropy_loss | &check; | - | 
+| Ops | CPU | Metal | Dim |
+| :---: | :---: | :---: | :---: |
+| add | &check; | &check; | 1D-4D |
+| sub | &check; | &check; | 1D-4D |
+| mul | &check; | &check; | 1D-4D |
+| div | &check; | &check; | 1D-4D |
+| matmul | &check; | &check; | 2D |
+| transpose | &check; | &check; | 2D |
+| sum | &check; | &check; | 1D-4D |
+| relu | &check; | &check; | 1D-4D |
+| linear | &check; | - |
+| max | &check; | &check; | 1D-4D |
+| exp | &check; | &check; | 1D-4D |
+| log | &check; | &check; | 1D-4D |
+| sqrt | &check; | &check; | 1D-4D |
+| log_softmax | &check; |  - |
+| cross_entropy_loss | &check; | - |
 
 
 For ops like transpose or matmul, you can use the symbols like ```T```, ```@```. Other than these, dlgrad also supports the following operations
@@ -83,8 +83,8 @@ class Model:
             Tensor.relu,
             nn.Linear(HS, ncls, bias=True)
         ]
-    
-    def __call__(self, x: Tensor) -> Tensor: 
+
+    def __call__(self, x: Tensor) -> Tensor:
         return x.sequential(self.layers)
 ```
 

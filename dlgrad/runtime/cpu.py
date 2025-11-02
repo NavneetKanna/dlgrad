@@ -18,8 +18,6 @@ from dlgrad.helpers import CACHE_DIR, BinaryOps, BufferOps, CustomOps, UnaryOps,
 CFLAGS = ["-shared", "-fPIC", "-O2", "-march=native", "-ffast-math"]
 COMPILER = "clang" if shutil.which('clang') else "gcc"
 
-# TODO: Cache malloc/out_ptr, reuse it, this should speed up
-
 class CPU:
     """
     Main CPU runtime class which handles the logic of calling the compiled C source files.

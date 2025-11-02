@@ -26,8 +26,8 @@ class OP:
 
 	def __init__(self, *data: Tensor) -> None:
 		self.parents: tuple = data
-		self.req_grad = [i.requires_grad for i in data]
-		self.requires_grad = True if any(self.req_grad) else False
+		self.req_grad: list[bool] = [i.requires_grad for i in data]
+		self.requires_grad: bool = True if any(self.req_grad) else False
 
 	def forward(self, *args, **kwargs) -> None:
 		raise NotImplementedError(f"forward not implemented for {type(self)}")  # noqa: ANN201
@@ -198,7 +198,7 @@ class Tensor:
 	def full(shape: tuple, fill_value: Scalar, device: Device = Device.CPU,
 			 dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
 		"""
-		Creates a tensor with the specified shape filled with `fill_value`.
+		Creates a tensor from a uniform distribution with the specified shape filled with `fill_value`.
 
 		Parameters
 		----------
