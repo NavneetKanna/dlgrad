@@ -18,7 +18,7 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
             const device float* x  [[ buffer(0) ]],
             const device float* y  [[ buffer(1) ]],
             device float* out      [[ buffer(2) ]],
-            uint tid                [[ thread_position_in_grid ]]) 
+            uint tid                [[ thread_position_in_grid ]])
         {
     """
     if x_shape == y_shape:
@@ -30,7 +30,7 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
             var = next(gen)
             var_str.append(var)
             metal_code += f"int {var} = temp % {i}; temp = temp / {i};\n"
-        
+
         t = "int y_idx = "
         for i, j, k in zip(y_stride, var_str[::-1], y_shape):
             if k != 1:
@@ -61,14 +61,12 @@ def matmul(x_shape: tuple, y_shape: tuple):
             const device float* x  [[ buffer(0) ]],
             const device float* y  [[ buffer(1) ]],
             device float* out      [[ buffer(2) ]],
-            uint2 tid              [[ thread_position_in_grid ]],
-            uint2 gid              [[ threadgroup_position_in_grid ]],
-            uint2 lid              [[ thread_position_in_threadgroup ]])
+            uint2 tid              [[ thread_position_in_grid ]])
         {{
             int row = tid.y;
             int col = tid.x;
 
-            if (row >= {x_shape[0]} || col >= {y_shape[1]}) return;   // M = rows of out, N = cols of out
+            if (row >= {x_shape[0]} || col >= {y_shape[1]}) return;
 
             float tmp = 0.0;
             for (int k=0; k<{x_shape[1]}; k++) {{
@@ -76,6 +74,41 @@ def matmul(x_shape: tuple, y_shape: tuple):
             }}
 
             out[row * {y_shape[1]} + col] = tmp;
+        }}
+    """
+    return metal_code
+
+@cache
+def matmul_fast(x_shape: tuple, y_shape: tuple):
+    metal_code = f"""
+        #include <metal_simdgroup_matrix>
+        using namespace metal;
+        kernel void matmul(
+            const device float* x  [[ buffer(0) ]],
+            const device float* y  [[ buffer(1) ]],
+            device float* out      [[ buffer(2) ]],
+            uint2 tid              [[ thread_position_in_grid ]],
+            uint2 gid              [[ threadgroup_position_in_grid ]],
+            uint2 lid              [[ thread_position_in_threadgroup ]],
+            uint simd_lane_id      [[ thread_index_in_simdgroup ]],
+            uint simd_group_id     [[ simdgroup_index_in_threadgroup ]])
+        {{
+
+            simdgroup_float8x8 matA, matB, matC(0.0f);
+
+            int x_idx = gid.y * {x_shape[1]} * 8;
+            const device float* x_ptr = x + x_idx;
+            int y_idx = (gid.x * 8);
+            const device float* y_ptr = y + y_idx;
+            int out_idx = (gid.x * 8) + (gid.y * {y_shape[1]} * 8);
+            device float* out_ptr = out + out_idx;
+            for (int k=0; k<{x_shape[1]}; k+=8) {{
+                simdgroup_load(matA, x_ptr + k, {x_shape[1]});
+                simdgroup_load(matB, y_ptr + (k * {y_shape[1]}), {y_shape[1]});
+                simdgroup_multiply_accumulate(matC, matA, matB, matC);
+            }}
+
+            simdgroup_store(matC, out_ptr, {y_shape[1]});
         }}
     """
     return metal_code
@@ -101,7 +134,7 @@ def reduce_along_rows(x_shape: tuple, op: str) -> str:
         {{
             int row = tid.y;
             int col = tid.x;
-            
+
             if (col >= {x_shape[-1]}) return;
     """
 
@@ -120,12 +153,12 @@ def reduce_along_rows(x_shape: tuple, op: str) -> str:
 
             threadgroup_barrier(mem_flags::mem_threadgroup);
         """
-        
+
     if op == "max":
         t = "float val = -FLT_MAX;"
     elif op == "sum":
         t = "float val = 0.0;"
-    
+
     metal_code += t
 
     if op == "max":
@@ -197,7 +230,7 @@ def reduce_4d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
         t = "float val = -FLT_MAX;"
     elif op == "sum":
         t = "float val = 0.0;"
-    
+
     metal_code += t
 
     if op == "max":
@@ -208,7 +241,7 @@ def reduce_4d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
     if dim == 0:
         m = f"""
             int x_idx = out_row*{x_shape[-1]} + out_col;
-            
+
             for(int i=0; i<{x_shape[dim]}; i++) {{
                 {opt}
                 x_idx += {x_stride[dim]};
@@ -278,7 +311,7 @@ def max_3d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
         t = "float val = -FLT_MAX;"
     elif op == "sum":
         t = "float val = 0.0;"
-    
+
     metal_code += t
 
     if op == "max":
@@ -345,7 +378,7 @@ def max_2d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
         t = "float val = -FLT_MAX;"
     elif op == "sum":
         t = "float val = 0.0;"
-    
+
     metal_code += t
 
     if op == "max":
@@ -366,7 +399,7 @@ def max_2d(x_shape: tuple, x_stride: tuple, dim: int, op: str):
         return metal_code
     elif dim == 1:
         return reduce_along_rows(x_shape, op)
-        
+
 @cache
 def where(x_shape: tuple, inp: bool, other: bool):
     metal_code = f"""
@@ -419,7 +452,7 @@ def transpose(x_shape: tuple):
             uint2 tid                [[ thread_position_in_grid ]],
             uint2 tw                 [[ dispatch_threads_per_threadgroup ]],
             uint2 lid                [[ thread_position_in_threadgroup ]])
-        {{ 
+        {{
             int row = tid.y;
             int col = tid.x;
 
@@ -449,7 +482,7 @@ def utils(x_shape: tuple, func: str, val: Scalar = None):
                     device const float* x    [[ buffer(0) ]],
                     device float* out        [[ buffer(1) ]],
                     uint2 tid                [[ thread_position_in_grid ]])
-                {{ 
+                {{
                     int row = tid.y;
                     int col = tid.x;
 
@@ -468,7 +501,7 @@ def utils(x_shape: tuple, func: str, val: Scalar = None):
                     device const float* x    [[ buffer(0) ]],
                     device float* out        [[ buffer(1) ]],
                     uint2 tid                [[ thread_position_in_grid ]])
-                {{ 
+                {{
                     int row = tid.y;
                     int col = tid.x;
 
@@ -487,7 +520,7 @@ def utils(x_shape: tuple, func: str, val: Scalar = None):
                     device const float* x    [[ buffer(0) ]],
                     device float* out        [[ buffer(1) ]],
                     uint2 tid                [[ thread_position_in_grid ]])
-                {{ 
+                {{
                     int row = tid.y;
                     int col = tid.x;
 
@@ -506,7 +539,7 @@ def utils(x_shape: tuple, func: str, val: Scalar = None):
                     device const float* x    [[ buffer(0) ]],
                     device float* out        [[ buffer(1) ]],
                     uint2 tid                [[ thread_position_in_grid ]])
-                {{ 
+                {{
                     int row = tid.y;
                     int col = tid.x;
 
@@ -525,7 +558,7 @@ def utils(x_shape: tuple, func: str, val: Scalar = None):
                     device const float* x    [[ buffer(0) ]],
                     device float* out        [[ buffer(1) ]],
                     uint2 tid                [[ thread_position_in_grid ]])
-                {{ 
+                {{
                     int row = tid.y;
                     int col = tid.x;
 
@@ -534,6 +567,3 @@ def utils(x_shape: tuple, func: str, val: Scalar = None):
                 }}
             """
             return metal_code
-            
-
-

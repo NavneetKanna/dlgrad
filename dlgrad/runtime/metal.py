@@ -55,7 +55,7 @@ class MetalGPU:
         threadsPerThreadgroup = Metal.MTLSizeMake(min(w, numel), 1, 1)
 
         return pso, threadsPerGrid, threadsPerThreadgroup
-    
+
     @staticmethod
     @cache
     def build_2d_pipeline(src: str, func_name: str, w: int, h: int):
@@ -86,20 +86,20 @@ class MetalGPU:
         x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
         y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(y.ptr, y.nbytes), y.nbytes, Metal.MTLResourceStorageModeShared, None)
         out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(out_ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
-        
+
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-        
+
         src = metal_kernel.arithmetic(x.shape, x.stride, y.shape, y.stride, op=op)
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_1d_pipeline(src, "binary_op", x.numel)
-        
+
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(y_buf, 0, 1)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 2)
 
         MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
-        
+
         return out_ptr
 
     @staticmethod
@@ -133,14 +133,23 @@ class MetalGPU:
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-        
+
+        # src = metal_kernel.matmul_fast(x.shape, y.shape)
         src = metal_kernel.matmul(x.shape, y.shape)
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "matmul", w=y.shape[1], h=x.shape[0])
-        
+        # pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "matmul", w=32 * (y.shape[1]/8), h=32*(x.shape[0]/8))
+        # threadgroupsPerGrid = Metal.MTLSizeMake(y.shape[1]/8, x.shape[0]/8, 1)
+        # threadsPerThreadgroup = Metal.MTLSizeMake(32, 1, 1)
+
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(y_buf, 0, 1)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 2)
+
+        # computeEncoder.dispatchThreadgroups_threadsPerThreadgroup_(threadgroupsPerGrid, threadsPerThreadgroup)
+        # computeEncoder.endEncoding()
+        # commandBuffer.commit()
+        # commandBuffer.waitUntilCompleted()
 
         MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
 
@@ -162,7 +171,7 @@ class MetalGPU:
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-        
+
         if x.ndim == 4:
             src = metal_kernel.reduce_4d(x.shape, x.stride, dim=dim if dim != -1 else 3, op=op)
             if dim == 3 or dim == -1:
@@ -203,12 +212,12 @@ class MetalGPU:
     @dispatcher.register(UnaryOps.MAX, Device.METAL)
     def max(x: Buffer, dim: int, backward: bool = False, out: Buffer = None):
         return MetalGPU.reduce(x, dim, "max")
-        
+
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.METAL)
     def sum(x: Buffer, dim: int):
         return MetalGPU.reduce(x, dim, "sum")
-    
+
     @staticmethod
     @dispatcher.register(UnaryOps.WHERE, Device.METAL)
     def where(x: Buffer, inp: Buffer, other: Buffer):
@@ -221,11 +230,11 @@ class MetalGPU:
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-        
+
         src = metal_kernel.where(x.shape, inp=True if inp.ndim == 0 else False, other=True if other.ndim == 0 else False)
         # print(src)
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "where", w=x.shape[-1], h=prod_(x.shape[:-1]))
-        
+
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
@@ -246,10 +255,10 @@ class MetalGPU:
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-        
+
         src = metal_kernel.transpose(x.shape)
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "transpose", w=x.shape[1], h=x.shape[0])
-        
+
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
@@ -257,7 +266,7 @@ class MetalGPU:
         MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
 
         return out_ptr
-    
+
     @staticmethod
     @dispatcher.register(UnaryOps.NEG, Device.METAL)
     def neg(x: Buffer):
@@ -268,10 +277,10 @@ class MetalGPU:
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-        
+
         src = metal_kernel.utils(x.shape, "neg")
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "neg", w=x.shape[-1], h=prod_(x.shape[:-1]))
-        
+
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
@@ -279,7 +288,7 @@ class MetalGPU:
         MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
 
         return out_ptr
-    
+
     @staticmethod
     @dispatcher.register(UnaryOps.EXP, Device.METAL)
     def exp(x: Buffer):
@@ -290,10 +299,10 @@ class MetalGPU:
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-        
+
         src = metal_kernel.utils(x.shape, "exp")
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "exp", w=x.shape[-1], h=prod_(x.shape[:-1]))
-        
+
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
@@ -301,7 +310,7 @@ class MetalGPU:
         MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
 
         return out_ptr
-    
+
     @staticmethod
     @dispatcher.register(UnaryOps.LOG, Device.METAL)
     def log(x: Buffer):
@@ -312,10 +321,10 @@ class MetalGPU:
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-        
+
         src = metal_kernel.utils(x.shape, "log")
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "log", w=x.shape[-1], h=prod_(x.shape[:-1]))
-        
+
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
@@ -323,7 +332,7 @@ class MetalGPU:
         MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
 
         return out_ptr
-    
+
     @staticmethod
     @dispatcher.register(UnaryOps.POW, Device.METAL)
     def pow(x: Buffer, val: Scalar):
@@ -334,10 +343,10 @@ class MetalGPU:
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-        
+
         src = metal_kernel.utils(x.shape, "pow", val)
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "pow", w=x.shape[-1], h=prod_(x.shape[:-1]))
-        
+
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
@@ -345,7 +354,7 @@ class MetalGPU:
         MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
 
         return out_ptr
-    
+
     @staticmethod
     @dispatcher.register(UnaryOps.SQRT, Device.METAL)
     def sqrt(x: Buffer):
@@ -356,10 +365,10 @@ class MetalGPU:
 
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
-        
+
         src = metal_kernel.utils(x.shape, "sqrt")
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "sqrt", w=x.shape[-1], h=prod_(x.shape[:-1]))
-        
+
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
@@ -367,4 +376,3 @@ class MetalGPU:
         MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
 
         return out_ptr
-    

@@ -1,6 +1,4 @@
-test.py
-test2.py
-test3.py
+test*.py
 Metal.hpp
 test.cpp
 metal-cpp=example/
