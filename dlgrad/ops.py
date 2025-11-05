@@ -172,7 +172,6 @@ class Add(OP):
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
 		grad_x = self.reduce_grad_for_broadcasting(upstream_grad, self.x.shape) if self.req_grad[0] else None
 		grad_y = self.reduce_grad_for_broadcasting(upstream_grad, self.y.shape) if self.req_grad[1] else None
-
 		return grad_x, grad_y
 
 
@@ -186,7 +185,6 @@ class Sub(OP):
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
 		grad_x = self.reduce_grad_for_broadcasting(upstream_grad, self.x.shape) if self.req_grad[0] else None
 		grad_y = self.reduce_grad_for_broadcasting(-upstream_grad, self.y.shape) if self.req_grad[1] else None
-
 		return grad_x, grad_y
 
 
@@ -200,7 +198,6 @@ class Mul(OP):
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
 		grad_x = self.reduce_grad_for_broadcasting(upstream_grad*self.y, self.x.shape) if self.req_grad[0] else None
 		grad_y = self.reduce_grad_for_broadcasting(upstream_grad*self.x, self.y.shape) if self.req_grad[1] else None
-
 		return grad_x, grad_y
 
 
@@ -214,7 +211,6 @@ class Div(OP):
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
 		grad_x = self.reduce_grad_for_broadcasting(upstream_grad/self.y, self.x.shape) if self.req_grad[0] else None
 		grad_y = self.reduce_grad_for_broadcasting((-upstream_grad*self.x)/self.y**2, self.y.shape) if self.req_grad[1] else None
-
 		return grad_x, grad_y
 
 
@@ -222,13 +218,11 @@ class MatMul(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
 		self.y = y
-
 		return x@y
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		t1 = self.x.T
 		t2 = self.y.T
-
 		return (upstream_grad@t2, t1@upstream_grad)
 
 
