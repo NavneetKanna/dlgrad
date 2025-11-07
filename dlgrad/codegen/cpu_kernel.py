@@ -462,24 +462,34 @@ def ce_backward(x_shape: tuple, x_stride: tuple) -> tuple[str, str]:
 
 @cache
 def argmax(x_shape: tuple, axis: int) -> tuple[str, str]:
-    code = f"""
-        void argmax2d(float *x, float *out)
-        {{
-            int rows = {x_shape[0]};
-            int cols = {x_shape[1]};
-            if ({axis} == 1) {{
-                for (int i = 0; i < rows; i++) {{
-                    float max = x[i * cols + 0];
-                    int idx = 0;
-                    for (int j = 1; j < cols; j++) {{
-                        if (x[i * cols + j] > max) {{
-                            max = x[i * cols + j];
-                            idx = j;
+    if axis == 1:
+        code = f"""
+            void argmax2d(float *x, float *out)
+            {{
+                int rows = {x_shape[0]};
+                int cols = {x_shape[1]};
+                if ({axis} == 1) {{
+                    for (int i = 0; i < rows; i++) {{
+                        float max = x[i * cols + 0];
+                        int idx = 0;
+                        for (int j = 1; j < cols; j++) {{
+                            if (x[i * cols + j] > max) {{
+                                max = x[i * cols + j];
+                                idx = j;
+                            }}
                         }}
+                        out[i] = idx;
                     }}
-                    out[i] = idx;
                 }}
-            }} else if ({axis} == 0) {{
+            }}
+        """
+        return code, "void argmax2d(float *x, float *out);"
+    elif axis == 0:
+        f"""
+            void argmax2d(float *x, float *out)
+            {{
+                int rows = {x_shape[0]};
+                int cols = {x_shape[1]};
                 for (int j = 0; j < cols; j++) {{
                     float max = x[0 * cols + j];
                     int idx = 0;
@@ -491,7 +501,15 @@ def argmax(x_shape: tuple, axis: int) -> tuple[str, str]:
                     }}
                     out[j] = idx;
                 }}
-            }} else {{
+            }}
+        """
+        return code, "void argmax2d(float *x, float *out);"
+    else:
+        f"""
+            void argmax2d(float *x, float *out)
+            {{
+                int rows = {x_shape[0]};
+                int cols = {x_shape[1]};
                 float max = -999;
                 int idx = 0;
                 for (int i=0; i<rows*cols; i++) {{
@@ -502,10 +520,8 @@ def argmax(x_shape: tuple, axis: int) -> tuple[str, str]:
                 }}
                 out[0] = idx;
             }}
-        }}
-    """
-
-    return code, "void argmax2d(float *x, float *out);"
+        """
+        return code, "void argmax2d(float *x, float *out);"
 
 @cache
 def relu(x_numel: int) -> tuple[str, str]:
@@ -900,37 +916,6 @@ stride = (6, 2, 1)
  [[0.15955642 0.7351426 ]
   [0.49416125 0.13069092]
   [0.07697563 0.8316998 ]]]
-
-#include <stdlib.h>
-
-void maxx(float *x, float *out) {
-    int shape_dim = 3;
-    int stride_dim = 2;
-    int numel = 24;
-
-    int out_start = 0;
-    for (int j = 0; j < numel; j += stride_dim) {
-        if ((j % (stride_dim * shape_dim)) == 0) {
-            if (j != 0) {
-                out_start += stride_dim;
-            } else {
-                out_start = 0;
-            }
-            // copy
-            for (int i = 0; i < stride_dim; i++) {
-                out[out_start + i] = x[j + i];
-            }
-        } else {
-            // max
-            for (int i = 0; i < stride_dim; i++) {
-                float val = x[j + i];
-                if (val > out[out_start + i]) {
-                    out[out_start + i] = val;
-                }
-            }
-        }
-    }
-}
 
 at loop index 0,
 out_start=0, j=0

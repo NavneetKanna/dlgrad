@@ -133,7 +133,7 @@ def test_transpose_same_tensors(shapes, device):
 def test_pow(shapes, device):
     # if device == 'metal':
         # pytest.skip()
-    
+
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
         dlgrad_data = Tensor(np_data, device=device)
@@ -149,7 +149,7 @@ def test_pow(shapes, device):
             to_out = to_out.cpu()
 
         np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-    
+
 # TODO: Sum 1d ?
 @pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(4, 3)], [(1000, 1000)], [(4096, 4096)]])
 def test_sum(shapes, device):
@@ -171,7 +171,7 @@ def test_sum(shapes, device):
                 to_out = to_out.cpu()
 
             np.testing.assert_allclose(dl_out.numpy(), to_out.numpy(), atol=1e-6, rtol=1e-3)
-        
+
         dl_out = dlgrad_data.sum()
         to_out = torch_data.sum()
         if device == "mps":

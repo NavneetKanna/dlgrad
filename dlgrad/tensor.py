@@ -552,7 +552,7 @@ class Tensor:
 
         Parameters
         ----------
-        self : Tensor
+        self: Tensor
         min: int | None
         max: int | None
 
@@ -602,8 +602,8 @@ class Tensor:
             target = Tensor(target)
         return ops.BCEWithLogitsLoss.execute(self, target)
 
-    def argmax(self, axis: int = -1) -> Tensor:
-        return Tensor(data=self.data.argmax(axis))
+    def argmax(self, dim: int = -1) -> Tensor:
+        return Tensor(data=self.data.argmax(dim))
 
     def detach(self) -> Tensor:
         return Tensor(data=self.data, requires_grad=False, device=self.device)

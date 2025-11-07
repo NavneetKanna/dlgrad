@@ -572,16 +572,16 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.ARGMAX, Device.CPU)
-    def argmax(x: Buffer, axis: int) -> CDataPtr:
-        if axis==0:
+    def argmax(x: Buffer, dim: int) -> CDataPtr:
+        if dim==0:
             n = x.shape[1]
-        elif axis==1:
+        elif dim==1:
             n = x.shape[0]
         else:
             n = 1
         out_ptr = CPU.malloc(num=n)
 
-        c_code, cdef = cpu_kernel.argmax(x.shape, axis)
+        c_code, cdef = cpu_kernel.argmax(x.shape, dim)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"argmax_{key}.so"

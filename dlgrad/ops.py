@@ -6,11 +6,11 @@ from dlgrad.tensor import OP
 # ------------ Unary Ops -----------
 
 class Transpose(OP):
-	def forward(self, x: Buffer):  # noqa: ANN201
-		return x.transpose()
+    def forward(self, x: Buffer) -> Buffer:
+        return x.transpose()
 
-	def backward(self, upstream_grad: Buffer):  # noqa: ANN201
-		return (upstream_grad.transpose(),)
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        return (upstream_grad.transpose(),)
 
 # TODO: Maube add expand/broadcast_to instead of buffer.full in backward
 class Sum(OP):
@@ -56,7 +56,6 @@ class Max(OP):
 		self.x = x
 		self.keepdim = keepdim
 		self.out = x.max(dim=dim, keepdim=keepdim)
-
 		return self.out
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
@@ -64,7 +63,6 @@ class Max(OP):
 		max_with_1s = self.x.max(dim=self.dim, backward=True, out=self.out)
 		if not self.keepdim:
 			upstream_grad.unsqueeze(self.dim)
-
 		return (max_with_1s*upstream_grad,)
 
 class Exp(OP):

@@ -53,13 +53,17 @@ With the tensors created, any of the following ops can be performed on them, the
 | transpose | &check; | &check; | 2D |
 | sum | &check; | &check; | 1D-4D |
 | relu | &check; | &check; | 1D-4D |
+| leaky_relu | &check; | &check; | 1D-4D |
+| tanh | &check; | &check; | 1D-4D |
 | linear | &check; | - |
 | max | &check; | &check; | 1D-4D |
 | exp | &check; | &check; | 1D-4D |
 | log | &check; | &check; | 1D-4D |
 | sqrt | &check; | &check; | 1D-4D |
+| clamp | &check; | &cross; | 1D-4D |
 | log_softmax | &check; |  - |
 | cross_entropy_loss | &check; | - |
+| argmax | &check; | &cross; | 2D |
 
 
 For ops like transpose or matmul, you can use the symbols like ```T```, ```@```. Other than these, dlgrad also supports the following operations
