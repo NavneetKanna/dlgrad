@@ -670,7 +670,6 @@ class Tensor:
     def __add__(self, other: Tensor | Scalar) -> Tensor:
         return Tensor.add(self, other)
 
-    # TODO: Support rmul, lmul
     def __mul__(self: Tensor | Scalar, other: Tensor | Scalar) -> Tensor:
         return Tensor.mul(self, other)
 
@@ -718,13 +717,3 @@ class Tensor:
     @property
     def device(self) -> int:
         return self.data.device
-
-"""
-Roadmap:
-
-- memory pool instead of malloc if malloc is slow to call repeatedly
-- python slots
-- kernel fusion, ex, relu after matmul
-- functools cache in helpers
-- profile memory, how many allocations and free, if any freed obj is being used
-"""

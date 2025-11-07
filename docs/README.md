@@ -68,16 +68,16 @@ With the tensors created, any of the following ops can be performed on them, the
 
 For ops like transpose or matmul, you can use the symbols like ```T```, ```@```. Other than these, dlgrad also supports the following operations
 
-
-| Ops | Left operand | Right operand | CPU | Metal
-| :---: | :---: | :---: |:---: | :---: |
-| > (greater) | Tensor | Scalar | &check| &cross;
-| ** (power) | Tensor | Scalar | &check | &check; 2D, 3D |
-| - (negate) | Tensor | - | &check | &check; 2D, 3D |
+| Ops | Left operand | Right operand | CPU | Metal | Dim |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| > (greater) | Tensor | Scalar | &check | &cross; | 1d-4D |
+| ** (power) | Tensor | Scalar | &check | &check; | 1D-4D |
+| - (negate) | Tensor | - | &check | &check; | 1D-4D |
+| == (equate) | Tensor | Tensor | &check; | &cross; | 1D-4D |
 
 ### Models
 
-You can create neural networks models like so
+You can create neural network models like so
 
 ```python
 class Model:
@@ -92,7 +92,7 @@ class Model:
         return x.sequential(self.layers)
 ```
 
-then we create an instance of the class and we can begin training.
+then create an instance of the class and we can begin training.
 
 ```python
 model = Model()
@@ -105,12 +105,7 @@ dlgrad supports the following loss functions
 | Loss Functions |
 | :---: |
 | Cross-Entropy Loss |
-
-You can use it like so
-
-```python
-model_output.cross_entropy_loss(target=x_train_labels[s:h])
-```
+| BCEWithLogitsLoss |
 
 The following optimizers are supported
 
@@ -118,12 +113,6 @@ The following optimizers are supported
 | :---: |
 | SGD |
 | Adam |
-
-and we can use them like this
-
-```python
-opt = nn.optim.Adam(params=nn.utils.get_parameters(model), lr=1e-3)
-```
 
 We can use ```nn.utils.get_parameters()``` to get all the trainable parameters of the defined model automatically.
 
@@ -158,7 +147,6 @@ Every tensor has got the following properties
 - ndim
 - dtype
 - device
-
 
 ### Dataloaders
 
