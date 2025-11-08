@@ -4,7 +4,7 @@ dlgrad is a lightweight deep learning engine built from scratch. It’s designed
 
 ### Tensors
 
-Tensors are multidimensional arrays based on which all operations are performed on. It is similar to pytorch tensors.
+Tensors are multidimensional arrays based on which all operations are performed. It is similar to PyTorch tensors.
 
 The tensor class can be imported like so
 
@@ -66,11 +66,11 @@ With the tensors created, any of the following ops can be performed on them, the
 | argmax | &check; | &cross; | 2D |
 
 
-For ops like transpose or matmul, you can use the symbols like ```T```, ```@```. Other than these, dlgrad also supports the following operations
+For ops like transpose or matmul, you can use shorthand symbols such as ```T```, ```@```. Other than these, dlgrad also supports the following operations
 
 | Ops | Left operand | Right operand | CPU | Metal | Dim |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| > (greater) | Tensor | Scalar | &check; | &cross; | 1d-4D |
+| > (greater) | Tensor | Scalar | &check; | &cross; | 1D-4D |
 | ** (power) | Tensor | Scalar | &check; | &check; | 1D-4D |
 | - (negate) | Tensor | - | &check; | &check; | 1D-4D |
 | == (equate) | Tensor | Tensor | &check; | &cross; | 1D-4D |
@@ -130,7 +130,7 @@ a[1:2]
 
 ### Printing
 
-To print a tensor, you need to call the ```.numpy()``` method which returns a numpy array
+To print a tensor, you need to call the ```.numpy()``` method which returns a NumPy array
 
 ```python
 a = Tensor.rand((2, 3))
@@ -150,12 +150,12 @@ Every tensor has got the following properties
 
 ### Dataloaders
 
-dlgrads comes with an ```mnsit``` loader, to use them just import call the function
+dlgrads comes with an ```mnist``` loader
 
 ```python
 from dlgrad.nn.datasets import mnist
 
 # (60000, 784), (60000, 1), (10000, 784), (10000, 1)
 x_train_images, x_train_labels, x_test_images, x_test_labels = mnist(device="metal")
-
 ```
+These are unnormalized.

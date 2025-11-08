@@ -829,7 +829,7 @@ def mnist_loader() -> tuple[str, str]:
             num_rows = ntohl(num_rows);
             num_cols = ntohl(num_cols);
 
-        int out_size = num_images * num_rows * num_cols;
+            int out_size = num_images * num_rows * num_cols;
 
             float *out = (float*)malloc(out_size * sizeof(float));
             if (!out) {
