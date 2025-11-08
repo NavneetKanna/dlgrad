@@ -1,6 +1,6 @@
 ## dlgrad
 
-This guide will explain all the things dlgrad can do.
+dlgrad is a lightweight deep learning engine built from scratch. It’s designed to be minimal, fast, and fully transparent. It supports two accelerators, CPU and Apple Silicon GPUs. This guide will explain all the things dlgrad can do.
 
 ### Tensors
 
@@ -21,11 +21,11 @@ Tensor(np.array([1, 2, 3], dtype=np.float32))
 or from one of the data creation methods
 
 ```python
+a = Tensor.rand((2, 3)) # Creates a tensor filled with random numbers from a uniform distribution on the interval [0, 1)
 Tensor.uniform((2, 3), low=-1, high=1) # Creates a tensor filled with random numbers from a uniform distribution on the interval [low, high)
-Tensor.rand((2, 3)) # Creates a tensor filled with random numbers from a uniform distribution on the interval [0, 1)
 Tensor.full((2, 3), fill_value=4) # Creates a tensor from a uniform distribution filled with 4
-Tensor.ones_like((2, 3)) # Creates a tensor filled with 1
-Tensor.zeros_like((2, 3)) # Creates a tensor filled with 0
+Tensor.ones_like(a) # Creates a tensor filled with 1
+Tensor.zeros_like(a) # Creates a tensor filled with 0
 ```
 
 All of the above functions take ```dtype``` and ```device``` as arguments, the supported dtypes are
@@ -70,9 +70,9 @@ For ops like transpose or matmul, you can use the symbols like ```T```, ```@```.
 
 | Ops | Left operand | Right operand | CPU | Metal | Dim |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| > (greater) | Tensor | Scalar | &check | &cross; | 1d-4D |
-| ** (power) | Tensor | Scalar | &check | &check; | 1D-4D |
-| - (negate) | Tensor | - | &check | &check; | 1D-4D |
+| > (greater) | Tensor | Scalar | &check; | &cross; | 1d-4D |
+| ** (power) | Tensor | Scalar | &check; | &check; | 1D-4D |
+| - (negate) | Tensor | - | &check; | &check; | 1D-4D |
 | == (equate) | Tensor | Tensor | &check; | &cross; | 1D-4D |
 
 ### Models
@@ -130,7 +130,7 @@ a[1:2]
 
 ### Printing
 
-To print a tensor, you need to call the ```.numpy()``` method
+To print a tensor, you need to call the ```.numpy()``` method which returns a numpy array
 
 ```python
 a = Tensor.rand((2, 3))
@@ -150,7 +150,7 @@ Every tensor has got the following properties
 
 ### Dataloaders
 
-dlgrads comes with ```mnsit``` loader, to use them just import call the function
+dlgrads comes with an ```mnsit``` loader, to use them just import call the function
 
 ```python
 from dlgrad.nn.datasets import mnist

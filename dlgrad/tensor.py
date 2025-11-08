@@ -222,15 +222,15 @@ class Tensor:
         )
 
     @staticmethod
-    def ones_like(shape: tuple, device: Device = Device.CPU,
+    def ones_like(input: Tensor, device: Device = Device.CPU,
                   dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
         """
-        Creates a tensor with the specified shape filled with 1.0.
+        Creates a tensor with shape same as input filled with 1.0.
 
         Parameters
         ----------
-        shape : tuple
-                The desired shape
+        input: Tensor
+                The shape is derived from the shape of input tensor
         device : str | Device | None
                 Default device is CPU
         dtype : str | DType | None
@@ -241,18 +241,18 @@ class Tensor:
         Returns:
             A tensor filled with 1.0.
         """
-        return Tensor.full(shape, 1.0, device, dtype, requires_grad)
+        return Tensor.full(input.shape, 1.0, device, dtype, requires_grad)
 
     @staticmethod
-    def zeros_like(shape: tuple, device: Device = Device.CPU,
+    def zeros_like(input: Tensor, device: Device = Device.CPU,
                   dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
         """
-        Creates a tensor with the specified shape filled with 0.0.
+        Creates a tensor with shape same as input filled with 0.0.
 
         Parameters
         ----------
-        shape : tuple
-                The desired shape
+        input: Tensor
+                The shape is derived from the shape of input tensor
         device : str | Device | None
                 Default device is CPU
         dtype : str | DType | None
@@ -263,7 +263,7 @@ class Tensor:
         Returns:
             A tensor filled with 0.0.
         """
-        return Tensor.full(shape, 0.0, device, dtype, requires_grad)
+        return Tensor.full(input.shape, 0.0, device, dtype, requires_grad)
 
     @staticmethod
     def add(x: Tensor, y: Tensor | Scalar) -> Tensor:
