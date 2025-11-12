@@ -422,10 +422,19 @@ class CPU:
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
     def sum(x: Buffer, dim: int) -> CDataPtr:
-        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        out_shape = cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape)
+        out_stride = calculate_stride(out_shape)
+        num = prod_(out_shape)
         out_ptr = CPU.calloc(num=num)
 
-        c_code, cdef = cpu_kernel.sum(x.shape, x.stride, x.numel, dim)
+        if x.ndim == 4:
+            c_code, cdef = cpu_kernel.reduce_4d(x.shape, x.stride, out_stride, x.numel, dim, "sum")
+        elif x.ndim == 3:
+            c_code, cdef = cpu_kernel.reduce_3d(x.shape, x.stride, out_stride, x.numel, dim, "sum")
+        elif x.ndim == 2:
+            c_code, cdef = cpu_kernel.reduce_2d(x.shape, x.stride, out_stride, x.numel, dim, "sum")
+        elif x.ndim == 1 and dim == -1:
+            c_code, cdef = cpu_kernel.reduce(x.numel, "sum")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"sum_{key}.so"
@@ -487,13 +496,13 @@ class CPU:
         out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
 
         if x.ndim == 4:
-            c_code, cdef = cpu_kernel.max_4d(x.shape, x.stride, out_stride, x.numel, dim)
+            c_code, cdef = cpu_kernel.reduce_4d(x.shape, x.stride, out_stride, x.numel, dim, "max")
         elif x.ndim == 3:
-            c_code, cdef = cpu_kernel.max_3d(x.shape, x.stride, out_stride, x.numel, dim)
+            c_code, cdef = cpu_kernel.reduce_3d(x.shape, x.stride, out_stride, x.numel, dim, "max")
         elif x.ndim == 2:
-            c_code, cdef = cpu_kernel.max_2d(x.shape, x.stride, out_stride, x.numel, dim)
+            c_code, cdef = cpu_kernel.reduce_2d(x.shape, x.stride, out_stride, x.numel, dim, "max")
         elif x.ndim == 1 and dim == -1:
-            c_code, cdef = cpu_kernel.reduce(x.numel)
+            c_code, cdef = cpu_kernel.reduce(x.numel, "max")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"max_{key}.so"

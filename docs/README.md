@@ -43,20 +43,20 @@ and the supported devices are
 
 With the tensors created, any of the following ops can be performed on them, the table also shows which runtime supports which ops and which dimensions
 
-| Ops | CPU | Metal | Dim |
-| :---: | :---: | :---: | :---: |
+| Ops | CPU | Metal | Dim | Notes |
+| :---: | :---: | :---: | :---: | :---: |
 | add | &check; | &check; | 1D-4D |
 | sub | &check; | &check; | 1D-4D |
 | mul | &check; | &check; | 1D-4D |
 | div | &check; | &check; | 1D-4D |
 | matmul | &check; | &check; | 2D |
 | transpose | &check; | &check; | 2D |
-| sum | &check; | &check; | 1D-4D |
+| sum | &check; | &check; | 1D-4D | Metal supports sum along last dim or full tensor |
 | relu | &check; | &check; | 1D-4D |
 | leaky_relu | &check; | &check; | 1D-4D |
 | tanh | &check; | &check; | 1D-4D |
 | linear | &check; | - |
-| max | &check; | &check; | 1D-4D |
+| max | &check; | &check; | 1D-4D | Metal supports max along last dim or full tensor |
 | exp | &check; | &check; | 1D-4D |
 | log | &check; | &check; | 1D-4D |
 | sqrt | &check; | &check; | 1D-4D |
@@ -64,7 +64,6 @@ With the tensors created, any of the following ops can be performed on them, the
 | log_softmax | &check; |  - |
 | cross_entropy_loss | &check; | - |
 | argmax | &check; | &cross; | 2D |
-
 
 For ops like transpose or matmul, you can use shorthand symbols such as ```T```, ```@```. Other than these, dlgrad also supports the following operations
 

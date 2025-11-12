@@ -226,7 +226,6 @@ class MetalGPU:
         computeEncoder = commandBuffer.computeCommandEncoder()
 
         src = metal_kernel.where(x.shape, inp=True if inp.ndim == 0 else False, other=True if other.ndim == 0 else False)
-        # print(src)
         pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "where", w=x.shape[-1], h=prod_(x.shape[:-1]))
 
         computeEncoder.setComputePipelineState_(pso)
