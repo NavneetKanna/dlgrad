@@ -72,6 +72,26 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
 
 @cache
 def max_backward(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
+    code = f"""
+    void max_backward(float *x, float *max_values, float *mask) {{
+        int shape_dim = {x_shape[dim]};
+        int stride_dim = {x_stride[dim]};
+        int numel = {x_numel};
+
+        int out_start = 0;
+        for (int j = 0; j < numel; j += stride_dim) {{
+            if ((j % (stride_dim * shape_dim)) == 0) {{
+                if (j != 0) out_start += stride_dim;
+            }}
+            for (int i = 0; i < stride_dim; i++) {{
+                float val = x[j + i];
+                float m = max_values[out_start + i];
+                mask[j + i] = (val == m) ? 1.0f : 0.0f;
+            }}
+        }}
+    }}
+    """
+    return code, "void max_backward(float *x, float *max_values, float *mask);"
     code  = f"""
         void max_backward(float *x, float *out, float *max_with_1s) {{
             int shape_dim = {x_shape[dim]};
@@ -109,54 +129,210 @@ def max_backward(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tup
     return code, "void max_backward(float *x, float *out, float *max_with_1s);"
 
 @cache
-def max(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
-    if dim == -1:
-        code = f"""
-            void max(float *x, float *out) {{
-                float m = x[0];
-                for (int i=1; i<{x_numel}; i++) {{
-                    if (x[i] > m) {{
-                        m = x[i];
+def reduce(x_numel: int) -> tuple[str, str]:
+    c_code = f"""
+        #include <stdlib.h>
+        #include <float.h>
+        void max(const float *x, float *out) {{
+            float maxval = -FLT_MAX;
+            for (size_t i=0; i<{x_numel}; i++) {{
+                if (x[i] > maxval)
+                    maxval = x[i];
+            }}
+            out[0] = maxval;
+        }}
+    """
+    return c_code, "void max(const float *x, float *out);"
+
+@cache
+def max_4d(x_shape: tuple, x_stride: tuple, out_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
+    if dim == 0:
+        c_code = f"""
+            #include <stdlib.h>
+            #include <float.h>
+            void max(const float *x, float *out) {{
+                for (size_t C = 0; C < {x_shape[1]}; C++) {{
+                    for (size_t H = 0; H < {x_shape[2]}; H++) {{
+                        for (size_t W = 0; W < {x_shape[3]}; W++) {{
+                            float maxval = -FLT_MAX;
+                            for (size_t B=0; B<{x_shape[0]}; B++) {{
+                                float v = x[B*{x_stride[0]} + C*{x_stride[1]} + H*{x_stride[2]} + W];
+                                if (v > maxval)
+                                    maxval = v;
+                            }}
+                            out[C*{out_stride[0]} + H*{out_stride[1]} + W] = maxval;
+                        }}
                     }}
                 }}
-                out[0] = m;
             }}
         """
-
-        return code, "void max(float *x, float *out);"
-
-    code  = f"""
-    void max(float *x, float *out) {{
-        int shape_dim = {x_shape[dim]};
-        int stride_dim = {x_stride[dim]};
-        int numel = {x_numel};
-
-        int out_start = 0;
-        for (int j = 0; j < numel; j += stride_dim) {{
-            if ((j % (stride_dim * shape_dim)) == 0) {{
-                if (j != 0) {{
-                    out_start += stride_dim;
-                }} else {{
-                    out_start = 0;
-                }}
-                // copy
-                for (int i = 0; i < stride_dim; i++) {{
-                    out[out_start + i] = x[j + i];
-                }}
-            }} else {{
-                // max
-                for (int i = 0; i < stride_dim; i++) {{
-                    float val = x[j + i];
-                    if (val > out[out_start + i]) {{
-                        out[out_start + i] = val;
+        return c_code, "void max(const float *x, float *out);"
+    elif dim == 1:
+        c_code = f"""
+            #include <stdlib.h>
+            #include <float.h>
+            void max(const float *x, float *out) {{
+                for (size_t B=0; B<{x_shape[0]}; B++) {{
+                    for (size_t H=0; H<{x_shape[2]}; H++) {{
+                        for (size_t W=0; W<{x_shape[3]}; W++) {{
+                            float maxval = -FLT_MAX;
+                            for (size_t C=0; C<{x_shape[1]}; C++) {{
+                                float v = x[B*{x_stride[0]} + C*{x_stride[1]} + H*{x_stride[2]} + W];
+                                if (v > maxval)
+                                    maxval = v;
+                            }}
+                            out[B*{out_stride[0]} + H*{out_stride[1]} + W] = maxval;
+                        }}
                     }}
                 }}
             }}
-        }}
-    }}
-    """
+        """
+        return c_code, "void max(const float *x, float *out);"
+    elif dim == 2:
+        c_code = f"""
+            #include <stdlib.h>
+            #include <float.h>
+            void max(const float *x, float *out) {{
+                for (size_t B=0; B<{x_shape[0]}; B++) {{
+                    for (size_t C=0; C<{x_shape[1]}; C++) {{
+                        for (size_t W=0; W<{x_shape[3]}; W++) {{
+                            float maxval = -FLT_MAX;
+                            for (size_t H=0; H<{x_shape[2]}; H++) {{
+                                float v = x[B*{x_stride[0]} + C*{x_stride[1]} + H*{x_stride[2]} + W];
+                                if (v > maxval)
+                                    maxval = v;
+                            }}
+                            out[B*{out_stride[0]} + C*{out_stride[1]} + W] = maxval;
+                        }}
+                    }}
+                }}
+            }}
+        """
+        return c_code, "void max(const float *x, float *out);"
+    elif dim == 3:
+        c_code = f"""
+            #include <stdlib.h>
+            #include <float.h>
+            void max(const float *x, float *out) {{
+                for (size_t B=0; B<{x_shape[0]}; B++) {{
+                    for (size_t C=0; C<{x_shape[1]}; C++) {{
+                        for (size_t H=0; H<{x_shape[2]}; H++) {{
+                            const float *ptr = x + B*{x_stride[0]} + C*{x_stride[1]} + H*{x_stride[2]};
+                            float maxval = -FLT_MAX;
+                            for (size_t W=0; W<{x_shape[3]}; W++) {{
+                                if (ptr[W] > maxval)
+                                    maxval = ptr[W];
+                            }}
+                            out[B*{out_stride[0]} + C*{out_stride[1]} + H] = maxval;
+                        }}
+                    }}
+                }}
+            }}
+        """
+        return c_code, "void max(const float *x, float *out);"
+    elif dim == -1:
+        return reduce(x_numel)
 
-    return code, "void max(float *x, float *out);"
+@cache
+def max_3d(x_shape: tuple, x_stride: tuple, out_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
+    if dim == 0:
+        c_code = f"""
+            #include <stdio.h>
+            #include <float.h>
+            void max(const float *x, float *out) {{
+                    for (size_t H=0; H<{x_shape[1]}; H++) {{
+                        for (size_t W=0; W<{x_shape[2]}; W++) {{
+                            float maxval = -FLT_MAX;
+                            for (size_t C=0; C<{x_shape[0]}; C++) {{
+                                float v = x[C*{x_stride[0]} + H*{x_stride[1]} + W];
+                                if (v > maxval)
+                                    maxval = v;
+                            }}
+                            out[H*{out_stride[0]} + W] = maxval;
+                        }}
+                    }}
+            }}
+        """
+        return c_code, "void max(const float *x, float *out);"
+    elif dim == 1:
+        c_code = f"""
+            #include <stdio.h>
+            #include <float.h>
+            void max(const float *x, float *out) {{
+                    for (size_t C=0; C<{x_shape[0]}; C++) {{
+                        for (size_t W=0; W<{x_shape[2]}; W++) {{
+                            float maxval = -FLT_MAX;
+                            for (size_t H=0; H<{x_shape[1]}; H++) {{
+                                float v = x[C*{x_stride[0]} + H*{x_stride[1]} + W];
+                                if (v > maxval)
+                                    maxval = v;
+                            }}
+                            out[C*{out_stride[0]} + W] = maxval;
+                        }}
+                    }}
+            }}
+        """
+        return c_code, "void max(const float *x, float *out);"
+    elif dim == 2:
+        c_code = f"""
+            #include <stdio.h>
+            #include <float.h>
+            void max(const float *x, float *out) {{
+                for (size_t C=0; C<{x_shape[0]}; C++) {{
+                    for (size_t H=0; H<{x_shape[1]}; H++) {{
+                        const float *ptr = x + C*{x_stride[0]} + H*{x_stride[1]};
+                        float maxval = -FLT_MAX;
+                        for (size_t W=0; W<{x_shape[2]}; W++) {{
+                            if (ptr[W] > maxval)
+                                maxval = ptr[W];
+                        }}
+                        out[C*{out_stride[0]} + H] = maxval;
+                    }}
+                }}
+            }}
+        """
+        return c_code, "void max(const float *x, float *out);"
+    elif dim == -1:
+        return reduce(x_numel)
+
+@cache
+def max_2d(x_shape: tuple, x_stride: tuple, out_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
+    if dim == 0:
+        c_code = f"""
+            #include <stdio.h>
+            #include <float.h>
+            void max(const float *x, float *out) {{
+                for (size_t W=0; W<{x_shape[1]}; W++) {{
+                    float maxval = -FLT_MAX;
+                    for (size_t H=0; H<{x_shape[0]}; H++) {{
+                        float v = x[H*{x_stride[0]} + W];
+                        if (v > maxval)
+                            maxval = v;
+                    }}
+                    out[W] = maxval;
+                }}
+            }}
+        """
+        return c_code, "void max(const float *x, float *out);"
+    elif dim == 1:
+        c_code = f"""
+            #include <stdio.h>
+            #include <float.h>
+            void max(const float *x, float *out) {{
+                for (size_t H=0; H<{x_shape[0]}; H++) {{
+                    const float *ptr = x + H*{x_stride[0]};
+                    float maxval = -FLT_MAX;
+                    for (size_t W=0; W<{x_shape[1]}; W++) {{
+                        if (ptr[W] > maxval)
+                            maxval = ptr[W];
+                    }}
+                    out[H] = maxval;
+                }}
+            }}
+        """
+        return c_code, "void max(const float *x, float *out);"
+    elif dim == -1:
+        return reduce(x_numel)
 
 @cache
 def sum(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
@@ -589,7 +765,22 @@ def where(x_numel: int, inp: bool, other: bool) -> tuple[str, str]:
     return code, "void where(float *arr, float *out, float *inp, float *other);"
 
 @cache
-def eqt(x_numel: int) -> tuple[str, str]:
+def eqt(x_numel: int, y_scalar: bool) -> tuple[str, str]:
+    if y_scalar:
+        code = f"""
+            void eqt(float *x, float *y, float *out)
+            {{
+                for (int i=0; i<{x_numel}; i++) {{
+                    if (x[i] == y[0]) {{
+                        out[i] = 1.0;
+                    }} else {{
+                        out[i] = 0.0;
+                    }}
+                }}
+            }}
+        """
+        return code, "void eqt(float *x, float *y, float *out);"
+
     code = f"""
         void eqt(float *x, float *y, float *out)
         {{

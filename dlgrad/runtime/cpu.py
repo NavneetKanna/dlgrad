@@ -13,7 +13,16 @@ from dlgrad.codegen import cpu_kernel
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
-from dlgrad.helpers import CACHE_DIR, BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_max_out_shape, prod_
+from dlgrad.helpers import (
+    CACHE_DIR,
+    BinaryOps,
+    BufferOps,
+    CustomOps,
+    UnaryOps,
+    cal_sum_max_out_shape,
+    calculate_stride,
+    prod_,
+)
 
 CFLAGS = ["-shared", "-fPIC", "-O2", "-march=native", "-ffast-math"]
 COMPILER = "clang" if shutil.which('clang') else "gcc"
@@ -472,10 +481,19 @@ class CPU:
 
             return max_with_1s
 
-        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        out_shape = cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape)
+        out_stride = calculate_stride(out_shape)
+        num = prod_(out_shape)
         out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
 
-        c_code, cdef = cpu_kernel.max(x.shape, x.stride, x.numel, dim)
+        if x.ndim == 4:
+            c_code, cdef = cpu_kernel.max_4d(x.shape, x.stride, out_stride, x.numel, dim)
+        elif x.ndim == 3:
+            c_code, cdef = cpu_kernel.max_3d(x.shape, x.stride, out_stride, x.numel, dim)
+        elif x.ndim == 2:
+            c_code, cdef = cpu_kernel.max_2d(x.shape, x.stride, out_stride, x.numel, dim)
+        elif x.ndim == 1 and dim == -1:
+            c_code, cdef = cpu_kernel.reduce(x.numel)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"max_{key}.so"
@@ -553,9 +571,10 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.EQT, Device.CPU)
     def eqt(x: Buffer, y: Buffer) -> CDataPtr:
+        # TODO: Add check that the numel should be the same
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.eqt(x.numel)
+        c_code, cdef = cpu_kernel.eqt(x.numel, True if y.ndim == 0 else False)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"eqt_{key}.so"

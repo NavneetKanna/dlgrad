@@ -14,83 +14,84 @@ class Transpose(OP):
 
 # TODO: Maube add expand/broadcast_to instead of buffer.full in backward
 class Sum(OP):
-	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
-		self.inp_shape = x.shape
-		self.device = x.device
-		self.dtype = x.dtype
-		self.keepdim = keepdim
-		self.dim = dim
-		return x.sum(dim=dim, keepdim=keepdim)
+    def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
+        self.inp_shape = x.shape
+        self.device = x.device
+        self.dtype = x.dtype
+        self.keepdim = keepdim
+        self.dim = dim
+        return x.sum(dim=dim, keepdim=keepdim)
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
-		if not self.keepdim:
-			upstream_grad.unsqueeze(self.dim)
-		return (t*upstream_grad,)
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        t = Buffer.full(shape=self.inp_shape, fill_value=1.0, device=self.device, dtype=self.dtype)
+        if not self.keepdim:
+            upstream_grad.unsqueeze(self.dim)
+        return (t*upstream_grad,)
 
 class Mean(OP):
-	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
-		self.inp_shape = x.shape
-		self.device = x.device
-		self.dtype = x.dtype
-		self.keepdim = keepdim
-		self.dim = dim
-		if dim == -1:  # reduce over ALL elements
-			self.N = x.numel
-		else:
-			self.N = x.shape[dim]
-		return x.mean(dim=dim, keepdim=keepdim)
+    def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
+        self.inp_shape = x.shape
+        self.device = x.device
+        self.dtype = x.dtype
+        self.keepdim = keepdim
+        self.dim = dim
+        if dim == -1:  # reduce over ALL elements
+            self.N = x.numel
+        else:
+            self.N = x.shape[dim]
+        return x.mean(dim=dim, keepdim=keepdim)
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		scale = 1.0 / self.N
-		grad = Buffer.full(self.inp_shape, fill_value=scale, device=self.device, dtype=self.dtype)
-		if not self.keepdim:
-			upstream_grad.unsqueeze(self.dim)
-			return (grad * upstream_grad,)
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        scale = 1.0 / self.N
+        grad = Buffer.full(self.inp_shape, fill_value=scale, device=self.device, dtype=self.dtype)
+        if not self.keepdim:
+            upstream_grad.unsqueeze(self.dim)
+        return (grad * upstream_grad,)
 
 class Max(OP):
-	def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
-		self.inp_shape = x.shape
-		self.device = x.device
-		self.dim = dim
-		self.x = x
-		self.keepdim = keepdim
-		self.out = x.max(dim=dim, keepdim=keepdim)
-		return self.out
+    def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
+        self.inp_shape = x.shape
+        self.device = x.device
+        self.dim = dim
+        self.x = x
+        self.keepdim = keepdim
+        self.out = x.max(dim=dim, keepdim=keepdim)
+        return self.out
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		# TODO: Can we replace this with self.x == self.out ?
-		max_with_1s = self.x.max(dim=self.dim, backward=True, out=self.out)
-		if not self.keepdim:
-			upstream_grad.unsqueeze(self.dim)
-		return (max_with_1s*upstream_grad,)
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        if self.dim == -1:
+            max_with_1s = self.x == self.out
+            return (max_with_1s*upstream_grad,)
+
+        max_with_1s = self.x.max(dim=self.dim, backward=True, out=self.out)
+        self.out.unsqueeze(self.dim)
+        if not self.keepdim:
+            upstream_grad.unsqueeze(self.dim)
+        return (max_with_1s*upstream_grad,)
 
 class Exp(OP):
-	def forward(self, x: Buffer) -> Buffer:
-		self.out = x.exp()
-		return self.out
+    def forward(self, x: Buffer) -> Buffer:
+        self.out = x.exp()
+        return self.out
 
-	def backward(self, upstream_grad: Buffer) -> Buffer:
-		return (upstream_grad * self.out,)
-
+    def backward(self, upstream_grad: Buffer) -> Buffer:
+        return (upstream_grad * self.out,)
 
 class Log(OP):
-	def forward(self, x: Buffer) -> Buffer:
-		self.x = x
-		return x.log()
+    def forward(self, x: Buffer) -> Buffer:
+        self.x = x
+        return x.log()
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		return (upstream_grad / self.x,)
-
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        return (upstream_grad / self.x,)
 
 class Relu(OP):
-	def forward(self, x: Buffer) -> Buffer:
-		self.out = x.relu()
-		return self.out
+    def forward(self, x: Buffer) -> Buffer:
+        self.out = x.relu()
+        return self.out
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		return ((self.out.where(inp=1.0, other=0.0)) * upstream_grad,)
-
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        return ((self.out.where(inp=1.0, other=0.0)) * upstream_grad,)
 
 class Sigmoid(OP):
 	def forward(self, x: Buffer) -> Buffer:

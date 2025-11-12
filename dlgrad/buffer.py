@@ -41,6 +41,25 @@ class Buffer:
                                        ndim=kwargs.get("ndim", len(shape)),
                                        dtype=dtype, device=device, nbytes=prod_(shape)*DType.get_n_bytes(dtype))
 
+    def numpy(self: Buffer) -> "np.ndarray":  # type: ignore  # noqa: F821
+        import numpy as np
+
+        data = np.frombuffer(
+            ffi.buffer(self.ptr, self.numel * ffi.sizeof("float")),
+            count=-1,
+            dtype=np.float32,
+        )
+
+        t = np.lib.stride_tricks.as_strided(
+            data,
+            self.shape,
+            tuple(
+                stride * DType.get_n_bytes(self.dtype) for stride in self.stride
+            ),
+        )
+
+        return t
+
     @staticmethod
     def from_scalar(val: Scalar) -> Buffer:
         float_arr = ffi.new("float[]", 1)
@@ -118,8 +137,13 @@ class Buffer:
             else:
                 ndim = self.ndim - 1
 
+        if dim in range(0, self.shape[-1]):
+            d = Device.CPU
+        else:
+            d = self.device
+
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim),
+            data=dispatcher.dispatch(op=UnaryOps.SUM, device=d, x=self, dim=dim),
             shape=out_shape, device=self.device,
             ndim=ndim, dtype=self.dtype
         )
@@ -145,7 +169,13 @@ class Buffer:
         out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape, keepdim=keepdim)
 
         if not backward:
-            out = dispatcher.dispatch(op=UnaryOps.MAX, device=self.device, x=self, dim=dim, backward=backward)
+            # Metal kernels are there only for reduction along rows or overall reduction
+            # print("dim", dim, self.shape[-1])
+            if dim in range(0, self.shape[-1]):
+                d = Device.CPU
+            else:
+                d = self.device
+            out = dispatcher.dispatch(op=UnaryOps.MAX, device=d, x=self, dim=dim, backward=backward)
         else:
             out_shape = self.shape
             out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward, out=out)

@@ -173,29 +173,23 @@ class MetalGPU:
         computeEncoder = commandBuffer.computeCommandEncoder()
 
         if x.ndim == 4:
-            src = metal_kernel.reduce_4d(x.shape, x.stride, dim=dim if dim != -1 else 3, op=op)
+            src = metal_kernel.reduce_along_rows(x.shape, op=op)
             if dim == 3 or dim == -1:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, op, w=x.shape[-1], h=prod_(x.shape[:-1]))
                 threadsPerGrid = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], prod_(x.shape[:-1]), 1)
                 threadsPerThreadgroup = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], 1, 1)
-            else:
-                pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, op, w=out_shape[-1], h=prod_(out_shape[:-1]))
         elif x.ndim == 3:
-            src = metal_kernel.max_3d(x.shape, x.stride, dim=dim if dim != -1 else 2, op=op)
+            src = metal_kernel.reduce_along_rows(x.shape, op=op)
             if dim == 2 or dim == -1:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, op, w=x.shape[-1], h=prod_(x.shape[:-1]))
                 threadsPerGrid = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], prod_(x.shape[:-1]), 1)
                 threadsPerThreadgroup = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], 1, 1)
-            else:
-                pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, op, w=out_shape[-1], h=prod_(out_shape[:-1]))
         elif x.ndim == 2:
-            src = metal_kernel.max_2d(x.shape, x.stride, dim=dim if dim != -1 else 1, op=op)
+            src = metal_kernel.reduce_along_rows(x.shape, op=op)
             if dim == 1 or dim == -1:
                 pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, op, w=x.shape[-1], h=prod_(x.shape[:-1]))
                 threadsPerGrid = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], prod_(x.shape[:-1]), 1)
                 threadsPerThreadgroup = Metal.MTLSizeMake(pso.maxTotalThreadsPerThreadgroup() if x.shape[-1] > pso.maxTotalThreadsPerThreadgroup() else x.shape[-1], 1, 1)
-            else:
-                pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, op, w=out_shape[-1], h=prod_(out_shape[:-1]))
 
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
