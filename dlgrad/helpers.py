@@ -156,3 +156,20 @@ def unzip(filename: str, save_filename: str) -> None:
                 shutil.copyfileobj(fin, fout)
     else:
         print(f"{save_filename} already exists")
+
+class Colors:
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    END = '\033[0m'
+
+def get_color(color: str) -> str:
+    match color:
+        case "green":
+            return Colors.GREEN
+        case "yellow":
+            return Colors.YELLOW
+        case "red":
+            return Colors.RED
+        case "end":
+            return Colors.END

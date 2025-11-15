@@ -25,25 +25,24 @@ def benchmark(func, data, use_tiny: bool = False) -> float:
 def convert_time(seconds: float) -> tuple[float, str]:
     return round(seconds * 1e3, 2), "ms"
 
+def to_torch_device(device):
+    return "mps" if device == "metal" else device
+
 def color_ratio(lib_time: float, dlgrad_time: float):
     if dlgrad_time == lib_time:
         return f"{get_color('end')}1.0", "equal"
     elif dlgrad_time < lib_time:  # dlgrad is faster
         ratio = lib_time / dlgrad_time
         return f"{get_color('green')}{ratio:.1f}{get_color('end')}", "faster"
-    else:  
+    else:
         ratio = dlgrad_time / lib_time
         return f"{get_color('red')}{ratio:.1f}{get_color('end')}", "slower"
-    
+
 def run_benchmark(shapes: tuple, func, op_name: str, nargs: int, device: str):
     np_data = [np.random.uniform(size=shapes).astype(np.float32) for _ in range(nargs)]
     dlgrad_data = [Tensor(data, device=device) for data in np_data]
     tinygrad_data = [tinygrad.Tensor(data, device=device).realize() for data in np_data]
-    if device == "metal":
-        d = "mps"
-    else:
-        d = device
-    torch_data = [torch.tensor(data, device=d) for data in np_data]
+    torch_data = [torch.tensor(data, device=to_torch_device(device)) for data in np_data]
 
     dlgrad_time = benchmark(func, dlgrad_data)
     torch_time = benchmark(func, torch_data)
@@ -57,11 +56,11 @@ def run_benchmark(shapes: tuple, func, op_name: str, nargs: int, device: str):
     tinygrad_time, tinygrad_unit = convert_time(tinygrad_time)
 
     print(
-        f"{op_name:^12} | "                      
-        f"{f'{shapes[0]}x{shapes[1]}':^12} | "    
+        f"{op_name:^12} | "
+        f"{f'{shapes[0]}x{shapes[1]}':^12} | "
         f"{f'dlgrad: {dlgrad_time:.2f}{dlgrad_unit} Torch: {torch_time:.2f}{torch_unit} Tinygrad: {tinygrad_time:.2f}{tinygrad_unit}':^64} | "
-        f"{f'vs Torch: {torch_ratio:15} ({torch_desc:})':^20} | " 
-        f"{f'vs Tinygrad: {tinygrad_ratio:15} ({tinygrad_desc})':^16} |" 
+        f"{f'vs Torch: {torch_ratio:15} ({torch_desc:})':^20} | "
+        f"{f'vs Tinygrad: {tinygrad_ratio:15} ({tinygrad_desc})':^16} |"
     )
 
     np.testing.assert_allclose(
@@ -98,7 +97,7 @@ def test_all_operations() -> None:
         (lambda x: x.log(), "log", 1),
         (lambda x: x.sqrt(), "sqrt", 1),
         # (lambda x, y: x@y, "matmul", 2),
-    ] 
+    ]
 
     print("-" * 155)
     for shape in shapes:
@@ -126,7 +125,7 @@ def test_all_operations() -> None:
         (lambda x: x.max(), "max", 1),
         (lambda x: x.sum(), "sum", 1),
         (lambda x, y: x@y, "matmul", 2),
-    ] 
+    ]
 
     print("-" * 155)
     for shape in shapes:
