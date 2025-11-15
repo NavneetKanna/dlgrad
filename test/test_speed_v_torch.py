@@ -12,13 +12,15 @@ from dlgrad.helpers import get_color
 
 ITERATIONS = 8
 
-def benchmark(func, data, use_tiny: bool = False) -> float:
+def benchmark(func, data, sync_tiny: bool = False, sync_torch: bool = False) -> float:
     times = []
     for _ in range(ITERATIONS):
         start = time.perf_counter()
         result = func(*data)
-        if use_tiny:
+        if sync_tiny:
             result = result.realize()
+        if sync_torch:
+            torch.mps.synchronize()
         times.append(time.perf_counter() - start)
     return np.min(times)
 
@@ -45,8 +47,8 @@ def run_benchmark(shapes: tuple, func, op_name: str, nargs: int, device: str):
     torch_data = [torch.tensor(data, device=to_torch_device(device)) for data in np_data]
 
     dlgrad_time = benchmark(func, dlgrad_data)
-    torch_time = benchmark(func, torch_data)
-    tinygrad_time = benchmark(func, tinygrad_data, use_tiny=True)
+    torch_time = benchmark(func, torch_data, sync_torch=True)
+    tinygrad_time = benchmark(func, tinygrad_data, sync_tiny=True)
 
     torch_ratio, torch_desc = color_ratio(torch_time, dlgrad_time)
     tinygrad_ratio, tinygrad_desc = color_ratio(tinygrad_time, dlgrad_time)
