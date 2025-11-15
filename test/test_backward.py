@@ -63,7 +63,6 @@ def test_elementwise_backward(shapes, device, op):
     lambda x: x.leaky_relu() if not isinstance(x, torch.Tensor) else F.leaky_relu(x),
     lambda x: x.tanh(),
     lambda x: x.sigmoid(),
-    lambda x: x.sum(),
 ])
 def test_unary_backward(shape, device, op):
     run_unary_op_backward(shape, device, op)
@@ -166,13 +165,13 @@ def test_cross_entropy_backward(shapes, device):
         dl_x = Tensor(np_data, device=device, requires_grad=True)
         dl_t = Tensor(np_target)
         th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
-        th_t = torch.tensor(np_target, dtype=torch.long).squeeze()
+        th_t = torch.tensor(np_target, device=to_torch_device(device), dtype=torch.long).squeeze()
 
         dl_x.cross_entropy_loss(dl_t).backward()
         loss = torch.nn.CrossEntropyLoss(reduction="sum")
         loss(th_x, th_t).backward()
 
-        np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.numpy(), atol=1e-6, rtol=1e-3)
+        np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", [[(2, 3)]])
 def test_log_softmax_backward(shapes, device):

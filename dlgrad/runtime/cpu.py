@@ -473,23 +473,7 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.MAX, Device.CPU)
-    def max(x: Buffer, dim: int, backward: bool = False, out: Buffer = None) -> CDataPtr:
-        if backward:
-            max_with_1s = CPU.init_with_scalar(num=x.numel, scalar=0)
-            c_code, cdef = cpu_kernel.max_backward(x.shape, x.stride, x.numel, dim)
-            key = CPU._hash_code(c_code)
-            so_fp = pathlib.Path(CACHE_DIR) / f"max_backward_{key}.so"
-            if not os.path.exists(so_fp):
-                CPU._build_shared_object(c_code, so_fp)
-
-            lib = CPU._get_handle(str(so_fp))
-
-            CPU._ensure_sig(cdef)
-
-            lib.max_backward(x.ptr, out.ptr, max_with_1s)
-
-            return max_with_1s
-
+    def max(x: Buffer, dim: int, out: Buffer = None) -> CDataPtr:
         out_shape = cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape)
         out_stride = calculate_stride(out_shape)
         num = prod_(out_shape)
@@ -580,10 +564,11 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.EQT, Device.CPU)
     def eqt(x: Buffer, y: Buffer) -> CDataPtr:
+        # NOTE: Assumes x.numel > y.numel
         # TODO: Add check that the numel should be the same
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.eqt(x.numel, True if y.ndim == 0 else False)
+        c_code, cdef = cpu_kernel.eqt(x.numel, True if y.ndim == 0 else False, x.shape, x.stride, y.shape, y.stride, x.ndim)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"eqt_{key}.so"

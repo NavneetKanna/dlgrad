@@ -137,7 +137,10 @@ class Buffer:
             else:
                 ndim = self.ndim - 1
 
-        if dim in range(0, self.shape[-1]):
+        # print(self.shape, dim, self.ndim)
+        if self.ndim == 1:
+            d = Device.CPU
+        elif dim in range(0, self.shape[-1]+1):
             d = Device.CPU
         else:
             d = self.device
@@ -165,20 +168,14 @@ class Buffer:
             ndim=ndim, dtype=self.dtype
         )
 
-    def max(self, dim: int = -1, backward: bool = False, out: Buffer = None, keepdim: bool = False) -> Buffer:
+    def max(self, dim: int = -1, out: Buffer = None, keepdim: bool = False) -> Buffer:
         out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape, keepdim=keepdim)
 
-        if not backward:
-            # Metal kernels are there only for reduction along rows or overall reduction
-            # print("dim", dim, self.shape[-1])
-            if dim in range(0, self.shape[-1]):
-                d = Device.CPU
-            else:
-                d = self.device
-            out = dispatcher.dispatch(op=UnaryOps.MAX, device=d, x=self, dim=dim, backward=backward)
+        if dim in range(0, self.shape[-1]+1):
+            d = Device.CPU
         else:
-            out_shape = self.shape
-            out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward, out=out)
+            d = self.device
+        out = dispatcher.dispatch(op=UnaryOps.MAX, device=d, x=self, dim=dim)
 
         if keepdim:
             ndim = self.ndim
