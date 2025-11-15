@@ -610,7 +610,25 @@ class Tensor:
 
     @staticmethod
     def where(cond: Tensor, inp: Tensor | Scalar, other: Tensor | Scalar) -> Tensor:
-        return Tensor(data=cond.data.where(inp=inp if isinstance(inp, Scalar) else inp.data, other=other if isinstance(other, Scalar) else other.data), requires_grad=cond.requires_grad, device=cond.device)
+        """
+        Returns a tensor where elements are from input if cond else from other
+
+         Parameters
+         ----------
+         cond: Tensor
+         input: Tensor | Scalar
+         other: Tensor | Scalar
+
+         Returns:
+              A tensor of same shape as cond
+        """
+        return Tensor(
+            data=cond.data.where(
+                inp=inp if isinstance(inp, Scalar) else inp.data,
+                other=other if isinstance(other, Scalar) else other.data),
+            requires_grad=cond.requires_grad,
+            device=cond.device
+        )
 
     def backward(self) -> None:
         assert all(item == 1 for item in self.shape), "backward must be called on a scalar Tensor"

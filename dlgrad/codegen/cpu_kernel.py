@@ -70,64 +70,6 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
 
     return c_code, f"void {op}(float *x, float *y, float *out);"
 
-# @cache
-# def max_backward(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
-#     code = f"""
-#     void max_backward(float *x, float *max_values, float *mask) {{
-#         int shape_dim = {x_shape[dim]};
-#         int stride_dim = {x_stride[dim]};
-#         int numel = {x_numel};
-
-#         int out_start = 0;
-#         for (int j = 0; j < numel; j += stride_dim) {{
-#             if ((j % (stride_dim * shape_dim)) == 0) {{
-#                 if (j != 0) out_start += stride_dim;
-#             }}
-#             for (int i = 0; i < stride_dim; i++) {{
-#                 float val = x[j + i];
-#                 float m = max_values[out_start + i];
-#                 mask[j + i] = (val == m) ? 1.0f : 0.0f;
-#             }}
-#         }}
-#     }}
-#     """
-#     return code, "void max_backward(float *x, float *max_values, float *mask);"
-#     code  = f"""
-#         void max_backward(float *x, float *out, float *max_with_1s) {{
-#             int shape_dim = {x_shape[dim]};
-#             int stride_dim = {x_stride[dim]};
-#             int numel = {x_numel};
-
-#             int out_start = 0;
-#             for (int j = 0; j < numel; j += stride_dim) {{
-#                 if ((j % (stride_dim * shape_dim)) == 0) {{
-#                     if (j != 0) {{
-#                         out_start += stride_dim;
-#                     }} else {{
-#                         out_start = 0;
-#                     }}
-#                     for (int i = 0; i < stride_dim; i++) {{
-#                         float val = x[j + i];
-#                         float val2 = out[out_start + i];
-#                         if (val == val2) {{
-#                             max_with_1s[j+i] = 1.0f;
-#                         }}
-#                     }}
-#                 }} else {{
-#                     for (int i = 0; i < stride_dim; i++) {{
-#                         float val = x[j + i];
-#                         float val2 = out[out_start + i];
-#                         if (val == val2) {{
-#                             max_with_1s[j+i] = 1.0f;
-#                         }}
-#                     }}
-#                 }}
-#             }}
-#         }}
-#     """
-
-#     return code, "void max_backward(float *x, float *out, float *max_with_1s);"
-
 @cache
 def reduce(x_numel: int, op: str) -> tuple[str, str]:
     if op == "sum":

@@ -53,6 +53,8 @@ With the tensors created, any of the following ops can be performed on them, the
 | transpose | &check; | &check; | 2D |
 | sum | &check; | &check; | 1D-4D | Metal supports sum along last dim or full tensor |
 | relu | &check; | &check; | 1D-4D |
+| sigmoid | &check; | &check; | 1D-4D |
+| mean | &check; | &cross; | 1D-4D |
 | leaky_relu | &check; | &check; | 1D-4D |
 | tanh | &check; | &check; | 1D-4D |
 | linear | &check; | - |
@@ -63,7 +65,11 @@ With the tensors created, any of the following ops can be performed on them, the
 | clamp | &check; | &cross; | 1D-4D |
 | log_softmax | &check; |  - |
 | cross_entropy_loss | &check; | - |
+| bce_with_logits_loss | &check; | - |
 | argmax | &check; | &cross; | 2D |
+| where | &check; | &cross; | 2D |
+| squeeze | - | - | - |
+| unsqueeze | - | - | - |
 
 For ops like transpose or matmul, you can use shorthand symbols such as ```T```, ```@```. Other than these, dlgrad also supports the following operations
 

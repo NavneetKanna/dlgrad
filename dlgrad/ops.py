@@ -12,7 +12,6 @@ class Transpose(OP):
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
         return (upstream_grad.transpose(),)
 
-# TODO: Maube add expand/broadcast_to instead of buffer.full in backward
 class Sum(OP):
     def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
         self.inp_shape = x.shape
@@ -98,7 +97,6 @@ class Sigmoid(OP):
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		return ((self.out * -(self.out - 1.0)) * upstream_grad,)
 
-
 class LeakyRelu(OP):
 	def forward(self, x: Buffer, neg_slope: Scalar = 0.01) -> Buffer:
 		self.neg_slope = neg_slope
@@ -107,7 +105,6 @@ class LeakyRelu(OP):
 
 	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
 		return ((self.out.where(inp=1.0, other=self.neg_slope)) * upstream_grad,)
-
 
 class Tanh(OP):
 	def forward(self, x: Buffer) -> Buffer:
@@ -209,7 +206,6 @@ class Div(OP):
 		grad_y = self.reduce_grad_for_broadcasting((-upstream_grad*self.x)/self.y**2, self.y.shape) if self.req_grad[1] else None
 		return grad_x, grad_y
 
-
 class MatMul(OP):
 	def forward(self, x: Buffer, y: Buffer) -> Buffer:
 		self.x = x
@@ -220,7 +216,6 @@ class MatMul(OP):
 		t1 = self.x.T
 		t2 = self.y.T
 		return (upstream_grad@t2, t1@upstream_grad)
-
 
 class CrossEntropy(OP):
 	def forward(self, logits: Buffer, target: Buffer, dim: int = 1) -> Buffer:
