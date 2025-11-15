@@ -2,18 +2,18 @@
 
 import struct
 from functools import cache
+import os
 
-import _allocate  # type: ignore
 import Metal
 from cffi import FFI
-
+import pathlib
 from dlgrad.buffer import Buffer
-from dlgrad.codegen import metal_kernel
+from dlgrad.codegen import metal_kernel, cpu_kernel
 from dlgrad.runtime.cpu import CPU
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, DType
-from dlgrad.helpers import BinaryOps, UnaryOps, cal_sum_max_out_shape, prod_
+from dlgrad.helpers import CACHE_DIR, BinaryOps, UnaryOps, cal_sum_max_out_shape, prod_
 from dlgrad.buffer import Buffer
 from dlgrad.dtype import Scalar
 
@@ -30,15 +30,56 @@ class MetalGPU:
 
     @staticmethod
     def malloc(num: int, size: int = struct.calcsize('f')) -> CDataPtr:
-        ptr = MetalGPU.ffi.gc(_allocate.lib.uninitialized_memory(num*size), _allocate.lib.free_ptr)
-        if ptr == MetalGPU.ffi.NULL:
+        c_code, cdef = cpu_kernel.uninitialized_memory()
+        c_code2, cdef2 = cpu_kernel.free_ptr()
+
+        key = CPU._hash_code(c_code)
+        key2 = CPU._hash_code(c_code2)
+        so_fp = pathlib.Path(CACHE_DIR) / f"unintialized_memory_{key}.so"
+        so_fp2 = pathlib.Path(CACHE_DIR) / f"free_{key2}.so"
+
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+        if not os.path.exists(so_fp2):
+            CPU._build_shared_object(c_code2, so_fp2)
+
+        lib = CPU._get_handle(str(so_fp))
+        lib2 = CPU._get_handle(str(so_fp2))
+
+        CPU._ensure_sig(cdef)
+        CPU._ensure_sig(cdef2)
+
+        ptr = CPU.ffi.gc(lib.uninitialized_memory(num*size), lib2.free_ptr)
+
+        if ptr == CPU.ffi.NULL:
             raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
+
         return ptr
 
     @staticmethod
     def calloc(num: int, size: int = struct.calcsize('f')) -> CDataPtr:
-        ptr = MetalGPU.ffi.gc(_allocate.lib.initialized_memory(num, size), _allocate.lib.free_ptr)
-        if ptr == MetalGPU.ffi.NULL:
+        c_code, cdef = cpu_kernel.initialized_memory()
+        c_code2, cdef2 = cpu_kernel.free_ptr()
+
+        key = CPU._hash_code(c_code)
+        key2 = CPU._hash_code(c_code2)
+        so_fp = pathlib.Path(CACHE_DIR) / f"initialized_memory_{key}.so"
+        so_fp2 = pathlib.Path(CACHE_DIR) / f"free_{key2}.so"
+
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+        if not os.path.exists(so_fp2):
+            CPU._build_shared_object(c_code2, so_fp2)
+
+        lib = CPU._get_handle(str(so_fp))
+        lib2 = CPU._get_handle(str(so_fp2))
+
+        CPU._ensure_sig(cdef)
+        CPU._ensure_sig(cdef2)
+
+        ptr = CPU.ffi.gc(lib.initialized_memory(num, size), lib2.free_ptr)
+
+        if ptr == CPU.ffi.NULL:
             raise MemoryError(f"Failed to allocate {num * size} bytes of memory")
         return ptr
 
