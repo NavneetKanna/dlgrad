@@ -3,12 +3,15 @@ import itertools
 import os
 import platform
 import shutil
+import urllib.error
+import urllib.request
 from collections.abc import Iterable
 from enum import Enum, auto
 from math import prod
+from pathlib import Path
 
-import requests
 from cffi import FFI
+from tqdm import tqdm
 
 ffi = FFI()
 
@@ -135,27 +138,44 @@ def cal_sum_max_out_shape(ndim: int, dim: int, inp_shape: tuple, keepdim: bool =
 OSX = platform.system() == "Darwin"
 CACHE_DIR = os.path.expanduser("~/Library/Caches/dlgrad" if OSX else "~/.cache/dlgrad")
 
-# TODO: Add pbar
 def fetch(url: str, filename: str) -> None:
-    if not os.path.exists(f"{CACHE_DIR}/downloads"):
-        os.makedirs(f"{CACHE_DIR}/downloads")
-    if not os.path.exists(f"{CACHE_DIR}/downloads/{filename}"):
-        response = requests.get(url)
-        if response.status_code == 200:
-            with open(f"{CACHE_DIR}/downloads/{filename}", "wb") as file:
-                file.write(response.content)
-        else:
-            print(f"Failed to download file. Status code: {response.status_code}")
-    else:
-        print(f"{CACHE_DIR}/downloads/{filename} already exists")
+    downloads = Path(CACHE_DIR) / "downloads"
+    path = downloads / filename
+
+    if not os.path.exists(downloads):
+        downloads.mkdir(parents=True, exist_ok=True)
+
+    if not path.exists():
+        print(f"Downloading {filename} ...")
+        try:
+            with urllib.request.urlopen(url) as response:
+                total_size = response.length
+                chunk_size = 8192
+
+                with tqdm(
+                    total=total_size,
+                    unit="B",
+                    unit_scale=True,
+                    desc=filename,
+                    ascii=True,
+                ) as pbar, path.open("wb") as file:
+
+                    while True:
+                        chunk = response.read(chunk_size)
+                        if not chunk:
+                            break
+                        file.write(chunk)
+                        pbar.update(len(chunk))
+        except urllib.error.HTTPError as e:
+            print(f"Failed to download file. HTTP status: {e.code}")
+        except urllib.error.URLError as e:
+            print(f"Failed to reach server: {e.reason}")
 
 def unzip(filename: str, save_filename: str) -> None:
     if not os.path.exists(f"{CACHE_DIR}/downloads/{save_filename}"):
         with gzip.open(f"{CACHE_DIR}/downloads/{filename}", 'rb') as fin:
             with open(f"{CACHE_DIR}/downloads/{save_filename}", "wb") as fout:
                 shutil.copyfileobj(fin, fout)
-    else:
-        print(f"{save_filename} already exists")
 
 class Colors:
     GREEN = '\033[92m'

@@ -14,6 +14,16 @@ Built from scratch to learn how deep learning and ML frameworks work.
 
 ## Installation
 
+From source 
+
+```bash
+git clone https://github.com/NavneetKanna/dlgrad.git
+cd dlgrad
+python3 -m pip install -e .
+```
+
+Direct
+
 ```bash
 python3 -m pip install git+https://github.com/NavneetKanna/dlgrad
 ```
@@ -25,6 +35,11 @@ Documentation can be found in this [folder](docs/README.md).
 ## Examples
 
 The mnist MLP and GAN examples can be found in the [examples folder](examples/).
+
+```python3
+python3 examples/mnist_mlp.py
+python3 examples/mnist_gan.py
+```
 
 The mnist example gets to around 95% accuracy in ~5 seconds on the CPU.
 

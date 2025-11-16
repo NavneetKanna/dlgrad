@@ -12,8 +12,8 @@ setup(
     description='An autograd engine built for my understanding',
     author='Navneet Kanna',
     license='MIT',
-    version='0.5',
+    version='0.9',
     packages=find_packages(),
     python_requires='>=3.10',
-    install_requires=['cffi>=1.0.0', 'requests', 'pyobjc-framework-Metal; sys_platform == "darwin"'],
+    install_requires=['cffi>=1.0.0', 'pyobjc-framework-Metal; sys_platform == "darwin"'],
 )
