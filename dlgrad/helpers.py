@@ -139,11 +139,11 @@ OSX = platform.system() == "Darwin"
 CACHE_DIR = os.path.expanduser("~/Library/Caches/dlgrad" if OSX else "~/.cache/dlgrad")
 
 def fetch(url: str, filename: str) -> None:
-    downloads = Path(CACHE_DIR) / "downloads"
-    path = downloads / filename
+    downloads_dir = Path(CACHE_DIR) / "downloads"
+    path = downloads_dir / filename
 
-    if not os.path.exists(downloads):
-        downloads.mkdir(parents=True, exist_ok=True)
+    if not os.path.exists(downloads_dir):
+        downloads_dir.mkdir(parents=True, exist_ok=True)
 
     if not path.exists():
         print(f"Downloading {filename} ...")
@@ -172,10 +172,13 @@ def fetch(url: str, filename: str) -> None:
             print(f"Failed to reach server: {e.reason}")
 
 def unzip(filename: str, save_filename: str) -> None:
-    if not os.path.exists(f"{CACHE_DIR}/downloads/{save_filename}"):
-        with gzip.open(f"{CACHE_DIR}/downloads/{filename}", 'rb') as fin:
-            with open(f"{CACHE_DIR}/downloads/{save_filename}", "wb") as fout:
-                shutil.copyfileobj(fin, fout)
+    downloads_dir = Path(CACHE_DIR) / "downloads"
+    src = downloads_dir / filename
+    dst = downloads_dir / save_filename
+
+    if not dst.exists():
+        with gzip.open(src, "rb") as fin, dst.open("wb") as fout:
+            shutil.copyfileobj(fin, fout)
 
 class Colors:
     GREEN = '\033[92m'

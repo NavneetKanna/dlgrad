@@ -3,7 +3,7 @@ from tqdm import tqdm
 from dlgrad import Tensor, nn
 from dlgrad.nn.datasets import mnist
 
-BS, in_dim, HS, ncls = 64, 784, 64, 10
+BS, in_dim, HS, ncls = 128, 784, 64, 10
 EPOCHS = 3
 STEPS = int(60000/BS) * EPOCHS
 

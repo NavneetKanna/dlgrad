@@ -8,9 +8,9 @@
 
 dlgrad (*D*eep *L*earning auto*grad*) is a small but highly capable reverse-mode autodiff engine with a PyTorch-like API.
 
-It lives in the sweet spot between micrograd and tinygrad — simple enough to learn from, powerful enough to run real models.
+It lives in the sweet spot between micrograd and tinygrad — simple enough to learn from and powerful enough to run real models.
 
-Built from scratch to learn how deep learning and ML frameworks work.
+Built from scratch to learn how deep learning and ML frameworks work. Note that this is not meant as a replacement to the existing frameworks, rather to learn how they operate and to understand how deep learning models train/learn.
 
 ## Installation
 
