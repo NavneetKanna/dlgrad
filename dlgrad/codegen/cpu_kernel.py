@@ -2,6 +2,8 @@ from collections.abc import Generator
 from functools import cache
 from typing import Any
 
+from dlgrad.dtype import Scalar
+
 
 # NOTE: Assumes max 4D tensor
 def n_gen() -> Generator[str, Any, None]:
@@ -69,138 +71,228 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
     return c_code, f"void {op}(float *x, float *y, float *out);"
 
 @cache
-def max_backward(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
-    code  = f"""
-        void max_backward(float *x, float *out, float *max_with_1s) {{
-            int shape_dim = {x_shape[dim]};
-            int stride_dim = {x_stride[dim]};
-            int numel = {x_numel};
-
-            int out_start = 0;
-            for (int j = 0; j < numel; j += stride_dim) {{
-                if ((j % (stride_dim * shape_dim)) == 0) {{
-                    if (j != 0) {{
-                        out_start += stride_dim;
-                    }} else {{
-                        out_start = 0;
-                    }}
-                    for (int i = 0; i < stride_dim; i++) {{
-                        float val = x[j + i];
-                        float val2 = out[out_start + i];
-                        if (val == val2) {{
-                            max_with_1s[j+i] = 1.0f;
-                        }}
-                    }}
-                }} else {{
-                    for (int i = 0; i < stride_dim; i++) {{
-                        float val = x[j + i];
-                        float val2 = out[out_start + i];
-                        if (val == val2) {{
-                            max_with_1s[j+i] = 1.0f;
-                        }}
-                    }}
-                }}
+def reduce(x_numel: int, op: str) -> tuple[str, str]:
+    if op == "sum":
+        op1 = "float val = 0;"
+        op2 = "val += v;"
+    else:
+        op1 = "float val = -FLT_MAX;"
+        op2 = "if (v > val)\nval = v;"
+    c_code = f"""
+        #include <stdlib.h>
+        #include <float.h>
+        void {op}(const float *x, float *out) {{
+            {op1}
+            for (size_t i=0; i<{x_numel}; i++) {{
+                float v = x[i];
+                {op2}
             }}
+            out[0] = val;
         }}
     """
-
-    return code, "void max_backward(float *x, float *out, float *max_with_1s);"
+    return c_code, f"void {op}(const float *x, float *out);"
 
 @cache
-def max(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
-    if dim == -1:
-        code = f"""
-            void max(float *x, float *out) {{
-                float m = 0.0;
-                for (int i=0; i<{x_numel}; i++) {{
-                    if (x[i] > m) {{
-                        m = x[i];
+def reduce_4d(x_shape: tuple, x_stride: tuple, out_stride: tuple, x_numel: int, dim: int, op: str) -> tuple[str, str]:
+    if op == "sum":
+        op1 = "float val = 0;"
+        op2 = "val += v;"
+    else:
+        op1 = "float val = -FLT_MAX;"
+        op2 = "if (v > val)\nval = v;"
+    if dim == 0:
+        c_code = f"""
+            #include <stdlib.h>
+            #include <float.h>
+            void {op}(const float *x, float *out) {{
+                for (size_t C = 0; C < {x_shape[1]}; C++) {{
+                    for (size_t H = 0; H < {x_shape[2]}; H++) {{
+                        for (size_t W = 0; W < {x_shape[3]}; W++) {{
+                            {op1}
+                            for (size_t B=0; B<{x_shape[0]}; B++) {{
+                                float v = x[B*{x_stride[0]} + C*{x_stride[1]} + H*{x_stride[2]} + W];
+                                {op2}
+                            }}
+                            out[C*{out_stride[0]} + H*{out_stride[1]} + W] = val;
+                        }}
                     }}
                 }}
-                out[0] = m;
             }}
         """
-
-        return code, "void max(float *x, float *out);"
-
-    code  = f"""
-    void max(float *x, float *out) {{
-        int shape_dim = {x_shape[dim]};
-        int stride_dim = {x_stride[dim]};
-        int numel = {x_numel};
-
-        int out_start = 0;
-        for (int j = 0; j < numel; j += stride_dim) {{
-            if ((j % (stride_dim * shape_dim)) == 0) {{
-                if (j != 0) {{
-                    out_start += stride_dim;
-                }} else {{
-                    out_start = 0;
-                }}
-                // copy
-                for (int i = 0; i < stride_dim; i++) {{
-                    out[out_start + i] = x[j + i];
-                }}
-            }} else {{
-                // max
-                for (int i = 0; i < stride_dim; i++) {{
-                    float val = x[j + i];
-                    if (val > out[out_start + i]) {{
-                        out[out_start + i] = val;
+        return c_code, f"void {op}(const float *x, float *out);"
+    elif dim == 1:
+        c_code = f"""
+            #include <stdlib.h>
+            #include <float.h>
+            void {op}(const float *x, float *out) {{
+                for (size_t B=0; B<{x_shape[0]}; B++) {{
+                    for (size_t H=0; H<{x_shape[2]}; H++) {{
+                        for (size_t W=0; W<{x_shape[3]}; W++) {{
+                            {op1}
+                            for (size_t C=0; C<{x_shape[1]}; C++) {{
+                                float v = x[B*{x_stride[0]} + C*{x_stride[1]} + H*{x_stride[2]} + W];
+                                {op2}
+                            }}
+                            out[B*{out_stride[0]} + H*{out_stride[1]} + W] = val;
+                        }}
                     }}
                 }}
             }}
-        }}
-    }}
-    """
-
-    return code, "void max(float *x, float *out);"
+        """
+        return c_code, f"void {op}(const float *x, float *out);"
+    elif dim == 2:
+        c_code = f"""
+            #include <stdlib.h>
+            #include <float.h>
+            void {op}(const float *x, float *out) {{
+                for (size_t B=0; B<{x_shape[0]}; B++) {{
+                    for (size_t C=0; C<{x_shape[1]}; C++) {{
+                        for (size_t W=0; W<{x_shape[3]}; W++) {{
+                            {op1}
+                            for (size_t H=0; H<{x_shape[2]}; H++) {{
+                                float v = x[B*{x_stride[0]} + C*{x_stride[1]} + H*{x_stride[2]} + W];
+                                {op2}
+                            }}
+                            out[B*{out_stride[0]} + C*{out_stride[1]} + W] = val;
+                        }}
+                    }}
+                }}
+            }}
+        """
+        return c_code, f"void {op}(const float *x, float *out);"
+    elif dim == 3:
+        c_code = f"""
+            #include <stdlib.h>
+            #include <float.h>
+            void {op}(const float *x, float *out) {{
+                for (size_t B=0; B<{x_shape[0]}; B++) {{
+                    for (size_t C=0; C<{x_shape[1]}; C++) {{
+                        for (size_t H=0; H<{x_shape[2]}; H++) {{
+                            const float *ptr = x + B*{x_stride[0]} + C*{x_stride[1]} + H*{x_stride[2]};
+                            {op1}
+                            for (size_t W=0; W<{x_shape[3]}; W++) {{
+                                float v = ptr[W];
+                                {op2}
+                            }}
+                            out[B*{out_stride[0]} + C*{out_stride[1]} + H] = val;
+                        }}
+                    }}
+                }}
+            }}
+        """
+        return c_code, f"void {op}(const float *x, float *out);"
+    elif dim == -1:
+        return reduce(x_numel, op)
 
 @cache
-def sum(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int) -> tuple[str, str]:
-    if dim == -1:
-        code = f"""
-            void sum(float *x, float *out) {{
-                float s = 0.0;
-                for (int i=0; i<{x_numel}; i++) {{
-                    s += x[i];
-                }}
-                out[0] = s;
+def reduce_3d(x_shape: tuple, x_stride: tuple, out_stride: tuple, x_numel: int, dim: int, op: str) -> tuple[str, str]:
+    if op == "sum":
+        op1 = "float val = 0;"
+        op2 = "val += v;"
+    else:
+        op1 = "float val = -FLT_MAX;"
+        op2 = "if (v > val)\nval = v;"
+    if dim == 0:
+        c_code = f"""
+            #include <stdio.h>
+            #include <float.h>
+            void {op}(const float *x, float *out) {{
+                    for (size_t H=0; H<{x_shape[1]}; H++) {{
+                        for (size_t W=0; W<{x_shape[2]}; W++) {{
+                            {op1}
+                            for (size_t C=0; C<{x_shape[0]}; C++) {{
+                                float v = x[C*{x_stride[0]} + H*{x_stride[1]} + W];
+                                {op2}
+                            }}
+                            out[H*{out_stride[0]} + W] = val;
+                        }}
+                    }}
             }}
         """
-
-        return code, "void sum(float *x, float *out);"
-
-    code  = f"""
-    void sum(float *x, float *out) {{
-        int shape_dim = {x_shape[dim]};
-        int stride_dim = {x_stride[dim]};
-        int numel = {x_numel};
-
-        int out_start = 0;
-        for (int j = 0; j < numel; j += stride_dim) {{
-            if ((j % (stride_dim * shape_dim)) == 0) {{
-                if (j != 0) {{
-                    out_start += stride_dim;
-                }} else {{
-                    out_start = 0;
-                }}
-                // copy
-                for (int i = 0; i < stride_dim; i++) {{
-                    out[out_start + i] = x[j + i];
-                }}
-            }} else {{
-                // sum
-                for (int i = 0; i < stride_dim; i++) {{
-                    float val = x[j + i];
-                    out[out_start + i] += val;
+        return c_code, f"void {op}(const float *x, float *out);"
+    elif dim == 1:
+        c_code = f"""
+            #include <stdio.h>
+            #include <float.h>
+            void {op}(const float *x, float *out) {{
+                    for (size_t C=0; C<{x_shape[0]}; C++) {{
+                        for (size_t W=0; W<{x_shape[2]}; W++) {{
+                            {op1}
+                            for (size_t H=0; H<{x_shape[1]}; H++) {{
+                                float v = x[C*{x_stride[0]} + H*{x_stride[1]} + W];
+                                {op2}
+                            }}
+                            out[C*{out_stride[0]} + W] = val;
+                        }}
+                    }}
+            }}
+        """
+        return c_code, f"void {op}(const float *x, float *out);"
+    elif dim == 2:
+        c_code = f"""
+            #include <stdio.h>
+            #include <float.h>
+            void {op}(const float *x, float *out) {{
+                for (size_t C=0; C<{x_shape[0]}; C++) {{
+                    for (size_t H=0; H<{x_shape[1]}; H++) {{
+                        const float *ptr = x + C*{x_stride[0]} + H*{x_stride[1]};
+                        {op1}
+                        for (size_t W=0; W<{x_shape[2]}; W++) {{
+                            float v = ptr[W];
+                            {op2}
+                        }}
+                        out[C*{out_stride[0]} + H] = val;
+                    }}
                 }}
             }}
-        }}
-    }}
-    """
+        """
+        return c_code, f"void {op}(const float *x, float *out);"
+    elif dim == -1:
+        return reduce(x_numel, op)
 
-    return code, "void sum(float *x, float *out);"
+@cache
+def reduce_2d(x_shape: tuple, x_stride: tuple, out_stride: tuple, x_numel: int, dim: int, op: str) -> tuple[str, str]:
+    if op == "sum":
+        op1 = "float val = 0;"
+        op2 = "val += v;"
+    else:
+        op1 = "float val = -FLT_MAX;"
+        op2 = "if (v > val)\nval = v;"
+    if dim == 0:
+        c_code = f"""
+            #include <stdio.h>
+            #include <float.h>
+            void {op}(const float *x, float *out) {{
+                for (size_t W=0; W<{x_shape[1]}; W++) {{
+                    {op1}
+                    for (size_t H=0; H<{x_shape[0]}; H++) {{
+                        float v = x[H*{x_stride[0]} + W];
+                        {op2}
+                    }}
+                    out[W] = val;
+                }}
+            }}
+        """
+        return c_code, f"void {op}(const float *x, float *out);"
+    elif dim == 1:
+        c_code = f"""
+            #include <stdio.h>
+            #include <float.h>
+            void {op}(const float *x, float *out) {{
+                for (size_t H=0; H<{x_shape[0]}; H++) {{
+                    const float *ptr = x + H*{x_stride[0]};
+                    {op1}
+                    for (size_t W=0; W<{x_shape[1]}; W++) {{
+                        float v = ptr[W];
+                        {op2}
+                    }}
+                    out[H] = val;
+                }}
+            }}
+        """
+        return c_code, f"void {op}(const float *x, float *out);"
+    elif dim == -1:
+        return reduce(x_numel, op)
 
 @cache
 def mean(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int, out_numel: int) -> tuple[str, str]:
@@ -253,18 +345,8 @@ def mean(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int, out_numel: int
     return code, "void mean(float *x, float *out);"
 
 @cache
-def transpose_given_axes(x_shape: tuple, axes: tuple) -> list:
-    ax = list(range(len(x_shape)))
-    # replace elements at positions in axes with elements of axes reversed
-    for i, pos in enumerate(axes):
-        ax[pos] = axes[-(i+1)]
-    return ax
-
-@cache
-def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int, axes: tuple) -> tuple[str, str]:
+def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int) -> tuple[str, str]:
     gen = n_gen()
-
-    ax = transpose_given_axes(x_shape, axes)
 
     code = """
     void transpose(float *x, float *out) {
@@ -281,8 +363,8 @@ def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int,
         """
 
     ts = "out_idx = "
-    for i, v in zip(out_stride, ax):
-        ts += f"{i}*{var_str[v]} + "
+    for i, v in zip(out_stride, var_str[::-1]):
+        ts += f"{i}*{v} + "
     ts = ts[:-3]
     ts += ";"
 
@@ -312,7 +394,7 @@ def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int,
     return code, "void transpose(float *x, float *out);"
 
 @cache
-def utils(x_numel: int, func: str) -> tuple[str, str]:
+def utils(x_numel: int, func: str, val: Scalar = None) -> tuple[str, str]:
     match func:
         case "neg":
             code = f"""
@@ -357,15 +439,15 @@ def utils(x_numel: int, func: str) -> tuple[str, str]:
             code = f"""
             #include <math.h>
 
-            void c_pow(float *x, float *out, int val)
+            void c_pow(float *x, float *out)
             {{
                 for (int i=0; i<{x_numel}; i++) {{
-                    out[i] = powf(x[i], val);
+                    out[i] = powf(x[i], {val});
                 }}
             }}
             """
 
-            return code, "void c_pow(float *x, float *out, int val);"
+            return code, "void c_pow(float *x, float *out);"
         case "sqrt":
             code = f"""
             #include <math.h>
@@ -383,9 +465,9 @@ def utils(x_numel: int, func: str) -> tuple[str, str]:
 @cache
 def clamp(x_numel: int, min_val: int, max_val: int) -> tuple[str, str]:
     c_code = f"""
-void clamp(float *x, float *out) {{
-    for (int i=0; i<{x_numel}; i++) {{
-"""
+    void clamp(float *x, float *out) {{
+        for (int i=0; i<{x_numel}; i++) {{
+    """
     if min_val is not None and max_val is not None:
         c_code += f"""
         if (x[i] < {min_val}) {{
@@ -395,7 +477,7 @@ void clamp(float *x, float *out) {{
         }} else {{
             out[i] = x[i];
         }}
-"""
+        """
     elif min_val is not None:
         c_code += f"""
         if (x[i] < {min_val}) {{
@@ -403,7 +485,7 @@ void clamp(float *x, float *out) {{
         }} else {{
             out[i] = x[i];
         }}
-"""
+        """
     elif max_val is not None:
         c_code += f"""
         if (x[i] > {max_val}) {{
@@ -411,15 +493,15 @@ void clamp(float *x, float *out) {{
         }} else {{
             out[i] = x[i];
         }}
-"""
+        """
     else:
         c_code += """
         out[i] = x[i];
-"""
+        """
     c_code += """
-    }
-}
-"""
+                }
+            }
+        """
     return c_code, "void clamp(float *x, float *out);"
 
 @cache
@@ -470,24 +552,34 @@ def ce_backward(x_shape: tuple, x_stride: tuple) -> tuple[str, str]:
 
 @cache
 def argmax(x_shape: tuple, axis: int) -> tuple[str, str]:
-    code = f"""
-        void argmax2d(float *x, float *out)
-        {{
-            int rows = {x_shape[0]};
-            int cols = {x_shape[1]};
-            if ({axis} == 1) {{
-                for (int i = 0; i < rows; i++) {{
-                    float max = x[i * cols + 0];
-                    int idx = 0;
-                    for (int j = 1; j < cols; j++) {{
-                        if (x[i * cols + j] > max) {{
-                            max = x[i * cols + j];
-                            idx = j;
+    if axis == 1:
+        code = f"""
+            void argmax2d(float *x, float *out)
+            {{
+                int rows = {x_shape[0]};
+                int cols = {x_shape[1]};
+                if ({axis} == 1) {{
+                    for (int i = 0; i < rows; i++) {{
+                        float max = x[i * cols + 0];
+                        int idx = 0;
+                        for (int j = 1; j < cols; j++) {{
+                            if (x[i * cols + j] > max) {{
+                                max = x[i * cols + j];
+                                idx = j;
+                            }}
                         }}
+                        out[i] = idx;
                     }}
-                    out[i] = idx;
                 }}
-            }} else if ({axis} == 0) {{
+            }}
+        """
+        return code, "void argmax2d(float *x, float *out);"
+    elif axis == 0:
+        f"""
+            void argmax2d(float *x, float *out)
+            {{
+                int rows = {x_shape[0]};
+                int cols = {x_shape[1]};
                 for (int j = 0; j < cols; j++) {{
                     float max = x[0 * cols + j];
                     int idx = 0;
@@ -499,7 +591,15 @@ def argmax(x_shape: tuple, axis: int) -> tuple[str, str]:
                     }}
                     out[j] = idx;
                 }}
-            }} else {{
+            }}
+        """
+        return code, "void argmax2d(float *x, float *out);"
+    else:
+        f"""
+            void argmax2d(float *x, float *out)
+            {{
+                int rows = {x_shape[0]};
+                int cols = {x_shape[1]};
                 float max = -999;
                 int idx = 0;
                 for (int i=0; i<rows*cols; i++) {{
@@ -510,10 +610,8 @@ def argmax(x_shape: tuple, axis: int) -> tuple[str, str]:
                 }}
                 out[0] = idx;
             }}
-        }}
-    """
-
-    return code, "void argmax2d(float *x, float *out);"
+        """
+        return code, "void argmax2d(float *x, float *out);"
 
 @cache
 def relu(x_numel: int) -> tuple[str, str]:
@@ -581,21 +679,109 @@ def where(x_numel: int, inp: bool, other: bool) -> tuple[str, str]:
     return code, "void where(float *arr, float *out, float *inp, float *other);"
 
 @cache
-def eqt(x_numel: int) -> tuple[str, str]:
-    code = f"""
-        void eqt(float *x, float *y, float *out)
-        {{
-            for (int i=0; i<{x_numel}; i++) {{
-                if (x[i] == y[i]) {{
-                    out[i] = 1.0;
-                }} else {{
-                    out[i] = 0.0;
+def eqt(x_numel: int, y_scalar: bool, x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple, x_dim: int) -> tuple[str, str]:  # noqa: C901
+    if y_scalar:
+        code = f"""
+            void eqt(float *x, float *y, float *out)
+            {{
+                for (int i=0; i<{x_numel}; i++) {{
+                    if (x[i] == y[0]) {{
+                        out[i] = 1.0;
+                    }} else {{
+                        out[i] = 0.0;
+                    }}
                 }}
             }}
-        }}
-    """
+        """
+        return code, "void eqt(float *x, float *y, float *out);"
 
-    return code, "void eqt(float *x, float *y, float *out);"
+    if x_dim == 4:
+        c = ""
+        for d, i, j in zip(["B", "C", "H", "W"], y_shape, y_stride):
+            if i != 1:
+                c += f"{d}*{j} + "
+
+        c = c[:-3] if c else "0"
+
+        c_code = f"""
+            #include <stdlib.h>
+            void eqt(float *x, float *y, float *out)
+            {{
+                for (size_t B = 0; B < {x_shape[0]}; B++) {{
+                    for (size_t C = 0; C < {x_shape[1]}; C++) {{
+                        for (size_t H = 0; H < {x_shape[2]}; H++) {{
+                            for (size_t W=0; W<{x_shape[3]}; W++) {{
+                                int x_idx = B*{x_stride[0]} + C*{x_stride[1]} + H*{x_stride[2]} + W*{x_stride[3]};
+                                int y_idx = {c};
+
+                                if (x[x_idx] == y[y_idx]) {{
+                                    out[x_idx] = 1.0;
+                                }} else {{
+                                    out[x_idx] = 0.0;
+                                }}
+                            }}
+                        }}
+                    }}
+                }}
+            }}
+        """
+        return c_code, "void eqt(float *x, float *y, float *out);"
+    elif x_dim == 3:
+        c = ""
+        for d, i, j in zip(["C", "H", "W"], y_shape, y_stride):
+            if i != 1:
+                c += f"{d}*{j} + "
+
+        c = c[:-3] if c else "0"
+
+        c_code = f"""
+            #include <stdlib.h>
+            void eqt(float *x, float *y, float *out)
+            {{
+                for (size_t C = 0; C < {x_shape[0]}; C++) {{
+                    for (size_t H = 0; H < {x_shape[1]}; H++) {{
+                        for (size_t W=0; W<{x_shape[2]}; W++) {{
+                            int x_idx = C*{x_stride[0]} + H*{x_stride[1]} + W*{x_stride[2]};
+                            int y_idx = {c};
+
+                            if (x[x_idx] == y[y_idx]) {{
+                                out[x_idx] = 1.0;
+                            }} else {{
+                                out[x_idx] = 0.0;
+                            }}
+                        }}
+                    }}
+                }}
+            }}
+        """
+        return c_code, "void eqt(float *x, float *y, float *out);"
+    elif x_dim == 2:
+        c = ""
+        for d, i, j in zip(["H", "W"], y_shape, y_stride):
+            if i != 1:
+                c += f"{d}*{j} + "
+
+        c = c[:-3] if c else "0"
+
+        c_code = f"""
+            #include <stdlib.h>
+            void eqt(float *x, float *y, float *out)
+            {{
+                for (size_t H = 0; H < {x_shape[0]}; H++) {{
+                    for (size_t W=0; W<{x_shape[1]}; W++) {{
+                        int x_idx = H*{x_stride[0]} + W*{x_stride[1]};
+                        int y_idx = {c};
+
+                        if (x[x_idx] == y[y_idx]) {{
+                            out[x_idx] = 1.0;
+                        }} else {{
+                            out[x_idx] = 0.0;
+                        }}
+                    }}
+                }}
+            }}
+        """
+        return c_code, "void eqt(float *x, float *y, float *out);"
 
 @cache
 def uninitialized_memory() -> tuple[str, str]:
@@ -821,7 +1007,7 @@ def mnist_loader() -> tuple[str, str]:
             num_rows = ntohl(num_rows);
             num_cols = ntohl(num_cols);
 
-        int out_size = num_images * num_rows * num_cols;
+            int out_size = num_images * num_rows * num_cols;
 
             float *out = (float*)malloc(out_size * sizeof(float));
             if (!out) {
@@ -885,83 +1071,3 @@ def mnist_loader() -> tuple[str, str]:
         }
     """
     return c_code, "float *mnist_images_loader(char *path, uint32_t magic_number);float *mnist_labels_loader(char *path, uint32_t magic_number);"
-
-
-"""
-dim = 1
-
-shape = (4, 3, 2)
-stride = (6, 2, 1)
-
-[[[0.40329522 0.7129083 ]
-  [0.2902877  0.9216182 ]
-  [0.73256075 0.8372984 ]]
-
- [[0.59929603 0.36998346]
-  [0.55582845 0.17390463]
-  [0.05803654 0.39682135]]
-
- [[0.7792665  0.47508177]
-  [0.20465787 0.48576224]
-  [0.01099625 0.86618644]]
-
- [[0.15955642 0.7351426 ]
-  [0.49416125 0.13069092]
-  [0.07697563 0.8316998 ]]]
-
-#include <stdlib.h>
-
-void maxx(float *x, float *out) {
-    int shape_dim = 3;
-    int stride_dim = 2;
-    int numel = 24;
-
-    int out_start = 0;
-    for (int j = 0; j < numel; j += stride_dim) {
-        if ((j % (stride_dim * shape_dim)) == 0) {
-            if (j != 0) {
-                out_start += stride_dim;
-            } else {
-                out_start = 0;
-            }
-            // copy
-            for (int i = 0; i < stride_dim; i++) {
-                out[out_start + i] = x[j + i];
-            }
-        } else {
-            // max
-            for (int i = 0; i < stride_dim; i++) {
-                float val = x[j + i];
-                if (val > out[out_start + i]) {
-                    out[out_start + i] = val;
-                }
-            }
-        }
-    }
-}
-
-at loop index 0,
-out_start=0, j=0
-copies [0.40329522 0.7129083] into out[0] and out[1]
-
-at loop index 2,
-out_start=0, j=2
-find max b/w x[2] and out[0] and b/w x[3] and out[1], if x[2] or x[3] is > out[0] or out[1], then replace
-
-at loop index 4,
-out_start=0, j=4
-find max b/w x[4] and out[0] and b/w x[5] and out[1], if x[4] or x[5] is > out[0] or out[1], then replace
-
-at loop index 6,
-out_start=2, j=6
-copies [0.59929603 0.36998346] into out[2] and out[3]
-
-at loop index 8,
-out_start=2, j=8
-find max b/w x[8] and out[2] and b/w x[9] and out[3], if x[8] or x[9] is > out[2] or out[3], then replace
-
-and so on.
-
-This applies to any shape and any dim. This algo also ensures that we are avoiding cache miss when trying to find
-max or sum along a dim, by looping through the input and output array's sequentially.
-"""

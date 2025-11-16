@@ -3,10 +3,8 @@ import pytest
 import torch
 from dlgrad import Tensor
 from itertools import product
+import torch.nn.functional as F
 
-
-# TODO: Test with one tensor req grad is none
-# TODO: Test whether it is a leaf tensor or not
 
 @pytest.fixture(params=['cpu', 'metal'])
 def device(request):
@@ -14,323 +12,177 @@ def device(request):
         pytest.skip("Apple Metal GPU not available")
     return request.param
 
-# Thanks to tinygrad for the template
-def run(shapes: list[tuple], device, func):
+def to_torch_device(device):
+    return "mps" if device == "metal" else device
+
+def run_binary_op_backward(shapes, device, op):
     np_data = [np.random.uniform(size=sh).astype(np.float32) for sh in shapes]
-    dlgrad_data = [Tensor(data, requires_grad=True) for data in np_data]
+    dl_x, dl_y = [Tensor(data, requires_grad=True) for data in np_data]
+    th_x, th_y = [torch.tensor(data, device=to_torch_device(device), requires_grad=True) for data in np_data]
 
-    if device == "metal":
-        device = "mps"
-    torch_data = [torch.tensor(data, device=device, requires_grad=True) for data in np_data]
+    op(dl_x, dl_y).sum().backward()
+    op(th_x, th_y).sum().backward()
 
-    func(*dlgrad_data).sum().backward()
-    func(*torch_data).sum().backward()
+    np.testing.assert_allclose(
+        dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3
+    )
+    np.testing.assert_allclose(
+        dl_y.grad.numpy(), th_y.grad.cpu().numpy(), atol=1e-6, rtol=1e-3
+    )
 
-    if device == "mps":
-        torch_grad_1 = torch_data[0].grad.cpu()
-        torch_grad_2 = torch_data[1].grad.cpu()
-    else:
-        torch_grad_1 = torch_data[0].grad
-        torch_grad_2 = torch_data[1].grad
+def run_unary_op_backward(shape, device, op):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    dl_x = Tensor(np_data, requires_grad=True)
+    th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
 
-    np.testing.assert_allclose(dlgrad_data[0].grad.numpy(), torch_grad_1.numpy(), atol=1e-6, rtol=1e-3)
-    np.testing.assert_allclose(dlgrad_data[1].grad.numpy(), torch_grad_2.numpy(), atol=1e-6, rtol=1e-3)
+    op(dl_x).sum().backward()
+    op(th_x).sum().backward()
 
-def generate_broadcastable_shapes(shape, reverse: bool = False):
+    np.testing.assert_allclose(
+        dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3
+    )
+
+def generate_broadcastable_shapes(shape):
     options = [(1, d) for d in shape]
-    result = []
-    for dims in product(*options):
-        if dims == shape:
-            if not reverse:
-                result.append((shape, dims))
-            else:
-                result.append((dims, shape))
-        else:
-            if not reverse:
-                result.append((shape, dims))
-            else:
-                result.append((dims, shape))
-    return result
+    return [(shape, dims) for dims in product(*options)]
 
-s = generate_broadcastable_shapes((2, 3, 4, 5))
-s += generate_broadcastable_shapes((2, 3, 4))
-s += generate_broadcastable_shapes((2, 3))
+shapes = (
+    generate_broadcastable_shapes((2, 3, 4, 5))
+    + generate_broadcastable_shapes((2, 3, 4))
+    + generate_broadcastable_shapes((784, 64))
+)
 
-@pytest.mark.parametrize("shapes", s)
-def test_add_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
-    run(shapes, device, lambda x, y: x+y)
+@pytest.mark.parametrize("shapes", shapes)
+@pytest.mark.parametrize("op", [lambda x, y: x + y, lambda x, y: x - y, lambda x, y: x * y, lambda x, y: x / y])
+def test_elementwise_backward(shapes, device, op):
+    run_binary_op_backward(shapes, device, op)
 
-@pytest.mark.parametrize("shapes", s)
-def test_sub_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
-    run(shapes, device, lambda x, y: x-y)
+@pytest.mark.parametrize("shape", [(4,3,2,4), (4,3,2), (3,2)])
+@pytest.mark.parametrize("op", [
+    lambda x: x.relu(),
+    lambda x: x.leaky_relu() if not isinstance(x, torch.Tensor) else F.leaky_relu(x),
+    lambda x: x.tanh(),
+    lambda x: x.sigmoid(),
+])
+def test_unary_backward(shape, device, op):
+    run_unary_op_backward(shape, device, op)
 
-@pytest.mark.parametrize("shapes", s)
-def test_mul_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
-    run(shapes, device, lambda x, y: x*y)
+@pytest.mark.parametrize("shape", [(5, 4, 3, 2), (2, 3, 4), (2, 3)])
+@pytest.mark.parametrize("keepdims", [True, False])
+def test_max_backward(shape, keepdims, device):
+    for dim in range(len(shape)):
+        np_data = np.random.randn(*shape).astype(np.float32)
+        dl_x = Tensor(np_data, device=device, requires_grad=True)
+        th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
 
-@pytest.mark.parametrize("shapes", s)
-def test_div_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
-    run(shapes, device,lambda x, y: x/y)
+        dl_x.max(dim=dim, keepdim=keepdims).sum().backward()
+        o, _ = th_x.max(dim=dim, keepdim=keepdims)
+        o.sum().backward()
 
-s = [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]]
+        np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes", s)
-def test_relu_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, requires_grad=True)
+    np_data = np.random.randn(*shape).astype(np.float32)
+    dl_x = Tensor(np_data, device=device, requires_grad=True)
+    th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
 
-        if device == "metal":
-            device = "mps"
+    dl_x.max().backward()
+    th_x.max().backward()
 
-        torch_data = torch.tensor(np_data, device=device, requires_grad=True)
+    np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-        dlgrad_data.relu().sum().backward()
-        torch_data.relu().sum().backward()
-        if device == "mps":
-            torch_data = torch_data.grad.cpu()
-        else:
-            torch_data = torch_data.grad
+@pytest.mark.parametrize("shape", [(5, 4, 3, 2), (2, 3, 4), (2, 3)])
+@pytest.mark.parametrize("keepdims", [True, False])
+def test_sum_backward(shape, keepdims, device):
+    for dim in range(len(shape)):
+        np_data = np.random.randn(*shape).astype(np.float32)
+        dl_x = Tensor(np_data, requires_grad=True)
+        th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
 
-        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.numpy(), atol=1e-6, rtol=1e-3)
+        dl_x.sum(dim=dim, keepdim=keepdims).sum().backward()
+        th_x.sum(dim=dim, keepdim=keepdims).sum().backward()
 
-@pytest.mark.parametrize("shapes", s)
-def test_leaky_relu_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, requires_grad=True)
+        np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-        if device == "metal":
-            device = "mps"
+    np_data = np.random.randn(*shape).astype(np.float32)
+    dl_x = Tensor(np_data, requires_grad=True)
+    th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
 
-        torch_data = torch.tensor(np_data, device=device, requires_grad=True)
-        m = torch.nn.LeakyReLU()
+    dl_x.sum().backward()
+    th_x.sum().backward()
 
-        dlgrad_data.leaky_relu().sum().backward()
-        m(torch_data).sum().backward()
-        if device == "mps":
-            torch_data = torch_data.grad.cpu()
-        else:
-            torch_data = torch_data.grad
+    np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.numpy(), atol=1e-6, rtol=1e-3)
+@pytest.mark.parametrize("shape", [(3,2,4), (4,4)])
+@pytest.mark.parametrize("keepdims", [True, False])
+def test_mean_backward(shape, keepdims, device):
+    for dim in range(len(shape)):
+        np_data = np.random.randn(*shape).astype(np.float32)
+        dl_x = Tensor(np_data, requires_grad=True)
+        th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
 
-@pytest.mark.parametrize("shapes", s)
-def test_sigmoid_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, requires_grad=True)
+        dl_x.mean(dim=dim, keepdim=keepdims).sum().backward()
+        th_x.mean(dim=dim, keepdim=keepdims).sum().backward()
 
-        if device == "metal":
-            device = "mps"
+        np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-        torch_data = torch.tensor(np_data, device=device, requires_grad=True)
+    np_data = np.random.randn(*shape).astype(np.float32)
+    dl_x = Tensor(np_data, requires_grad=True)
+    th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
 
-        dlgrad_data.sigmoid().sum().backward()
-        torch_data.sigmoid().sum().backward()
-        if device == "mps":
-            torch_data = torch_data.grad.cpu()
-        else:
-            torch_data = torch_data.grad
+    dl_x.mean().backward()
+    th_x.mean().backward()
 
-        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.numpy(), atol=1e-6, rtol=1e-3)
+    np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes", s)
-def test_tanh_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, requires_grad=True)
+@pytest.mark.parametrize("shapes", [
+    ((2,3), (3,4)),
+    ((4,8), (8,16)),
+    ((128,64), (64,10)),
+])
+def test_matmul_backward(shapes, device):
+    x_shape, y_shape = shapes
+    np_x = np.random.randn(*x_shape).astype(np.float32)
+    np_y = np.random.randn(*y_shape).astype(np.float32)
+    dl_x = Tensor(np_x, requires_grad=True)
+    dl_y = Tensor(np_y, requires_grad=True)
+    th_x = torch.tensor(np_x, device=to_torch_device(device), requires_grad=True)
+    th_y = torch.tensor(np_y, device=to_torch_device(device), requires_grad=True)
 
-        if device == "metal":
-            device = "mps"
+    dl_out = dl_x @ dl_y
+    th_out = th_x @ th_y
+    dl_out.sum().backward()
+    th_out.sum().backward()
 
-        torch_data = torch.tensor(np_data, device=device, requires_grad=True)
-
-        dlgrad_data.tanh().sum().backward()
-        torch_data.tanh().sum().backward()
-        if device == "mps":
-            torch_data = torch_data.grad.cpu()
-        else:
-            torch_data = torch_data.grad
-
-        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.numpy(), atol=1e-6, rtol=1e-3)
-
-@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]])
-def test_max_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
-    for sh in shapes:
-        np_data = np.random.uniform(size=sh).astype(np.float32)
-
-        if device == "metal":
-            device = "mps"
-
-        for dim in range(len(sh)):
-            dlgrad_data = Tensor(np_data, requires_grad=True)
-            torch_data = torch.tensor(np_data, device=device, requires_grad=True)
-            dlgrad_data.max(dim=dim).sum().backward()
-            to_out, _ = torch_data.max(dim=dim)
-            to_out.sum().backward()
-            if device == "mps":
-                torch_data = torch_data.grad.cpu()
-            else:
-                torch_data = torch_data.grad
-
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.numpy(), atol=1e-6, rtol=1e-3)
-
-@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]])
-def test_sum_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes):
-        pytest.skip()
-    for sh in shapes:
-        np_data = np.random.uniform(size=sh).astype(np.float32)
-
-        if device == "metal":
-            device = "mps"
-
-        for dim in range(len(sh)):
-            dlgrad_data = Tensor(np_data, requires_grad=True)
-            torch_data = torch.tensor(np_data, device=device, requires_grad=True)
-            dlgrad_data.sum(dim=dim).sum().backward()
-            to_out = torch_data.sum(dim=dim)
-            to_out.sum().backward()
-            if device == "mps":
-                torch_data = torch_data.grad.cpu()
-            else:
-                torch_data = torch_data.grad
-
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.numpy(), atol=1e-6, rtol=1e-3)
-
-@pytest.mark.parametrize("shapes", [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]])
-def test_mean_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes) or any(len(shape) == 3 for shape in shapes) or any(len(shape) == 2 for shape in shapes):
-        pytest.skip()
-    for sh in shapes:
-        np_data = np.random.uniform(size=sh).astype(np.float32)
-
-        if device == "metal":
-            device = "mps"
-
-        for dim in range(len(sh)):
-            dlgrad_data = Tensor(np_data, requires_grad=True)
-            torch_data = torch.tensor(np_data, device=device, requires_grad=True)
-            dlgrad_data.mean(dim=dim).mean().backward()
-            torch_data.mean(dim=dim).mean().backward()
-            if device == "mps":
-                torch_data = torch_data.grad.cpu()
-            else:
-                torch_data = torch_data.grad
-
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.numpy(), atol=1e-6, rtol=1e-3)
+    np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
+    np.testing.assert_allclose(dl_y.grad.numpy(), th_y.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", [[(2, 3)]])
-def test_ce_backward(shapes):
+def test_cross_entropy_backward(shapes, device):
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
         np_target = np.array([[1, 2]]).astype(np.float32).reshape(-1, 1)
 
-        dlgrad_data = Tensor(np_data, requires_grad=True)
-        dlgrad_target = Tensor(np_target)
-        torch_data = torch.tensor(np_data, requires_grad=True)
-        torch_target = torch.tensor(np_target, dtype=torch.long).squeeze()
+        dl_x = Tensor(np_data, device=device, requires_grad=True)
+        dl_t = Tensor(np_target)
+        th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
+        th_t = torch.tensor(np_target, device=to_torch_device(device), dtype=torch.long).squeeze()
 
-        dlgrad_data.cross_entropy_loss(dlgrad_target).backward()
+        dl_x.cross_entropy_loss(dl_t).backward()
         loss = torch.nn.CrossEntropyLoss(reduction="sum")
-        loss(torch_data, torch_target).backward()
+        loss(th_x, th_t).backward()
 
-        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
+        np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes", s)
-def test_log_sft_backward(shapes, device):
-    if device == 'metal' and any(len(shape) == 4 for shape in shapes) or any(len(shape) == 3 for shape in shapes):
-        pytest.skip()
+@pytest.mark.parametrize("shapes", [[(2, 3)]])
+def test_log_softmax_backward(shapes, device):
     for sh in shapes:
         np_data = np.random.uniform(size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, requires_grad=True)
+        dl_x = Tensor(np_data, device=device, requires_grad=True)
 
-        if device == "metal":
-            device = "mps"
+        th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
 
-        torch_data = torch.tensor(np_data, device=device, requires_grad=True)
-
-        dlgrad_data.log_softmax(dim=1).sum().backward()
+        dl_x.log_softmax(dim=1).sum().backward()
         to_out = torch.nn.LogSoftmax(dim=1)
-        to_out(torch_data).sum().backward()
-        if device == "mps":
-            torch_data = torch_data.grad.cpu()
-        else:
-            torch_data = torch_data.grad
+        to_out(th_x).sum().backward()
 
-        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.numpy(), atol=1e-6, rtol=1e-3)
-
-@pytest.mark.parametrize("shapes", [[(2, 3), (3, 2)]])
-def test_matmul_backward(shapes, device):
-    if device == 'metal' and len(shapes) == 4:
-        pytest.skip()
-    run(shapes, device, lambda x, y: x@y)
-    
-s = [
-    [(4, 3, 2, 1)],
-    [(4, 3, 2)]
-]
-@pytest.mark.parametrize("shapes", s)
-def test_transpose_backward(shapes, device):
-    if device == 'metal':
-        pytest.skip()
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, device=device, requires_grad=True)
-        torch_data = torch.tensor(np_data, device=device, requires_grad=True)
-
-        dl_out = Tensor.transpose(dlgrad_data, (0, 1))
-        to_out = torch.transpose(torch_data, 0, 1)
-        dl_out.sum().backward()
-        to_out.sum().backward()
-        np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
-
-        if len(sh) == 4:
-            dl_out = Tensor.transpose(dlgrad_data, (0, 3))
-            to_out = torch.transpose(torch_data, 0, 3)
-            dl_out.sum().backward()
-            to_out.sum().backward()
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
-
-            dl_out = Tensor.transpose(dlgrad_data, (1, 2))
-            to_out = torch.transpose(torch_data, 1, 2)
-            dl_out.sum().backward()
-            to_out.sum().backward()
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
-
-            dl_out = Tensor.transpose(dlgrad_data, (2, 3))
-            to_out = torch.transpose(torch_data, 2, 3)
-            dl_out.sum().backward()
-            to_out.sum().backward()
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
-        elif len(sh) == 3:
-            dl_out = Tensor.transpose(dlgrad_data, (1, 2))
-            to_out = torch.transpose(torch_data, 1, 2)
-            dl_out.sum().backward()
-            to_out.sum().backward()
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
-
-            dl_out = Tensor.transpose(dlgrad_data, (0, 2))
-            to_out = torch.transpose(torch_data, 0, 2)
-            dl_out.sum().backward()
-            to_out.sum().backward()
-            np.testing.assert_allclose(dlgrad_data.grad.numpy(), torch_data.grad.numpy(), atol=1e-6, rtol=1e-3)
+        np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)

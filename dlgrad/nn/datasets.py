@@ -7,6 +7,11 @@ from dlgrad.runtime.cpu import CPU
 
 
 def mnist(device: Device = Device.CPU) -> list[Tensor]:
+    """
+    Returns a list of tensor which contain
+    train_images, train_labels, test_images, test_labels.
+    The data is not normalized.
+    """
     base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
     datasets = [
         ("train-images-idx3-ubyte.gz", True, 2051, (60000, 784)),

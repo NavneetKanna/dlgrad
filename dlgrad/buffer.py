@@ -41,6 +41,25 @@ class Buffer:
                                        ndim=kwargs.get("ndim", len(shape)),
                                        dtype=dtype, device=device, nbytes=prod_(shape)*DType.get_n_bytes(dtype))
 
+    def numpy(self: Buffer) -> "np.ndarray":  # type: ignore  # noqa: F821
+        import numpy as np
+
+        data = np.frombuffer(
+            ffi.buffer(self.ptr, self.numel * ffi.sizeof("float")),
+            count=-1,
+            dtype=np.float32,
+        )
+
+        t = np.lib.stride_tricks.as_strided(
+            data,
+            self.shape,
+            tuple(
+                stride * DType.get_n_bytes(self.dtype) for stride in self.stride
+            ),
+        )
+
+        return t
+
     @staticmethod
     def from_scalar(val: Scalar) -> Buffer:
         float_arr = ffi.new("float[]", 1)
@@ -118,8 +137,16 @@ class Buffer:
             else:
                 ndim = self.ndim - 1
 
+        # print(self.shape, dim, self.ndim)
+        if self.ndim == 1:
+            d = Device.CPU
+        elif dim in range(0, self.shape[-1]+1):
+            d = Device.CPU
+        else:
+            d = self.device
+
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.SUM, device=self.device, x=self, dim=dim),
+            data=dispatcher.dispatch(op=UnaryOps.SUM, device=d, x=self, dim=dim),
             shape=out_shape, device=self.device,
             ndim=ndim, dtype=self.dtype
         )
@@ -141,14 +168,14 @@ class Buffer:
             ndim=ndim, dtype=self.dtype
         )
 
-    def max(self, dim: int = -1, backward: bool = False, out: Buffer = None, keepdim: bool = False) -> Buffer:
+    def max(self, dim: int = -1, out: Buffer = None, keepdim: bool = False) -> Buffer:
         out_shape = cal_sum_max_out_shape(ndim=self.ndim, dim=dim, inp_shape=self.shape, keepdim=keepdim)
 
-        if not backward:
-            out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward)
+        if dim in range(0, self.shape[-1]+1):
+            d = Device.CPU
         else:
-            out_shape = self.shape
-            out = dispatcher.dispatch(op=UnaryOps.MAX, device=Device.CPU, x=self, dim=dim, backward=backward, out=out)
+            d = self.device
+        out = dispatcher.dispatch(op=UnaryOps.MAX, device=d, x=self, dim=dim)
 
         if keepdim:
             ndim = self.ndim
@@ -167,6 +194,7 @@ class Buffer:
         if (self.shape[-1] != other.shape[0] and self.ndim != 2 and other.ndim != 2):
             raise ValueError("Either the Tensors shape dont match or is not 2D")
 
+        # print(self.shape, other.shape)
         return Buffer(
             data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other),
             shape=(self.shape[0], other.shape[1]), device=self.device, dtype=self.dtype
@@ -181,30 +209,29 @@ class Buffer:
                 lst[idx1], lst[idx2] = lst[idx2], lst[idx1]
             return tuple(lst)
 
-    def transpose(self, axes: tuple) -> Buffer:
-        # assert self.ndim == 2, "Only 2D Tensors can be transposed"
+    def transpose(self) -> Buffer:
+        assert self.ndim == 2, "Only 2D Tensors can be transposed"
 
+        out_shape = (self.shape[1], self.shape[0])
         return Buffer(
             data=dispatcher.dispatch(
                 op=UnaryOps.TRANSPOSE,
-                device=Device.CPU,
+                device=self.device,
                 x=self,
-                out_shape=Buffer.swap_indices(self.shape, axes),
-                out_stride=calculate_stride(Buffer.swap_indices(self.shape, axes)),
-                axes=axes
+                out_stride=calculate_stride(out_shape),
             ),
-            shape=Buffer.swap_indices(self.shape, axes), device=self.device, dtype=self.dtype
+            shape=out_shape, device=self.device, dtype=self.dtype
         )
 
     def exp(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.EXP, device=self.device, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.EXP, device=self.device if self.ndim !=0 else Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
     def sqrt(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.SQRT, device=self.device, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.SQRT, device=self.device if self.ndim !=0 else Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -216,7 +243,7 @@ class Buffer:
 
     def log(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.LOG, device=self.device, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.LOG, device=self.device if self.ndim !=0 else Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -254,17 +281,17 @@ class Buffer:
             shape=(1, x.shape[0]), device=x.device, dtype=x.dtype
         )
 
-    def argmax(self, axis: int) -> Buffer:
+    def argmax(self, dim: int) -> Buffer:
         assert self.ndim == 2, "currently dlgrad supports argmax for 2d only"
-        if axis==0:
+        if dim==0:
             s = (1, self.shape[1])
-        elif axis==1:
+        elif dim==1:
             s = (self.shape[0], 1)
         else:
             s = (1, 1)
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.ARGMAX, device=Device.CPU,
-                                     x=self, axis=axis),
+                                     x=self, dim=dim),
             shape=s, device=self.device, dtype=self.dtype
         )
 
@@ -274,7 +301,7 @@ class Buffer:
         if isinstance(other, Scalar):
             other = Buffer.from_scalar(other)
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.WHERE, device=Device.CPU,
+            data=dispatcher.dispatch(op=UnaryOps.WHERE, device=self.device,
                                     x=self, inp=inp, other=other),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
@@ -306,7 +333,7 @@ class Buffer:
                 shape=other.shape, device=self.device, dtype=self.dtype
             )
             return Buffer(
-                data=dispatcher.dispatch(op=UnaryOps.NEG, device=self.device, x=tmp),
+                data=dispatcher.dispatch(op=UnaryOps.NEG, device=Device.CPU, x=tmp),
                 shape=tmp.shape, device=tmp.device, dtype=self.dtype
             )
 
@@ -364,7 +391,7 @@ class Buffer:
 
     def __pow__(self, val: Scalar) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.POW, device=self.device, x=self, val=val),
+            data=dispatcher.dispatch(op=UnaryOps.POW, device=self.device if self.ndim !=0 else Device.CPU, x=self, val=val),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -376,7 +403,7 @@ class Buffer:
 
     def __neg__(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.NEG, device=self.device, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.NEG, device=self.device if self.ndim !=0 else Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -391,7 +418,7 @@ class Buffer:
 
     @property
     def T(self) -> Buffer:  # noqa: N802
-        return self.transpose(tuple([i for i in range(self.ndim)][::-1]))
+        return self.transpose()
 
     @property
     def numel(self) -> int:

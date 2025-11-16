@@ -1,8 +1,10 @@
 test.py
 test2.py
 test3.py
+test4.py
 Metal.hpp
 test.cpp
+outputs/
 metal-cpp=example/
 *.metallib
 *.o

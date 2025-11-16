@@ -21,7 +21,7 @@ class SGD(Optimizer):
     def __init__(self, params: list[Tensor], lr: int = 1e-3, momentum: float = 0.0) -> None:
         super().__init__(params, lr)
         self.momentum = momentum
-        self.velocities = {id(param): Tensor.zeros_like(param.shape) for param in self.params}
+        self.velocities = {id(param): Tensor.zeros_like(param) for param in self.params}
 
     def step(self) -> None:
         for param in self.params:
@@ -50,8 +50,8 @@ class Adam(Optimizer):
         self.lr = lr
         self.beta1, self.beta2 = betas
         self.eps = eps
-        self.m = {id(p): Tensor.zeros_like(p.shape) for p in params}
-        self.v = {id(p): Tensor.zeros_like(p.shape) for p in params}
+        self.m = {id(p): Tensor.zeros_like(p) for p in params}
+        self.v = {id(p): Tensor.zeros_like(p) for p in params}
         self.t = 0
         self.params = params
         self.tensor_one = Tensor(1.0)

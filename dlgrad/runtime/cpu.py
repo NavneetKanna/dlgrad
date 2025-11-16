@@ -1,6 +1,7 @@
 import hashlib
 import os
 import pathlib
+import shutil
 import struct
 import subprocess
 from functools import cache
@@ -8,16 +9,23 @@ from functools import cache
 from cffi import FFI
 
 from dlgrad.buffer import Buffer
-from dlgrad.codegen.cpu import cpu_kernel
+from dlgrad.codegen import cpu_kernel
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
-from dlgrad.helpers import CACHE_DIR, BinaryOps, BufferOps, CustomOps, UnaryOps, cal_sum_max_out_shape, prod_
+from dlgrad.helpers import (
+    CACHE_DIR,
+    BinaryOps,
+    BufferOps,
+    CustomOps,
+    UnaryOps,
+    cal_sum_max_out_shape,
+    calculate_stride,
+    prod_,
+)
 
 CFLAGS = ["-shared", "-fPIC", "-O2", "-march=native", "-ffast-math"]
-COMPILER = "clang"
-
-# TODO: Cache malloc/out_ptr, reuse it, this should speed up
+COMPILER = "clang" if shutil.which('clang') else "gcc"
 
 class CPU:
     """
@@ -271,10 +279,10 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.TRANSPOSE, Device.CPU)
-    def transpose(x: Buffer, out_shape: tuple, out_stride: tuple, axes: tuple) -> CDataPtr:
+    def transpose(x: Buffer, out_stride: tuple) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.transpose(x.shape, x.stride, out_stride, x.numel, axes)
+        c_code, cdef = cpu_kernel.transpose(x.shape, x.stride, out_stride, x.numel)
 
         key   = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"transpose_{key}.so"
@@ -374,7 +382,7 @@ class CPU:
     def pow(x: Buffer, val: Scalar) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils(x.numel, "pow")
+        c_code, cdef = cpu_kernel.utils(x.numel, "pow", int(val))
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"pow_{key}.so"
@@ -385,7 +393,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_pow(x.ptr, out_ptr, int(val))
+        lib.c_pow(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -414,10 +422,19 @@ class CPU:
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
     def sum(x: Buffer, dim: int) -> CDataPtr:
-        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        out_shape = cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape)
+        out_stride = calculate_stride(out_shape)
+        num = prod_(out_shape)
         out_ptr = CPU.calloc(num=num)
 
-        c_code, cdef = cpu_kernel.sum(x.shape, x.stride, x.numel, dim)
+        if x.ndim == 4:
+            c_code, cdef = cpu_kernel.reduce_4d(x.shape, x.stride, out_stride, x.numel, dim, "sum")
+        elif x.ndim == 3:
+            c_code, cdef = cpu_kernel.reduce_3d(x.shape, x.stride, out_stride, x.numel, dim, "sum")
+        elif x.ndim == 2:
+            c_code, cdef = cpu_kernel.reduce_2d(x.shape, x.stride, out_stride, x.numel, dim, "sum")
+        elif x.ndim == 1 and dim == -1:
+            c_code, cdef = cpu_kernel.reduce(x.numel, "sum")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"sum_{key}.so"
@@ -456,27 +473,20 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.MAX, Device.CPU)
-    def max(x: Buffer, dim: int, backward: bool = False, out: Buffer = None) -> CDataPtr:
-        if backward:
-            max_with_1s = CPU.init_with_scalar(num=x.numel, scalar=0)
-            c_code, cdef = cpu_kernel.max_backward(x.shape, x.stride, x.numel, dim)
-            key = CPU._hash_code(c_code)
-            so_fp = pathlib.Path(CACHE_DIR) / f"max_backward_{key}.so"
-            if not os.path.exists(so_fp):
-                CPU._build_shared_object(c_code, so_fp)
-
-            lib = CPU._get_handle(str(so_fp))
-
-            CPU._ensure_sig(cdef)
-
-            lib.max_backward(x.ptr, out.ptr, max_with_1s)
-
-            return max_with_1s
-
-        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+    def max(x: Buffer, dim: int, out: Buffer = None) -> CDataPtr:
+        out_shape = cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape)
+        out_stride = calculate_stride(out_shape)
+        num = prod_(out_shape)
         out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
 
-        c_code, cdef = cpu_kernel.max(x.shape, x.stride, x.numel, dim)
+        if x.ndim == 4:
+            c_code, cdef = cpu_kernel.reduce_4d(x.shape, x.stride, out_stride, x.numel, dim, "max")
+        elif x.ndim == 3:
+            c_code, cdef = cpu_kernel.reduce_3d(x.shape, x.stride, out_stride, x.numel, dim, "max")
+        elif x.ndim == 2:
+            c_code, cdef = cpu_kernel.reduce_2d(x.shape, x.stride, out_stride, x.numel, dim, "max")
+        elif x.ndim == 1 and dim == -1:
+            c_code, cdef = cpu_kernel.reduce(x.numel, "max")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"max_{key}.so"
@@ -554,9 +564,11 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.EQT, Device.CPU)
     def eqt(x: Buffer, y: Buffer) -> CDataPtr:
+        # NOTE: Assumes x.numel > y.numel
+        # TODO: Add check that the numel should be the same
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.eqt(x.numel)
+        c_code, cdef = cpu_kernel.eqt(x.numel, True if y.ndim == 0 else False, x.shape, x.stride, y.shape, y.stride, x.ndim)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"eqt_{key}.so"
@@ -573,16 +585,16 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.ARGMAX, Device.CPU)
-    def argmax(x: Buffer, axis: int) -> CDataPtr:
-        if axis==0:
+    def argmax(x: Buffer, dim: int) -> CDataPtr:
+        if dim==0:
             n = x.shape[1]
-        elif axis==1:
+        elif dim==1:
             n = x.shape[0]
         else:
             n = 1
         out_ptr = CPU.malloc(num=n)
 
-        c_code, cdef = cpu_kernel.argmax(x.shape, axis)
+        c_code, cdef = cpu_kernel.argmax(x.shape, dim)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"argmax_{key}.so"
