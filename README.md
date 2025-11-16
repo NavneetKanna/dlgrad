@@ -38,5 +38,5 @@ python3 -m pytest test/
 
 To compare the speed of dlgrad with pytorch and tinygrad
 ```python3
-OMP_NUM_THREADS=1 python3 -m pytest -s -q -k test_speed_v_torch
+python3 -m pytest -s test/speed/test_speed_v_torch_tinygrad.py
 ```
