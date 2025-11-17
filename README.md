@@ -1,6 +1,9 @@
 <div align="center">
 
-![dlgrad logo](docs/dlgrad_logo.png)
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="docs/dlgrad_logo_dark">
+  <img alt="dlgrad logo" src="docs/dlgrad_logo_light" width="50%" height="50%">
+</picture>
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/NavneetKanna/dlgrad)
 
