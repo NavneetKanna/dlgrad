@@ -16,7 +16,6 @@ metal-cpp=example/
 *.s
 a.out
 *.ipynb
-*.svg
 *.dot
 *.html
 *.json
