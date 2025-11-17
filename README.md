@@ -2,7 +2,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/dlgrad_logo_dark.png">
-  <img alt="dlgrad logo" src="docs/test.svg" width="50%" height="50%">
+  <img alt="dlgrad logo" src="docs/test3.svg" width="50%" height="50%">
 </picture>
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/NavneetKanna/dlgrad)
