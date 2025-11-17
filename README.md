@@ -1,18 +1,12 @@
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: light)" srcset="/docs/dlgrad_logo.png">
-</picture>
-
-</div>
-
----
-
-<div align="center">
+![dlgrad logo](docs/dlgrad_logo.png)
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/NavneetKanna/dlgrad)
 
 </div>
+
+---
 
 # dlgrad
 
