@@ -646,7 +646,7 @@ class CPU:
     @dispatcher.register(CustomOps.PRINT, Device.CPU)
     def print(x: Buffer) -> None:
         if x.ndim == 2:
-            c_code, cdef = cpu_kernel.print_2d_tensor(x.shape, x.stride)
+            c_code, cdef = cpu_kernel.print_2d_tensor(x.shape, x.stride, x.numel)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"print_{key}.so"

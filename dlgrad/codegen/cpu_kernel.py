@@ -1073,20 +1073,40 @@ def mnist_loader() -> tuple[str, str]:
     return c_code, "float *mnist_images_loader(char *path, uint32_t magic_number);float *mnist_labels_loader(char *path, uint32_t magic_number);"
 
 @cache
-def print_2d_tensor(shape: tuple, stride: tuple) -> tuple[str, str]:
+def print_2d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
+    h_trunc = "false"
+    w_trunc = "false"
+    if (H := shape[0]) > 3 and not numel <= 1000:
+        H = 3
+        h_trunc = "true"
+    if (W := shape[1]) > 3 and not numel <= 1000:
+        W = 3
+        w_trunc = "true"
     c_code = f"""
         #include <stdio.h>
+        #include <stdbool.h>
 
         void print_2d_tensor(float *x) {{
             printf("[[");
-            for (int h = 0; h < {shape[0]}; h++) {{
-                for (int w = 0; w < {shape[1]}; w++) {{
+            for (int h = 0; h < {H}; h++) {{
+                for (int w = 0; w < {W}; w++) {{
                     printf("%f", x[h*{stride[0]} + w*{stride[1]}]);
-                    if (w != {shape[1]} - 1)
+                    if (w != {W} - 1)
                         printf(", ");
+                    else {{
+                        if ({w_trunc}) {{
+                            printf(" ...");
+                            for (int w={shape[1] - 3}; w<{shape[1]}; w++)
+                                printf(" %f", x[h*{stride[0]} + w*{stride[1]}]);
+                        }}
+                    }}
                 }}
-                if (h != {shape[0]} - 1)
+                if (h != {H} - 1)
                     printf("],\\n [");
+                else {{
+                    if ({h_trunc})
+                        printf("],\\n ...\\n");
+                }}
             }}
             printf("]]\\n");
         }}
