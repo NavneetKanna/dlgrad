@@ -49,6 +49,7 @@ class CustomOps(Enum):
     INDEX = auto()
     CE_FORWARD = auto()
     CE_BACKWARD = auto()
+    PRINT = auto()
 
 
 def prod_(x: Iterable) -> int:

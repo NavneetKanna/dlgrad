@@ -1071,3 +1071,24 @@ def mnist_loader() -> tuple[str, str]:
         }
     """
     return c_code, "float *mnist_images_loader(char *path, uint32_t magic_number);float *mnist_labels_loader(char *path, uint32_t magic_number);"
+
+@cache
+def print_2d_tensor(shape: tuple, stride: tuple) -> tuple[str, str]:
+    c_code = f"""
+        #include <stdio.h>
+
+        void print_2d_tensor(float *x) {{
+            printf("[[");
+            for (int h = 0; h < {shape[0]}; h++) {{
+                for (int w = 0; w < {shape[1]}; w++) {{
+                    printf("%f", x[h*{stride[0]} + w*{stride[1]}]);
+                    if (w != {shape[1]} - 1)
+                        printf(", ");
+                }}
+                if (h != {shape[0]} - 1)
+                    printf("],\\n [");
+            }}
+            printf("]]\\n");
+        }}
+    """
+    return c_code, "void print_2d_tensor(float *x);"

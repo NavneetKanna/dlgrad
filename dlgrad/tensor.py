@@ -118,6 +118,9 @@ class Tensor:
         else:
             raise ValueError("The data must be of type Buffer, np.ndarray or float")
 
+    def print_tensor(self: Tensor) -> None:
+        self.data.print_tensor()
+
     def numpy(self: Tensor) -> "np.ndarray":  # type: ignore  # noqa: F821
         import numpy as np
 

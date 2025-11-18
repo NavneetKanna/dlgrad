@@ -48,7 +48,13 @@ python3 examples/mnist_mlp.py
 python3 examples/mnist_gan.py
 ```
 
-The mnist example gets to around 95% accuracy in ~5 seconds on the CPU.
+The mnist example gets to around 95% accuracy in ~5 seconds on my M2 CPU.
+
+## Features
+
+- Shape specific generated kernels.
+- Supports CPU and Metal accelerators.
+- Only 3 requiements, cffi, pyobjc and NnumPy. NumPy is used only for printing the tensor.
 
 ## Tests
 

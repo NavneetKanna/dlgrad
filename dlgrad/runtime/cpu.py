@@ -400,11 +400,9 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
-        # out_ptr = CPU.malloc(num=x.shape[0]*y.shape[1])
         out_ptr = CPU.init_with_scalar(num=x.shape[0]*y.shape[1], scalar=0)
 
         c_code, cdef = cpu_kernel.matmul(x.shape, y.shape, x.stride, y.stride)
-        # print(c_code)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"matmul_{key}.so"
@@ -456,7 +454,6 @@ class CPU:
         out_ptr = CPU.calloc(num=num)
 
         c_code, cdef = cpu_kernel.mean(x.shape, x.stride, x.numel, dim, num)
-        # print(c_code)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"mean_{key}.so"
@@ -644,3 +641,20 @@ class CPU:
         CPU._ensure_sig(cdef)
 
         lib.ce_backward(x.ptr, target.ptr)
+
+    @staticmethod
+    @dispatcher.register(CustomOps.PRINT, Device.CPU)
+    def print(x: Buffer) -> None:
+        if x.ndim == 2:
+            c_code, cdef = cpu_kernel.print_2d_tensor(x.shape, x.stride)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"print_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.print_2d_tensor(x.ptr)

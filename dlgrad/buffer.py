@@ -41,6 +41,9 @@ class Buffer:
                                        ndim=kwargs.get("ndim", len(shape)),
                                        dtype=dtype, device=device, nbytes=prod_(shape)*DType.get_n_bytes(dtype))
 
+    def print_tensor(self: Buffer) -> None:
+        dispatcher.dispatch(op=CustomOps.PRINT, device=Device.CPU, x=self)
+
     def numpy(self: Buffer) -> "np.ndarray":  # type: ignore  # noqa: F821
         import numpy as np
 
