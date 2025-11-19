@@ -1076,20 +1076,21 @@ def mnist_loader() -> tuple[str, str]:
 def print_2d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
     h_trunc = "false"
     w_trunc = "false"
-    if (H := shape[0]) > 3 and not numel <= 1000:
+    if (H := shape[0]) > 3 and H > 9:
         H = 3
         h_trunc = "true"
-    if (W := shape[1]) > 3 and not numel <= 1000:
+    if (W := shape[1]) > 3 and W > 9:
         W = 3
         w_trunc = "true"
     c_code = f"""
         #include <stdio.h>
         #include <stdbool.h>
 
-        void print_2d_tensor(float *x) {{
-            printf("[[");
-            for (int h = 0; h < {H}; h++) {{
-                for (int w = 0; w < {W}; w++) {{
+        void print_tensor(float *x) {{
+            printf("[\\n");
+            for (int h=0; h<{H}; h++) {{
+                printf("  [");
+                for (int w=0; w<{W}; w++) {{
                     printf("%f", x[h*{stride[0]} + w*{stride[1]}]);
                     if (w != {W} - 1)
                         printf(", ");
@@ -1102,16 +1103,19 @@ def print_2d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
                     }}
                 }}
                 if (h != {H} - 1)
-                    printf("],\\n [");
+                    printf("],\\n");
                 else {{
-                    if ({h_trunc})
-                        printf("],\\n ...\\n");
+                    if ({h_trunc}) {{
+                        printf("],\\n  ... \\n");
+                    }} else {{
+                        printf("]\\n");
+                    }}
                 }}
             }}
-            printf("]]\\n");
+            printf("]\\n");
         }}
     """
-    return c_code, "void print_2d_tensor(float *x);"
+    return c_code, "void print_tensor(float *x);"
 
 @cache
 def print_3d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
