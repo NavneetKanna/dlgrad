@@ -1,8 +1,8 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: light)" srcset="docs/dlgrad_logo_dark.svg">
-  <img alt="dlgrad logo" src="docs/dlgrad_logo_light.svg" width="50%" height="50%">
+  <source media="(prefers-color-scheme: light)" srcset="assets/dlgrad_logo_dark.svg">
+  <img alt="dlgrad logo" src="assets/dlgrad_logo_light.svg" width="50%" height="50%">
 </picture>
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/NavneetKanna/dlgrad)
@@ -13,11 +13,11 @@
 
 # dlgrad
 
-dlgrad (*D*eep *L*earning auto*grad*) is a small but highly capable reverse-mode autodiff engine with a PyTorch-like API.
+dlgrad (*D*eep *L*earning auto*grad*) is a small but capable reverse-mode autodiff engine with a PyTorch-like API.
 
-It lives in the sweet spot between micrograd and tinygrad — simple enough to learn from and powerful enough to run real models.
+It sits in the sweet spot between micrograd and tinygrad — simple enough to study, yet powerful enough to run real models.
 
-Built from scratch to learn how deep learning and ML frameworks work. Note that this is not meant as a replacement to the existing frameworks, rather to learn how they operate and to understand how deep learning models train/learn.
+Built from scratch to learn how deep learning and ML frameworks work. It is not intended to replace existing libraries, but to learn how they operate and to understand how deep learning models train/learn.
 
 ## Installation
 
@@ -48,13 +48,16 @@ python3 examples/mnist_mlp.py
 python3 examples/mnist_gan.py
 ```
 
-The mnist example gets to around 95% accuracy in ~5 seconds on my M2 CPU.
+The mnist example gets to around 95% accuracy in ~5 seconds on an M2 CPU.
 
 ## Features
 
-- Shape specific generated kernels.
+- Reverse-mode autodiff with broadcasting support.
+- Auto-generated shape-specialized kernels.
 - Supports CPU and Metal accelerators.
-- Only 3 requiements, cffi, pyobjc and NnumPy. NumPy is used only for printing the tensor.
+- Lightweight and fast.
+- Trains real models (MNIST ~95% in ~5s on M2 CPU)
+- Only two dependencies: cffi, pyobjc.
 
 ## Tests
 

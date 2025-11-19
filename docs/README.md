@@ -135,7 +135,14 @@ a[1:2]
 
 ### Printing
 
-To print a tensor, you need to call the ```.numpy()``` method which returns a NumPy array
+To print a tensor, you need to call the `.show()` method
+
+```python
+a = Tensor.rand((2, 3))
+a.show()
+```
+
+You can also call `.numpy()` which returns the numpy array
 
 ```python
 a = Tensor.rand((2, 3))
