@@ -1114,6 +1114,63 @@ def print_2d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
     return c_code, "void print_2d_tensor(float *x);"
 
 @cache
+def print_3d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
+    c_trunc = "false"
+    h_trunc = "false"
+    w_trunc = "false"
+    if (C := shape[0]) > 3 and C > 9:
+        C = 3
+        c_trunc = "true"
+    if (H := shape[1]) > 3 and H > 9:
+        H = 3
+        h_trunc = "true"
+    if (W := shape[2]) > 3 and W > 9:
+        W = 3
+        w_trunc = "true"
+    c_code = f"""
+        #include <stdio.h>
+        #include <stdbool.h>
+
+        void print_tensor(float *x) {{
+            printf("[\\n");
+            printf("    [");
+            for (int c=0; c<{C}; c++) {{
+                for (int h=0; h<{H}; h++) {{
+                    printf("[");
+                    for (int w=0; w<{W}; w++) {{
+                        printf("%f", x[c*{stride[0]} + h*{stride[1]} + w*{stride[2]}]);
+                        if (w != {W} - 1)
+                            printf(", ");
+                        else {{
+                            if ({w_trunc}) {{
+                                printf(" ...");
+                                for (int w={shape[2] - 3}; w<{shape[2]}; w++)
+                                    printf(" %f", x[c*{stride[0]} + h*{stride[1]} + w*{stride[2]}]);
+                            }}
+                        }}
+                    }}
+                    if (h != {H} - 1)
+                        printf("], ");
+                    else {{
+                        if ({h_trunc}) {{
+                            printf("], ... ");
+                        }}
+                    }}
+                }}
+                if (c != {C} - 1)
+                    printf("]],\\n    [");
+                else {{
+                    printf("]],\\n");
+                    if ({c_trunc})
+                        printf("    ...\\n");
+                }}
+            }}
+            printf("]\\n");
+        }}
+    """
+    return c_code, "void print_tensor(float *x);"
+
+@cache
 def print_4d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
     h_trunc = "false"
     w_trunc = "false"
@@ -1135,7 +1192,7 @@ def print_4d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
         #include <stdio.h>
         #include <stdbool.h>
 
-        void print_4d_tensor(float *x) {{
+        void print_tensor(float *x) {{
             printf("[\\n");
             for (int b=0; b<{B}; b++) {{
                 printf("  [\\n");
@@ -1159,7 +1216,6 @@ def print_4d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
                             printf("], ");
                         else {{
                             if ({h_trunc}) {{
-                                //printf("], \\n ... ");
                                 printf("], ... ");
                             }}
                         }}
@@ -1184,4 +1240,4 @@ def print_4d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
             printf("]\\n");
         }}
     """
-    return c_code, "void print_4d_tensor(float *x);"
+    return c_code, "void print_tensor(float *x);"

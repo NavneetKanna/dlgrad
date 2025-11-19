@@ -649,6 +649,8 @@ class CPU:
             c_code, cdef = cpu_kernel.print_2d_tensor(x.shape, x.stride, x.numel)
         elif x.ndim == 4:
             c_code, cdef = cpu_kernel.print_4d_tensor(x.shape, x.stride, x.numel)
+        elif x.ndim == 3:
+            c_code, cdef = cpu_kernel.print_3d_tensor(x.shape, x.stride, x.numel)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"print_{key}.so"
@@ -659,7 +661,4 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        if x.ndim == 2:
-            lib.print_2d_tensor(x.ptr)
-        elif x.ndim == 4:
-            lib.print_4d_tensor(x.ptr)
+        lib.print_tensor(x.ptr)
