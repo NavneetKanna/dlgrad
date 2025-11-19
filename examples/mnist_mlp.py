@@ -56,5 +56,6 @@ for epoch in range(EPOCHS):
     y_pred = out.argmax(dim=1)
     correct = (y_pred==x_test_labels).sum()
     total = float(x_test_labels.shape[0])
-    test_acc = ((correct/total) * 100.0).numpy()
-    print("test acc", test_acc)
+    test_acc = ((correct/total) * 100.0)
+    print("test acc")
+    test_acc.show()

@@ -1073,6 +1073,18 @@ def mnist_loader() -> tuple[str, str]:
     return c_code, "float *mnist_images_loader(char *path, uint32_t magic_number);float *mnist_labels_loader(char *path, uint32_t magic_number);"
 
 @cache
+def print_0d_tensor() -> tuple[str, str]:
+    c_code = """
+    #include <stdio.h>
+    #include <stdbool.h>
+
+    void print_tensor(float *x) {{
+        printf("%f\\n", x[0]);
+    }}
+    """
+    return c_code, "void print_tensor(float *x);"
+
+@cache
 def print_1d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
     w_trunc = "false"
     if (W := shape[0]) > 3 and W > 9:

@@ -1,14 +1,13 @@
 # ruff: noqa
+from pathlib import Path
 
 import numpy as np
-from tqdm import tqdm
-from torchvision.utils import make_grid, save_image
 import torch
+from torchvision.utils import make_grid, save_image
+from tqdm import tqdm
 
 from dlgrad import Tensor, nn
-from pathlib import Path
 from dlgrad.nn.datasets import mnist
-import time
 
 # parameters
 EPOCHS = 300
@@ -59,7 +58,7 @@ def make_targets(bs: int, value: float) -> Tensor:
     # shape (bs, 1), values in [0, 1]
     return Tensor(np.full((bs, 1), value, dtype=np.float32), device=device)
 
-def train_discriminator(discriminator, optimizer, data_real, data_fake):
+def train_discriminator(discriminator, optimizer, data_real, data_fake) -> np.ndarray:
     # (512, 1)
     real_targets = make_targets(BS, 1.0)  # real -> 1
     fake_targets = make_targets(BS, 0.0)  # fake -> 0

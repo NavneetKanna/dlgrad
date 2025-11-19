@@ -57,7 +57,7 @@ The mnist example gets to around 95% accuracy in ~5 seconds on an M2 CPU.
 - Supports CPU and Metal accelerators.
 - Lightweight and fast.
 - Trains real models (MNIST ~95% in ~5s on M2 CPU)
-- Only two dependencies: cffi, pyobjc.
+- Only three dependencies: cffi, pyobjc, tqdm.
 
 ## Tests
 
