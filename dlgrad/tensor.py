@@ -118,8 +118,8 @@ class Tensor:
         else:
             raise ValueError("The data must be of type Buffer, np.ndarray or float")
 
-    def print_tensor(self: Tensor) -> None:
-        self.data.print_tensor()
+    def show(self: Tensor) -> None:
+        self.data.show()
 
     def numpy(self: Tensor) -> "np.ndarray":  # type: ignore  # noqa: F821
         import numpy as np
@@ -676,7 +676,8 @@ class Tensor:
             raise ValueError("dlgrad only supports slicing or start, stop are None")
 
     def __repr__(self) -> str:
-        return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"  # noqa: E501
+        # TODO: Add size
+        return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"
 
     @property
     def T(self) -> Tensor:  # noqa: N802

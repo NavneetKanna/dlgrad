@@ -644,7 +644,7 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(CustomOps.PRINT, Device.CPU)
-    def print(x: Buffer) -> None:
+    def show(x: Buffer) -> None:
         if x.ndim == 1:
             c_code, cdef = cpu_kernel.print_1d_tensor(x.shape, x.stride, x.numel)
         elif x.ndim == 2:
