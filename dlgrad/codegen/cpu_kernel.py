@@ -1112,3 +1112,76 @@ def print_2d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
         }}
     """
     return c_code, "void print_2d_tensor(float *x);"
+
+@cache
+def print_4d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
+    h_trunc = "false"
+    w_trunc = "false"
+    c_trunc = "false"
+    b_trunc = "false"
+    if (B := shape[0]) > 3 and B > 9:
+        B = 3
+        b_trunc = "true"
+    if (C := shape[1]) > 3 and C > 9:
+        C = 3
+        c_trunc = "true"
+    if (H := shape[2]) > 3 and H > 9:
+        H = 3
+        h_trunc = "true"
+    if (W := shape[3]) > 3 and W > 9:
+        W = 3
+        w_trunc = "true"
+    c_code = f"""
+        #include <stdio.h>
+        #include <stdbool.h>
+
+        void print_4d_tensor(float *x) {{
+            printf("[\\n");
+            for (int b=0; b<{B}; b++) {{
+                printf("  [\\n");
+                printf("    [");
+                for (int c=0; c<{C}; c++) {{
+                    for (int h=0; h<{H}; h++) {{
+                        printf("[");
+                        for (int w=0; w<{W}; w++) {{
+                            printf("%f", x[b*{stride[0]} + c*{stride[1]} + h*{stride[2]} + w*{stride[3]}]);
+                            if (w != {W} - 1)
+                                printf(", ");
+                            else {{
+                                if ({w_trunc}) {{
+                                    printf(" ...");
+                                    for (int w={shape[3] - 3}; w<{shape[3]}; w++)
+                                        printf(" %f", x[b*{stride[0]} + c*{stride[1]} + h*{stride[2]} + w*{stride[3]}]);
+                                }}
+                            }}
+                        }}
+                        if (h != {H} - 1)
+                            printf("], ");
+                        else {{
+                            if ({h_trunc}) {{
+                                //printf("], \\n ... ");
+                                printf("], ... ");
+                            }}
+                        }}
+                    }}
+                    if (c != {C} - 1)
+                        printf("]],\\n    [");
+                    else {{
+                        printf("]],\\n");
+                        if ({c_trunc})
+                            printf("    ...\\n");
+                    }}
+                }}
+                if (b != {B} - 1)
+                    printf("  ],\\n");
+                else {{
+                    if ({b_trunc})
+                        printf("  ],\\n  ...\\n");
+                    else
+                        printf("  ]\\n");
+                }}
+            }}
+            printf("]\\n");
+        }}
+    """
+    return c_code, "void print_4d_tensor(float *x);"
