@@ -1073,6 +1073,35 @@ def mnist_loader() -> tuple[str, str]:
     return c_code, "float *mnist_images_loader(char *path, uint32_t magic_number);float *mnist_labels_loader(char *path, uint32_t magic_number);"
 
 @cache
+def print_1d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
+    w_trunc = "false"
+    if (W := shape[0]) > 3 and W > 9:
+        W = 3
+        w_trunc = "true"
+    c_code = f"""
+        #include <stdio.h>
+        #include <stdbool.h>
+
+        void print_tensor(float *x) {{
+            printf("[");
+            for (int w=0; w<{W}; w++) {{
+                printf("%f", x[w*{stride[0]}]);
+                if (w != {W} - 1)
+                    printf(", ");
+                else {{
+                    if ({w_trunc}) {{
+                        printf(" ...");
+                        for (int w={shape[0] - 3}; w<{shape[0]}; w++)
+                            printf(" %f", x[w*{stride[0]}]);
+                    }}
+                }}
+            }}
+            printf("]\\n");
+        }}
+    """
+    return c_code, "void print_tensor(float *x);"
+
+@cache
 def print_2d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
     h_trunc = "false"
     w_trunc = "false"
