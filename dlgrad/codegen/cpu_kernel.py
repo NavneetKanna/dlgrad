@@ -551,14 +551,14 @@ def ce_backward(x_shape: tuple, x_stride: tuple) -> tuple[str, str]:
     return c_code, "void ce_backward(float *x, float *target);"
 
 @cache
-def argmax(x_shape: tuple, axis: int) -> tuple[str, str]:
-    if axis == 1:
+def argmax(x_shape: tuple, dim: int) -> tuple[str, str]:
+    if dim == 1:
         code = f"""
             void argmax2d(float *x, float *out)
             {{
                 int rows = {x_shape[0]};
                 int cols = {x_shape[1]};
-                if ({axis} == 1) {{
+                if ({dim} == 1) {{
                     for (int i = 0; i < rows; i++) {{
                         float max = x[i * cols + 0];
                         int idx = 0;
@@ -574,7 +574,7 @@ def argmax(x_shape: tuple, axis: int) -> tuple[str, str]:
             }}
         """
         return code, "void argmax2d(float *x, float *out);"
-    elif axis == 0:
+    elif dim == 0:
         f"""
             void argmax2d(float *x, float *out)
             {{
