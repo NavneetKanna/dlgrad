@@ -677,7 +677,7 @@ class Tensor:
 
     def __repr__(self) -> str:
         # TODO: Add size
-        return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}>"
+        return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}, size: {self.numel * DType.get_n_bytes(self.dtype) / 1e6}mb>"
 
     @property
     def T(self) -> Tensor:  # noqa: N802

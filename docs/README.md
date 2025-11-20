@@ -149,6 +149,15 @@ a = Tensor.rand((2, 3))
 print(a.numpy())
 ```
 
+When you just print the tensor you get the all the metadata associated with it
+
+```python
+a = Tensor.rand((1000, 700))
+print(a)
+
+# output - Tensor<dtype: DType.FLOAT32 device: Device.CPU, shape: (1000, 700), ndim: 2, size: 2.8mb>
+```
+
 ### Properties
 
 Every tensor has got the following properties
