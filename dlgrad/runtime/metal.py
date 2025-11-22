@@ -3,7 +3,7 @@
 import struct
 from functools import cache
 import os
-
+import math
 import Metal
 from cffi import FFI
 import pathlib
@@ -102,7 +102,7 @@ class MetalGPU:
     def build_2d_pipeline(src: str, func_name: str, w: int, h: int):
         options = Metal.MTLCompileOptions.alloc().init()
         lib, _ = device.newLibraryWithSource_options_error_(src, options, None)
-        # print(_)
+        print(_)
         fn = lib.newFunctionWithName_(func_name)
         pso = device.newComputePipelineStateWithFunction_error_(fn, None)[0]
 
@@ -175,24 +175,21 @@ class MetalGPU:
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
 
-        # src = metal_kernel.matmul_fast(x.shape, y.shape)
-        src = metal_kernel.matmul(x.shape, y.shape)
-        pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "matmul", w=y.shape[1], h=x.shape[0])
-        # pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "matmul", w=32 * (y.shape[1]/8), h=32*(x.shape[0]/8))
-        # threadgroupsPerGrid = Metal.MTLSizeMake(y.shape[1]/8, x.shape[0]/8, 1)
-        # threadsPerThreadgroup = Metal.MTLSizeMake(32, 1, 1)
+        src = metal_kernel.matmul_fast(x.shape, y.shape)
+        # TODO: Add a new function to return only pso and another to choose from threadgroup or thread dispatch
+        pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "matmul", w=32 * (y.shape[1]/8), h=32*(x.shape[0]/8))
+        threadgroupsPerGrid = Metal.MTLSizeMake(math.ceil(y.shape[1]/8), math.ceil(x.shape[0]/8), 1)
+        threadsPerThreadgroup = Metal.MTLSizeMake(32, 1, 1)
 
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
         computeEncoder.setBuffer_offset_atIndex_(y_buf, 0, 1)
         computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 2)
 
-        # computeEncoder.dispatchThreadgroups_threadsPerThreadgroup_(threadgroupsPerGrid, threadsPerThreadgroup)
-        # computeEncoder.endEncoding()
-        # commandBuffer.commit()
-        # commandBuffer.waitUntilCompleted()
-
-        MetalGPU._run_kernel(commandBuffer, computeEncoder, threadsPerGrid, threadsPerThreadgroup)
+        computeEncoder.dispatchThreadgroups_threadsPerThreadgroup_(threadgroupsPerGrid, threadsPerThreadgroup)
+        computeEncoder.endEncoding()
+        commandBuffer.commit()
+        commandBuffer.waitUntilCompleted()
 
         return out_ptr
 

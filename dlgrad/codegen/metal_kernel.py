@@ -4,6 +4,8 @@ from typing import Any
 from functools import cache
 import math
 from dlgrad.dtype import Scalar
+import math
+
 
 def n_gen() -> Generator[str, Any, None]:
     a = ["batch", "channel", "row", "col"][::-1]
@@ -87,21 +89,19 @@ def matmul_fast(x_shape: tuple, y_shape: tuple):
             const device float* x  [[ buffer(0) ]],
             const device float* y  [[ buffer(1) ]],
             device float* out      [[ buffer(2) ]],
-            uint2 tid              [[ thread_position_in_grid ]],
-            uint2 gid              [[ threadgroup_position_in_grid ]],
-            uint2 lid              [[ thread_position_in_threadgroup ]],
-            uint simd_lane_id      [[ thread_index_in_simdgroup ]],
-            uint simd_group_id     [[ simdgroup_index_in_threadgroup ]])
+            uint2 gid              [[ threadgroup_position_in_grid ]])
         {{
-
             simdgroup_float8x8 matA, matB, matC(0.0f);
 
             int x_idx = gid.y * {x_shape[1]} * 8;
             const device float* x_ptr = x + x_idx;
+
             int y_idx = (gid.x * 8);
             const device float* y_ptr = y + y_idx;
+
             int out_idx = (gid.x * 8) + (gid.y * {y_shape[1]} * 8);
             device float* out_ptr = out + out_idx;
+
             for (int k=0; k<{x_shape[1]}; k+=8) {{
                 simdgroup_load(matA, x_ptr + k, {x_shape[1]});
                 simdgroup_load(matB, y_ptr + (k * {y_shape[1]}), {y_shape[1]});

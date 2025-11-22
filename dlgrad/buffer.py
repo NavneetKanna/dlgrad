@@ -197,9 +197,12 @@ class Buffer:
         if (self.shape[-1] != other.shape[0] and self.ndim != 2 and other.ndim != 2):
             raise ValueError("Either the Tensors shape dont match or is not 2D")
 
-        # print(self.shape, other.shape)
+        if self.shape[0] % 8 == 0 and self.shape[1] % 8 == 0 and other.shape[0] % 8 == 0 and other.shape[1] % 8 == 0:
+            device = Device.METAL
+        else:
+            device = Device.CPU
         return Buffer(
-            data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=self.device, x=self, y=other),
+            data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=device, x=self, y=other),
             shape=(self.shape[0], other.shape[1]), device=self.device, dtype=self.dtype
         )
 
