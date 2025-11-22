@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 
 from dlgrad.device import Device
@@ -197,7 +198,7 @@ class Buffer:
         if (self.shape[-1] != other.shape[0] and self.ndim != 2 and other.ndim != 2):
             raise ValueError("Either the Tensors shape dont match or is not 2D")
 
-        if self.shape[0] % 8 == 0 and self.shape[1] % 8 == 0 and other.shape[0] % 8 == 0 and other.shape[1] % 8 == 0:
+        if self.shape[0] % 8 == 0 and self.shape[1] % 8 == 0 and other.shape[0] % 8 == 0 and other.shape[1] % 8 == 0 and sys.platform == "darwin":
             device = Device.METAL
         else:
             device = Device.CPU
