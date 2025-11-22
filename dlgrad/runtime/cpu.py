@@ -4,6 +4,7 @@ import pathlib
 import shutil
 import struct
 import subprocess
+import sys
 from functools import cache
 
 from cffi import FFI
@@ -14,18 +15,24 @@ from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, Scalar
 from dlgrad.helpers import (
-    CACHE_DIR,
-    BinaryOps,
-    BufferOps,
-    CustomOps,
-    UnaryOps,
-    cal_sum_max_out_shape,
-    calculate_stride,
-    prod_,
+   CACHE_DIR,
+   BinaryOps,
+   BufferOps,
+   CustomOps,
+   UnaryOps,
+   cal_sum_max_out_shape,
+   calculate_stride,
+   prod_,
 )
 
-CFLAGS = ["-shared", "-fPIC", "-O2", "-march=native", "-ffast-math"]
-COMPILER = "clang" if shutil.which('clang') else "gcc"
+CFLAGS = ["-shared", "-fPIC", "-O3", "-march=native", "-ffast-math"]
+if shutil.which('clang'):
+   COMPILER = "clang"
+elif shutil.which('gcc'):
+    COMPILER = "gcc"
+else:
+    print("Clang or GCC not found")
+    sys.exit(1)
 
 class CPU:
     """
