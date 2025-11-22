@@ -20,6 +20,10 @@ from dlgrad.dtype import Scalar
 device = Metal.MTLCreateSystemDefaultDevice()
 commandQueue = device.newCommandQueue()
 
+# NOTE: Metal only supports certain ops on certain dimensions, this is because coming up with an algorithm
+# for cases like reduction along dim 1 of a 4d tensor is quite hard and not really used in real world training.
+# Hence, I have decided to opt such cases out and only support them on CPU. Metal supports matmul, transpose, reduction
+# of full tensor or along rows, etc, where it makes sense to use a GPU.
 class MetalGPU:
     """
     Main GPU runtime class for apple silicon gpus which handles the logic of using metal.
