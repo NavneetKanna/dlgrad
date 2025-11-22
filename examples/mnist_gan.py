@@ -15,7 +15,7 @@ BS = 100
 K = 1
 STEPS = 70000 // BS
 SAMPLE_INTERVAL = EPOCHS // 10
-device = "metal"
+device = "cpu"
 
 class LinearGen:
     def __init__(self) -> None:
