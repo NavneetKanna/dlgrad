@@ -41,14 +41,14 @@ Documentation can be found in this [folder](docs/README.md).
 
 ## Examples
 
-The mnist MLP and GAN examples can be found in the [examples folder](examples/).
+The MNIST MLP and GAN examples can be found in the [examples folder](examples/).
 
 ```python3
 python3 examples/mnist_mlp.py
 python3 examples/mnist_gan.py
 ```
 
-The mnist example gets to around 95% accuracy in ~5 seconds on an M2 CPU.
+The MNIST example gets to around 95% accuracy in ~5 seconds on an M2 CPU.
 
 ## Features
 
@@ -71,3 +71,11 @@ To compare the speed of dlgrad with pytorch and tinygrad
 ```python3
 python3 -m pytest -s test/speed/test_speed_v_torch_tinygrad.py
 ```
+
+## Further features to add
+
+- Memory checker, since arrays are created in C, add in checks to ensure dlgrad is not reading or writing out of bounds accidentally.
+- In the speed comparison script, include a GFLOPS metric.
+- Add support for visualization graphs of networks.
+- dlgrad should start to support transformers and LLM's and eventually implement LLM's.
+- Add CUDA support.
