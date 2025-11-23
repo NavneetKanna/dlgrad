@@ -974,6 +974,14 @@ def mnist_loader() -> tuple[str, str]:
         #include <stdlib.h>
         #include <arpa/inet.h>
 
+        size_t safe_fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
+            size_t ret = fread(ptr, size, nmemb, stream);
+            if (ret != nmemb) {
+                printf("Read error or unexpected EOF\\n");
+            }
+            return ret;
+        }
+
         // https://web.archive.org/web/20160828233817/http://yann.lecun.com/exdb/mnist/index.html
         float *mnist_images_loader(char *path, uint32_t magic_number)
         {
@@ -985,7 +993,10 @@ def mnist_loader() -> tuple[str, str]:
 
             uint32_t magic_num, num_images, num_rows, num_cols;
 
-            fread(&magic_num, 1, 4, fp);
+            if (safe_fread(&magic_num, 1, 4, fp) != 4) {
+                fclose(fp);
+                return NULL;
+            }
 
             magic_num = ntohl(magic_num);
 
@@ -995,9 +1006,19 @@ def mnist_loader() -> tuple[str, str]:
                 return NULL;
             }
 
-            fread(&num_images, 1, 4, fp);
-            fread(&num_rows, 1, 4, fp);
-            fread(&num_cols, 1, 4, fp);
+            if (safe_fread(&num_images, 1, 4, fp) != 4) {
+                fclose(fp);
+                return NULL;
+            }
+            if (safe_fread(&num_rows, 1, 4, fp) != 4) {
+                fclose(fp);
+                return NULL;
+            }
+            if (safe_fread(&num_cols, 1, 4, fp) != 4) {
+                fclose(fp);
+                return NULL;
+            }
+
             num_images = ntohl(num_images);
             num_rows = ntohl(num_rows);
             num_cols = ntohl(num_cols);
@@ -1013,7 +1034,10 @@ def mnist_loader() -> tuple[str, str]:
 
             unsigned char pixel;
             for (int i=0; i<out_size; i++) {
-                fread(&pixel, 1, 1, fp);
+                if (safe_fread(&pixel, 1, 1, fp) != 1) {
+                    fclose(fp);
+                    return NULL;
+                }
                 out[i] = (float)pixel;
             }
 
@@ -1032,7 +1056,10 @@ def mnist_loader() -> tuple[str, str]:
 
             uint32_t magic_num, num_images;
 
-            fread(&magic_num, 1, 4, fp);
+            if (safe_fread(&magic_num, 1, 4, fp) != 4) {
+                fclose(fp);
+                return NULL;
+            }
 
             magic_num = ntohl(magic_num);
 
@@ -1042,7 +1069,10 @@ def mnist_loader() -> tuple[str, str]:
                 return NULL;
             }
 
-            fread(&num_images, 1, 4, fp);
+            if (safe_fread(&num_images, 1, 4, fp) != 4) {
+                fclose(fp);
+                return NULL;
+            }
             num_images = ntohl(num_images);
 
             int out_size = num_images;
@@ -1056,7 +1086,10 @@ def mnist_loader() -> tuple[str, str]:
 
             unsigned char labels;
             for (int i=0; i<out_size; i++) {
-                fread(&labels, 1, 1, fp);
+                if (safe_fread(&labels, 1, 1, fp) != 1) {
+                    fclose(fp);
+                    return NULL;
+                }
                 out[i] = (float)labels;
             }
 
