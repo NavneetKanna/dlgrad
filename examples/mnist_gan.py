@@ -1,7 +1,12 @@
 # ruff: noqa
 from pathlib import Path
 
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    print("NumPy needs to be installed, it is needed for a few operations which are not yet supported by dlgrad")
+    exit()
+
 import torch
 from torchvision.utils import make_grid, save_image
 from tqdm import tqdm
@@ -12,9 +17,8 @@ from dlgrad.nn.datasets import mnist
 # parameters
 EPOCHS = 300
 BS = 100
-K = 1
-STEPS = 70000 // BS
-SAMPLE_INTERVAL = EPOCHS // 10
+STEPS = float(70000 // BS)
+STEPS = 3.0
 device = "cpu"
 
 class LinearGen:
@@ -56,14 +60,14 @@ def make_batch(images: np.ndarray) -> Tensor:
 
 def make_targets(bs: int, value: float) -> Tensor:
     # shape (bs, 1), values in [0, 1]
-    return Tensor(np.full((bs, 1), value, dtype=np.float32), device=device)
+    return Tensor.full((bs, 1), value, device=device)
 
-def train_discriminator(discriminator, optimizer, data_real, data_fake) -> np.ndarray:
-    # (512, 1)
+def train_discriminator(discriminator, optimizer, data_real, data_fake) -> Tensor:
+    # (BS, 1)
     real_targets = make_targets(BS, 1.0)  # real -> 1
     fake_targets = make_targets(BS, 0.0)  # fake -> 0
     optimizer.zero_grad()
-    # (512, 1)
+    # (BS, 1)
     out_real = discriminator(data_real)   # logits
     out_fake = discriminator(data_fake)   # logits
     loss_real = out_real.bcewithlogitsloss(real_targets)
@@ -71,9 +75,9 @@ def train_discriminator(discriminator, optimizer, data_real, data_fake) -> np.nd
     d_loss = (loss_real + loss_fake) / 2.0
     d_loss.backward()
     optimizer.step()
-    return d_loss.numpy()
+    return d_loss
 
-def train_generator(discriminator, optimizer, data_fake):
+def train_generator(discriminator, optimizer, data_fake) -> Tensor:
     # non-saturating: push D(G(z)) to be real (target=1)
     real_like = make_targets(BS, 1.0)
     optimizer.zero_grad()
@@ -81,7 +85,7 @@ def train_generator(discriminator, optimizer, data_fake):
     g_loss = out_fake.bcewithlogitsloss(real_like)
     g_loss.backward()
     optimizer.step()
-    return g_loss.numpy()
+    return g_loss
 
 if __name__ == "__main__":
     x_train_images, x_train_labels, x_test_images, x_test_labels = mnist(device=device)
@@ -99,27 +103,27 @@ if __name__ == "__main__":
     output_dir.mkdir(exist_ok=True)
 
     # optimizers
-    optim_g = nn.optim.Adam(nn.utils.get_parameters(generator), lr=0.0002, betas=(0.5, 0.999))
-    optim_d = nn.optim.Adam(nn.utils.get_parameters(discriminator), lr=0.0002, betas=(0.5, 0.999))
+    optim_g = nn.optim.Adam(nn.utils.get_parameters(generator), lr=0.0005, betas=(0.5, 0.999))
+    optim_d = nn.optim.Adam(nn.utils.get_parameters(discriminator), lr=0.0005, betas=(0.5, 0.999))
 
     # training loop
     for epoch in tqdm(range(EPOCHS), position=0, leave=True):
-        loss_g, loss_d = 0.0, 0.0
-        for _ in tqdm(range(STEPS), position=1, leave=False):
-            # (512, 784)
+        loss_g, loss_d = Tensor(0.0), Tensor(0.0)
+        for _ in tqdm(range(int(STEPS)), position=1, leave=False):
+            # (BS, 784)
             data_real = make_batch(images_real)
-            # (512, 128)
+            # (BS, 128)
             noise = Tensor.uniform((BS, 128), low=-1, high=1, device=device)
-            # (512, 784)
+            # (BS, 784)
             data_fake = generator(noise).detach()
-            loss_d += train_discriminator(discriminator, optim_d, data_real, data_fake)
+            loss_d = loss_d + train_discriminator(discriminator, optim_d, data_real, data_fake)
             noise = Tensor.uniform((BS, 128), low=-1, high=1, device=device)
             data_fake = generator(noise)
-            loss_g += train_generator(discriminator, optim_g, data_fake)
+            loss_g = loss_g + train_generator(discriminator, optim_g, data_fake)
 
         fake_images = generator(ds_noise).detach().numpy()
         fake_images = (fake_images.reshape(-1, 1, 28, 28) + 1) / 2  # 0 - 1 range.
         save_image(make_grid(torch.tensor(fake_images)[:64], nrow=8), output_dir / f"image_{epoch+1}.jpg")
-        tqdm.write(f"Generator loss: {loss_g/STEPS}, Discriminator loss: {loss_d/STEPS}")
+        tqdm.write(f"Generator loss: {(loss_g/STEPS).numpy()}, Discriminator loss: {(loss_d/STEPS).numpy()}")
 
     print("Training Completed!")

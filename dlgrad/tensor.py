@@ -118,6 +118,7 @@ class Tensor:
         else:
             raise ValueError("The data must be of type Buffer, np.ndarray or float")
 
+    # TODO: Print in python using indexing, rather than printf in C
     def show(self: Tensor) -> None:
         self.data.show()
 
