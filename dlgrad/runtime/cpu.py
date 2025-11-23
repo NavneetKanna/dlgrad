@@ -25,7 +25,7 @@ from dlgrad.helpers import (
    prod_,
 )
 
-CFLAGS = ["-shared", "-fPIC", "-O3", "-march=native", "-ffast-math"]
+CFLAGS = ["-shared", "-fPIC", "-O3", "-march=native", "-ffast-math", "-Werror"]
 if shutil.which('clang'):
    COMPILER = "clang"
 elif shutil.which('gcc'):
@@ -284,7 +284,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.neg(x.ptr, out_ptr)
+        lib.c_neg(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -324,7 +324,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.cexp(x.ptr, out_ptr)
+        lib.c_exp(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -344,7 +344,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.csqrt(x.ptr, out_ptr)
+        lib.c_sqrt(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -384,7 +384,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.clog(x.ptr, out_ptr)
+        lib.c_log(x.ptr, out_ptr)
 
         return out_ptr
 

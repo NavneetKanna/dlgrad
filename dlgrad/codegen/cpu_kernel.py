@@ -400,41 +400,38 @@ def utils(x_numel: int, func: str, val: Scalar = None) -> tuple[str, str]:
             code = f"""
             #include <math.h>
 
-            void neg(float *x, float *out)
+            void c_neg(float *x, float *out)
             {{
                 for (int i=0; i<{x_numel}; i++) {{
                     out[i] = -1 * x[i];
                 }}
             }}
             """
-
-            return code, "void neg(float *x, float *out);"
+            return code, "void c_neg(float *x, float *out);"
         case "exp":
             code = f"""
             #include <math.h>
 
-            void cexp(float *x, float *out)
+            void c_exp(float *x, float *out)
             {{
                 for (int i=0; i<{x_numel}; i++) {{
                     out[i] = exp(x[i]);
                 }}
             }}
             """
-
-            return code, "void cexp(float *x, float *out);"
+            return code, "void c_exp(float *x, float *out);"
         case "log":
             code = f"""
             #include <math.h>
 
-            void clog(float *x, float *out)
+            void c_log(float *x, float *out)
             {{
                 for (int i=0; i<{x_numel}; i++) {{
                     out[i] = log(x[i]);
                 }}
             }}
             """
-
-            return code, "void clog(float *x, float *out);"
+            return code, "void c_log(float *x, float *out);"
         case "pow":
             code = f"""
             #include <math.h>
@@ -446,21 +443,19 @@ def utils(x_numel: int, func: str, val: Scalar = None) -> tuple[str, str]:
                 }}
             }}
             """
-
             return code, "void c_pow(float *x, float *out);"
         case "sqrt":
             code = f"""
             #include <math.h>
 
-            void csqrt(float *x, float *out)
+            void c_sqrt(float *x, float *out)
             {{
                 for (int i=0; i<{x_numel}; i++) {{
                     out[i] = sqrtf(x[i]);
                 }}
             }}
             """
-
-            return code, "void csqrt(float *x, float *out);"
+            return code, "void c_sqrt(float *x, float *out);"
 
 @cache
 def clamp(x_numel: int, min_val: int, max_val: int) -> tuple[str, str]:
