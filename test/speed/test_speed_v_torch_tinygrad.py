@@ -17,7 +17,8 @@ def benchmark(func, data, device: str, sync_tiny: bool = False, sync_torch: bool
             result = result.realize()
             tinygrad.Device[device].synchronize()
         if sync_torch:
-            torch.mps.synchronize()
+            if platform.system() == 'Darwin':
+                torch.mps.synchronize()
         times.append(time.perf_counter() - start)
     return np.min(times)
 
