@@ -34,6 +34,12 @@ else:
     print("Clang or GCC not found")
     sys.exit(1)
 
+EXTRA_LIBS = []
+if sys.platform == "linux":
+    EXTRA_LIBS = ["-lm", "-lmvec"]
+elif sys.platform == "darwin":
+    EXTRA_LIBS = ["-lm"]
+
 class CPU:
     """
     Main CPU runtime class which handles the logic of calling the compiled C source files.
@@ -47,7 +53,7 @@ class CPU:
         c_path = so_path.with_suffix(".c")
         c_path.write_text(source)
 
-        cmd = [COMPILER, *CFLAGS, "-o", str(so_path), str(c_path)]
+        cmd = [COMPILER, *CFLAGS, *EXTRA_LIBS, "-o", str(so_path), str(c_path)]
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0:
             raise RuntimeError(f"Compilation failed:\n{res.stderr}")
