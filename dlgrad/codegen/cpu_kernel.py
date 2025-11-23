@@ -969,6 +969,23 @@ def uniform(x_numel: int, low: int, high: int) -> tuple[str, str]:
 
 @cache
 def mnist_loader() -> tuple[str, str]:
+    # TODO: Check if this works
+    """
+    uint8_t *temp_buf = (uint8_t*)malloc(out_size);
+    if (!temp_buf) { free(out); fclose(fp); return NULL; }
+
+    if (safe_fread(temp_buf, 1, out_size, fp) != out_size) {
+        free(temp_buf); free(out); fclose(fp); return NULL;
+    }
+
+    // 3. Cast to float in memory
+    for (int i=0; i<out_size; i++) {
+        out[i] = (float)temp_buf[i];
+    }
+
+    free(temp_buf);
+    fclose(fp);
+    """
     c_code = """
         #include <stdio.h>
         #include <stdlib.h>

@@ -16,4 +16,5 @@ setup(
     packages=find_packages(),
     python_requires='>=3.10',
     install_requires=['cffi>=1.0.0', 'tqdm', 'pyobjc-framework-Metal; sys_platform == "darwin"'],
+    extras_require={'testing': ['torch', 'tinygrad', 'pytest']}
 )
