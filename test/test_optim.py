@@ -2,7 +2,7 @@ from dlgrad import Tensor
 from dlgrad.nn.optim import SGD, Adam
 import torch
 import numpy as np
-
+import platform
 
 np.random.seed(1337)
 
@@ -31,18 +31,21 @@ def step(tensor, optim, steps=2, device="cpu"):
         optim.zero_grad()
         out.backward()
         optim.step()
-    
+
     if isinstance(net.x, torch.Tensor) and isinstance(net.W, torch.Tensor):
         return net.x.cpu().detach().numpy(), net.W.cpu().detach().numpy()
     else:
         return net.x.numpy(), net.W.numpy()
 
 def _test_optim(dlgrad_optim, torch_optim, steps, atol, rtol):
-    for d in ["cpu", "metal"]:
+    devices = ["cpu"]
+    if platform.system() == 'Darwin':
+        d.append("metal")
+    for d in devices:
         for x,y in zip(step(Tensor, dlgrad_optim, steps, d),
                     step(torch.tensor, torch_optim, steps, d if d != "metal" else "mps")):
              np.testing.assert_allclose(x, y, atol=atol, rtol=rtol)
-         
+
 def test():
     _test_optim(SGD, torch.optim.SGD, 5, 1e-2, 1e-3)
     _test_optim(Adam, torch.optim.Adam, 5, 1e-2, 1e-3)
