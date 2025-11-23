@@ -5,6 +5,13 @@ from dlgrad import Tensor
 import tinygrad
 from dlgrad.helpers import get_color
 import platform
+import shutil
+import os
+
+if shutil.which('clang'):
+   os.environ["CC"] = "clang"
+elif shutil.which('gcc'):
+    os.environ["CC"] = "gcc"
 
 ITERATIONS = 8
 
