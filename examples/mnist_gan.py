@@ -24,7 +24,6 @@ from dlgrad.nn.datasets import mnist
 EPOCHS = 300
 BS = 100
 STEPS = float(70000 // BS)
-STEPS = 3.0
 device = "cpu"
 
 class LinearGen:
