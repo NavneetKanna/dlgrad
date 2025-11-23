@@ -2,13 +2,16 @@ import numpy as np
 import pytest
 import torch
 from dlgrad import Tensor, nn
+import platform
 
 BS, in_dim, HS, ncls = 128, 784, 64, 10
 
 device_pairs = [
     ('cpu', 'cpu'),
-    ('metal', 'mps')
 ]
+
+if platform.system() == 'Darwin':
+    device_pairs.append(('metal', 'mps'))
 
 def run_test(dlgrad_device, torch_device):
     na = np.random.uniform(size=(BS, in_dim)).astype(np.float32)
@@ -30,8 +33,8 @@ def run_test(dlgrad_device, torch_device):
                 Tensor.relu,
                 li2
             ]
-        
-        def __call__(self, x: Tensor) -> Tensor: 
+
+        def __call__(self, x: Tensor) -> Tensor:
             return x.sequential(self.layers)
 
     m = Model()
