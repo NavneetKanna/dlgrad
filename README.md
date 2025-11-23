@@ -64,6 +64,7 @@ The MNIST example gets to around 95% accuracy in ~5 seconds on an M2 CPU.
 To run the tests (pytest is required)
 
 ```bash
+python3 -m pip install -e '.[testing]'
 python3 -m pytest test/
 ```
 
