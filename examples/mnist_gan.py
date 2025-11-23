@@ -3,12 +3,18 @@ from pathlib import Path
 
 try:
     import numpy as np
-except ImportError:
-    print("NumPy needs to be installed, it is needed for a few operations which are not yet supported by dlgrad")
-    exit()
+except ImportError as e:
+    raise ImportError(
+        "NumPy is required for few operations which are not yet supported by dlgrad."
+    ) from e
 
 import torch
-from torchvision.utils import make_grid, save_image
+try:
+    from torchvision.utils import make_grid, save_image
+except ImportError as e:
+    raise ImportError(
+        "torchvision is required for saving the grid."
+    ) from e
 from tqdm import tqdm
 
 from dlgrad import Tensor, nn
