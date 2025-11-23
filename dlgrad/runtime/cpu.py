@@ -51,7 +51,7 @@ class CPU:
         c_path = so_path.with_suffix(".c")
         c_path.write_text(source)
 
-        cmd = [COMPILER, *CFLAGS, "-o", str(so_path), *EXTRA_LIBS, str(c_path)]
+        cmd = [COMPILER, *CFLAGS, "-o", str(so_path), str(c_path), *EXTRA_LIBS]
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0:
             raise RuntimeError(f"Compilation failed:\n{res.stderr}")
