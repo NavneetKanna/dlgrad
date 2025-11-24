@@ -75,8 +75,9 @@ python3 -m pytest -s test/speed/test_speed_v_torch_tinygrad.py
 
 ## Further features to add
 
-- Memory checker, since arrays are created in C, add in checks to ensure dlgrad is not reading or writing out of bounds accidentally.
+- Add a memory checker. Since arrays are created in C, include checks to ensure that dlgrad is not accidentally reading or writing out of bounds.
 - In the speed comparison script, include a GFLOPS metric.
-- Add support for visualization graphs of networks.
-- dlgrad should start to support transformers and LLM's and eventually implement LLM's.
+- Add support for visualization networks graphs.
+- Begin adding support for transformers and large language models, with the long-term goal of fully implementing LLMs. 
 - Add CUDA support.
+- Add batch normalization, additional activation functions, optimizers.
