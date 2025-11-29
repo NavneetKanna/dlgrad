@@ -106,7 +106,7 @@ class MetalGPU:
     def build_2d_pipeline(src: str, func_name: str, w: int, h: int):
         options = Metal.MTLCompileOptions.alloc().init()
         lib, _ = device.newLibraryWithSource_options_error_(src, options, None)
-        # print(_)
+        print(_)
         fn = lib.newFunctionWithName_(func_name)
         pso = device.newComputePipelineStateWithFunction_error_(fn, None)[0]
 
@@ -282,7 +282,7 @@ class MetalGPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.TRANSPOSE, Device.METAL)
-    def transpose(x: Buffer, out_stride: tuple):
+    def transpose(x: Buffer, out_stride: tuple, dim0: int, dim1: int):
         out_ptr = CPU.malloc(num=x.numel)
 
         x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
@@ -291,8 +291,13 @@ class MetalGPU:
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
 
-        src = metal_kernel.transpose(x.shape)
-        pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "transpose", w=x.shape[1], h=x.shape[0])
+        if x.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
+            src = metal_kernel.transpose_3d_01(x.shape, x.stride)
+            # print(src)
+            pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "transpose", w=x.shape[2], h=x.shape[0]*x.shape[1])
+        else:
+            src = metal_kernel.transpose(x.shape)
+            pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "transpose", w=x.shape[1], h=x.shape[0])
 
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)

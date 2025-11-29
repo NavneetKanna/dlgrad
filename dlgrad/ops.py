@@ -6,11 +6,11 @@ from dlgrad.tensor import OP
 # ------------ Unary Ops -----------
 
 class Transpose(OP):
-    def forward(self, x: Buffer) -> Buffer:
-        return x.transpose()
+    def forward(self, x: Buffer, dim0: int, dim1: int) -> Buffer:
+        return x.transpose(dim0, dim1)
 
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-        return (upstream_grad.transpose(),)
+        return (upstream_grad.transpose(1, 0),) # 2d
 
 class Sum(OP):
     def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:

@@ -216,15 +216,20 @@ class Buffer:
                 lst[idx1], lst[idx2] = lst[idx2], lst[idx1]
             return tuple(lst)
 
-    def transpose(self) -> Buffer:
-        assert self.ndim == 2, "Only 2D Tensors can be transposed"
+    def transpose(self, dim0: int, dim1: int) -> Buffer:
+        # assert self.ndim == 2, "Only 2D Tensors can be transposed"
 
-        out_shape = (self.shape[1], self.shape[0])
+        if self.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
+            out_shape = (self.shape[1], self.shape[0], self.shape[2])
+        else:
+            out_shape = (self.shape[1], self.shape[0])
         return Buffer(
             data=dispatcher.dispatch(
                 op=UnaryOps.TRANSPOSE,
                 device=self.device,
                 x=self,
+                dim0=dim0,
+                dim1=dim1,
                 out_stride=calculate_stride(out_shape),
             ),
             shape=out_shape, device=self.device, dtype=self.dtype

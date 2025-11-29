@@ -290,7 +290,7 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.TRANSPOSE, Device.CPU)
-    def transpose(x: Buffer, out_stride: tuple) -> CDataPtr:
+    def transpose(x: Buffer, out_stride: tuple, dim0: int, dim1: int) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
         c_code, cdef = cpu_kernel.transpose(x.shape, x.stride, out_stride, x.numel)
