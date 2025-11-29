@@ -221,6 +221,8 @@ class Buffer:
 
         if self.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
             out_shape = (self.shape[1], self.shape[0], self.shape[2])
+        elif self.ndim == 3 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
+            out_shape = (self.shape[0], self.shape[2], self.shape[1])
         else:
             out_shape = (self.shape[1], self.shape[0])
         return Buffer(

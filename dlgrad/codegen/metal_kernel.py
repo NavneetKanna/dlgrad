@@ -270,80 +270,86 @@ def transpose_3d_01(x_shape: tuple, x_stride: tuple):
     return metal_code
 
 @cache
-def transpose(x_shape: tuple):
-    metal_code1 = f"""
+def transpose_3d_12(x_shape: tuple):
+    metal_code = f"""
         #include <metal_stdlib>
         using namespace metal;
 
+        #define TILE_DIM 32
+
         kernel void transpose(
-            device const float* x    [[ buffer(0) ]],
-            device float* out        [[ buffer(1) ]],
-            uint2 tid                [[ thread_position_in_grid ]],
-            uint2 tw                 [[ dispatch_threads_per_threadgroup ]],
-            uint2 lid                [[ thread_position_in_threadgroup ]])
+            device const float* in     [[ buffer(0) ]],
+            device float* out          [[ buffer(1) ]],
+            uint3 gid                  [[ threadgroup_position_in_grid ]],
+            uint3 tid                  [[ thread_position_in_threadgroup ]])
         {{
-            int row = tid.y;
-            int col = tid.x;
+            threadgroup float tile[32][32 + 1];
 
-            threadgroup float ldata[32][32];
+            uint batch_size = {x_shape[0]};
+            uint height = {x_shape[1]};
+            uint width  = {x_shape[2]};
 
-            int idx = row*{x_shape[1]} + col;
-            ldata[lid.y][lid.x] = x[idx];
+            uint batch_idx = gid.z;
+
+            if (batch_idx >= batch_size)
+                return;
+
+            uint batch_offset = batch_idx * width * height;
+
+            uint in_col = gid.x * TILE_DIM + tid.x;
+            uint in_row = gid.y * TILE_DIM + tid.y;
+
+            if (in_col < width && in_row < height) {{
+                tile[tid.y][tid.x] = in[batch_offset + in_row * width + in_col];
+            }}
 
             threadgroup_barrier(mem_flags::mem_threadgroup);
 
-            out[col*{x_shape[0]} + row] = ldata[lid.y][lid.x];
+            uint out_col = gid.y * TILE_DIM + tid.x;
+            uint out_row = gid.x * TILE_DIM + tid.y;
+
+            if (out_row < width && out_col < height) {{
+                out[batch_offset + out_row * height + out_col] = tile[tid.x][tid.y];
+            }}
         }}
     """
+    return metal_code
+
+@cache
+def transpose_2d(x_shape: tuple):
     metal_code = f"""
-    #include <metal_stdlib>
-    using namespace metal;
+        #include <metal_stdlib>
+        using namespace metal;
 
-    // Define tile size matching the threadgroup size
-    #define TILE_DIM 32
-    #define BLOCK_ROWS 32
+        #define TILE_DIM 32
 
-    kernel void transpose(
-        device const float* in     [[ buffer(0) ]],
-        device float* out          [[ buffer(1) ]],
-        // We need group ID and local ID to manually calculate swapped coordinates
-        uint2 gid  [[ threadgroup_position_in_grid ]],
-        uint2 tid  [[ thread_position_in_threadgroup ]])
-    {{
-        // Shared memory with padding to avoid bank conflicts
-        // [32][33] instead of [32][32] offsets the stride by 1
-        threadgroup float tile[TILE_DIM][TILE_DIM + 1];
+        kernel void transpose(
+            device const float* in     [[ buffer(0) ]],
+            device float* out          [[ buffer(1) ]],
+            uint2 gid                  [[ threadgroup_position_in_grid ]],
+            uint2 tid                  [[ thread_position_in_threadgroup ]])
+        {{
+            threadgroup float tile[TILE_DIM][TILE_DIM + 1];
 
-        uint width = {x_shape[1]};
-        uint height = {x_shape[0]};
+            uint width = {x_shape[1]};
+            uint height = {x_shape[0]};
 
-        // 1. Coalesced Read
-        // Calculate input global coordinates normally
-        uint in_col = gid.x * TILE_DIM + tid.x;
-        uint in_row = gid.y * TILE_DIM + tid.y;
+            uint in_col = gid.x * TILE_DIM + tid.x;
+            uint in_row = gid.y * TILE_DIM + tid.y;
 
-        if (in_col < width && in_row < height) {{
-            tile[tid.y][tid.x] = in[in_row * width + in_col];
+            if (in_col < width && in_row < height) {{
+                tile[tid.y][tid.x] = in[in_row * width + in_col];
+            }}
+
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+
+            uint out_col = gid.y * TILE_DIM + tid.x;
+            uint out_row = gid.x * TILE_DIM + tid.y;
+
+            if (out_row < height && out_col < width) {{
+                out[out_row * height + out_col] = tile[tid.x][tid.y];
+            }}
         }}
-
-        threadgroup_barrier(mem_flags::mem_threadgroup);
-
-        // 2. Transpose Block Coordinates
-        // The block (x,y) in input becomes block (y,x) in output
-        // We re-map tid.x to be the fastest moving dimension of the OUTPUT (new columns)
-        uint out_col = gid.y * TILE_DIM + tid.x;
-        uint out_row = gid.x * TILE_DIM + tid.y;
-
-        // 3. Coalesced Write
-        // We want to write to out[y_out * height + x_out].
-        // Since x_out depends on tid.x, this write is coalesced.
-        // But we need to grab the correct value from the tile.
-        // The thread that is now handling (x_out, y_out) corresponds to
-        // the transposed position in the tile: tile[tid.x][tid.y].
-        if (out_row < height && out_col < width) {{
-            out[out_row * height + out_col] = tile[tid.x][tid.y];
-        }}
-    }}
     """
     return metal_code
 

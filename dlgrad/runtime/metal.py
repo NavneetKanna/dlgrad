@@ -106,7 +106,7 @@ class MetalGPU:
     def build_2d_pipeline(src: str, func_name: str, w: int, h: int):
         options = Metal.MTLCompileOptions.alloc().init()
         lib, _ = device.newLibraryWithSource_options_error_(src, options, None)
-        print(_)
+        # print(_)
         fn = lib.newFunctionWithName_(func_name)
         pso = device.newComputePipelineStateWithFunction_error_(fn, None)[0]
 
@@ -293,10 +293,22 @@ class MetalGPU:
 
         if x.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
             src = metal_kernel.transpose_3d_01(x.shape, x.stride)
-            # print(src)
             pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "transpose", w=x.shape[2], h=x.shape[0]*x.shape[1])
+        elif x.ndim == 3 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
+            src = metal_kernel.transpose_3d_12(x.shape)
+            pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "transpose", w=x.shape[2], h=x.shape[0]*x.shape[1])
+            threadgroupsPerGrid = Metal.MTLSizeMake(math.ceil(x.shape[2]/32), math.ceil(x.shape[1]/32), x.shape[0])
+            threadsPerThreadgroup = Metal.MTLSizeMake(32, 32, 1)
+            computeEncoder.setComputePipelineState_(pso)
+            computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
+            computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
+            computeEncoder.dispatchThreadgroups_threadsPerThreadgroup_(threadgroupsPerGrid, threadsPerThreadgroup)
+            computeEncoder.endEncoding()
+            commandBuffer.commit()
+            commandBuffer.waitUntilCompleted()
+            return out_ptr
         else:
-            src = metal_kernel.transpose(x.shape)
+            src = metal_kernel.transpose_2d(x.shape)
             pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "transpose", w=x.shape[1], h=x.shape[0])
 
         computeEncoder.setComputePipelineState_(pso)
