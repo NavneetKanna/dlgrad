@@ -508,7 +508,25 @@ def clamp(x_numel: int, min_val: int, max_val: int) -> tuple[str, str]:
     return c_code, "void clamp(float *x, float *out);"
 
 @cache
-def matmul(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple) -> tuple[str, str]:
+def matmul_3d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, out_stride: tuple) -> tuple[str, str]:
+    c_code = f"""
+    void matmul(float *x, float *y, float *out) {{
+        for (int b=0; b<{x_shape[0]}; b++) {{
+            for (int i=0; i<{x_shape[1]}; i++) {{
+                for (int k=0; k<{x_shape[2]}; k++) {{
+                    float a = x[b*{x_stride[0]} + i*{x_stride[1]} + k*{x_stride[2]}];
+                    for (int j=0; j<{y_shape[2]}; j++) {{
+                        out[b*{out_stride[0]} + i*{out_stride[1]} + j*{out_stride[2]}] += a * y[b*{y_stride[0]} + k*{y_stride[1]} + j*{y_stride[2]}];
+                    }}
+                }}
+            }}
+        }}
+    }}
+    """
+    return c_code, "void matmul(float *x, float *y, float *out);"
+
+@cache
+def matmul_2d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple) -> tuple[str, str]:
     c_code = f"""
     void matmul(float *x, float *y, float *out) {{
         for (int i=0; i<{x_shape[0]}; i++) {{
@@ -521,7 +539,6 @@ def matmul(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple) -> 
         }}
     }}
     """
-
     return c_code, "void matmul(float *x, float *y, float *out);"
 
 @cache

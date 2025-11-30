@@ -199,7 +199,8 @@ class Buffer:
             # raise ValueError("Either the Tensors shape dont match or is not 2D")
 
         if self.ndim == 3:
-            device = Device.METAL
+            # device = Device.METAL
+            device = self.device
             shape = (self.shape[0], self.shape[1], other.shape[2])
         elif self.shape[0] % 8 == 0 and self.shape[1] % 8 == 0 and other.shape[0] % 8 == 0 and other.shape[1] % 8 == 0 and sys.platform == "darwin":
             device = Device.METAL
