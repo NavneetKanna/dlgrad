@@ -293,8 +293,10 @@ class CPU:
     def transpose(x: Buffer, out_stride: tuple, dim0: int, dim1: int) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.transpose_2d(x.shape, x.stride, out_stride, x.numel)
-        # print(c_code)
+        if x.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
+            c_code, cdef = cpu_kernel.transpose_3d_01(x.shape, (x.shape[1], x.shape[0], x.shape[2]), x.stride, out_stride, x.numel)
+        else:
+            c_code, cdef = cpu_kernel.transpose_2d(x.shape, x.stride, out_stride, x.numel)
 
         key   = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"transpose_{key}.so"

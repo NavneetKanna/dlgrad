@@ -345,6 +345,25 @@ def mean(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int, out_numel: int
     return code, "void mean(float *x, float *out);"
 
 @cache
+def transpose_3d_01(x_shape: tuple, out_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int) -> tuple[str, str]:
+    c_code = f"""
+        void transpose(float *x, float *out) {{
+            int out_idx = 0;
+            int x_idx = 0;
+            for (int i=0; i<{out_shape[0]}; i++) {{
+                for (int j=0; j<{out_shape[1]}; j++) {{
+                    for (int k=0; k<{out_shape[2]}; k++) {{
+                        x_idx = i*{x_stride[1]} + j*{x_stride[0]} + k*{x_stride[2]};
+                        out_idx = i*{out_stride[0]} + j*{out_stride[1]} + k*{out_stride[2]};
+                        out[out_idx] = x[x_idx];
+                    }}
+                }}
+            }}
+        }}
+    """
+    return c_code, "void transpose(float *x, float *out);"
+
+@cache
 def transpose_2d(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int) -> tuple[str, str]:
     c_code = f"""
         void transpose(float *x, float *out) {{
