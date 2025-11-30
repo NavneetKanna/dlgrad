@@ -332,6 +332,16 @@ class MetalGPU:
         else:
             src = metal_kernel.transpose_2d(x.shape)
             pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "transpose", w=x.shape[1], h=x.shape[0])
+            threadgroupsPerGrid = Metal.MTLSizeMake(math.ceil(x.shape[1]/32), math.ceil(x.shape[0]/32), 1)
+            threadsPerThreadgroup = Metal.MTLSizeMake(32, 32, 1)
+            computeEncoder.setComputePipelineState_(pso)
+            computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
+            computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
+            computeEncoder.dispatchThreadgroups_threadsPerThreadgroup_(threadgroupsPerGrid, threadsPerThreadgroup)
+            computeEncoder.endEncoding()
+            commandBuffer.commit()
+            commandBuffer.waitUntilCompleted()
+            return out_ptr
 
         computeEncoder.setComputePipelineState_(pso)
         computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)

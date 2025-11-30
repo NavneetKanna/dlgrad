@@ -434,7 +434,7 @@ def transpose_2d(x_shape: tuple):
             uint out_col = gid.y * TILE_DIM + tid.x;
             uint out_row = gid.x * TILE_DIM + tid.y;
 
-            if (out_row < height && out_col < width) {{
+            if (out_row < width && out_col < height) {{
                 out[out_row * height + out_col] = tile[tid.x][tid.y];
             }}
         }}

@@ -345,53 +345,21 @@ def mean(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int, out_numel: int
     return code, "void mean(float *x, float *out);"
 
 @cache
-def transpose(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int) -> tuple[str, str]:
-    gen = n_gen()
-
-    code = """
-    void transpose(float *x, float *out) {
-    int out_idx = 0;
-    int x_idx = 0;
+def transpose_2d(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int) -> tuple[str, str]:
+    c_code = f"""
+        void transpose(float *x, float *out) {{
+            int out_idx = 0;
+            int x_idx = 0;
+            for (int i=0; i<{x_shape[0]}; i++) {{
+                for (int j=0; j<{x_shape[1]}; j++) {{
+                    out_idx = {out_stride[0]}*j + {out_stride[1]}*i;
+                    x_idx = {x_stride[0]}*i + {x_stride[1]}*j;
+                    out[out_idx] = x[x_idx];
+                }}
+            }}
+        }}
     """
-
-    var_str = []
-    for i in x_shape:
-        var = next(gen)
-        var_str.append(var)
-        code += f"""
-        for (int {var}=0; {var}<{i}; {var}++) {{
-        """
-
-    ts = "out_idx = "
-    for i, v in zip(out_stride, var_str[::-1]):
-        ts += f"{i}*{v} + "
-    ts = ts[:-3]
-    ts += ";"
-
-    code += ts
-
-    code += "\n"
-
-    ts = "x_idx = "
-    for i, v in zip(x_stride, var_str):
-        ts += f"{i}*{v} + "
-    ts = ts[:-3]
-    ts += ";"
-
-    code += ts
-
-    code += "\n"
-
-    code += """
-    out[out_idx] = x[x_idx];
-    """
-
-    for i in range(len(var_str)):
-        code += "}\n"
-
-    code += "}\n"
-
-    return code, "void transpose(float *x, float *out);"
+    return c_code, "void transpose(float *x, float *out);"
 
 @cache
 def utils(x_numel: int, func: str, val: Scalar = None) -> tuple[str, str]:
