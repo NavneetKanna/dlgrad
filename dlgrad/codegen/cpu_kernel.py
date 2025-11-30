@@ -364,6 +364,27 @@ def transpose_3d_01(x_shape: tuple, out_shape: tuple, x_stride: tuple,  out_stri
     return c_code, "void transpose(float *x, float *out);"
 
 @cache
+def transpose_3d_12(x_shape: tuple, out_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int) -> tuple[str, str]:
+    c_code = f"""
+        void transpose(float *x, float *out) {{
+            int out_idx = 0;
+            int x_idx = 0;
+            for (int k=0; k<{x_shape[0]}; k++) {{
+                int out_idx = 0;
+                int x_idx = 0;
+                for (int i=0; i<{x_shape[1]}; i++) {{
+                    for (int j=0; j<{x_shape[2]}; j++) {{
+                        out_idx = k*{out_stride[0]} + {out_stride[1]}*j + {out_stride[2]}*i;
+                        x_idx = k*{x_stride[0]} + {x_stride[1]}*i + {x_stride[2]}*j;
+                        out[out_idx] = x[x_idx];
+                    }}
+                }}
+            }}
+        }}
+    """
+    return c_code, "void transpose(float *x, float *out);"
+
+@cache
 def transpose_2d(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int) -> tuple[str, str]:
     c_code = f"""
         void transpose(float *x, float *out) {{

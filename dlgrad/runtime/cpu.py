@@ -295,6 +295,8 @@ class CPU:
 
         if x.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
             c_code, cdef = cpu_kernel.transpose_3d_01(x.shape, (x.shape[1], x.shape[0], x.shape[2]), x.stride, out_stride, x.numel)
+        elif x.ndim == 3 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
+            c_code, cdef = cpu_kernel.transpose_3d_12(x.shape, (x.shape[1], x.shape[0], x.shape[2]), x.stride, out_stride, x.numel)
         else:
             c_code, cdef = cpu_kernel.transpose_2d(x.shape, x.stride, out_stride, x.numel)
 
