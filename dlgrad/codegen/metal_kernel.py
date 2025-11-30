@@ -57,25 +57,113 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
     return metal_code
 
 @cache
-def matmul(x_shape: tuple, y_shape: tuple):
+def matmul_3d(B, M, K, N):
     metal_code = f"""
-    kernel void matmul(
+        #include <metal_stdlib>
+        using namespace metal;
+
+        #define TILE_DIM 32
+
+        kernel void matmul(
             const device float* x  [[ buffer(0) ]],
             const device float* y  [[ buffer(1) ]],
             device float* out      [[ buffer(2) ]],
-            uint2 tid              [[ thread_position_in_grid ]])
+            uint3 gid              [[ threadgroup_position_in_grid ]],
+            uint3 tid              [[ thread_position_in_threadgroup ]])
         {{
-            int row = tid.y;
-            int col = tid.x;
+            uint batch_idx = gid.z;
+            if (batch_idx >= {B})
+                return;
 
-            if (row >= {x_shape[0]} || col >= {y_shape[1]}) return;
+            int A_offset = batch_idx * {M} * {K};
+            int B_offset = batch_idx * {K} * {N};
+            int C_offset = batch_idx * {M} * {N};
 
-            float tmp = 0.0;
-            for (int k=0; k<{x_shape[1]}; k++) {{
-                tmp += x[row * {x_shape[1]} + k] * y[k*{y_shape[1]} + col];
+            int out_row = gid.y * TILE_DIM + tid.y; // starting of the block
+            int out_col = gid.x * TILE_DIM + tid.x; // starting of the block
+
+            threadgroup float tileA[TILE_DIM][TILE_DIM];
+            threadgroup float tileB[TILE_DIM][TILE_DIM];
+
+            float sum = 0.0f;
+
+            for (int k=0; k<{K}; k+=TILE_DIM) {{
+                if (out_row < {M} && (k + tid.x) < {K}) {{
+                    tileA[tid.y][tid.x] = x[A_offset + out_row * {K} + (k + tid.x)];
+                }} else {{
+                    tileA[tid.y][tid.x] = 0.0;
+                }}
+
+                if (out_col < {N} && (k+tid.y) < {K}) {{
+                    tileB[tid.y][tid.x] = y[B_offset + (k + tid.y) * {N} + out_col];
+                }} else {{
+                    tileB[tid.y][tid.x] = 0.0;
+                }}
+
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                for (int i=0; i<TILE_DIM; i++) {{
+                    sum += tileA[tid.y][i] * tileB[i][tid.x];
+                }}
+
+                threadgroup_barrier(mem_flags::mem_threadgroup);
             }}
 
-            out[row * {y_shape[1]} + col] = tmp;
+            if (out_row < {M} && out_col < {N}) {{
+                out[C_offset + out_row * {N} + out_col] = sum;
+            }}
+        }}
+    """
+    return metal_code
+
+@cache
+def matmul(x_shape: tuple, y_shape: tuple):
+    metal_code = f"""
+        #include <metal_stdlib>
+        using namespace metal;
+
+        #define TILE_DIM 32
+
+        kernel void matmul(
+            const device float* x  [[ buffer(0) ]],
+            const device float* y  [[ buffer(1) ]],
+            device float* out      [[ buffer(2) ]],
+            uint2 gid              [[ threadgroup_position_in_grid ]],
+            uint2 tid              [[ thread_position_in_threadgroup ]])
+        {{
+            int out_row = gid.y * TILE_DIM + tid.y; // starting of the block
+            int out_col = gid.x * TILE_DIM + tid.x; // starting of the block
+
+            threadgroup float tileA[TILE_DIM][TILE_DIM];
+            threadgroup float tileB[TILE_DIM][TILE_DIM];
+
+            float sum = 0.0f;
+
+            for (int k=0; k<{x_shape[1]}; k+=TILE_DIM) {{
+                if (out_row < {x_shape[0]} && (k + tid.x) < {x_shape[1]}) {{
+                    tileA[tid.y][tid.x] = x[(out_row * {x_shape[1]}) + (k + tid.x)];
+                }} else {{
+                    tileA[tid.y][tid.x] = 0.0;
+                }}
+
+                if (out_col < {y_shape[1]} && (k+tid.y) < {y_shape[0]}) {{
+                    tileB[tid.y][tid.x] = y[((k + tid.y) * {y_shape[1]}) + out_col];
+                }} else {{
+                    tileB[tid.y][tid.x] = 0.0;
+                }}
+
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                for (int i=0; i<TILE_DIM; i++) {{
+                    sum += tileA[tid.y][i] * tileB[i][tid.x];
+                }}
+
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+            }}
+
+            if (out_row < {x_shape[0]} && out_col < {y_shape[1]}) {{
+                out[out_row * {y_shape[1]} + out_col] = sum;
+            }}
         }}
     """
     return metal_code
