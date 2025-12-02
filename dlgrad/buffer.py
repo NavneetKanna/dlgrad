@@ -438,7 +438,7 @@ class Buffer:
 
     @property
     def T(self) -> Buffer:  # noqa: N802
-        return self.transpose()
+        return self.transpose(0, 1)
 
     @property
     def numel(self) -> int:

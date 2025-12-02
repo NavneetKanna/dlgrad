@@ -273,3 +273,33 @@ def test_transpose(shapes, device):
         dl_out = dlgrad_data.T
         to_out = torch_data.T
         np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+shapes = [
+    [(4, 3, 5)],
+    [(100, 200, 300)]
+]
+@pytest.mark.parametrize("shapes", shapes)
+def test_transpose_3d(shapes, device):
+    for sh in shapes:
+        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
+        dlgrad_data = Tensor(np_data, device=device)
+        torch_data = torch.tensor(np_data, device=to_torch_device(device))
+
+        dl_out = dlgrad_data.transpose(0, 1)
+        to_out = torch_data.transpose(0, 1)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+        dl_out = dlgrad_data.transpose(1, 2)
+        to_out = torch_data.transpose(1, 2)
+        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes", [
+    [(2, 3, 4), (2, 4, 3)],
+    [(20, 20, 20), (20, 20, 20)],
+    [(32, 8, 16), (32, 16, 8)],
+    [(128, 784, 100), (128, 100, 10)],
+    [(64, 128, 32), (64, 32, 64)],
+    [(4000, 64, 50), (4000, 50, 70)]
+])
+def test_matmul_3d(shapes, device):
+    run(shapes, device, lambda x, y: x@y)

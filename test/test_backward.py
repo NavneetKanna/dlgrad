@@ -186,3 +186,37 @@ def test_log_softmax_backward(shapes, device):
         to_out(th_x).sum().backward()
 
         np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shape", [
+    (4, 3),
+    (100, 200),
+])
+def test_transpose_2d_backward(shape, device):
+    np_data = np.random.uniform(size=shape).astype(np.float32)
+    dl_x = Tensor(np_data, device=device, requires_grad=True)
+    th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
+
+    dl_x.T.sum().backward()
+    th_x.T.sum().backward()
+    np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+    dl_x.T.sum().backward()
+    th_x.T.sum().backward()
+    np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shape", [
+    (4, 3, 5),
+    (100, 200, 300),
+])
+def test_transpose_3d_backward(shape, device):
+    np_data = np.random.uniform(size=shape).astype(np.float32)
+    dl_x = Tensor(np_data, device=device, requires_grad=True)
+    th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
+
+    dl_x.transpose(0, 1).sum().backward()
+    th_x.transpose(0, 1).sum().backward()
+    np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+    dl_x.transpose(1, 2).sum().backward()
+    th_x.transpose(1, 2).sum().backward()
+    np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)

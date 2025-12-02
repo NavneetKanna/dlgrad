@@ -7,10 +7,12 @@ from dlgrad.tensor import OP
 
 class Transpose(OP):
     def forward(self, x: Buffer, dim0: int, dim1: int) -> Buffer:
+        self.dim0 = dim0
+        self.dim1 = dim1
         return x.transpose(dim0, dim1)
 
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-        return (upstream_grad.transpose(1, 0),) # 2d
+        return (upstream_grad.transpose(self.dim1, self.dim0),) # 2d
 
 class Sum(OP):
     def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
