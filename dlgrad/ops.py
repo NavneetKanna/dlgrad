@@ -12,7 +12,7 @@ class Transpose(OP):
         return x.transpose(dim0, dim1)
 
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-        return (upstream_grad.transpose(self.dim1, self.dim0),) # 2d
+        return (upstream_grad.transpose(self.dim1, self.dim0),)
 
 class Sum(OP):
     def forward(self, x: Buffer, dim: int = -1, keepdim: bool = False) -> Buffer:
@@ -209,15 +209,47 @@ class Div(OP):
 		return grad_x, grad_y
 
 class MatMul(OP):
-	def forward(self, x: Buffer, y: Buffer) -> Buffer:
-		self.x = x
-		self.y = y
-		return x@y
+    def forward(self, x: Buffer, y: Buffer) -> Buffer:
+        self.x = x
+        self.y = y
+        return x@y
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		t1 = self.x.T
-		t2 = self.y.T
-		return (upstream_grad@t2, t1@upstream_grad)
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        """
+        # 1. Use specific axis transpose for 3D/Batch support
+                # Transpose only the last two dimensions (matrix transpose)
+                # .transpose(-1, -2) works in PyTorch/tinygrad to swap last two axes
+                t1 = self.x.transpose(-1, -2)
+                t2 = self.y.transpose(-1, -2)
+
+                grad_x = upstream_grad @ t2
+                grad_y = t1 @ upstream_grad
+
+                # 2. Handle Broadcasting (Optional but recommended for full 3D support)
+                # If x or y was broadcasted (e.g., (1, M, K) * (B, K, N)),
+                # we must sum gradients over the broadcasted dimensions.
+                if self.x.shape != grad_x.shape:
+                    axis = tuple(i for i, (a, b) in enumerate(zip(self.x.shape, grad_x.shape)) if a != b)
+                    grad_x = grad_x.sum(axis=axis, keepdims=True)
+
+                if self.y.shape != grad_y.shape:
+                    axis = tuple(i for i, (a, b) in enumerate(zip(self.y.shape, grad_y.shape)) if a != b)
+                    grad_y = grad_y.sum(axis=axis, keepdims=True)
+
+                return (grad_x, grad_y)
+        """
+        t1 = self.x.transpose(0, 1) if self.x.ndim == 2 else self.x.transpose(1, 2)
+        t2 = self.y.transpose(0, 1) if self.y.ndim == 2 else self.y.transpose(1, 2)
+
+        grad_x = upstream_grad @ t2
+        grad_y = t1 @ upstream_grad
+
+        if self.x.shape != grad_x.shape:
+            grad_x = grad_x.sum(0, keepdim=True)
+        if self.y.shape != grad_y.shape:
+            grad_y = grad_y.sum(0, keepdim=True)
+
+        return (grad_x, grad_y)
 
 class CrossEntropy(OP):
 	def forward(self, logits: Buffer, target: Buffer, dim: int = 1) -> Buffer:

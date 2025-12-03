@@ -508,15 +508,28 @@ def clamp(x_numel: int, min_val: int, max_val: int) -> tuple[str, str]:
     return c_code, "void clamp(float *x, float *out);"
 
 @cache
-def matmul_3d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, out_stride: tuple) -> tuple[str, str]:
+def matmul_3d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, out_stride: tuple, broadcast_x: bool = False, broadcast_y: bool = False) -> tuple[str, str]:
+    B = x_shape[0] if not broadcast_x else y_shape[0]
+    M = x_shape[1]
+    K = x_shape[2]
+    N = y_shape[2]
+
+    tx = f"b*{x_stride[0]} + i*{x_stride[1]} + k*{x_stride[2]}"
+    ty = f"b*{y_stride[0]} + k*{y_stride[1]} + j*{y_stride[2]}"
+
+    if broadcast_x:
+        tx = f"i*{x_stride[1]} + k*{x_stride[2]}"
+    if broadcast_y:
+        ty = f"k*{y_stride[1]} + j*{y_stride[2]}"
+
     c_code = f"""
     void matmul(float *x, float *y, float *out) {{
-        for (int b=0; b<{x_shape[0]}; b++) {{
-            for (int i=0; i<{x_shape[1]}; i++) {{
-                for (int k=0; k<{x_shape[2]}; k++) {{
-                    float a = x[b*{x_stride[0]} + i*{x_stride[1]} + k*{x_stride[2]}];
-                    for (int j=0; j<{y_shape[2]}; j++) {{
-                        out[b*{out_stride[0]} + i*{out_stride[1]} + j*{out_stride[2]}] += a * y[b*{y_stride[0]} + k*{y_stride[1]} + j*{y_stride[2]}];
+        for (int b=0; b<{B}; b++) {{
+            for (int i=0; i<{M}; i++) {{
+                for (int k=0; k<{K}; k++) {{
+                    float a = x[{tx}];
+                    for (int j=0; j<{N}; j++) {{
+                        out[b*{out_stride[0]} + i*{out_stride[1]} + j*{out_stride[2]}] += a * y[{ty}];
                     }}
                 }}
             }}

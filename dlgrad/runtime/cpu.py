@@ -417,8 +417,19 @@ class CPU:
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
         if x.ndim == 3:
-            out_ptr = CPU.init_with_scalar(num=x.shape[0]*x.shape[1]*y.shape[2], scalar=0)
-            c_code, cdef = cpu_kernel.matmul_3d(x.shape, y.shape, x.stride, y.stride, calculate_stride((x.shape[0], x.shape[1], y.shape[2])))
+            if x.shape[0] != 1:
+                out_shape = x.shape[0]*x.shape[1]*y.shape[2]
+                out_stride = calculate_stride((x.shape[0], x.shape[1], y.shape[2]))
+            else:
+                out_shape = y.shape[0]*x.shape[1]*y.shape[2]
+                out_stride = calculate_stride((y.shape[0], x.shape[1], y.shape[2]))
+            out_ptr = CPU.init_with_scalar(num=out_shape, scalar=0)
+            broadcast_x, broadcast_y = False, False
+            if x.shape[0] == 1:
+                broadcast_x = True
+            if y.shape[0] == 1:
+                broadcast_y = True
+            c_code, cdef = cpu_kernel.matmul_3d(x.shape, y.shape, x.stride, y.stride, out_stride, broadcast_x, broadcast_y)
         else:
             out_ptr = CPU.init_with_scalar(num=x.shape[0]*y.shape[1], scalar=0)
             c_code, cdef = cpu_kernel.matmul_2d(x.shape, y.shape, x.stride, y.stride)

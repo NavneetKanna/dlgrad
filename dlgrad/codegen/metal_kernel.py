@@ -57,7 +57,15 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
     return metal_code
 
 @cache
-def matmul_3d(B, M, K, N):
+def matmul_3d(B, M, K, N, broadcast_x: bool = False, broadcast_y: bool = False):
+    tx = f"int A_offset = batch_idx * {M} * {K};"
+    ty = f"int B_offset = batch_idx * {K} * {N};"
+
+    if broadcast_x:
+        tx = f"int A_offset = 0;"
+    elif broadcast_y:
+        ty = f"int B_offset = 0;"
+
     metal_code = f"""
         #include <metal_stdlib>
         using namespace metal;
@@ -75,8 +83,8 @@ def matmul_3d(B, M, K, N):
             if (batch_idx >= {B})
                 return;
 
-            int A_offset = batch_idx * {M} * {K};
-            int B_offset = batch_idx * {K} * {N};
+            {tx}
+            {ty}
             int C_offset = batch_idx * {M} * {N};
 
             int out_row = gid.y * TILE_DIM + tid.y; // starting of the block

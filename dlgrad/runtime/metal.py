@@ -170,15 +170,20 @@ class MetalGPU:
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.METAL)
     def matmul(x: Buffer, y: Buffer):
+        if x.shape[0] != 1:
+            out_numel = x.shape[0]*x.shape[1]*y.shape[2]
+        else:
+            out_numel = y.shape[0]*x.shape[1]*y.shape[2]
+
         if x.ndim == 3:
-            out_ptr = CPU.init_with_scalar(num=x.shape[0]*x.shape[1]*y.shape[2], scalar=0)
+            out_ptr = CPU.init_with_scalar(num=out_numel, scalar=0)
         else:
             out_ptr = CPU.init_with_scalar(num=x.shape[0]*y.shape[1], scalar=0)
 
         if x.ndim == 3:
             x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
             y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(y.ptr, y.nbytes), y.nbytes, Metal.MTLResourceStorageModeShared, None)
-            out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(out_ptr, x.shape[0]*x.shape[1]*y.shape[2]*4), x.shape[0]*x.shape[1]*y.shape[2]*4, Metal.MTLResourceStorageModeShared, None)
+            out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(out_ptr, out_numel*4), out_numel*4, Metal.MTLResourceStorageModeShared, None)
         else:
             x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
             y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(y.ptr, y.nbytes), y.nbytes, Metal.MTLResourceStorageModeShared, None)
@@ -188,11 +193,15 @@ class MetalGPU:
         computeEncoder = commandBuffer.computeCommandEncoder()
 
         if x.ndim == 3:
-            src = metal_kernel.matmul_3d(x.shape[0], x.shape[1], x.shape[2], y.shape[2])
-            # print(src)
+            broadcast_x, broadcast_y = False, False
+            if x.shape[0] == 1:
+                broadcast_x = True
+            if y.shape[0] == 1:
+                broadcast_y = True
+            src = metal_kernel.matmul_3d(x.shape[0] if x.shape[0] != 1 else y.shape[0], x.shape[1], x.shape[2], y.shape[2], broadcast_x, broadcast_y)
             # TODO: Add a new function to return only pso and another to choose from threadgroup or thread dispatch
             pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "matmul", w=32 * (y.shape[1]/8), h=32*(x.shape[0]/8))
-            threadgroupsPerGrid = Metal.MTLSizeMake(math.ceil(y.shape[2]/32), math.ceil(x.shape[1]/32), x.shape[0])
+            threadgroupsPerGrid = Metal.MTLSizeMake(math.ceil(y.shape[2]/32), math.ceil(x.shape[1]/32), x.shape[0] if x.shape[0] != 1 else y.shape[0])
             threadsPerThreadgroup = Metal.MTLSizeMake(32, 32, 1)
         else:
             # src = metal_kernel.matmul_fast(x.shape, y.shape)

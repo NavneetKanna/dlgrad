@@ -139,10 +139,10 @@ def test_mean_backward(shape, keepdims, device):
     ((4,8), (8,16)),
     ((128,64), (64,10)),
 ])
-def test_matmul_backward(shapes, device):
+def test_matmul_2d_backward(shapes, device):
     x_shape, y_shape = shapes
-    np_x = np.random.randn(*x_shape).astype(np.float32)
-    np_y = np.random.randn(*y_shape).astype(np.float32)
+    np_x = np.random.rand(*x_shape).astype(np.float32)
+    np_y = np.random.rand(*y_shape).astype(np.float32)
     dl_x = Tensor(np_x, requires_grad=True)
     dl_y = Tensor(np_y, requires_grad=True)
     th_x = torch.tensor(np_x, device=to_torch_device(device), requires_grad=True)
@@ -155,6 +155,29 @@ def test_matmul_backward(shapes, device):
 
     np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
     np.testing.assert_allclose(dl_y.grad.numpy(), th_y.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shapes", [
+    ((2, 3, 4), (2, 4, 5)),
+    ((100, 200, 300), (100, 300, 200)),
+    ((100, 200, 300), (1, 300, 200)),
+    ((1, 200, 300), (100, 300, 200)),
+])
+def test_matmul_3d_backward(shapes, device):
+    x_shape, y_shape = shapes
+    np_x = np.random.rand(*x_shape).astype(np.float32)
+    np_y = np.random.rand(*y_shape).astype(np.float32)
+    dl_x = Tensor(np_x, requires_grad=True)
+    dl_y = Tensor(np_y, requires_grad=True)
+    th_x = torch.tensor(np_x, device=to_torch_device(device), requires_grad=True)
+    th_y = torch.tensor(np_y, device=to_torch_device(device), requires_grad=True)
+
+    dl_out = dl_x @ dl_y
+    th_out = th_x @ th_y
+    dl_out.sum().backward()
+    th_out.sum().backward()
+
+    np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().detach().numpy(), atol=1e-6, rtol=1e-3)
+    np.testing.assert_allclose(dl_y.grad.numpy(), th_y.grad.cpu().detach().numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shapes", [[(2, 3)]])
 def test_cross_entropy_backward(shapes, device):
