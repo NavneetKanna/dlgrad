@@ -8,13 +8,9 @@ np.random.seed(1337)
 
 BS, in_dim, HS, ncls = 4, 784, 16, 10
 
-# inp = np.random.uniform(size=(BS, in_dim)).astype(np.float32)
-# w1 = np.random.uniform(size=(in_dim, HS)).astype(np.float32)
-
-
-x_init = np.random.randn(1,4).astype(np.float32)
-W_init = np.random.randn(4,4).astype(np.float32)
-b_init = np.random.randn(1,4).astype(np.float32)
+x_init = np.random.rand(1,4).astype(np.float32)
+W_init = np.random.rand(4,4).astype(np.float32)
+b_init = np.random.rand(1,4).astype(np.float32)
 
 class Model:
     def __init__(self, tensor, device):
@@ -40,11 +36,11 @@ def step(tensor, optim, steps=2, device="cpu"):
 def _test_optim(dlgrad_optim, torch_optim, steps, atol, rtol):
     devices = ["cpu"]
     if platform.system() == 'Darwin':
-        d.append("metal")
+        devices.append("metal")
     for d in devices:
         for x,y in zip(step(Tensor, dlgrad_optim, steps, d),
-                    step(torch.tensor, torch_optim, steps, d if d != "metal" else "mps")):
-             np.testing.assert_allclose(x, y, atol=atol, rtol=rtol)
+            step(torch.tensor, torch_optim, steps, d if d != "metal" else "mps")):
+            np.testing.assert_allclose(x, y, atol=atol, rtol=rtol)
 
 def test():
     _test_optim(SGD, torch.optim.SGD, 5, 1e-2, 1e-3)

@@ -199,7 +199,7 @@ class Buffer:
             # raise ValueError("Either the Tensors shape dont match or is not 2D")
         if self.ndim == 3:
             device = self.device
-            if self.numel < other.numel:
+            if self.shape[0] == 1:
                 shape = (other.shape[0], self.shape[1], other.shape[2])
             else:
                 shape = (self.shape[0], self.shape[1], other.shape[2])

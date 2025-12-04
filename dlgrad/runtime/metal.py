@@ -170,10 +170,11 @@ class MetalGPU:
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.METAL)
     def matmul(x: Buffer, y: Buffer):
-        if x.shape[0] != 1:
-            out_numel = x.shape[0]*x.shape[1]*y.shape[2]
-        else:
-            out_numel = y.shape[0]*x.shape[1]*y.shape[2]
+        if x.ndim == 3:
+            if x.shape[0] != 1:
+                out_numel = x.shape[0]*x.shape[1]*y.shape[2]
+            else:
+                out_numel = y.shape[0]*x.shape[1]*y.shape[2]
 
         if x.ndim == 3:
             out_ptr = CPU.init_with_scalar(num=out_numel, scalar=0)
