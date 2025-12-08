@@ -89,9 +89,9 @@ import dlgrad.ops as ops  # since ops module imports OP class, it is placed afte
 
 class Tensor:
     def __init__(
-            self, data: Buffer | "np.ndarray" | Scalar,  # type: ignore  # noqa: F821
-            requires_grad: bool = False, device: Device | str = Device.CPU
-        ) -> None:
+        self, data: Buffer | "np.ndarray" | Scalar,  # type: ignore  # noqa: F821
+        requires_grad: bool = False, device: Device | str = Device.CPU
+    ) -> None:
         self.requires_grad: bool = requires_grad
         self._ctx: OP = None  # used by autograd engine
         self.grad = None
@@ -246,7 +246,7 @@ class Tensor:
 
     @staticmethod
     def zeros_like(input: Tensor, device: Device = Device.CPU,
-                  dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
+                   dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
         """
         Creates a tensor with shape same as input filled with 0.0.
 

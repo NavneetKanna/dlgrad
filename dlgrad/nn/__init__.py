@@ -13,3 +13,15 @@ class Linear:
 
     def __call__(self, x: Tensor) -> Tensor:
         return x.linear(self.weight, self.bias)
+
+class Embedding:
+    def __init__(self, num_embeddings: int, embedding_dim: int) -> None:
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+        self.weight = Tensor.uniform((self.num_embeddings, self.embedding_dim))
+
+    def __call__(self, idx: Tensor) -> None:
+        if not idx.dtype == "int":
+            raise TypeError(f"Expected integer indicies, but got {idx.dtype}")
+
+
