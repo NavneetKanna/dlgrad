@@ -10,7 +10,7 @@ def n_gen() -> Generator[str, Any, None]:
     a = ["i", "j", "k", "l"]
     yield from a
 
-@cache
+cache
 def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple, op: str) -> tuple[str, str]:  # noqa: C901
     gen = n_gen()
 
@@ -400,6 +400,20 @@ def transpose_2d(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: i
         }}
     """
     return c_code, "void transpose(float *x, float *out);"
+
+@cache
+def embedding(idx_numel: int, x_width: int) -> tuple[str, str]:
+    c_code = f"""
+        #include <string.h>
+        void embedding(float *x, float *idx, float *out) {{
+            for (int i=0; i<{idx_numel}; i++) {{
+                int x_idx = idx[i]*{x_width};
+                memcpy(&out[i * {x_width}], &x[x_idx], {x_width} * sizeof(float));
+            }}
+        }}
+
+    """
+    return c_code, "void embedding(float *x, float *idx, float *out);"
 
 @cache
 def utils(x_numel: int, func: str, val: Scalar = None) -> tuple[str, str]:
@@ -903,6 +917,7 @@ def full(x_numel: int, fill_value: int) -> tuple[str, str]:
 
     return c_code, "void full(float *out);"
 
+
 @cache
 def uniform(x_numel: int, low: int, high: int) -> tuple[str, str]:
     c_code = f"""
@@ -1369,3 +1384,4 @@ def print_4d_tensor(shape: tuple, stride: tuple, numel: int) -> tuple[str, str]:
         }}
     """
     return c_code, "void print_tensor(float *x);"
+

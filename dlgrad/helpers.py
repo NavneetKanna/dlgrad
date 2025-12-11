@@ -50,6 +50,7 @@ class CustomOps(Enum):
     CE_FORWARD = auto()
     CE_BACKWARD = auto()
     PRINT = auto()
+    EMBEDDING = auto()
 
 
 def prod_(x: Iterable) -> int:

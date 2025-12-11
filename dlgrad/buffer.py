@@ -32,10 +32,10 @@ class BufferMetadata:
 
 class Buffer:
     def __init__(
-            self, data: CDataPtr, shape: tuple,
-            device: str | Device | None = Device.CPU,
-            dtype: str | DType | None = None, **kwargs
-        ) -> None:
+        self, data: CDataPtr, shape: tuple,
+        device: str | Device | None = Device.CPU,
+        dtype: str | DType | None = None, **kwargs
+    ) -> None:
         self.ptr = data # ptr to the array
         self.metadata = BufferMetadata(shape=shape, numel=prod_(shape),
                                        stride=kwargs.get("stride", calculate_stride(shape)),
@@ -196,7 +196,7 @@ class Buffer:
     def matmul(self, other: Buffer) -> Buffer:
         # assert self.ndim == 2 and other.ndim == 2, "dlgrad only supports 2d matrix multiplication"
         # if (self.shape[-1] != other.shape[0] and self.ndim != 2 and other.ndim != 2):
-            # raise ValueError("Either the Tensors shape dont match or is not 2D")
+        # raise ValueError("Either the Tensors shape dont match or is not 2D")
         if self.ndim == 3:
             device = self.device
             if self.shape[0] == 1:
@@ -324,7 +324,7 @@ class Buffer:
             other = Buffer.from_scalar(other)
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.WHERE, device=self.device,
-                                    x=self, inp=inp, other=other),
+                                     x=self, inp=inp, other=other),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
@@ -380,6 +380,15 @@ class Buffer:
             y.squeeze(tmp)
 
         return t
+
+    def embedding(self, idx: Buffer) -> Buffer:
+        out_shape = idx.shape + (self.shape[-1],)
+        print(out_shape)
+        return Buffer(
+            data=dispatcher.dispatch(op=CustomOps.EMBEDDING, device=Device.CPU, x=self, idx=idx, out_numel=prod_(out_shape)),
+            shape=out_shape, device=self.device, dtype=self.dtype
+        )
+
 
     def __add__(self, other: Buffer | Scalar) -> Buffer:
         if isinstance(other, Scalar):

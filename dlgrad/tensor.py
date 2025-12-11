@@ -630,6 +630,10 @@ class Tensor:
             device=cond.device
         )
 
+    @staticmethod
+    def embedding(weight: Tensor, idx: Tensor) -> Tensor:
+        return ops.Embedding.execute(weight, idx)
+
     def backward(self) -> None:
         assert all(item == 1 for item in self.shape), "backward must be called on a scalar Tensor"
 

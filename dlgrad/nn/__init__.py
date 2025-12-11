@@ -21,7 +21,8 @@ class Embedding:
         self.weight = Tensor.uniform((self.num_embeddings, self.embedding_dim))
 
     def __call__(self, idx: Tensor) -> None:
-        if not idx.dtype == "int":
-            raise TypeError(f"Expected integer indicies, but got {idx.dtype}")
+        # if not idx.dtype == DType.int:
+        #     raise TypeError(f"Expected integer indicies, but got {idx.dtype}")
+        return Tensor.embedding(self.weight, idx)
 
 

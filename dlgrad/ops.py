@@ -285,3 +285,11 @@ class BCEWithLogitsLoss(OP):
 		N = self.probs.numel
 		grad = ((self.probs.sigmoid() - self.target) * upstream_grad) / float(N)
 		return (grad,)
+
+class Embedding(OP):
+    def forward(self, weight: Buffer, idx: Buffer) -> Buffer:
+        return weight.embedding(idx)
+
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        pass
+
