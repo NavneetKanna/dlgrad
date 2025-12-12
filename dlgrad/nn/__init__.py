@@ -18,7 +18,7 @@ class Embedding:
     def __init__(self, num_embeddings: int, embedding_dim: int) -> None:
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
-        self.weight = Tensor.uniform((self.num_embeddings, self.embedding_dim))
+        self.weight = Tensor.uniform((self.num_embeddings, self.embedding_dim), requires_grad=True)
 
     def __call__(self, idx: Tensor) -> None:
         # if not idx.dtype == DType.int:

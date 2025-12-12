@@ -699,7 +699,23 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(CustomOps.EMBEDDING, Device.CPU)
-    def embedding(x: Buffer, idx: Buffer, out_numel: int) -> CDataPtr:
+    def embedding(x: Buffer, idx: Buffer, out_numel: int, backward: bool = False, upstream_grad: Buffer = None) -> CDataPtr:
+        if backward:
+            out_ptr = CPU.init_with_scalar(num=x.numel, scalar=0)
+            c_code, cdef = cpu_kernel.embedding_backward(idx.numel, x.shape[-1])
+            key = CPU._hash_code(c_code)
+            so_fp = pathlib.Path(CACHE_DIR) / f"embedding_backward_{key}.so"
+            if not os.path.exists(so_fp):
+                CPU._build_shared_object(c_code, so_fp)
+
+            lib = CPU._get_handle(str(so_fp))
+
+            CPU._ensure_sig(cdef)
+
+            lib.embedding_backward(out_ptr, upstream_grad.ptr, idx.ptr)
+
+            return out_ptr
+
         out_ptr = CPU.malloc(num=out_numel)
 
         c_code, cdef = cpu_kernel.embedding(idx.numel, x.shape[-1])

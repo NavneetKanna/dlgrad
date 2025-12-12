@@ -416,6 +416,20 @@ def embedding(idx_numel: int, x_width: int) -> tuple[str, str]:
     return c_code, "void embedding(float *x, float *idx, float *out);"
 
 @cache
+def embedding_backward(idx_numel: int, x_width: int) -> tuple[str, str]:
+    c_code = f"""
+        void embedding_backward(float *out, float *upstream_grad, float *idx) {{
+            for (int i=0; i<{idx_numel}; i++) {{
+                for (int j=0; j<{x_width}; j++) {{
+                    int x_idx = idx[i]*{x_width}+j;
+                    out[x_idx] += upstream_grad[i*{x_width}+j];
+                }}
+            }}
+        }}
+    """
+    return c_code, "void embedding_backward(float *out, float *upstream_grad, float *idx);"
+
+@cache
 def utils(x_numel: int, func: str, val: Scalar = None) -> tuple[str, str]:
     match func:
         case "neg":

@@ -381,9 +381,14 @@ class Buffer:
 
         return t
 
-    def embedding(self, idx: Buffer) -> Buffer:
+    def embedding(self, idx: Buffer, backward: bool = False, upstream_grad: Buffer = None) -> Buffer:
+        if backward:
+            out_shape = self.shape
+            return Buffer(
+                data=dispatcher.dispatch(op=CustomOps.EMBEDDING, device=Device.CPU, x=self, idx=idx, out_numel=prod_(out_shape), backward=True, upstream_grad=upstream_grad),
+                shape=out_shape, device=self.device, dtype=self.dtype
+            )
         out_shape = idx.shape + (self.shape[-1],)
-        print(out_shape)
         return Buffer(
             data=dispatcher.dispatch(op=CustomOps.EMBEDDING, device=Device.CPU, x=self, idx=idx, out_numel=prod_(out_shape)),
             shape=out_shape, device=self.device, dtype=self.dtype

@@ -288,8 +288,11 @@ class BCEWithLogitsLoss(OP):
 
 class Embedding(OP):
     def forward(self, weight: Buffer, idx: Buffer) -> Buffer:
+        self.idx = idx
+        self.weight = weight
         return weight.embedding(idx)
 
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-        pass
+        print("in embedding backward")
+        return (self.weight.embedding(self.idx, backward=True, upstream_grad=upstream_grad),)
 
