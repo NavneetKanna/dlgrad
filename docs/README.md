@@ -49,8 +49,8 @@ With the tensors created, any of the following ops can be performed on them, the
 | sub | &check; | &check; | 1D-4D |
 | mul | &check; | &check; | 1D-4D |
 | div | &check; | &check; | 1D-4D |
-| matmul | &check; | &check; | 2D |
-| transpose | &check; | &check; | 2D |
+| matmul | &check; | &check; | 2D-3D |
+| transpose | &check; | &check; | 2D-3D | For 3D, transpose between dim 0&1 and between 1&2 is supported |
 | sum | &check; | &check; | 1D-4D | Metal supports sum along last dim or full tensor |
 | relu | &check; | &check; | 1D-4D |
 | sigmoid | &check; | &check; | 1D-4D |
