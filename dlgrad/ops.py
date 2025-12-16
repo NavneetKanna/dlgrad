@@ -80,6 +80,10 @@ class Tril(OP):
 
         return mask.where(x, 0.0)
 
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        return (self.mask.where(upstream_grad, 0.0),)
+
+
 class Exp(OP):
     def forward(self, x: Buffer) -> Buffer:
         self.out = x.exp()

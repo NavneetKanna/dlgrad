@@ -99,7 +99,7 @@ class Buffer:
         )
 
     @staticmethod
-    def arange(shape: tuple, device: Device, dtype: DType= DType.FLOAT32) -> Buffer:
+    def arange(shape: tuple, device: Device, dtype: DType = DType.FLOAT32) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BufferOps.ARANGE, device=Device.CPU, shape=shape),
             shape=shape, device=device, dtype=dtype

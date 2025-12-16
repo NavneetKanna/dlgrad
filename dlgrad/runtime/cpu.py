@@ -588,6 +588,7 @@ class CPU:
 
         return out_ptr
 
+    # TODO: Add to docs once testing
     @staticmethod
     @dispatcher.register(BinaryOps.CMP, Device.CPU)
     def cmp(x: Buffer, y: Buffer | int | float, out_shape: tuple,  mode: str) -> CDataPtr:
