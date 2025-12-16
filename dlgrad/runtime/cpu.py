@@ -209,6 +209,26 @@ class CPU:
         return out_ptr
 
     @staticmethod
+    @dispatcher.register(BufferOps.ARANGE, Device.CPU)
+    def arange(shape: tuple) -> CDataPtr:
+        out_ptr = CPU.malloc(num=prod_(shape))
+
+        c_code, cdef = cpu_kernel.arange(prod_(shape))
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"arange_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.arange(out_ptr)
+
+        return out_ptr
+
+    @staticmethod
     @dispatcher.register(BufferOps.FULL, Device.CPU)
     def full(shape: tuple, fill_value: Scalar) -> CDataPtr:
         out_ptr = CPU.malloc(num=prod_(shape))
@@ -565,6 +585,30 @@ class CPU:
         CPU._ensure_sig(cdef)
 
         lib.gt_with_scalar(x.ptr, out_ptr)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(BinaryOps.CMP, Device.CPU)
+    def cmp(x: Buffer, y: Buffer | int | float, out_shape: tuple,  mode: str) -> CDataPtr:
+        out_ptr = CPU.malloc(num=prod_(out_shape))
+
+        match mode:
+            case "<=":
+                x_stride = tuple([0 if i== 1 else 1 for i in x.shape])
+                y_stride = tuple([0 if i== 1 else 1 for i in y.shape])
+                c_code, cdef = cpu_kernel.cmp_2d(mode, out_shape, calculate_stride(out_shape), x.shape, x_stride, y_stride)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"cmp_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.cmp(x.ptr, y.ptr,  out_ptr)
 
         return out_ptr
 

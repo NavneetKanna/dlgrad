@@ -845,6 +845,24 @@ def eqt(x_numel: int, y_scalar: bool, x_shape: tuple, x_stride: tuple, y_shape: 
         return c_code, "void eqt(float *x, float *y, float *out);"
 
 @cache
+def cmp_2d(mode: str, out_shape: tuple, out_stride: tuple, x_shape: tuple, x_stride: tuple, y_stride: tuple) -> tuple[str, str]:
+    match mode:
+        case "<=":
+            c_code = f"""
+                #include <stdio.h>
+                void cmp(float *x, float *y, float *out) {{
+                    for (int i=0; i<{out_shape[0]}; i++) {{
+                        for (int j=0; j<{out_shape[1]}; j++) {{
+                            int x_idx = i*{x_stride[0]} + j*{x_stride[1]};
+                            int y_idx = i*{y_stride[0]} + j*{y_stride[1]};
+                            out[i*{out_stride[0]} + j*{out_stride[1]}] = x[x_idx] <= y[y_idx] ? 1.0 : 0.0;
+                        }}
+                    }}
+                }}
+            """
+            return c_code, "void cmp(float *x, float *y, float *out);"
+
+@cache
 def uninitialized_memory() -> tuple[str, str]:
     c_code = """
         #include <stdlib.h>
@@ -915,6 +933,21 @@ def free_ptr() -> tuple[str, str]:
     """
 
     return c_code, "void free_ptr(float *ptr);"
+
+@cache
+def arange(x_numel: int) -> tuple[str, str]:
+    c_code = f"""
+        #include <stdlib.h>
+
+        void arange(float *out)
+        {{
+            for (int i=0; i<{x_numel}; i++) {{
+                out[i] = i;
+            }}
+        }}
+    """
+
+    return c_code, "void arange(float *out);"
 
 @cache
 def full(x_numel: int, fill_value: int) -> tuple[str, str]:

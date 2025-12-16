@@ -44,6 +44,7 @@ class BinaryOps(Enum):
     MATMUL = auto()
     GT = auto() # >
     EQT = auto() # ==
+    CMP  = auto()
 
 class CustomOps(Enum):
     INDEX = auto()
@@ -98,6 +99,25 @@ def get_brodcast_tensor(x, y):  # noqa: ANN001, ANN201
                 return y, x
 
         return x, y
+
+def get_broadcast_shape(shape1: tuple, shape2: tuple) -> tuple:
+    s1 = list(reversed(shape1))
+    s2 = list(reversed(shape2))
+
+    max_len = max(len(s1), len(s2))
+
+    final_shape = []
+
+    for i in range(max_len):
+        dim1 = s1[i] if i < len(s1) else 1
+        dim2 = s2[i] if i < len(s2) else 1
+
+        if dim1 != dim2 and dim1 != 1 and dim2 != 1:
+            raise ValueError(f"Operands could not be broadcast together with shapes {shape1} and {shape2}")
+
+        final_shape.append(max(dim1, dim2))
+
+    return tuple(reversed(final_shape))
 
 def calculate_stride(shape: tuple|int) -> tuple:
     if not shape:

@@ -15,6 +15,7 @@ from dlgrad.helpers import (
     calculate_stride,
     check_broadcast,
     ffi,
+    get_broadcast_shape,
     prod_,
 )
 
@@ -95,6 +96,13 @@ class Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BufferOps.FULL, device=Device.CPU, shape=shape, fill_value=fill_value),
             shape=shape, device=device, dtype=dtype
+        )
+
+    @staticmethod
+    def arange(shape: tuple, device: Device) -> Buffer:
+        return Buffer(
+            data=dispatcher.dispatch(op=BufferOps.ARANGE, device=Device.CPU, shape=shape),
+            shape=shape, device=device, dtype=DType.FLOAT32
         )
 
     def unsqueeze(self, dim: list[int] | int) -> None:
@@ -429,6 +437,14 @@ class Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.POW, device=self.device if self.ndim !=0 else Device.CPU, x=self, val=val),
             shape=self.shape, device=self.device, dtype=self.dtype
+        )
+
+    def __le__(self, other: Buffer) -> Buffer:
+        # TODO: Check broadcast, if self.numel < other.numel
+        out_shape = get_broadcast_shape(self.shape, other.shape)
+        return Buffer(
+            data=dispatcher.dispatch(op=BinaryOps.CMP, device=Device.CPU, x=self, y=other,out_shape=out_shape, mode="<="),
+            shape=out_shape, device=self.device, dtype=self.dtype
         )
 
     def __gt__(self, other: Scalar) -> Buffer:

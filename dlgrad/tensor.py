@@ -609,6 +609,12 @@ class Tensor:
         return Tensor(data=self.data, requires_grad=False, device=self.device)
 
     @staticmethod
+    def tril(inp: Tensor, k: Scalar = 0.0) -> Tensor:
+        if isinstance(k, Scalar):
+            k = Tensor(k)
+        return ops.Tril.execute(inp, k)
+
+    @staticmethod
     def where(cond: Tensor, inp: Tensor | Scalar, other: Tensor | Scalar) -> Tensor:
         """
         Returns a tensor where elements are from input if cond else from other

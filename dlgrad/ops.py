@@ -67,6 +67,19 @@ class Max(OP):
             upstream_grad.unsqueeze(self.dim)
         return (max_with_1s*upstream_grad,)
 
+class Tril(OP):
+    def forward(self, x: Buffer, k: int = 0) -> Buffer:
+        # NOTE: Currently supports only 2D
+        H, W = x.shape[0], x.shape[1]
+        rows = Buffer.arange((H, 1), x.device)
+        cols = Buffer.arange((1, W), x.device)
+
+        mask = cols <= (rows + k)
+
+        self.mask = mask
+
+        return mask.where(x, 0.0)
+
 class Exp(OP):
     def forward(self, x: Buffer) -> Buffer:
         self.out = x.exp()
