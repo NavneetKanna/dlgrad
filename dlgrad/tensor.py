@@ -245,6 +245,30 @@ class Tensor:
         return Tensor.full(input.shape, 1.0, device, dtype, requires_grad)
 
     @staticmethod
+    def arange(shape: tuple, device: Device = Device.CPU, dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
+        """
+        Creates a tensor filled with increamenting values from 0.
+
+        Parameters
+        ----------
+        shape: tuple
+                The desired shape
+        device : str | Device | None
+                Default device is CPU
+        dtype : str | DType | None
+                Default dtype is float32
+        requires_grad : bool
+                Default is False
+
+        Returns:
+            A tensor filled with 0.0.
+        """
+        return Tensor(
+            data=Buffer.arange(shape, device=device, dtype=dtype),
+            requires_grad=requires_grad, device=device
+        )
+
+    @staticmethod
     def zeros_like(input: Tensor, device: Device = Device.CPU,
                    dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
         """

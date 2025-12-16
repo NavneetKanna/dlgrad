@@ -99,10 +99,10 @@ class Buffer:
         )
 
     @staticmethod
-    def arange(shape: tuple, device: Device) -> Buffer:
+    def arange(shape: tuple, device: Device, dtype: DType= DType.FLOAT32) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=BufferOps.ARANGE, device=Device.CPU, shape=shape),
-            shape=shape, device=device, dtype=DType.FLOAT32
+            shape=shape, device=device, dtype=dtype
         )
 
     def unsqueeze(self, dim: list[int] | int) -> None:
