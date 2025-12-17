@@ -29,6 +29,7 @@ class UnaryOps(Enum):
     WHERE = auto()
     MEAN = auto()
     CLAMP = auto()
+    MASKED_FILL = auto()
 
 class BufferOps(Enum):
     CREATE = auto()

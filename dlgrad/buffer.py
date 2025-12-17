@@ -105,6 +105,14 @@ class Buffer:
             shape=shape, device=device, dtype=dtype
         )
 
+    @staticmethod
+    def masked_fill(x: Buffer, mask: Buffer, val: Scalar) -> Buffer:
+        out_shape = get_broadcast_shape(x.shape, mask.shape)
+        return Buffer(
+            data=dispatcher.dispatch(op=UnaryOps.MASKED_FILL, device=Device.CPU, x=x, y=mask, val=val, out_shape=out_shape),
+            shape=out_shape, device=x.device, dtype=x.dtype
+        )
+
     def unsqueeze(self, dim: list[int] | int) -> None:
         if dim == -1:
             dim = 0

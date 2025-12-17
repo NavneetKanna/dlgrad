@@ -845,6 +845,23 @@ def eqt(x_numel: int, y_scalar: bool, x_shape: tuple, x_stride: tuple, y_shape: 
         return c_code, "void eqt(float *x, float *y, float *out);"
 
 @cache
+def masked_fill_3d(out_shape: tuple, out_stride: tuple, x_stride: tuple, y_stride: tuple, val: Scalar) -> tuple[str, str]:
+    c_code = f"""
+        void masked_fill(float *x, float *y, float *out) {{
+            for (int i=0; i<{out_shape[0]}; i++) {{
+                for (int j=0; j<{out_shape[1]}; j++) {{
+                    for (int k=0; k<{out_shape[2]}; k++) {{
+                        int x_idx = i*{x_stride[0]} + j*{x_stride[1]} + k*{x_stride[2]};
+                        int y_idx = i*{y_stride[0]} + j*{y_stride[1]} + k*{y_stride[2]};
+                        out[i*{out_stride[0]} + j*{out_stride[1]} + k*{out_stride[2]}] = y[y_idx] > 0 ? x[x_idx] : {val};
+                    }}
+                }}
+            }}
+        }}
+    """
+    return c_code, "void masked_fill(float *x, float *y, float *out);"
+
+@cache
 def cmp_2d(mode: str, out_shape: tuple, out_stride: tuple, x_shape: tuple, x_stride: tuple, y_stride: tuple) -> tuple[str, str]:
     match mode:
         case "<=":

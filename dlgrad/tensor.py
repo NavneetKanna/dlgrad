@@ -639,6 +639,10 @@ class Tensor:
         return ops.Tril.execute(inp, k)
 
     @staticmethod
+    def masked_fill(x: Tensor, mask: Tensor, value: Scalar) -> Tensor:
+        return Tensor(data=Buffer.masked_fill(x.data, mask.data, value), requires_grad=x.requires_grad, device=x.device)
+
+    @staticmethod
     def where(cond: Tensor, inp: Tensor | Scalar, other: Tensor | Scalar) -> Tensor:
         """
         Returns a tensor where elements are from input if cond else from other
