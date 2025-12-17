@@ -846,7 +846,12 @@ def eqt(x_numel: int, y_scalar: bool, x_shape: tuple, x_stride: tuple, y_shape: 
 
 @cache
 def masked_fill_3d(out_shape: tuple, out_stride: tuple, x_stride: tuple, y_stride: tuple, val: Scalar) -> tuple[str, str]:
+    if val == float('inf'):
+        val = 'INFINITY'
+    elif val == float('-inf'):
+        val = '-INFINITY'
     c_code = f"""
+        #include <math.h>
         void masked_fill(float *x, float *y, float *out) {{
             for (int i=0; i<{out_shape[0]}; i++) {{
                 for (int j=0; j<{out_shape[1]}; j++) {{

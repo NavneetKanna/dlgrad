@@ -47,11 +47,14 @@ class CPU:
     ffi = FFI()
 
     @staticmethod
-    def _build_shared_object(source: str, so_path: pathlib.Path) -> None:
+    def _build_shared_object(source: str, so_path: pathlib.Path, rm_flags: list) -> None:
         c_path = so_path.with_suffix(".c")
         c_path.write_text(source)
 
         cmd = [COMPILER, *CFLAGS, "-o", str(so_path), str(c_path), *EXTRA_LIBS]
+        if rm_flags:
+            for flags in rm_flags:
+                cmd.remove(flags)
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0:
             raise RuntimeError(f"Compilation failed:\n{res.stderr}")
@@ -605,7 +608,7 @@ class CPU:
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"masked_fill_{key}.so"
         if not os.path.exists(so_fp):
-            CPU._build_shared_object(c_code, so_fp)
+            CPU._build_shared_object(c_code, so_fp, ["-ffast-math"] if val in [float('inf'), float('-inf')] else [])
 
         lib = CPU._get_handle(str(so_fp))
 
