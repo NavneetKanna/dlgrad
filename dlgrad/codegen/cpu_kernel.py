@@ -345,6 +345,25 @@ def mean(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int, out_numel: int
     return code, "void mean(float *x, float *out);"
 
 @cache
+def transpose_4d_12(out_shape: tuple, out_stride: tuple, x_stride: tuple) -> tuple[str, str]:
+    c_code = f"""
+        #include <string.h>
+
+        void transpose(float *x, float *out) {{
+            for (int B=0; B<{out_shape[0]}; B++) {{
+                for (int C=0; C<{out_shape[1]}; C++) {{
+                    for (int H=0; H<{out_shape[2]}; H++) {{
+                        int out_idx = B*{out_stride[0]} + C*{out_stride[1]} + H*{out_stride[2]};
+                        int x_idx = B*{x_stride[0]} + H*{x_stride[1]} + C*{x_stride[2]};
+                        memcpy(&out[out_idx], &x[x_idx], {out_shape[3]}*sizeof(float));
+                    }}
+                }}
+            }}
+        }}
+    """
+    return c_code, "void transpose(float *x, float *out);"
+
+@cache
 def transpose_3d_01(x_shape: tuple, out_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int) -> tuple[str, str]:
     c_code = f"""
         void transpose(float *x, float *out) {{
@@ -843,6 +862,58 @@ def eqt(x_numel: int, y_scalar: bool, x_shape: tuple, x_stride: tuple, y_shape: 
             }}
         """
         return c_code, "void eqt(float *x, float *y, float *out);"
+
+@cache
+def cal_stride(first_inp_shape: tuple, cat_dim: int) -> int:
+    stride = 1
+    for i in range(cat_dim, len(first_inp_shape)):
+        stride *= first_inp_shape[i]
+    return stride
+
+@cache
+def cal_out_steps(cat_dim: int, first_inp_shape: tuple) -> int:
+    steps = 1
+    for i in range(cat_dim):
+        steps *= first_inp_shape[i]
+    return steps
+
+@cache
+def cat(n_tensors: int, input_strides: tuple[tuple], input_shapes: tuple, cat_dim: int, first_inp_shape: tuple) -> tuple[str, str]:
+    t1 = "void cat(float *out, "
+    for i in range(n_tensors):
+        t1 += f"float *arr{i}, "
+    t1 = t1[:-2]
+    t1 += ") {\n"
+
+    t2 = ""
+    for idx, (i, j) in enumerate(zip(input_strides, input_shapes)):
+        t2 += f"int arr{idx}_copy_size = {i[cat_dim]}*{j[idx]} * sizeof(float);\n"
+
+    t3 = f"int out_steps = {cal_out_steps(cat_dim, first_inp_shape)};"
+
+    t4 = "for (int i=0; i<out_steps; i++) {\n"
+    for i in range(n_tensors):
+        t4 += f"""
+            memcpy(out, arr{i}, arr{i}_copy_size);
+            out += arr{i}_copy_size;
+            arr{i} += arr{i}_copy_size;
+        """
+
+    c_code = f"""
+        #include <string.h>
+
+        {t1}
+
+            {t2}
+
+            {t3}
+
+            {t4}
+
+            }}
+        }}
+    """
+    return c_code, f"{t1[:-2]};"
 
 @cache
 def masked_fill_3d(out_shape: tuple, out_stride: tuple, x_stride: tuple, y_stride: tuple, val: Scalar) -> tuple[str, str]:

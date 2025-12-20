@@ -47,7 +47,7 @@ class CPU:
     ffi = FFI()
 
     @staticmethod
-    def _build_shared_object(source: str, so_path: pathlib.Path, rm_flags: list) -> None:
+    def _build_shared_object(source: str, so_path: pathlib.Path, rm_flags: list = []) -> None:
         c_path = so_path.with_suffix(".c")
         c_path.write_text(source)
 
@@ -313,10 +313,12 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.TRANSPOSE, Device.CPU)
-    def transpose(x: Buffer, out_stride: tuple, dim0: int, dim1: int) -> CDataPtr:
+    def transpose(x: Buffer, out_stride: tuple, out_shape: tuple, dim0: int, dim1: int) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        if x.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
+        if x.ndim == 4 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
+            c_code, cdef = cpu_kernel.transpose_4d_12(out_shape, out_stride, x.stride)
+        elif x.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
             c_code, cdef = cpu_kernel.transpose_3d_01(x.shape, (x.shape[1], x.shape[0], x.shape[2]), x.stride, out_stride, x.numel)
         elif x.ndim == 3 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
             c_code, cdef = cpu_kernel.transpose_3d_12(x.shape, (x.shape[1], x.shape[0], x.shape[2]), x.stride, out_stride, x.numel)
@@ -373,6 +375,30 @@ class CPU:
         CPU._ensure_sig(cdef)
 
         lib.c_sqrt(x.ptr, out_ptr)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.CAT, Device.CPU)
+    def cat(x: tuple[Buffer], cat_dim: int, out_shape: tuple) -> CDataPtr:
+        out_ptr = CPU.malloc(num=prod_(out_shape))
+
+        input_strides = tuple([i.stride for i in x])
+        input_shapes = tuple([i.shape for i in x])
+        c_code, cdef = cpu_kernel.cat(len(x), input_strides, input_shapes, cat_dim, x[0].shape)
+        print(c_code)
+        print(cdef)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"cat_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.cat(out_ptr, *[i.ptr for i in x])
 
         return out_ptr
 

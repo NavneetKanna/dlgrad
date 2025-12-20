@@ -24,7 +24,7 @@ class OP:
         requires_grad (bool): A bool to indicate whether the output Tensor should be used in backward pass.
     """  # noqa: E501
 
-    def __init__(self, *data: Tensor) -> None:
+    def __init__(self, *data: tuple[Tensor] | tuple[tuple[Tensor]]) -> None:
         self.parents: tuple = data
         self.req_grad: list[bool] = [i.requires_grad for i in data]
         self.requires_grad: bool = True if any(self.req_grad) else False
@@ -73,11 +73,15 @@ class OP:
         Returns:
             A Tensor which is the output of the op.
         """
+        if isinstance(data[0], tuple):
+            data = data[0]
         ctx = cls(*data)
         tensor = Tensor.__new__(Tensor)
+        dtype = kwargs.pop("dtype", data[0].dtype)
+        device = kwargs.pop("device", data[0].device)
         tensor.data = ctx.forward(*[d.data for d in data], **kwargs)
-        tensor.data.metadata.dtype = kwargs.get("dtype", data[0].dtype)
-        tensor.data.metadata.device = kwargs.get("device", data[0].device)
+        tensor.data.metadata.dtype = dtype
+        tensor.data.metadata.device = device
         tensor.requires_grad = ctx.requires_grad
         tensor._ctx = ctx if ctx.requires_grad else None
         tensor.grad = None
@@ -289,6 +293,11 @@ class Tensor:
             A tensor filled with 0.0.
         """
         return Tensor.full(input.shape, 0.0, device, dtype, requires_grad)
+
+    @staticmethod
+    def cat(x: tuple[Tensor], dim: int) -> Tensor:
+        #return ops.Cat.execute(tuple([i.data for i in x]), dim=dim, dtype=x[0].dtype, device=x[0].device)
+        return ops.Cat.execute(x, dim=dim, dtype=x[0].dtype, device=x[0].device)
 
     @staticmethod
     def add(x: Tensor, y: Tensor | Scalar) -> Tensor:

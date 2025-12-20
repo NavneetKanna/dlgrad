@@ -5,6 +5,14 @@ from dlgrad.tensor import OP
 
 # ------------ Unary Ops -----------
 
+class Cat(OP):
+    def forward(self, *x: tuple[Buffer], dim: int) -> Buffer:
+        print("x in buffer", x)
+        return Buffer.cat(x=x, cat_dim=dim)
+
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        return ()
+
 class Transpose(OP):
     def forward(self, x: Buffer, dim0: int, dim1: int) -> Buffer:
         self.dim0 = dim0

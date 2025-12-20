@@ -30,6 +30,7 @@ class UnaryOps(Enum):
     MEAN = auto()
     CLAMP = auto()
     MASKED_FILL = auto()
+    CAT = auto()
 
 class BufferOps(Enum):
     CREATE = auto()
@@ -100,6 +101,13 @@ def get_brodcast_tensor(x, y):  # noqa: ANN001, ANN201
                 return y, x
 
         return x, y
+
+def cal_cat_out_shape(data: tuple[tuple], cat_dim: int) -> tuple:
+    transposed = list(zip(*data))
+    summed_val = sum(transposed[cat_dim])
+    result = list(data[0])
+    result[cat_dim] = summed_val
+    return tuple(result)
 
 def get_broadcast_shape(shape1: tuple, shape2: tuple) -> tuple:
     s1 = list(reversed(shape1))
