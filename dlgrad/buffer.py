@@ -217,9 +217,9 @@ class Buffer:
         if self.ndim == 4:
             device = Device.CPU
             if self.shape[0] == 1:
-                shape = (other.shape[0], self.shape[1], self.shape[2], other.shape[2])
+                shape = (other.shape[0], self.shape[1], self.shape[2], other.shape[3])
             else:
-                shape = (self.shape[0], self.shape[1], self.shape[2], other.shape[2])
+                shape = (self.shape[0], self.shape[1], self.shape[2], other.shape[3])
         elif self.ndim == 3:
             device = self.device
             if self.shape[0] == 1:

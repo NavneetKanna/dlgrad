@@ -247,7 +247,7 @@ class MatMul(OP):
         return x@y
 
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-        t1 = self.x.transpose(self.y.ndim - 2, self.y.ndim - 1)
+        t1 = self.x.transpose(self.x.ndim - 2, self.x.ndim - 1)
         t2 = self.y.transpose(self.y.ndim - 2, self.y.ndim - 1)
         # if self.x.ndim == 4:
         #     t1 = self.x.transpose(2, 3)
@@ -263,7 +263,6 @@ class MatMul(OP):
         # t1 = self.x.transpose(0, 1) if self.x.ndim == 2 else self.x.transpose(1, 2)
         # t2 = self.y.transpose(0, 1) if self.y.ndim == 2 else self.y.transpose(1, 2)
 
-        print(upstream_grad.shape, t1.shape, t2.shape)
         grad_x = upstream_grad @ t2
         grad_y = t1 @ upstream_grad
 
