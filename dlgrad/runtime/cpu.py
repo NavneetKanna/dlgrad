@@ -318,6 +318,8 @@ class CPU:
 
         if x.ndim == 4 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
             c_code, cdef = cpu_kernel.transpose_4d_12(out_shape, out_stride, x.stride)
+        elif x.ndim == 4 and ((dim0 == 2 and dim1 == 3) or (dim0 == 3 and dim1 == 2)):
+            c_code, cdef = cpu_kernel.transpose_4d_23(out_shape, out_stride, x.stride)
         elif x.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
             c_code, cdef = cpu_kernel.transpose_3d_01(x.shape, (x.shape[1], x.shape[0], x.shape[2]), x.stride, out_stride, x.numel)
         elif x.ndim == 3 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
@@ -465,7 +467,16 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
-        if x.ndim == 3:
+        if x.ndim == 4:
+            if x.shape[0] != 1:
+                out_shape = x.shape[0]*x.shape[1]*x.shape[2]*y.shape[2]
+                out_stride = calculate_stride((x.shape[0], x.shape[1], x.shape[2], y.shape[2]))
+            else:
+                out_shape = y.shape[0]*x.shape[1]*x.shape[2]*y.shape[2]
+                out_stride = calculate_stride((y.shape[0], x.shape[1], x.shape[2], y.shape[2]))
+            out_ptr = CPU.init_with_scalar(num=out_shape, scalar=0)
+            c_code, cdef = cpu_kernel.matmul_4d(x.shape, y.shape, x.stride, y.stride, out_stride)
+        elif x.ndim == 3:
             if x.shape[0] != 1:
                 out_shape = x.shape[0]*x.shape[1]*y.shape[2]
                 out_stride = calculate_stride((x.shape[0], x.shape[1], y.shape[2]))

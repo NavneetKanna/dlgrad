@@ -345,6 +345,25 @@ def mean(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int, out_numel: int
     return code, "void mean(float *x, float *out);"
 
 @cache
+def transpose_4d_23(out_shape: tuple, out_stride: tuple, x_stride: tuple) -> tuple[str, str]:
+    c_code = f"""
+        void transpose(float *x, float *out) {{
+            for (int B=0; B<{out_shape[0]}; B++) {{
+                for (int C=0; C<{out_shape[1]}; C++) {{
+                    for (int H=0; H<{out_shape[2]}; H++) {{
+                        for (int W=0; W<{out_shape[3]}; W++) {{
+                            int out_idx = B*{out_stride[0]} + C*{out_stride[1]} + H*{out_stride[2]} + W*{out_stride[3]};
+                            int x_idx = B*{x_stride[0]} + C*{x_stride[1]} + W*{x_stride[2]} + H*{x_stride[3]};
+                            out[out_idx] = x[x_idx];
+                        }}
+                    }}
+                }}
+            }}
+        }}
+    """
+    return c_code, "void transpose(float *x, float *out);"
+
+@cache
 def transpose_4d_12(out_shape: tuple, out_stride: tuple, x_stride: tuple) -> tuple[str, str]:
     c_code = f"""
         #include <string.h>
@@ -555,6 +574,35 @@ def clamp(x_numel: int, min_val: int, max_val: int) -> tuple[str, str]:
     return c_code, "void clamp(float *x, float *out);"
 
 @cache
+def matmul_4d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, out_stride: tuple) -> tuple[str, str]:
+    c_code = f"""
+        #include <stdint.h>
+
+        void matmul(const float* x, const float* y, float* out)
+        {{
+           for (int b = 0; b < {x_shape[0]}; ++b) {{
+               for (int c = 0; c < {x_shape[1]}; ++c) {{
+                   const float* A_ptr = x + (b * {x_stride[0]}) + (c * {x_stride[1]});
+                   const float* B_ptr = y + (b * {y_stride[0]}) + (c * {y_stride[1]});
+                   float* out_ptr = out + (b * {out_stride[0]}) + (c * {out_stride[1]});
+                   for (int h = 0; h < {x_shape[2]}; ++h) {{
+                       const float* A_row = A_ptr + (h * {x_stride[2]});
+                       float* out_row = out_ptr + (h * {out_stride[2]});
+                       for (int k = 0; k < {x_shape[3]}; ++k) {{
+                           float a_val = A_row[k * {x_stride[3]}];
+                           const float* B_row_k = B_ptr + (k * {y_stride[2]});
+                           for (int w = 0; w < {y_shape[3]}; ++w) {{
+                               out_row[w * {out_stride[3]}] += a_val * B_row_k[w * {y_stride[3]}];
+                           }}
+                       }}
+                   }}
+               }}
+           }}
+        }}
+    """
+    return c_code, "void matmul(const float* x, const float* y, float* out);"
+
+@cache
 def matmul_3d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, out_stride: tuple, broadcast_x: bool = False, broadcast_y: bool = False) -> tuple[str, str]:
     B = x_shape[0] if not broadcast_x else y_shape[0]
     M = x_shape[1]
@@ -571,17 +619,17 @@ def matmul_3d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, 
 
     c_code = f"""
     void matmul(float *x, float *y, float *out) {{
-        for (int b=0; b<{B}; b++) {{
-            for (int i=0; i<{M}; i++) {{
-                for (int k=0; k<{K}; k++) {{
-                    float a = x[{tx}];
-                    for (int j=0; j<{N}; j++) {{
-                        out[b*{out_stride[0]} + i*{out_stride[1]} + j*{out_stride[2]}] += a * y[{ty}];
+    for (int b=0; b<{B}; b++) {{
+        for (int i=0; i<{M}; i++) {{
+            for (int k=0; k<{K}; k++) {{
+                float a = x[{tx}];
+                for (int j=0; j<{N}; j++) {{
+                    out[b*{out_stride[0]} + i*{out_stride[1]} + j*{out_stride[2]}] += a * y[{ty}];
+                        }}
                     }}
                 }}
             }}
         }}
-    }}
     """
     return c_code, "void matmul(float *x, float *y, float *out);"
 

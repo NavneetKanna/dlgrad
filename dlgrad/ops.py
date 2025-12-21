@@ -117,121 +117,128 @@ class Relu(OP):
         return ((self.out.where(inp=1.0, other=0.0)) * upstream_grad,)
 
 class Sigmoid(OP):
-	def forward(self, x: Buffer) -> Buffer:
-		self.out = x.sigmoid()
-		return self.out
+    def forward(self, x: Buffer) -> Buffer:
+        self.out = x.sigmoid()
+        return self.out
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		return ((self.out * -(self.out - 1.0)) * upstream_grad,)
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        return ((self.out * -(self.out - 1.0)) * upstream_grad,)
 
 class LeakyRelu(OP):
-	def forward(self, x: Buffer, neg_slope: Scalar = 0.01) -> Buffer:
-		self.neg_slope = neg_slope
-		self.out = x.leaky_relu(neg_slope=neg_slope)
-		return self.out
+    def forward(self, x: Buffer, neg_slope: Scalar = 0.01) -> Buffer:
+        self.neg_slope = neg_slope
+        self.out = x.leaky_relu(neg_slope=neg_slope)
+        return self.out
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		return ((self.out.where(inp=1.0, other=self.neg_slope)) * upstream_grad,)
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        return ((self.out.where(inp=1.0, other=self.neg_slope)) * upstream_grad,)
 
 class Tanh(OP):
-	def forward(self, x: Buffer) -> Buffer:
-		self.out = x.tanh()
-		return self.out
+    def forward(self, x: Buffer) -> Buffer:
+        self.out = x.tanh()
+        return self.out
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		# TODO: Remove buffer.full() and add support for scalar in buffer sub
-		return ((Buffer.full(self.out.shape, 1.0, self.out.device, self.out.dtype) - self.out**2) * upstream_grad,)
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        # TODO: Remove buffer.full() and add support for scalar in buffer sub
+        return ((Buffer.full(self.out.shape, 1.0, self.out.device, self.out.dtype) - self.out**2) * upstream_grad,)
 
 class Sqrt(OP):
-	def forward(self, x: Buffer) -> Buffer:
-		self.out = x.sqrt()
-		return self.out
+    def forward(self, x: Buffer) -> Buffer:
+        self.out = x.sqrt()
+        return self.out
 
-	def backward(self, grad_output: Buffer) -> tuple[Buffer]:
-		return (grad_output / (self.out*2),)
+    def backward(self, grad_output: Buffer) -> tuple[Buffer]:
+        return (grad_output / (self.out*2),)
 
 class Clamp(OP):
-	def forward(self, x: Buffer, min: int | None, max: int | None) -> Buffer:
-		self.min = min
-		self.max = max
-		self.out = x.clamp(min, max)
-		return self.out
+    def forward(self, x: Buffer, min: int | None, max: int | None) -> Buffer:
+        self.min = min
+        self.max = max
+        self.out = x.clamp(min, max)
+        return self.out
 
-	def backward(self, grad_output: Buffer) -> tuple[Buffer]:
-		return (grad_output.clamp(self.min, self.max))
+    def backward(self, grad_output: Buffer) -> tuple[Buffer]:
+        return (grad_output.clamp(self.min, self.max))
 
 class Squeeze(OP):
-	def forward(self, x: Buffer, dim: list[int] | int) -> Buffer:
-		self.dim = dim
-		x.squeeze(dim)
-		return x
+    def forward(self, x: Buffer, dim: list[int] | int) -> Buffer:
+        self.dim = dim
+        x.squeeze(dim)
+        return x
 
-	def backward(self, grad_output: Buffer) -> tuple[Buffer]:
-		grad_output.unsqueeze(self.dim)
-		return (grad_output,)
+    def backward(self, grad_output: Buffer) -> tuple[Buffer]:
+        grad_output.unsqueeze(self.dim)
+        return (grad_output,)
 
 class Unsqueeze(OP):
-	def forward(self, x: Buffer, dim: list[int] | int) -> Buffer:
-		self.dim = dim
-		x.unsqueeze(dim)
-		return x
+    def forward(self, x: Buffer, dim: list[int] | int) -> Buffer:
+        self.dim = dim
+        x.unsqueeze(dim)
+        return x
 
-	def backward(self, grad_output: Buffer) -> tuple[Buffer]:
-		grad_output.squeeze(self.dim)
-		return (grad_output,)
+    def backward(self, grad_output: Buffer) -> tuple[Buffer]:
+        grad_output.squeeze(self.dim)
+        return (grad_output,)
 
 # ------------ Binary Ops -----------
 
 class Add(OP):
-	def forward(self, x: Buffer, y: Buffer) -> Buffer:
-		self.x = x
-		self.y = y
-		if check_broadcast(x.shape, y.shape):
-			return x + y
+    def forward(self, x: Buffer, y: Buffer) -> Buffer:
+        self.x = x
+        self.y = y
+        if check_broadcast(x.shape, y.shape):
+            return x + y
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		grad_x = self.reduce_grad_for_broadcasting(upstream_grad, self.x.shape) if self.req_grad[0] else None
-		grad_y = self.reduce_grad_for_broadcasting(upstream_grad, self.y.shape) if self.req_grad[1] else None
-		return grad_x, grad_y
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
+        grad_x = self.reduce_grad_for_broadcasting(upstream_grad, self.x.shape) if self.req_grad[0] else None
+        grad_y = self.reduce_grad_for_broadcasting(upstream_grad, self.y.shape) if self.req_grad[1] else None
+        return grad_x, grad_y
 
 
 class Sub(OP):
-	def forward(self, x: Buffer, y: Buffer) -> Buffer:
-		self.x = x
-		self.y = y
-		if check_broadcast(x.shape, y.shape):
-			return x - y
+    def forward(self, x: Buffer, y: Buffer) -> Buffer:
+        self.x = x
+        self.y = y
+        if check_broadcast(x.shape, y.shape):
+            return x - y
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		grad_x = self.reduce_grad_for_broadcasting(upstream_grad, self.x.shape) if self.req_grad[0] else None
-		grad_y = self.reduce_grad_for_broadcasting(-upstream_grad, self.y.shape) if self.req_grad[1] else None
-		return grad_x, grad_y
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
+        grad_x = self.reduce_grad_for_broadcasting(upstream_grad, self.x.shape) if self.req_grad[0] else None
+        grad_y = self.reduce_grad_for_broadcasting(-upstream_grad, self.y.shape) if self.req_grad[1] else None
+        return grad_x, grad_y
 
 
 class Mul(OP):
-	def forward(self, x: Buffer, y: Buffer) -> Buffer:
-		self.x = x
-		self.y = y
-		if check_broadcast(x.shape, y.shape):
-			return x*y
+    def forward(self, x: Buffer, y: Buffer) -> Buffer:
+        self.x = x
+        self.y = y
+        if check_broadcast(x.shape, y.shape):
+            return x*y
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		grad_x = self.reduce_grad_for_broadcasting(upstream_grad*self.y, self.x.shape) if self.req_grad[0] else None
-		grad_y = self.reduce_grad_for_broadcasting(upstream_grad*self.x, self.y.shape) if self.req_grad[1] else None
-		return grad_x, grad_y
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
+        grad_x = self.reduce_grad_for_broadcasting(upstream_grad*self.y, self.x.shape) if self.req_grad[0] else None
+        grad_y = self.reduce_grad_for_broadcasting(upstream_grad*self.x, self.y.shape) if self.req_grad[1] else None
+        return grad_x, grad_y
 
 
 class Div(OP):
-	def forward(self, x: Buffer, y: Buffer | Scalar) -> Buffer:
-		self.x = x
-		self.y = y
-		if check_broadcast(x.shape, y.shape):
-			return x/y
+    def forward(self, x: Buffer, y: Buffer | Scalar) -> Buffer:
+        self.x = x
+        self.y = y
+        if check_broadcast(x.shape, y.shape):
+            return x/y
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
-		grad_x = self.reduce_grad_for_broadcasting(upstream_grad/self.y, self.x.shape) if self.req_grad[0] else None
-		grad_y = self.reduce_grad_for_broadcasting((-upstream_grad*self.x)/self.y**2, self.y.shape) if self.req_grad[1] else None
-		return grad_x, grad_y
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer | None, Buffer | None]:
+        grad_x = self.reduce_grad_for_broadcasting(upstream_grad/self.y, self.x.shape) if self.req_grad[0] else None
+        grad_y = self.reduce_grad_for_broadcasting((-upstream_grad*self.x)/self.y**2, self.y.shape) if self.req_grad[1] else None
+        return grad_x, grad_y
+
+def unbroadcast(grad: Buffer, original_shape: tuple) -> Buffer:
+    for i, (grad_dim, in_dim) in enumerate(zip(grad.shape, original_shape)):
+        if in_dim == 1 and grad_dim > 1:
+            grad = grad.sum(i, keepdim=True)
+
+    return grad
 
 class MatMul(OP):
     def forward(self, x: Buffer, y: Buffer) -> Buffer:
@@ -240,76 +247,69 @@ class MatMul(OP):
         return x@y
 
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-        """
-        # 1. Use specific axis transpose for 3D/Batch support
-                # Transpose only the last two dimensions (matrix transpose)
-                # .transpose(-1, -2) works in PyTorch/tinygrad to swap last two axes
-                t1 = self.x.transpose(-1, -2)
-                t2 = self.y.transpose(-1, -2)
+        t1 = self.x.transpose(self.y.ndim - 2, self.y.ndim - 1)
+        t2 = self.y.transpose(self.y.ndim - 2, self.y.ndim - 1)
+        # if self.x.ndim == 4:
+        #     t1 = self.x.transpose(2, 3)
+        #     t2 = self.y.transpose(2, 3)
+        # elif self.x.ndim == 3:
+        #     t1 = self.x.transpose(1, 2)
+        #     t2 = self.y.transpose(1, 2)
+        # else:
+        #     t1 = self.x.transpose(0, 1)
+        #     t2 = self.y.transpose(0, 1)
 
-                grad_x = upstream_grad @ t2
-                grad_y = t1 @ upstream_grad
 
-                # 2. Handle Broadcasting (Optional but recommended for full 3D support)
-                # If x or y was broadcasted (e.g., (1, M, K) * (B, K, N)),
-                # we must sum gradients over the broadcasted dimensions.
-                if self.x.shape != grad_x.shape:
-                    axis = tuple(i for i, (a, b) in enumerate(zip(self.x.shape, grad_x.shape)) if a != b)
-                    grad_x = grad_x.sum(axis=axis, keepdims=True)
+        # t1 = self.x.transpose(0, 1) if self.x.ndim == 2 else self.x.transpose(1, 2)
+        # t2 = self.y.transpose(0, 1) if self.y.ndim == 2 else self.y.transpose(1, 2)
 
-                if self.y.shape != grad_y.shape:
-                    axis = tuple(i for i, (a, b) in enumerate(zip(self.y.shape, grad_y.shape)) if a != b)
-                    grad_y = grad_y.sum(axis=axis, keepdims=True)
-
-                return (grad_x, grad_y)
-        """
-        t1 = self.x.transpose(0, 1) if self.x.ndim == 2 else self.x.transpose(1, 2)
-        t2 = self.y.transpose(0, 1) if self.y.ndim == 2 else self.y.transpose(1, 2)
-
+        print(upstream_grad.shape, t1.shape, t2.shape)
         grad_x = upstream_grad @ t2
         grad_y = t1 @ upstream_grad
 
-        if self.x.shape != grad_x.shape:
-            grad_x = grad_x.sum(0, keepdim=True)
-        if self.y.shape != grad_y.shape:
-            grad_y = grad_y.sum(0, keepdim=True)
+        grad_x = unbroadcast(grad_x, self.x.shape)
+        grad_y = unbroadcast(grad_y, self.y.shape)
+        # if self.x.shape != grad_x.shape:
+        #     grad_x = grad_x.sum(0, keepdim=True)
+        # if self.y.shape != grad_y.shape:
+        #     grad_y = grad_y.sum(0, keepdim=True)
 
         return (grad_x, grad_y)
 
 class CrossEntropy(OP):
-	def forward(self, logits: Buffer, target: Buffer, dim: int = 1) -> Buffer:
-		assert logits.shape[0] == target.shape[0], f"logits shape[0] and target shape[0] does not match {logits.shape} != {target.shape}"  # noqa: E501
+    def forward(self, logits: Buffer, target: Buffer, dim: int = 1) -> Buffer:
+        assert logits.shape[0] == target.shape[0], f"logits shape[0] and target shape[0] does not match {logits.shape} != {target.shape}"  # noqa: E501
 
-		self.target = target
-		t = logits.max(dim=dim, keepdim=True)
-		m = logits - t
-		e = m.exp()
-		ss = e.sum(dim=dim, keepdim=True)
-		self.log_softmax_output = m - ss.log()
-		tmp = Buffer.ce_forward(self.log_softmax_output, self.target)
+        self.target = target
+        t = logits.max(dim=dim, keepdim=True)
+        m = logits - t
+        e = m.exp()
+        ss = e.sum(dim=dim, keepdim=True)
+        self.log_softmax_output = m - ss.log()
+        tmp = Buffer.ce_forward(self.log_softmax_output, self.target)
 
-		return -tmp.sum()
+        return -tmp.sum()
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		tmp = self.log_softmax_output.exp()
-		Buffer.ce_backward(op=CustomOps.CE_BACKWARD, device=tmp.device, x=tmp, target=self.target)
-		return (tmp,)
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        tmp = self.log_softmax_output.exp()
+        Buffer.ce_backward(op=CustomOps.CE_BACKWARD, device=tmp.device, x=tmp, target=self.target)
+        return (tmp,)
 
 # https://publish.obsidian.md/kamilelukosiute/pytorch/What+does+BCEWithLogits+actually+do%3F
 class BCEWithLogitsLoss(OP):
-	def forward(self, probs: Buffer, target: Buffer) -> Buffer:
-		assert probs.shape == target.shape, f"shape mismatch {probs.shape} vs {target.shape}"
+    def forward(self, probs: Buffer, target: Buffer) -> Buffer:
+        assert probs.shape == target.shape, f"shape mismatch {probs.shape} vs {target.shape}"
 
-		max_val = (-probs).clamp(min=0) # or (-probs).relu()
-		self.probs = probs
-		self.target = target
-		self.loss = ((1.0-target) * probs) + max_val + ((-max_val).exp() + (-(probs+max_val)).exp()).log()
-		return self.loss.mean()
+        max_val = (-probs).clamp(min=0) # or (-probs).relu()
+        self.probs = probs
+        self.target = target
+        self.loss = ((1.0-target) * probs) + max_val + ((-max_val).exp() + (-(probs+max_val)).exp()).log()
+        return self.loss.mean()
 
-	def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-		N = self.probs.numel
-		grad = ((self.probs.sigmoid() - self.target) * upstream_grad) / float(N)
-		return (grad,)
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        N = self.probs.numel
+        grad = ((self.probs.sigmoid() - self.target) * upstream_grad) / float(N)
+        return (grad,)
 
 class Embedding(OP):
     def forward(self, weight: Buffer, idx: Buffer) -> Buffer:

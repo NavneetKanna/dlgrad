@@ -214,7 +214,13 @@ class Buffer:
         # assert self.ndim == 2 and other.ndim == 2, "dlgrad only supports 2d matrix multiplication"
         # if (self.shape[-1] != other.shape[0] and self.ndim != 2 and other.ndim != 2):
         # raise ValueError("Either the Tensors shape dont match or is not 2D")
-        if self.ndim == 3:
+        if self.ndim == 4:
+            device = Device.CPU
+            if self.shape[0] == 1:
+                shape = (other.shape[0], self.shape[1], self.shape[2], other.shape[2])
+            else:
+                shape = (self.shape[0], self.shape[1], self.shape[2], other.shape[2])
+        elif self.ndim == 3:
             device = self.device
             if self.shape[0] == 1:
                 shape = (other.shape[0], self.shape[1], other.shape[2])
@@ -246,6 +252,8 @@ class Buffer:
 
         if self.ndim == 4 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
             out_shape = (self.shape[0], self.shape[2], self.shape[1], self.shape[3])
+        elif self.ndim == 4 and ((dim0 == 2 and dim1 == 3) or (dim0 == 3 and dim1 == 2)):
+            out_shape = (self.shape[0], self.shape[1], self.shape[3], self.shape[2])
         elif self.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
             out_shape = (self.shape[1], self.shape[0], self.shape[2])
         elif self.ndim == 3 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
