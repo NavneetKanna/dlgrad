@@ -387,6 +387,53 @@ def transpose_4d_12(x_shape: tuple, x_stride: tuple, out_stride: tuple):
     return metal_code
 
 @cache
+def transpose_4d_23(x_shape: tuple):
+    """
+    Swaps dims 2 and 3: (N, C, H, W) -> (N, C, W, H).
+    """
+    metal_code = f"""
+        #include <metal_stdlib>
+        using namespace metal;
+
+        #define TILE_DIM 32
+
+        kernel void transpose(
+            device const float* in     [[ buffer(0) ]],
+            device float* out          [[ buffer(1) ]],
+            uint3 gid                  [[ threadgroup_position_in_grid ]],
+            uint3 tid                  [[ thread_position_in_threadgroup ]])
+        {{
+            threadgroup float tile[TILE_DIM][TILE_DIM + 1];
+
+            uint NC = {x_shape[0] * x_shape[1]};
+            uint height = {x_shape[2]};
+            uint width  = {x_shape[3]};
+
+            uint batch_idx = gid.z;
+            if (batch_idx >= NC) return;
+
+            uint batch_offset = batch_idx * width * height;
+
+            uint in_col = gid.x * TILE_DIM + tid.x;
+            uint in_row = gid.y * TILE_DIM + tid.y;
+
+            if (in_col < width && in_row < height) {{
+                tile[tid.y][tid.x] = in[batch_offset + in_row * width + in_col];
+            }}
+
+            threadgroup_barrier(mem_flags::mem_threadgroup);
+
+            uint out_col = gid.y * TILE_DIM + tid.x;
+            uint out_row = gid.x * TILE_DIM + tid.y;
+
+            if (out_row < width && out_col < height) {{
+                out[batch_offset + out_row * height + out_col] = tile[tid.x][tid.y];
+            }}
+        }}
+    """
+    return metal_code
+
+@cache
 def transpose_3d_01(x_shape: tuple, x_stride: tuple):
     metal_code = f"""
         #include <metal_stdlib>

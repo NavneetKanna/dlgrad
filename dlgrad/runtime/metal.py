@@ -325,14 +325,27 @@ class MetalGPU:
 
         if x.ndim == 4 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
             src = metal_kernel.transpose_4d_12(x.shape, x.stride, out_stride)
-            print(src)
-            print(x.shape, out_stride, x.stride)
             pso, _, _ = MetalGPU.build_2d_pipeline(src, "transpose", w=1, h=1)
+            # Transpose (N, C, H, W) -> (N, H, C, W)
             # Grid: x=W, y=H, z=N*C
             w_threads = math.ceil(x.shape[3] / 32)
             threadgroupsPerGrid = Metal.MTLSizeMake(w_threads, x.shape[2], x.shape[0] * x.shape[1])
             threadsPerThreadgroup = Metal.MTLSizeMake(32, 1, 1)
-            print(threadgroupsPerGrid, threadsPerThreadgroup)
+            computeEncoder.setComputePipelineState_(pso)
+            computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
+            computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
+            computeEncoder.dispatchThreadgroups_threadsPerThreadgroup_(threadgroupsPerGrid, threadsPerThreadgroup)
+            computeEncoder.endEncoding()
+            commandBuffer.commit()
+            commandBuffer.waitUntilCompleted()
+            return out_ptr
+        if x.ndim == 4 and ((dim0 == 2 and dim1 == 3) or (dim0 == 3 and dim1 == 2)):
+            src = metal_kernel.transpose_4d_23(x.shape)
+            pso, _, _ = MetalGPU.build_2d_pipeline(src, "transpose", w=1, h=1)
+            # Transpose (N, C, H, W) -> (N, C, W, H)
+            # Grid: x=ceil(W/32), y=ceil(H/32), z=N*C
+            threadgroupsPerGrid = Metal.MTLSizeMake(math.ceil(x.shape[3]/32), math.ceil(x.shape[2]/32), x.shape[0] * x.shape[1])
+            threadsPerThreadgroup = Metal.MTLSizeMake(32, 32, 1)
             computeEncoder.setComputePipelineState_(pso)
             computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
             computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
