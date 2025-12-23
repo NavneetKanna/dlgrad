@@ -347,6 +347,46 @@ def where(x_shape: tuple, inp: bool, other: bool):
     return metal_code
 
 @cache
+def transpose_4d_12(x_shape: tuple, x_stride: tuple, out_stride: tuple):
+    """
+    Swaps dims 1 and 2: (N, C, H, W) -> (N, H, C, W).
+    """
+    metal_code = f"""
+        #include <metal_stdlib>
+        using namespace metal;
+
+        kernel void transpose(
+            device const float* in     [[ buffer(0) ]],
+            device float* out          [[ buffer(1) ]],
+            uint3 gid                  [[ threadgroup_position_in_grid ]],
+            uint3 tid                  [[ thread_position_in_threadgroup ]])
+        {{
+            // Grid Dimensions: x=W, y=H, z=N*C
+            // We map the z-dimension to both N and C to handle 4D
+            uint N = {x_shape[0]};
+            uint C = {x_shape[1]};
+            uint H = {x_shape[2]};
+            uint W = {x_shape[3]};
+
+            uint n = gid.z / C;
+            uint c = gid.z % C;
+            uint h = gid.y;
+            uint w = gid.x * 32 + tid.x;
+
+            if (w >= W || h >= H || n >= N) return;
+
+            // Input index: (n, c, h, w)
+            uint in_idx = n * {x_stride[0]} + c * {x_stride[1]} + h * {x_stride[2]} + w;
+
+            // Output index: (n, h, c, w)
+            uint out_idx = n * {out_stride[0]} + h * {out_stride[1]} + c * {out_stride[2]} + w;
+
+            out[out_idx] = in[in_idx];
+        }}
+    """
+    return metal_code
+
+@cache
 def transpose_3d_01(x_shape: tuple, x_stride: tuple):
     metal_code = f"""
         #include <metal_stdlib>

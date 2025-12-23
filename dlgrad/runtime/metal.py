@@ -314,7 +314,7 @@ class MetalGPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.TRANSPOSE, Device.METAL)
-    def transpose(x: Buffer, out_stride: tuple, dim0: int, dim1: int):
+    def transpose(x: Buffer, out_stride: tuple, dim0: int, dim1: int, out_shape: tuple):
         out_ptr = CPU.malloc(num=x.numel)
 
         x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
@@ -323,6 +323,24 @@ class MetalGPU:
         commandBuffer = commandQueue.commandBuffer()
         computeEncoder = commandBuffer.computeCommandEncoder()
 
+        if x.ndim == 4 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
+            src = metal_kernel.transpose_4d_12(x.shape, x.stride, out_stride)
+            print(src)
+            print(x.shape, out_stride, x.stride)
+            pso, _, _ = MetalGPU.build_2d_pipeline(src, "transpose", w=1, h=1)
+            # Grid: x=W, y=H, z=N*C
+            w_threads = math.ceil(x.shape[3] / 32)
+            threadgroupsPerGrid = Metal.MTLSizeMake(w_threads, x.shape[2], x.shape[0] * x.shape[1])
+            threadsPerThreadgroup = Metal.MTLSizeMake(32, 1, 1)
+            print(threadgroupsPerGrid, threadsPerThreadgroup)
+            computeEncoder.setComputePipelineState_(pso)
+            computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
+            computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 1)
+            computeEncoder.dispatchThreadgroups_threadsPerThreadgroup_(threadgroupsPerGrid, threadsPerThreadgroup)
+            computeEncoder.endEncoding()
+            commandBuffer.commit()
+            commandBuffer.waitUntilCompleted()
+            return out_ptr
         if x.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
             src = metal_kernel.transpose_3d_01(x.shape, x.stride)
             pso, threadsPerGrid, threadsPerThreadgroup = MetalGPU.build_2d_pipeline(src, "transpose", w=x.shape[2], h=x.shape[0]*x.shape[1])
