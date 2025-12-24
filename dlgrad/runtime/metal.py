@@ -170,6 +170,60 @@ class MetalGPU:
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.METAL)
     def matmul(x: Buffer, y: Buffer):
+        if x.ndim == 4:
+            B_out, C_out = max(x.shape[0], y.shape[0]), max(x.shape[1], y.shape[1])
+            M, K, N = x.shape[2], x.shape[3], y.shape[3]
+
+            def make_strides(tensor, target_B, target_C):
+                s = list(tensor.stride)
+                if tensor.shape[0] == 1 and target_B > 1: s[0] = 0
+                if tensor.shape[1] == 1 and target_C > 1: s[1] = 0
+                return tuple(s)
+
+            stride_A = make_strides(x, B_out, C_out)
+            stride_B = make_strides(y, B_out, C_out)
+            stride_Out = (C_out*M*N, M*N, N, 1)
+
+            out_batch = max(x.shape[0], y.shape[0])
+            out_chan  = max(x.shape[1], y.shape[1])
+            M, K = x.shape[2], x.shape[3]
+            N = y.shape[3]
+            out_shape = (out_batch, out_chan, M, N)
+            out_numel = out_batch * out_chan * M * N
+
+            out_ptr = CPU.init_with_scalar(num=out_numel, scalar=0)
+
+            x_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(x.ptr, x.nbytes), x.nbytes, Metal.MTLResourceStorageModeShared, None)
+            y_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(y.ptr, y.nbytes), y.nbytes, Metal.MTLResourceStorageModeShared, None)
+            out_buf = device.newBufferWithBytesNoCopy_length_options_deallocator_(MetalGPU.ffi.buffer(out_ptr, out_numel*4), out_numel*4, Metal.MTLResourceStorageModeShared, None)
+
+            commandBuffer = commandQueue.commandBuffer()
+            computeEncoder = commandBuffer.computeCommandEncoder()
+
+            src = metal_kernel.matmul_4d_strided(B_out, C_out, M, N, K, stride_A, stride_B, stride_Out)
+
+            pso, _, _ = MetalGPU.build_2d_pipeline(src, "matmul", w=1, h=1)
+
+            grid_z = B_out * C_out
+            grid_y = math.ceil(M / 32)
+            grid_x = math.ceil(N / 32)
+
+            threadgroupsPerGrid = Metal.MTLSizeMake(grid_x, grid_y, grid_z)
+            threadsPerThreadgroup = Metal.MTLSizeMake(32, 32, 1)
+
+            computeEncoder.setComputePipelineState_(pso)
+            computeEncoder.setBuffer_offset_atIndex_(x_buf, 0, 0)
+            computeEncoder.setBuffer_offset_atIndex_(y_buf, 0, 1)
+            computeEncoder.setBuffer_offset_atIndex_(out_buf, 0, 2)
+
+            computeEncoder.dispatchThreadgroups_threadsPerThreadgroup_(threadgroupsPerGrid, threadsPerThreadgroup)
+
+            computeEncoder.endEncoding()
+            commandBuffer.commit()
+            commandBuffer.waitUntilCompleted()
+
+            return out_ptr
+
         if x.ndim == 3:
             if x.shape[0] != 1:
                 out_numel = x.shape[0]*x.shape[1]*y.shape[2]

@@ -57,6 +57,76 @@ def arithmetic(x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple,
     return metal_code
 
 @cache
+def matmul_4d_strided(B: int, C: int, M: int, N: int, K: int, stride_A: tuple, stride_B: tuple, stride_Out: tuple):
+    metal_code = f"""
+        #include <metal_stdlib>
+        using namespace metal;
+
+        #define TILE_DIM 32
+
+        kernel void matmul(
+            device const float* A      [[ buffer(0) ]],
+            device const float* B      [[ buffer(1) ]],
+            device float* out          [[ buffer(2) ]],
+            uint3 gid                  [[ threadgroup_position_in_grid ]],
+            uint3 tid                  [[ thread_position_in_threadgroup ]])
+        {{
+            uint M = {M};
+            uint N = {N};
+            uint K = {K};
+            uint Channel = {C};
+
+            uint b_idx = gid.z / Channel;
+            uint c_idx = gid.z % Channel;
+
+            uint offset_A = (b_idx * {stride_A[0]}) + (c_idx * {stride_A[1]});
+            uint offset_B = (b_idx * {stride_B[0]}) + (c_idx * {stride_B[1]});
+            uint offset_Out = (b_idx * {stride_Out[0]}) + (c_idx * {stride_Out[1]});
+
+            // 2. Thread Coordinates
+            uint row = gid.y * TILE_DIM + tid.y;
+            uint col = gid.x * TILE_DIM + tid.x;
+
+            threadgroup float As[TILE_DIM][TILE_DIM];
+            threadgroup float Bs[TILE_DIM][TILE_DIM];
+
+            float acc = 0.0;
+
+            for (int k_base = 0; k_base < K; k_base += TILE_DIM) {{
+
+                int A_k = k_base + tid.x;
+
+                if (row < M && A_k < K) {{
+                    As[tid.y][tid.x] = A[offset_A + (row * {stride_A[2]}) + (A_k * {stride_A[3]})];
+                }} else {{
+                    As[tid.y][tid.x] = 0.0;
+                }}
+
+                int B_k = k_base + tid.y;
+
+                if (col < N && B_k < K) {{
+                    Bs[tid.y][tid.x] = B[offset_B + (B_k * {stride_B[2]}) + (col * {stride_B[3]})];
+                }} else {{
+                    Bs[tid.y][tid.x] = 0.0;
+                }}
+
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+
+                for (int k = 0; k < TILE_DIM; ++k) {{
+                    acc += As[tid.y][k] * Bs[k][tid.x];
+                }}
+
+                threadgroup_barrier(mem_flags::mem_threadgroup);
+            }}
+
+            if (row < M && col < N) {{
+                out[offset_Out + (row * {stride_Out[2]}) + (col * {stride_Out[3]})] = acc;
+            }}
+        }}
+    """
+    return metal_code
+
+@cache
 def matmul_3d(B, M, K, N, broadcast_x: bool = False, broadcast_y: bool = False):
     tx = f"int A_offset = batch_idx * {M} * {K};"
     ty = f"int B_offset = batch_idx * {K} * {N};"
