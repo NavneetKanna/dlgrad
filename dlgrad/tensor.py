@@ -545,6 +545,19 @@ class Tensor:
         """
         return ops.Log.execute(self)
 
+    def rsqrt(self) -> Tensor:
+        """
+        Applies the inverse sqaure root function to the tensor elementwise.
+
+        Parameters
+        ----------
+        self : Tensor
+
+        Returns:
+            A tensor of the same shape as self.
+        """
+        return ops.RSqrt.execute(self)
+
     def sqrt(self) -> Tensor:
         """
         Applies the sqaure root function to the tensor elementwise.

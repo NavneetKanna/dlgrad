@@ -362,6 +362,26 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.SQRT, Device.CPU)
+    def rsqrt(x: Buffer) -> CDataPtr:
+        out_ptr = CPU.malloc(num=x.numel)
+
+        c_code, cdef = cpu_kernel.utils(x.numel, "rsqrt")
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"rsqrt_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.c_rsqrt(x.ptr, out_ptr)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.SQRT, Device.CPU)
     def sqrt(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 

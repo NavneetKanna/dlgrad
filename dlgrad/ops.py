@@ -150,6 +150,14 @@ class Sqrt(OP):
     def backward(self, grad_output: Buffer) -> tuple[Buffer]:
         return (grad_output / (self.out*2),)
 
+class RSqrt(OP):
+    def forward(self, x: Buffer) -> Buffer:
+        self.out = x.rsqrt()
+        return self.out
+
+    def backward(self, grad_output: Buffer) -> tuple[Buffer]:
+        return (grad_output * (-0.5 * self.out**3),)
+
 class Clamp(OP):
     def forward(self, x: Buffer, min: int | None, max: int | None) -> Buffer:
         self.min = min

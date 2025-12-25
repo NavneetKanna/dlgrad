@@ -530,7 +530,18 @@ def utils(x_numel: int, func: str, val: Scalar = None) -> tuple[str, str]:
             }}
             """
             return code, "void c_sqrt(float *x, float *out);"
+        case "rsqrt":
+            code = f"""
+            #include <math.h>
 
+            void c_rsqrt(float *x, float *out)
+            {{
+                for (int i=0; i<{x_numel}; i++) {{
+                    out[i] = 1.0/sqrtf(x[i]);
+                }}
+            }}
+            """
+            return code, "void c_rsqrt(float *x, float *out);"
 @cache
 def clamp(x_numel: int, min_val: int, max_val: int) -> tuple[str, str]:
     c_code = f"""

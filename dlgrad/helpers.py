@@ -23,6 +23,7 @@ class UnaryOps(Enum):
     LOG = auto()
     POW = auto()
     SQRT = auto()
+    RSQRT = auto()
     TRANSPOSE = auto()
     RELU = auto()
     ARGMAX = auto()

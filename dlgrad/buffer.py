@@ -286,6 +286,12 @@ class Buffer:
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
+    def rsqrt(self) -> Buffer:
+        return Buffer(
+            data=dispatcher.dispatch(op=UnaryOps.RSQRT, device=self.device if self.ndim !=0 else Device.CPU, x=self),
+            shape=self.shape, device=self.device, dtype=self.dtype
+        )
+
     @staticmethod
     def cat(x: tuple[Buffer], cat_dim: int) -> Buffer:
         out_shape = cal_cat_out_shape(data=tuple([i.shape for i in x]), cat_dim=cat_dim)
