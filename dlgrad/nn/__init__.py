@@ -25,4 +25,18 @@ class Embedding:
         #     raise TypeError(f"Expected integer indicies, but got {idx.dtype}")
         return Tensor.embedding(self.weight, idx)
 
+class RMSNorm:
+    def __init__(self, dim: int, eps: int = 1e-6, elementwise_affine: bool = True) -> None:
+        self.eps = eps
+        self.weight = Tensor.ones_like(Tensor.rand((1, dim))) if elementwise_affine else None
+
+    def _norm(self, x: Tensor) -> Tensor:
+        t = x**2
+        t = t.mean(t.ndim - 1, keepdim=True)
+        return x * (t + self.eps).rsqrt()
+
+    def __call__(self, x: Tensor) -> Tensor:
+        x = self._norm(x)
+        return x if self.weight is None else x * self.weight
+
 

@@ -361,7 +361,7 @@ class CPU:
         return out_ptr
 
     @staticmethod
-    @dispatcher.register(UnaryOps.SQRT, Device.CPU)
+    @dispatcher.register(UnaryOps.RSQRT, Device.CPU)
     def rsqrt(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
