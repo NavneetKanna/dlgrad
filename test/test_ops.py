@@ -305,3 +305,16 @@ def test_transpose_3d(shapes, device):
 ])
 def test_matmul_3d(shapes, device):
     run(shapes, device, lambda x, y: x@y)
+
+@pytest.mark.parametrize("shapes", [
+    [(2, 3, 4, 5), (2, 3, 5, 4)],
+    [(20, 20, 20, 20), (20, 20, 20, 20)],
+    [(32, 2, 8, 16), (32, 2, 16, 8)],
+    [(128, 23, 784, 100), (128, 23, 100, 10)],
+    [(64, 1, 128, 32), (64, 1, 32, 64)],
+    #[(400, 2, 64, 50), (400, 2, 50, 70)],
+    [(1, 1, 784, 100), (1, 1, 100, 10)],
+    [(1, 784, 1, 100), (1, 784, 100, 1)],
+])
+def test_matmul_4d(shapes, device):
+    run(shapes, device, lambda x, y: x@y)

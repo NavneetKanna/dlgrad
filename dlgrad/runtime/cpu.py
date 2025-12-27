@@ -489,10 +489,10 @@ class CPU:
     def matmul(x: Buffer, y: Buffer) -> CDataPtr:
         if x.ndim == 4:
             if x.shape[0] != 1:
-                out_shape = x.shape[0]*x.shape[1]*x.shape[2]*y.shape[2]
+                out_shape = x.shape[0]*x.shape[1]*x.shape[2]*y.shape[3]
                 out_stride = calculate_stride((x.shape[0], x.shape[1], x.shape[2], y.shape[3]))
             else:
-                out_shape = y.shape[0]*x.shape[1]*x.shape[2]*y.shape[2]
+                out_shape = y.shape[0]*x.shape[1]*x.shape[2]*y.shape[3]
                 out_stride = calculate_stride((y.shape[0], x.shape[1], x.shape[2], y.shape[3]))
             out_ptr = CPU.init_with_scalar(num=out_shape, scalar=0)
             c_code, cdef = cpu_kernel.matmul_4d(x.shape, y.shape, x.stride, y.stride, out_stride)
@@ -523,7 +523,13 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.matmul(x.ptr, y.ptr, out_ptr)
+        if x.ndim == 4:
+            lib.matmul_4d(x.ptr, y.ptr, out_ptr)
+        elif x.ndim == 3:
+            lib.matmul_3d(x.ptr, y.ptr, out_ptr)
+        else:
+            lib.matmul_2d(x.ptr, y.ptr, out_ptr)
+
 
         return out_ptr
 

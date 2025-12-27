@@ -589,7 +589,7 @@ def matmul_4d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, 
     c_code = f"""
         #include <stdint.h>
 
-        void matmul(const float* x, const float* y, float* out)
+        void matmul_4d(const float* x, const float* y, float* out)
         {{
            for (int b = 0; b < {x_shape[0]}; ++b) {{
                for (int c = 0; c < {x_shape[1]}; ++c) {{
@@ -611,7 +611,7 @@ def matmul_4d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, 
            }}
         }}
     """
-    return c_code, "void matmul(const float* x, const float* y, float* out);"
+    return c_code, "void matmul_4d(const float* x, const float* y, float* out);"
 
 @cache
 def matmul_3d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, out_stride: tuple, broadcast_x: bool = False, broadcast_y: bool = False) -> tuple[str, str]:
@@ -629,7 +629,7 @@ def matmul_3d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, 
         ty = f"k*{y_stride[1]} + j*{y_stride[2]}"
 
     c_code = f"""
-    void matmul(float *x, float *y, float *out) {{
+    void matmul_3d(float *x, float *y, float *out) {{
     for (int b=0; b<{B}; b++) {{
         for (int i=0; i<{M}; i++) {{
             for (int k=0; k<{K}; k++) {{
@@ -642,12 +642,12 @@ def matmul_3d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, 
             }}
         }}
     """
-    return c_code, "void matmul(float *x, float *y, float *out);"
+    return c_code, "void matmul_3d(float *x, float *y, float *out);"
 
 @cache
 def matmul_2d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple) -> tuple[str, str]:
     c_code = f"""
-    void matmul(float *x, float *y, float *out) {{
+    void matmul_2d(float *x, float *y, float *out) {{
         for (int i=0; i<{x_shape[0]}; i++) {{
             for (int k=0; k<{x_shape[1]}; k++) {{
                 float a = x[i*{x_stride[0]} + k*{x_stride[1]}];
@@ -658,7 +658,7 @@ def matmul_2d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple) 
         }}
     }}
     """
-    return c_code, "void matmul(float *x, float *y, float *out);"
+    return c_code, "void matmul_2d(float *x, float *y, float *out);"
 
 @cache
 def ce_forward(n_rows: int, x_stride: tuple) -> tuple[str, str]:

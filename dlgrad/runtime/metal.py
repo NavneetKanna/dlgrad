@@ -167,6 +167,7 @@ class MetalGPU:
     def div(x: Buffer, y: Buffer) -> CDataPtr:
         return MetalGPU._binary_op(x, y, "div")
 
+    # NOTE: Failing for very large batch > 200, maybe got to do with allocation, maybe use newBufferWithBytes
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.METAL)
     def matmul(x: Buffer, y: Buffer):
