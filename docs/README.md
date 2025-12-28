@@ -64,6 +64,7 @@ With the tensors created, any of the following ops can be performed on them, the
 | log | &check; | &check; | 1D-4D |
 | sqrt | &check; | &check; | 1D-4D |
 | clamp | &check; | &cross; | 1D-4D |
+| masked_fill | &check; | &cross; | 3D-4D | The self tensor needs to be 3D or 4D but the mask tensor can be any dim but broadcastable |
 | log_softmax | &check; |  - |
 | cross_entropy_loss | &check; | - |
 | bce_with_logits_loss | &check; | - |

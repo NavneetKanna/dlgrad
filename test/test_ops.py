@@ -376,12 +376,6 @@ def test_masked_fill(input_shape, mask_shape, fill_value, device):
         is_ninf = np.isneginf(res_torch)
         np.testing.assert_allclose(dl_res[~is_ninf], res_torch[~is_ninf], atol=1e-5, rtol=1e-5)
         assert np.all(dl_res[is_ninf] < -1e37), "Filled values should be -FLT_MAX (approx -3.4e38)"
-    # if fill_value == float('inf'):
-    #     is_inf_torch = np.isinf(res_torch)
-    #     np.testing.assert_allclose(dl_res[~is_inf_torch], res_torch[~is_inf_torch], atol=1e-5, rtol=1e-5)
-    # elif fill_value == float('-inf'):
-    #     is_neg_inf_torch = np.isneginf(res_torch)
-    #     np.testing.assert_allclose(dl_res[~is_neg_inf_torch], res_torch[~is_neg_inf_torch], atol=1e-5, rtol=1e-5)
     else:
         np.testing.assert_allclose(dl_res, res_torch, atol=1e-5, rtol=1e-5)
 
