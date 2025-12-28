@@ -31,7 +31,6 @@ class UnaryOps(Enum):
     MEAN = auto()
     CLAMP = auto()
     MASKED_FILL = auto()
-    CAT = auto()
 
 class BufferOps(Enum):
     CREATE = auto()
@@ -128,6 +127,26 @@ def get_broadcast_shape(shape1: tuple, shape2: tuple) -> tuple:
         final_shape.append(max(dim1, dim2))
 
     return tuple(reversed(final_shape))
+
+def get_broadcast_strides(src_shape: tuple, dst_shape: tuple) -> tuple:
+    """
+    Calculates strides for src_shape as if it were broadcast to dst_shape.
+    Returns a tuple of strides matching the length of dst_shape.
+    """
+    base_strides = calculate_stride(src_shape)
+    ndim_diff = len(dst_shape) - len(src_shape)
+    aligned_src_shape = (1,) * ndim_diff + src_shape
+    aligned_src_strides = (0,) * ndim_diff + base_strides
+    final_strides = []
+
+    for dim_src, dim_dst, stride_src in zip(aligned_src_shape, dst_shape, aligned_src_strides):
+        if dim_src == dim_dst:
+            final_strides.append(stride_src)
+        elif dim_src == 1:
+            final_strides.append(0)
+        else:
+            raise ValueError(f"Shape mismatch: {src_shape} cannot be broadcast to {dst_shape}")
+    return tuple(final_strides)
 
 def calculate_stride(shape: tuple|int) -> tuple:
     if not shape:

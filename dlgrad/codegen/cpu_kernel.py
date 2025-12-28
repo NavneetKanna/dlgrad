@@ -942,58 +942,52 @@ def cal_out_steps(cat_dim: int, first_inp_shape: tuple) -> int:
     return steps
 
 @cache
-def cat(n_tensors: int, input_strides: tuple[tuple], input_shapes: tuple, cat_dim: int, first_inp_shape: tuple) -> tuple[str, str]:
-    t1 = "void cat(float *out, "
-    for i in range(n_tensors):
-        t1 += f"float *arr{i}, "
-    t1 = t1[:-2]
-    t1 += ") {\n"
-
-    t2 = ""
-    for idx, (i, j) in enumerate(zip(input_strides, input_shapes)):
-        t2 += f"int arr{idx}_copy_size = {i[cat_dim]}*{j[idx]} * sizeof(float);\n"
-
-    t3 = f"int out_steps = {cal_out_steps(cat_dim, first_inp_shape)};"
-
-    t4 = "for (int i=0; i<out_steps; i++) {\n"
-    for i in range(n_tensors):
-        t4 += f"""
-            memcpy(out, arr{i}, arr{i}_copy_size);
-            out += arr{i}_copy_size;
-            arr{i} += arr{i}_copy_size;
-        """
+def masked_fill_4d(out_shape: tuple, out_stride: tuple, x_stride: tuple, mask_stride: tuple, val: Scalar) -> tuple[str, str]:
+    if val == float('inf'):
+        val = 'FLT_MAX'
+    elif val == float('-inf'):
+        val = '-FLT_MAX'
 
     c_code = f"""
-        #include <string.h>
+        #include <math.h>
+        #include <float.h>
 
-        {t1}
+        void masked_fill(float *x, float *y, float *out) {{
+            for (int i=0; i<{out_shape[0]}; i++) {{
+                for (int j=0; j<{out_shape[1]}; j++) {{
+                    for (int k=0; k<{out_shape[2]}; k++) {{
+                        for (int l=0; l<{out_shape[3]}; l++) {{
+                            int x_idx = i*{x_stride[0]} + j*{x_stride[1]} + k*{x_stride[2]} + l*{x_stride[3]};
+                            int y_idx = i*{mask_stride[0]} + j*{mask_stride[1]} + k*{mask_stride[2]} + l*{mask_stride[3]};
+                            int out_idx = i*{out_stride[0]} + j*{out_stride[1]} + k*{out_stride[2]} + l*{out_stride[3]};
 
-            {t2}
-
-            {t3}
-
-            {t4}
-
+                            out[out_idx] = y[y_idx] > 0 ? {val}: x[x_idx];
+                        }}
+                    }}
+                }}
             }}
         }}
     """
-    return c_code, f"{t1[:-2]};"
+    return c_code, "void masked_fill(float *x, float *y, float *out);"
 
-@cache
+
 def masked_fill_3d(out_shape: tuple, out_stride: tuple, x_stride: tuple, y_stride: tuple, val: Scalar) -> tuple[str, str]:
     if val == float('inf'):
-        val = 'INFINITY'
+        val = 'FLT_MAX'
     elif val == float('-inf'):
-        val = '-INFINITY'
+        val = '-FLT_MAX'
+
     c_code = f"""
         #include <math.h>
+        #include <float.h>
+
         void masked_fill(float *x, float *y, float *out) {{
             for (int i=0; i<{out_shape[0]}; i++) {{
                 for (int j=0; j<{out_shape[1]}; j++) {{
                     for (int k=0; k<{out_shape[2]}; k++) {{
                         int x_idx = i*{x_stride[0]} + j*{x_stride[1]} + k*{x_stride[2]};
                         int y_idx = i*{y_stride[0]} + j*{y_stride[1]} + k*{y_stride[2]};
-                        out[i*{out_stride[0]} + j*{out_stride[1]} + k*{out_stride[2]}] = y[y_idx] > 0 ? x[x_idx] : {val};
+                        out[i*{out_stride[0]} + j*{out_stride[1]} + k*{out_stride[2]}] = y[y_idx] > 0 ? {val}: x[x_idx] ;
                     }}
                 }}
             }}

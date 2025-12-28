@@ -660,9 +660,8 @@ class Tensor:
             k = Tensor(k)
         return ops.Tril.execute(inp, k)
 
-    @staticmethod
-    def masked_fill(x: Tensor, mask: Tensor, value: Scalar) -> Tensor:
-        return Tensor(data=Buffer.masked_fill(x.data, mask.data, value), requires_grad=x.requires_grad, device=x.device)
+    def masked_fill(self, mask: Tensor, value: Scalar) -> Tensor:
+        return Tensor(data=Buffer.masked_fill(self.data, mask.data, value), requires_grad=self.requires_grad, device=self.device)
 
     @staticmethod
     def where(cond: Tensor, inp: Tensor | Scalar, other: Tensor | Scalar) -> Tensor:

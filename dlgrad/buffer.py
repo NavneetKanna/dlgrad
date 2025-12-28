@@ -11,7 +11,6 @@ from dlgrad.helpers import (
     BufferOps,
     CustomOps,
     UnaryOps,
-    cal_cat_out_shape,
     cal_sum_max_out_shape,
     calculate_stride,
     check_broadcast,
@@ -110,7 +109,7 @@ class Buffer:
     def masked_fill(x: Buffer, mask: Buffer, val: Scalar) -> Buffer:
         out_shape = get_broadcast_shape(x.shape, mask.shape)
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.MASKED_FILL, device=Device.CPU, x=x, y=mask, val=val, out_shape=out_shape),
+            data=dispatcher.dispatch(op=UnaryOps.MASKED_FILL, device=Device.CPU, x=x, mask=mask, val=val, out_shape=out_shape),
             shape=out_shape, device=x.device, dtype=x.dtype
         )
 
@@ -296,14 +295,6 @@ class Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.RSQRT, device=self.device if self.ndim !=0 else Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
-        )
-
-    @staticmethod
-    def cat(x: tuple[Buffer], cat_dim: int) -> Buffer:
-        out_shape = cal_cat_out_shape(data=tuple([i.shape for i in x]), cat_dim=cat_dim)
-        return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.CAT, device=Device.CPU, x=x, cat_dim=cat_dim, out_shape=out_shape),
-            shape=out_shape, device=x[0].device, dtype=x[0].dtype
         )
 
     def clamp(self, min: int | None = None, max: int | None = None) -> Buffer:

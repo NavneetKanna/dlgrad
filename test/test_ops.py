@@ -339,3 +339,49 @@ def test_matmul_3d(shapes, device):
 ])
 def test_matmul_4d(shapes, device):
     run(shapes, device, lambda x, y: x@y)
+
+shapes = [
+    ((32, 10, 10), (32, 10, 10), 0.0),
+    ((2, 8, 10, 10), (2, 8, 10, 10), -1.0),
+    ((32, 10, 10), (1, 10, 10), 5.0),
+    ((10, 10), (32, 10, 10), 99.0),
+    ((32, 1, 10), (1, 10, 10), -5.0),
+    ((2, 1, 10, 10), (1, 8, 10, 10), 7.0),
+    ((4, 4, 4), (4, 4, 4), float('inf')),
+    ((4, 4, 4), (4, 4, 4), float('-inf')),
+    ((2, 4, 8, 8), (8, 8), float('-inf')),
+]
+@pytest.mark.parametrize("input_shape, mask_shape, fill_value", shapes)
+def test_masked_fill(input_shape, mask_shape, fill_value, device):
+    np_input = np.random.uniform(low=-10.0, high=10.0, size=input_shape).astype(np.float32)
+    np_mask = (np.random.rand(*mask_shape) > 0.7).astype(np.float32)
+
+    dl_x = Tensor(np_input, device=device)
+    dl_mask = Tensor(np_mask, device=device)
+
+    x_torch = torch.tensor(np_input, device=to_torch_device(device))
+    mask_torch = torch.tensor(np_mask, device=to_torch_device(device)).bool()
+
+    dl_out = dl_x.masked_fill(dl_mask, fill_value)
+    out_torch = x_torch.masked_fill(mask_torch, fill_value)
+
+    dl_res = dl_out.numpy()
+    res_torch = out_torch.cpu().numpy()
+
+    if fill_value == float('inf'):
+        is_inf = np.isinf(res_torch) & (res_torch > 0)
+        np.testing.assert_allclose(dl_res[~is_inf], res_torch[~is_inf], atol=1e-5, rtol=1e-5)
+        assert np.all(dl_res[is_inf] > 1e37), "Filled values should be FLT_MAX (approx 3.4e38)"
+    elif fill_value == float('-inf'):
+        is_ninf = np.isneginf(res_torch)
+        np.testing.assert_allclose(dl_res[~is_ninf], res_torch[~is_ninf], atol=1e-5, rtol=1e-5)
+        assert np.all(dl_res[is_ninf] < -1e37), "Filled values should be -FLT_MAX (approx -3.4e38)"
+    # if fill_value == float('inf'):
+    #     is_inf_torch = np.isinf(res_torch)
+    #     np.testing.assert_allclose(dl_res[~is_inf_torch], res_torch[~is_inf_torch], atol=1e-5, rtol=1e-5)
+    # elif fill_value == float('-inf'):
+    #     is_neg_inf_torch = np.isneginf(res_torch)
+    #     np.testing.assert_allclose(dl_res[~is_neg_inf_torch], res_torch[~is_neg_inf_torch], atol=1e-5, rtol=1e-5)
+    else:
+        np.testing.assert_allclose(dl_res, res_torch, atol=1e-5, rtol=1e-5)
+

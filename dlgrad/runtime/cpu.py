@@ -22,6 +22,7 @@ from dlgrad.helpers import (
    UnaryOps,
    cal_sum_max_out_shape,
    calculate_stride,
+   get_broadcast_strides,
    prod_,
 )
 
@@ -401,30 +402,6 @@ class CPU:
         return out_ptr
 
     @staticmethod
-    @dispatcher.register(UnaryOps.CAT, Device.CPU)
-    def cat(x: tuple[Buffer], cat_dim: int, out_shape: tuple) -> CDataPtr:
-        out_ptr = CPU.malloc(num=prod_(out_shape))
-
-        input_strides = tuple([i.stride for i in x])
-        input_shapes = tuple([i.shape for i in x])
-        c_code, cdef = cpu_kernel.cat(len(x), input_strides, input_shapes, cat_dim, x[0].shape)
-        print(c_code)
-        print(cdef)
-
-        key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"cat_{key}.so"
-        if not os.path.exists(so_fp):
-            CPU._build_shared_object(c_code, so_fp)
-
-        lib = CPU._get_handle(str(so_fp))
-
-        CPU._ensure_sig(cdef)
-
-        lib.cat(out_ptr, *[i.ptr for i in x])
-
-        return out_ptr
-
-    @staticmethod
     @dispatcher.register(UnaryOps.CLAMP, Device.CPU)
     def clamp(x: Buffer, min: int | None, max: int | None) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
@@ -680,28 +657,32 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.MASKED_FILL, Device.CPU)
-    def masked_fill(x: Buffer, y: Buffer, val: Scalar, out_shape: tuple) -> CDataPtr:
+    def masked_fill(x: Buffer, mask: Buffer, val: Scalar, out_shape: tuple) -> CDataPtr:
         out_ptr = CPU.malloc(num=prod_(out_shape))
 
-        if x.ndim == 3:
-            x_stride = tuple([0 if i== 1 else 1 for i in x.shape])
-            y_stride = tuple([0 if i== 1 else 1 for i in y.shape])
-            while len(x_stride) > len(y_stride):
-                y_stride = (0,) + y_stride
+        out_stride = calculate_stride(out_shape)
 
+        x_stride = get_broadcast_strides(x.shape, out_shape)
+        mask_stride = get_broadcast_strides(mask.shape, out_shape)
 
-            c_code, cdef = cpu_kernel.masked_fill_3d(out_shape, calculate_stride(out_shape), x_stride, y_stride, val)
+        ndim = len(out_shape)
+
+        if ndim == 4:
+            c_code, cdef = cpu_kernel.masked_fill_4d(out_shape, out_stride, x_stride, mask_stride, val)
+        elif ndim == 3:
+            c_code, cdef = cpu_kernel.masked_fill_3d(out_shape, out_stride, x_stride, mask_stride, val)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"masked_fill_{key}.so"
         if not os.path.exists(so_fp):
-            CPU._build_shared_object(c_code, so_fp, ["-ffast-math"] if val in [float('inf'), float('-inf')] else [])
+            #CPU._build_shared_object(c_code, so_fp, ["-ffast-math"] if val in [float('inf'), float('-inf')] else [])
+            CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
 
         CPU._ensure_sig(cdef)
 
-        lib.masked_fill(x.ptr, y.ptr, out_ptr)
+        lib.masked_fill(x.ptr, mask.ptr, out_ptr)
 
         return out_ptr
 
