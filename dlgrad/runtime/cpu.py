@@ -486,16 +486,40 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(BinaryOps.MATMUL, Device.CPU)
-    def matmul(x: Buffer, y: Buffer) -> CDataPtr:
+    def matmul(x: Buffer, y: Buffer) -> CDataPtr: # noqa: C901
         if x.ndim == 4:
-            if x.shape[0] != 1:
-                out_shape = x.shape[0]*x.shape[1]*x.shape[2]*y.shape[3]
-                out_stride = calculate_stride((x.shape[0], x.shape[1], x.shape[2], y.shape[3]))
-            else:
-                out_shape = y.shape[0]*x.shape[1]*x.shape[2]*y.shape[3]
-                out_stride = calculate_stride((y.shape[0], x.shape[1], x.shape[2], y.shape[3]))
-            out_ptr = CPU.init_with_scalar(num=out_shape, scalar=0)
-            c_code, cdef = cpu_kernel.matmul_4d(x.shape, y.shape, x.stride, y.stride, out_stride)
+            B = max(x.shape[0], y.shape[0])
+            C = max(x.shape[1], y.shape[1])
+            M = x.shape[2]
+            N = y.shape[3]
+            K = x.shape[3]
+
+            out_shape = (B, C, M, N)
+            out_numel = B * C * M * N
+            out_stride = calculate_stride(out_shape)
+            out_ptr = CPU.init_with_scalar(num=out_numel, scalar=0)
+
+            x_strides = list(x.stride)
+            y_strides = list(y.stride)
+
+            # Broadcast Batch (Dim 0)
+            if x.shape[0] == 1 and B > 1:
+                x_strides[0] = 0
+            if y.shape[0] == 1 and B > 1:
+                y_strides[0] = 0
+
+            # Broadcast Channel (Dim 1)
+            if x.shape[1] == 1 and C > 1:
+                x_strides[1] = 0
+            if y.shape[1] == 1 and C > 1:
+                y_strides[1] = 0
+
+            c_code, cdef = cpu_kernel.matmul_4d(
+                (B, C, M, K, N),
+                tuple(x_strides),
+                tuple(y_strides),
+                out_stride
+            )
         elif x.ndim == 3:
             if x.shape[0] != 1:
                 out_shape = x.shape[0]*x.shape[1]*y.shape[2]

@@ -585,30 +585,35 @@ def clamp(x_numel: int, min_val: int, max_val: int) -> tuple[str, str]:
     return c_code, "void clamp(float *x, float *out);"
 
 @cache
-def matmul_4d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, out_stride: tuple) -> tuple[str, str]:
+def matmul_4d(dims: tuple, x_stride: tuple, y_stride: tuple, out_stride: tuple) -> tuple[str, str]:
+    B, C, M, K, N = dims
+
     c_code = f"""
         #include <stdint.h>
 
         void matmul_4d(const float* x, const float* y, float* out)
         {{
-           for (int b = 0; b < {x_shape[0]}; ++b) {{
-               for (int c = 0; c < {x_shape[1]}; ++c) {{
-                   const float* A_ptr = x + (b * {x_stride[0]}) + (c * {x_stride[1]});
-                   const float* B_ptr = y + (b * {y_stride[0]}) + (c * {y_stride[1]});
-                   float* out_ptr = out + (b * {out_stride[0]}) + (c * {out_stride[1]});
-                   for (int h = 0; h < {x_shape[2]}; ++h) {{
-                       const float* A_row = A_ptr + (h * {x_stride[2]});
-                       float* out_row = out_ptr + (h * {out_stride[2]});
-                       for (int k = 0; k < {x_shape[3]}; ++k) {{
-                           float a_val = A_row[k * {x_stride[3]}];
-                           const float* B_row_k = B_ptr + (k * {y_stride[2]});
-                           for (int w = 0; w < {y_shape[3]}; ++w) {{
-                               out_row[w * {out_stride[3]}] += a_val * B_row_k[w * {y_stride[3]}];
-                           }}
-                       }}
-                   }}
-               }}
-           }}
+            for (int b = 0; b < {B}; ++b) {{
+                for (int c = 0; c < {C}; ++c) {{
+                    const float* A_ptr = x + (b * {x_stride[0]}) + (c * {x_stride[1]});
+                    const float* B_ptr = y + (b * {y_stride[0]}) + (c * {y_stride[1]});
+                    float* out_ptr = out + (b * {out_stride[0]}) + (c * {out_stride[1]});
+
+                    for (int h = 0; h < {M}; ++h) {{
+                        const float* A_row = A_ptr + (h * {x_stride[2]});
+                        float* out_row = out_ptr + (h * {out_stride[2]});
+
+                        for (int k = 0; k < {K}; ++k) {{
+                            float a_val = A_row[k * {x_stride[3]}];
+                            const float* B_row_k = B_ptr + (k * {y_stride[2]});
+
+                            for (int w = 0; w < {N}; ++w) {{
+                                out_row[w * {out_stride[3]}] += a_val * B_row_k[w * {y_stride[3]}];
+                            }}
+                        }}
+                    }}
+                }}
+            }}
         }}
     """
     return c_code, "void matmul_4d(const float* x, const float* y, float* out);"

@@ -216,10 +216,16 @@ class Buffer:
         # raise ValueError("Either the Tensors shape dont match or is not 2D")
         if self.ndim == 4:
             device = self.device
-            if self.shape[0] == 1:
-                shape = (other.shape[0], self.shape[1], self.shape[2], other.shape[3])
-            else:
-                shape = (self.shape[0], self.shape[1], self.shape[2], other.shape[3])
+            B = max(self.shape[0], other.shape[0])
+            C = max(self.shape[1], other.shape[1])
+            M = self.shape[2]
+            N = other.shape[3] # Corrected N
+
+            shape = (B, C, M, N)
+            # if self.shape[0] == 1:
+            #     shape = (other.shape[0], self.shape[1], self.shape[2], other.shape[3])
+            # else:
+            #     shape = (self.shape[0], self.shape[1], self.shape[2], other.shape[3])
         elif self.ndim == 3:
             device = self.device
             if self.shape[0] == 1:
