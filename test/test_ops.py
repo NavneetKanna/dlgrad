@@ -379,3 +379,29 @@ def test_masked_fill(input_shape, mask_shape, fill_value, device):
     else:
         np.testing.assert_allclose(dl_res, res_torch, atol=1e-5, rtol=1e-5)
 
+tril_shapes = [
+        ((10, 10), 0.0),
+        ((10, 10), 1.0),
+        ((10, 10), -1.0),
+        ((20, 10), 0.0),
+        ((10, 20), 0.0),
+        ((8, 8), 3.0),
+        ((8, 8), -3.0),
+]
+
+@pytest.mark.parametrize("shape, diagonal", tril_shapes)
+def test_tril_2d(shape, diagonal, device):
+    np_input = np.random.uniform(low=-10.0, high=10.0, size=shape).astype(np.float32)
+
+    x_custom = Tensor(np_input, device=device)
+
+    x_torch = torch.tensor(np_input, device=to_torch_device(device))
+
+    out_custom = Tensor.tril(x_custom, diagonal)
+
+    out_torch = torch.tril(x_torch, diagonal=int(diagonal))
+
+    dl_res = out_custom.numpy()
+    res_torch = out_torch.cpu().numpy()
+
+    np.testing.assert_allclose(dl_res, res_torch, atol=1e-5, rtol=1e-5)
