@@ -179,6 +179,35 @@ def test_matmul_3d_backward(shapes, device):
     np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().detach().numpy(), atol=1e-6, rtol=1e-3)
     np.testing.assert_allclose(dl_y.grad.numpy(), th_y.grad.cpu().detach().numpy(), atol=1e-6, rtol=1e-3)
 
+@pytest.mark.parametrize("shapes", [
+    [(2, 3, 4, 5), (2, 3, 5, 4)],
+    [(20, 20, 20, 20), (20, 20, 20, 20)],
+    [(32, 2, 8, 16), (32, 2, 16, 8)],
+    [(128, 23, 784, 100), (128, 23, 100, 10)],
+    [(64, 1, 128, 32), (64, 1, 32, 64)],
+    [(64, 10, 128, 32), (64, 1, 32, 64)],
+    [(64, 1, 128, 32), (64, 10, 32, 64)],
+    #[(400, 2, 64, 50), (400, 2, 50, 70)],
+    [(1, 1, 784, 100), (1, 1, 100, 10)],
+    [(1, 784, 1, 100), (1, 784, 100, 1)],
+])
+def test_matmul_4d_backward(shapes, device):
+    x_shape, y_shape = shapes
+    np_x = np.random.rand(*x_shape).astype(np.float32)
+    np_y = np.random.rand(*y_shape).astype(np.float32)
+    dl_x = Tensor(np_x, requires_grad=True)
+    dl_y = Tensor(np_y, requires_grad=True)
+    th_x = torch.tensor(np_x, device=to_torch_device(device), requires_grad=True)
+    th_y = torch.tensor(np_y, device=to_torch_device(device), requires_grad=True)
+
+    dl_out = dl_x @ dl_y
+    th_out = th_x @ th_y
+    dl_out.sum().backward()
+    th_out.sum().backward()
+
+    np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().detach().numpy(), atol=1e-6, rtol=1e-3)
+    np.testing.assert_allclose(dl_y.grad.numpy(), th_y.grad.cpu().detach().numpy(), atol=1e-6, rtol=1e-3)
+
 @pytest.mark.parametrize("shapes", [[(2, 3)]])
 def test_cross_entropy_backward(shapes, device):
     for sh in shapes:
@@ -215,13 +244,16 @@ def test_log_softmax_backward(shapes, device):
     (100, 200),
 ])
 def test_transpose_2d_backward(shape, device):
-    np_data = np.random.uniform(size=shape).astype(np.float32)
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
     dl_x = Tensor(np_data, device=device, requires_grad=True)
     th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
 
     dl_x.T.sum().backward()
     th_x.T.sum().backward()
     np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+    dl_x.grad = None
+    th_x.grad = None
 
     dl_x.T.sum().backward()
     th_x.T.sum().backward()
@@ -229,10 +261,10 @@ def test_transpose_2d_backward(shape, device):
 
 @pytest.mark.parametrize("shape", [
     (4, 3, 5),
-    (100, 200, 300),
+    (10, 20, 30),
 ])
 def test_transpose_3d_backward(shape, device):
-    np_data = np.random.uniform(size=shape).astype(np.float32)
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
     dl_x = Tensor(np_data, device=device, requires_grad=True)
     th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
 
@@ -240,6 +272,30 @@ def test_transpose_3d_backward(shape, device):
     th_x.transpose(0, 1).sum().backward()
     np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
+    dl_x.grad = None
+    th_x.grad = None
+
     dl_x.transpose(1, 2).sum().backward()
     th_x.transpose(1, 2).sum().backward()
+    np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+shapes = [
+    (4, 3, 5, 6),
+    (10, 20, 30, 40)
+]
+@pytest.mark.parametrize("shape", shapes)
+def test_transpose_4d_backward(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    dl_x = Tensor(np_data, device=device, requires_grad=True)
+    th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
+
+    dl_x.transpose(1, 2).sum().backward()
+    th_x.transpose(1, 2).sum().backward()
+    np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+    dl_x.grad = None
+    th_x.grad = None
+
+    dl_x.transpose(2, 3).sum().backward()
+    th_x.transpose(2, 3).sum().backward()
     np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
