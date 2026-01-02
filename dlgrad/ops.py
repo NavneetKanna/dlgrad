@@ -320,3 +320,27 @@ class Embedding(OP):
         print("in embedding backward")
         return (self.weight.embedding(self.idx, backward=True, upstream_grad=upstream_grad),)
 
+class Where(OP):
+    def forward(self, cond: Buffer, inp: Buffer | Scalar, other: Buffer | Scalar) -> Buffer:
+        self.cond = cond
+        return cond.where(inp, other)
+
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        grad_inp = self.cond.where(upstream_grad, 0.0)
+        grad_other = self.cond.where(0.0, upstream_grad)
+        return (None, grad_inp, grad_other)
+
+class MaskedFill(OP):
+    def forward(): # noqa: ANN201
+        pass
+
+    def backward(): # noqa: ANN201
+        pass
+
+class Dropout(OP):
+    def forward(): # noqa: ANN201
+        pass
+
+    def backward(): # noqa: ANN201
+        pass
+

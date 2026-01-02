@@ -677,12 +677,14 @@ class Tensor:
          Returns:
               A tensor of same shape as cond
         """
-        return Tensor(
-            data=cond.data.where(
-                inp=inp if isinstance(inp, Scalar) else inp.data,
-                other=other if isinstance(other, Scalar) else other.data),
-            requires_grad=cond.requires_grad,
-            device=cond.device
+        if isinstance(inp, Scalar):
+            inp = Tensor(inp)
+        if isinstance(other, Scalar):
+            other = Tensor(other)
+        return ops.Where.execute(
+            cond,
+            inp,
+            other
         )
 
     @staticmethod
@@ -714,11 +716,17 @@ class Tensor:
             if not node.grad:
                 raise RuntimeError(f"Tensor {node} has no grad")
             upstream_grads: tuple[Buffer] = node._ctx.backward(node.grad.data)
-            upstream_grads: list[Tensor] = [
-                Tensor(g, requires_grad=False, device=g.device) for g in upstream_grads if g is not None
-            ]
+            # upstream_grads: list[Tensor] = [
+            #     Tensor(g, requires_grad=False, device=g.device) for g in upstream_grads if g is not None
+            # ]
+            upstream_grads: tuple[Buffer | None] = node._ctx.backward(node.grad.data)
             for p, g in zip(node._ctx.parents, upstream_grads):
-                p.grad = g if not p.grad else p.grad + g
+                if g is None:
+                    continue
+                g_tensor = Tensor(g, requires_grad=False, device=g.device)
+                if p.requires_grad:  # Good practice to check this
+                    p.grad = g_tensor if not p.grad else p.grad + g_tensor
+                # p.grad = g if not p.grad else p.grad + g
 
     def __getitem__(self, idx: slice) -> Tensor:
         """

@@ -299,3 +299,29 @@ def test_transpose_4d_backward(shape, device):
     dl_x.transpose(2, 3).sum().backward()
     th_x.transpose(2, 3).sum().backward()
     np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+shapes = [(4, 3, 2, 4), (4, 3, 2), (3, 2)]
+@pytest.mark.parametrize("shape", shapes)
+def test_where(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    da = Tensor(np_data, device=device, requires_grad=True)
+    ta = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
+
+    db = Tensor.where(da>0.0, 0.0, da)
+    tb = torch.where(ta>0.0, 0.0, ta)
+
+    db.sum().backward()
+    tb.sum().backward()
+
+    np.testing.assert_allclose(da.grad.numpy(), ta.grad.detach().cpu().numpy(), atol=1e-5, rtol=1e-5)
+
+    da.grad = None
+    ta.grad = None
+
+    db = Tensor.where(da>0.0, da, 0.0)
+    tb = torch.where(ta>0.0, ta, 0.0)
+
+    db.sum().backward()
+    tb.sum().backward()
+
+    np.testing.assert_allclose(da.grad.numpy(), ta.grad.detach().cpu().numpy(), atol=1e-5, rtol=1e-5)
