@@ -325,3 +325,34 @@ def test_where(shape, device):
     tb.sum().backward()
 
     np.testing.assert_allclose(da.grad.numpy(), ta.grad.detach().cpu().numpy(), atol=1e-5, rtol=1e-5)
+
+shapes = [(4, 3, 2, 4), (4, 3, 2)]
+@pytest.mark.parametrize("shape", shapes)
+def test_masked_fill(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    da = Tensor(np_data, device=device, requires_grad=True)
+    ta = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
+
+    mask = da > 0.0
+    t_mask = ta > 0.0
+
+    db = da.masked_fill(mask, 0.0)
+    tb = ta.masked_fill(t_mask, 0.0)
+
+    db.sum().backward()
+    tb.sum().backward()
+
+    np.testing.assert_allclose(da.grad.numpy(), ta.grad.detach().cpu().numpy(), atol=1e-5, rtol=1e-5)
+
+    da.grad = None
+    ta.grad = None
+
+    fill_val = -1.5
+    db = da.masked_fill(mask, fill_val)
+    tb = ta.masked_fill(t_mask, fill_val)
+
+    db.sum().backward()
+    tb.sum().backward()
+
+    np.testing.assert_allclose(da.grad.numpy(), ta.grad.detach().cpu().numpy(), atol=1e-5, rtol=1e-5)
+

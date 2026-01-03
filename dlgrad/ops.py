@@ -334,11 +334,13 @@ class Where(OP):
         return (None, grad_inp, grad_other)
 
 class MaskedFill(OP):
-    def forward(): # noqa: ANN201
-        pass
+    def forward(self, data: Buffer, mask: Buffer, value: Scalar) -> Buffer:
+        self.mask = mask
+        return Buffer.masked_fill(x=data, mask=mask, val=value)
 
-    def backward(): # noqa: ANN201
-        pass
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        grad_input = Buffer.masked_fill(x=upstream_grad, mask=self.mask, val=0.0)
+        return (grad_input, None, None)
 
 class Dropout(OP):
     def forward(): # noqa: ANN201

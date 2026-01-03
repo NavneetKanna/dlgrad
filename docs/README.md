@@ -69,7 +69,7 @@ With the tensors created, any of the following ops can be performed on them, the
 | cross_entropy_loss | &check; | - |
 | bce_with_logits_loss | &check; | - |
 | argmax | &check; | &cross; | 2D |
-| where | &check; | &cross; | 2D |
+| where | &check; | &check; | 1D-4D |
 | tril | &check; | &check; | 2D |
 | squeeze | - | - | - |
 | unsqueeze | - | - | - |
