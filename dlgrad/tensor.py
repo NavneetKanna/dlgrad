@@ -715,18 +715,13 @@ class Tensor:
         for node in reversed(topo):
             if not node.grad:
                 raise RuntimeError(f"Tensor {node} has no grad")
-            upstream_grads: tuple[Buffer] = node._ctx.backward(node.grad.data)
-            # upstream_grads: list[Tensor] = [
-            #     Tensor(g, requires_grad=False, device=g.device) for g in upstream_grads if g is not None
-            # ]
             upstream_grads: tuple[Buffer | None] = node._ctx.backward(node.grad.data)
             for p, g in zip(node._ctx.parents, upstream_grads):
                 if g is None:
                     continue
                 g_tensor = Tensor(g, requires_grad=False, device=g.device)
-                if p.requires_grad:  # Good practice to check this
+                if p.requires_grad:
                     p.grad = g_tensor if not p.grad else p.grad + g_tensor
-                # p.grad = g if not p.grad else p.grad + g
 
     def __getitem__(self, idx: slice) -> Tensor:
         """

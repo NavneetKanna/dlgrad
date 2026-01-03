@@ -62,9 +62,12 @@ class Max(OP):
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
         if not self.keepdim:
             self.out.unsqueeze(self.dim)
+
         max_with_1s = self.x == self.out
+
         if not self.keepdim:
             upstream_grad.unsqueeze(self.dim)
+
         return (max_with_1s*upstream_grad,)
 
 class Tril(OP):
