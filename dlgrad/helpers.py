@@ -45,6 +45,7 @@ class BinaryOps(Enum):
     DIV = auto()
     MATMUL = auto()
     GT = auto() # >
+    GTE = auto() # >=
     EQT = auto() # ==
     CMP  = auto()
 

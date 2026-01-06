@@ -688,6 +688,10 @@ class Tensor:
             other
         )
 
+    def dropout(self, p: Scalar) -> Tensor:
+        # p = Tensor(p)
+        return ops.Dropout.execute(self, p=p)
+
     @staticmethod
     def embedding(weight: Tensor, idx: Tensor) -> Tensor:
         return ops.Embedding.execute(weight, idx)
@@ -748,6 +752,9 @@ class Tensor:
 
     def __gt__(self, other: Scalar) -> Tensor:
         return Tensor(data=self.data>other)
+
+    def __ge__(self, other: Scalar) -> Tensor:
+        return Tensor(data=self.data>=other)
 
     def __add__(self, other: Tensor | Scalar) -> Tensor:
         return Tensor.add(self, other)

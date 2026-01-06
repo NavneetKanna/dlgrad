@@ -343,9 +343,24 @@ class MaskedFill(OP):
         return (grad_input, None, None)
 
 class Dropout(OP):
-    def forward(): # noqa: ANN201
-        pass
+    def forward(self, x: Buffer, p: Scalar) -> Buffer:
+        self.p = p
 
-    def backward(): # noqa: ANN201
-        pass
+        if p == 1.0:
+            return Buffer.full(x.shape, 0.0, x.device, x.dtype)
+        if p == 0.0:
+            return x
+
+        self.mask = Buffer.uniform(x.shape, x.device, x.dtype, low=0.0, high=1.0) >= p
+        self.scale = 1.0 / (1.0 - p)
+        out = self.mask.where(x, 0.0)
+
+        return out * self.scale
+
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        if self.p == 1.0:
+            return (Buffer.full(upstream_grad.shape, 0.0, upstream_grad.device, upstream_grad.dtype),)
+        if self.p == 0.0:
+            return (upstream_grad,)
+        return (self.mask.where(upstream_grad, 0.0) * self.scale)
 

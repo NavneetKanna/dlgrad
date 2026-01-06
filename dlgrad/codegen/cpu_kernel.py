@@ -790,6 +790,21 @@ def gt(x_numel: int, val: int | float) -> tuple[str, str]:
     return code, "void gt_with_scalar(float *arr, float *out);"
 
 @cache
+def gte(x_numel: int, val: int | float) -> tuple[str, str]:
+    code = f"""
+        void gte_with_scalar(float *arr, float *out)
+        {{
+            for (int i=0; i<{x_numel}; i++) {{
+                if (arr[i] >= {val})
+                    out[i] = 1.0;
+                else
+                    out[i] = 0.0;
+            }}
+        }}
+    """
+    return code, "void gte_with_scalar(float *arr, float *out);"
+
+@cache
 def where(x_numel: int, inp: bool, other: bool) -> tuple[str, str]:
     # if inp or other is True it is scalar
     s = ""

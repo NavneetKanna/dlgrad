@@ -485,6 +485,12 @@ class Buffer:
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 
+    def __ge__(self, other: Scalar) -> Buffer:
+        return Buffer(
+            data=dispatcher.dispatch(op=BinaryOps.GTE, device=Device.CPU, x=self, y=other),
+            shape=self.shape, device=self.device, dtype=self.dtype
+        )
+
     def __neg__(self) -> Buffer:
         return Buffer(
             data=dispatcher.dispatch(op=UnaryOps.NEG, device=self.device if self.ndim !=0 else Device.CPU, x=self),
