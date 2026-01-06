@@ -356,3 +356,33 @@ def test_masked_fill(shape, device):
 
     np.testing.assert_allclose(da.grad.numpy(), ta.grad.detach().cpu().numpy(), atol=1e-5, rtol=1e-5)
 
+shapes = [(4, 4), (3, 4), (2, 3)]
+@pytest.mark.parametrize("shape", shapes)
+def test_tril(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    da = Tensor(np_data, device=device, requires_grad=True)
+    ta = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
+
+    # Case 1: Default diagonal (0) - Main diagonal and below
+    db = Tensor.tril(da, k=0.0)
+    tb = torch.tril(ta, diagonal=0)
+
+    db.sum().backward()
+    tb.sum().backward()
+
+    np.testing.assert_allclose(da.grad.numpy(), ta.grad.detach().cpu().numpy(), atol=1e-5, rtol=1e-5)
+
+    # Reset gradients
+    da.grad = None
+    ta.grad = None
+
+    # Case 2: Offset diagonal (1) - Main diagonal, 1 above, and everything below
+    # This verifies the logic handles 'k' correctly
+    db = Tensor.tril(da, k=1.0)
+    tb = torch.tril(ta, diagonal=1)
+
+    db.sum().backward()
+    tb.sum().backward()
+
+    np.testing.assert_allclose(da.grad.numpy(), ta.grad.detach().cpu().numpy(), atol=1e-5, rtol=1e-5)
+
