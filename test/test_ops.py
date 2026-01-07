@@ -403,3 +403,17 @@ def test_tril_2d(shape, diagonal, device):
     res_torch = out_torch.cpu().numpy()
 
     np.testing.assert_allclose(dl_res, res_torch, atol=1e-5, rtol=1e-5)
+
+
+@pytest.mark.parametrize("p", [0.0, 1.0])
+def test_dropout_deterministic(p, device):
+    for shape in [(10, 10), (10, 10, 10), (10, 10, 10)]:
+        np_data = np.random.randn(*shape).astype(np.float32)
+
+        da = Tensor(np_data, device=device, requires_grad=True)
+        ta = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
+
+        db = da.dropout(p=p)
+        tb = torch.nn.functional.dropout(ta, p=p)
+
+        np.testing.assert_allclose(db.numpy(), tb.detach().cpu().numpy(), atol=1e-5)

@@ -71,6 +71,7 @@ With the tensors created, any of the following ops can be performed on them, the
 | argmax | &check; | &cross; | 2D |
 | where | &check; | &check; | 1D-4D |
 | tril | &check; | &check; | 2D |
+| dropout | &check; | &check; | 2D-4D |
 | squeeze | - | - | - |
 | unsqueeze | - | - | - |
 
@@ -79,6 +80,7 @@ For ops like transpose or matmul, you can use shorthand symbols such as ```T```,
 | Ops | Left operand | Right operand | CPU | Metal | Dim |
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | > (greater) | Tensor | Scalar | &check; | &cross; | 1D-4D |
+| >= (greater than or equal to) | Tensor | Scalar | &check; | &cross; | 1D-4D |
 | ** (power) | Tensor | Scalar | &check; | &check; | 1D-4D |
 | - (negate) | Tensor | - | &check; | &check; | 1D-4D |
 | == (equate) | Tensor | Tensor | &check; | &cross; | 1D-4D |
