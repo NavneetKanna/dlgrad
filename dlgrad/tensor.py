@@ -579,6 +579,23 @@ class Tensor:
         """
         return ops.Sqrt.execute(self)
 
+    def softmax(self, dim: int = -1) -> Tensor:
+        """
+        Applies the softmax function to the tensor along `dim`.
+
+        Parameters
+        ----------
+        self : Tensor
+        dim : int
+
+        Returns:
+            A tensor of the same shape as input with values in range [0, 1] summing to 1 along dim.
+        """
+        max_val = self.max(dim=dim, keepdim=True)
+        e = (self - max_val).exp()
+        sum_e = e.sum(dim=dim, keepdim=True)
+        return e / sum_e
+
     def log_softmax(self, dim: int = 1) -> Tensor:
         """
         Applies the log-softmax function to the tensor along `dim`.
@@ -670,7 +687,7 @@ class Tensor:
 
     def masked_fill(self, mask: Tensor, value: Scalar) -> Tensor:
         return ops.MaskedFill.execute(self, mask, value=value)
-        # return Tensor(data=Buffer.masked_fill(self.data, mask.data, value), requires_grad=self.requires_grad, device=self.device)
+    # return Tensor(data=Buffer.masked_fill(self.data, mask.data, value), requires_grad=self.requires_grad, device=self.device)
 
     @staticmethod
     def where(cond: Tensor, inp: Tensor | Scalar, other: Tensor | Scalar) -> Tensor:

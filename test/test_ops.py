@@ -152,110 +152,114 @@ def test_max(shapes, device):
         to_out = torch_data.max()
         np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-shapes = [[(4, 3, 2, 4)], [(4, 3, 2)], [(3, 2)]]
+shapes = [(4, 3, 2, 4), (4, 3, 2), (3, 2)]
 
-@pytest.mark.parametrize("shapes", shapes)
-def test_where(shapes, device):
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, device=device)
-        torch_data = torch.tensor(np_data, device=to_torch_device(device))
+@pytest.mark.parametrize("shape", shapes)
+def test_where(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    dlgrad_data = Tensor(np_data, device=device)
+    torch_data = torch.tensor(np_data, device=to_torch_device(device))
 
-        dl_out = Tensor.where(dlgrad_data>0.0, 1.0, 0.0)
-        to_out = torch.where(torch_data>0.0, 1.0, 0.0)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+    dl_out = Tensor.where(dlgrad_data>0.0, 1.0, 0.0)
+    to_out = torch.where(torch_data>0.0, 1.0, 0.0)
+    np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-        dl_out = Tensor.where(dlgrad_data>0.0, dlgrad_data, 0.0)
-        to_out = torch.where(torch_data>0.0, torch_data, 0.0)
-        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+    dl_out = Tensor.where(dlgrad_data>0.0, dlgrad_data, 0.0)
+    to_out = torch.where(torch_data>0.0, torch_data, 0.0)
+    np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes", shapes)
-def test_relu(shapes, device):
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, device=device)
-        torch_data = torch.tensor(np_data, device=to_torch_device(device))
+@pytest.mark.parametrize("shape", shapes)
+def test_relu(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    dlgrad_data = Tensor(np_data, device=device)
+    torch_data = torch.tensor(np_data, device=to_torch_device(device))
 
-        dl_out = dlgrad_data.relu()
-        to_out = torch_data.relu()
-        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+    dl_out = dlgrad_data.relu()
+    to_out = torch_data.relu()
+    np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes", shapes)
-def test_leaky_relu(shapes, device):
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, device=device)
-        torch_data = torch.tensor(np_data, device=to_torch_device(device))
+@pytest.mark.parametrize("shape", shapes)
+def test_leaky_relu(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    dlgrad_data = Tensor(np_data, device=device)
+    torch_data = torch.tensor(np_data, device=to_torch_device(device))
 
-        dl_out = dlgrad_data.leaky_relu()
-        m = torch.nn.LeakyReLU()
+    dl_out = dlgrad_data.leaky_relu()
+    m = torch.nn.LeakyReLU()
+    to_out = m(torch_data)
+    np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shape", shapes)
+def test_sigmoid(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    dlgrad_data = Tensor(np_data, device=device)
+    torch_data = torch.tensor(np_data, device=to_torch_device(device))
+
+    dl_out = dlgrad_data.sigmoid()
+    to_out = torch_data.sigmoid()
+    np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shape", shapes)
+def test_tanh(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    dlgrad_data = Tensor(np_data, device=device)
+    torch_data = torch.tensor(np_data, device=to_torch_device(device))
+
+    dl_out = dlgrad_data.tanh()
+    to_out = torch_data.tanh()
+    np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shape", shapes)
+def test_exp(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    dlgrad_data = Tensor(np_data, device=device)
+    torch_data = torch.tensor(np_data, device=to_torch_device(device))
+
+    dl_out = dlgrad_data.exp()
+    to_out = torch_data.exp()
+    np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shape", shapes)
+def test_log(shape, device):
+    np_data = np.random.uniform(low=0.1, high=1.0, size=shape).astype(np.float32)
+    dlgrad_data = Tensor(np_data, device=device)
+    torch_data = torch.tensor(np_data, device=to_torch_device(device))
+
+    dl_out = dlgrad_data.log()
+    to_out = torch_data.log()
+    np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shape", shapes)
+def test_sqrt(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    dlgrad_data = Tensor(np_data, device=device)
+    torch_data = torch.tensor(np_data, device=to_torch_device(device))
+
+    dl_out = dlgrad_data.sqrt()
+    to_out = torch_data.sqrt()
+    np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
+
+@pytest.mark.parametrize("shape", shapes)
+def test_logsoftmax(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    dlgrad_data = Tensor(np_data, device=device)
+    torch_data = torch.tensor(np_data, device=to_torch_device(device))
+
+    for dim in range(len(shape)):
+        dl_out = dlgrad_data.log_softmax(dim=dim)
+        m = torch.nn.LogSoftmax(dim=dim)
         to_out = m(torch_data)
         np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes", shapes)
-def test_sigmoid(shapes, device):
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, device=device)
-        torch_data = torch.tensor(np_data, device=to_torch_device(device))
+@pytest.mark.parametrize("shape", shapes)
+def test_softmax(shape, device):
+    np_data = np.random.uniform(low=-1.0, high=1.0, size=shape).astype(np.float32)
+    dlgrad_data = Tensor(np_data, device=device)
+    torch_data = torch.tensor(np_data, device=to_torch_device(device))
 
-        dl_out = dlgrad_data.sigmoid()
-        to_out = torch_data.sigmoid()
-        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
-
-@pytest.mark.parametrize("shapes", shapes)
-def test_tanh(shapes, device):
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, device=device)
-        torch_data = torch.tensor(np_data, device=to_torch_device(device))
-
-        dl_out = dlgrad_data.tanh()
-        to_out = torch_data.tanh()
-        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
-
-@pytest.mark.parametrize("shapes", shapes)
-def test_exp(shapes, device):
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, device=device)
-        torch_data = torch.tensor(np_data, device=to_torch_device(device))
-
-        dl_out = dlgrad_data.exp()
-        to_out = torch_data.exp()
-        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
-
-@pytest.mark.parametrize("shapes", shapes)
-def test_log(shapes, device):
-    for sh in shapes:
-        np_data = np.random.uniform(low=0.1, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, device=device)
-        torch_data = torch.tensor(np_data, device=to_torch_device(device))
-
-        dl_out = dlgrad_data.log()
-        to_out = torch_data.log()
-        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
-
-@pytest.mark.parametrize("shapes", shapes)
-def test_sqrt(shapes, device):
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, device=device)
-        torch_data = torch.tensor(np_data, device=to_torch_device(device))
-
-        dl_out = dlgrad_data.sqrt()
-        to_out = torch_data.sqrt()
-        np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
-
-@pytest.mark.parametrize("shapes", shapes)
-def test_logsoftmax(shapes, device):
-    for sh in shapes:
-        np_data = np.random.uniform(low=-1.0, high=1.0, size=sh).astype(np.float32)
-        dlgrad_data = Tensor(np_data, device=device)
-        torch_data = torch.tensor(np_data, device=to_torch_device(device))
-
-        dl_out = dlgrad_data.log_softmax()
-        m = torch.nn.LogSoftmax(dim=1)
+    for dim in range(len(shape)):
+        dl_out = dlgrad_data.softmax(dim=dim)
+        m = torch.nn.Softmax(dim=dim)
         to_out = m(torch_data)
         np.testing.assert_allclose(dl_out.numpy(), to_out.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
@@ -380,11 +384,11 @@ def test_masked_fill(input_shape, mask_shape, fill_value, device):
         np.testing.assert_allclose(dl_res, res_torch, atol=1e-5, rtol=1e-5)
 
 tril_shapes = [
-        ((10, 10), 0.0),
-        ((10, 10), 1.0),
-        ((20, 10), 0.0),
-        ((10, 20), 0.0),
-        ((8, 8), 3.0),
+    ((10, 10), 0.0),
+    ((10, 10), 1.0),
+    ((20, 10), 0.0),
+    ((10, 20), 0.0),
+    ((8, 8), 3.0),
 ]
 
 @pytest.mark.parametrize("shape, diagonal", tril_shapes)
