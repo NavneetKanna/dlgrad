@@ -225,18 +225,32 @@ def test_cross_entropy_backward(shapes, device):
 
         np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
-@pytest.mark.parametrize("shapes", [[(2, 3)]])
-def test_log_softmax_backward(shapes, device):
-    for sh in shapes:
-        np_data = np.random.uniform(size=sh).astype(np.float32)
-        dl_x = Tensor(np_data, device=device, requires_grad=True)
+@pytest.mark.parametrize("shape", [(2, 3, 4, 5), (2, 3, 4), (2, 3)])
+def test_log_softmax_backward(shape, device):
+    np_data = np.random.uniform(size=shape).astype(np.float32)
+    dl_x = Tensor(np_data, device=device, requires_grad=True)
+    th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
 
-        th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
-
-        dl_x.log_softmax(dim=1).sum().backward()
-        to_out = torch.nn.LogSoftmax(dim=1)
+    for dim in range(len(shape)):
+        dl_x.grad = None
+        th_x.grad = None
+        dl_x.log_softmax(dim=dim).sum().backward()
+        to_out = torch.nn.LogSoftmax(dim=dim)
         to_out(th_x).sum().backward()
+        np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
+@pytest.mark.parametrize("shape", [(2, 3, 4, 5), (2, 3, 4), (2, 3)])
+def test_softmax_backward(shape, device):
+    np_data = np.random.uniform(size=shape).astype(np.float32)
+    dl_x = Tensor(np_data, device=device, requires_grad=True)
+    th_x = torch.tensor(np_data, device=to_torch_device(device), requires_grad=True)
+
+    for dim in range(len(shape)):
+        dl_x.grad = None
+        th_x.grad = None
+        dl_x.softmax(dim=dim).sum().backward()
+        to_out = torch.nn.Softmax(dim=dim)
+        to_out(th_x).sum().backward()
         np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
 
 @pytest.mark.parametrize("shape", [
