@@ -3,10 +3,10 @@ from __future__ import annotations
 import platform
 from functools import reduce
 
-from dlgrad.buffer import Buffer
+from dlgrad.buffer import Buffer, BufferMetadata
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import ffi
+from dlgrad.helpers import calculate_stride, ffi, prod_
 from dlgrad.runtime import cpu  # needed to register all the cpu runtime functions  # noqa: F401
 
 if platform.system() == 'Darwin':
@@ -121,6 +121,14 @@ class Tensor:
             self.data.metadata.device = Device.from_str(device) if isinstance(device, str) else device
         else:
             raise ValueError("The data must be of type Buffer, np.ndarray or float")
+
+    def reshape(self, new_shape: tuple) -> Tensor:
+        nt = Tensor(data=self.data, requires_grad=self.requires_grad, device=self.device)
+        nt.data.metadata = BufferMetadata(shape=new_shape, numel=prod_(new_shape),
+                                          stride=calculate_stride(new_shape), ndim=len(new_shape),
+                                          dtype=self.dtype, device=self.device,
+                                          nbytes=prod_(new_shape)*DType.get_n_bytes(self.dtype))
+        return nt
 
     # TODO: Print in python using indexing, rather than printf in C
     def show(self: Tensor) -> None:

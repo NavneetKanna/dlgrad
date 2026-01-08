@@ -85,6 +85,8 @@ For ops like transpose or matmul, you can use shorthand symbols such as ```T```,
 | - (negate) | Tensor | - | &check; | &check; | 1D-4D |
 | == (equate) | Tensor | Tensor | &check; | &cross; | 1D-4D |
 
+dlgrad also supports reshape.
+
 ### Models
 
 You can create neural network models like so
@@ -108,6 +110,15 @@ then create an instance of the class and we can begin training.
 model = Model()
 ```
 
+dlgrad also supports Embedding
+
+```python
+embedding = nn.Embedding(10, 3)
+a = Tensor.rand((2, 3))
+
+b=embedding(a)
+```
+
 ### Training
 
 dlgrad supports the following loss functions
@@ -123,6 +134,12 @@ The following optimizers are supported
 | :---: |
 | SGD |
 | Adam |
+
+The following normalization technique is supported
+
+| Normalization |
+| :---: |
+| RMSNorm |
 
 We can use ```nn.utils.get_parameters()``` to get all the trainable parameters of the defined model automatically.
 
