@@ -28,3 +28,43 @@ def test_linear(device):
         torch_out = torch_model(torch_inp)
 
     np.testing.assert_allclose(dlgrad_out.numpy(), torch_out.cpu().numpy(), atol=5e-4, rtol=1e-5)
+
+def test_embedding_forward_backward(device):
+    vocab_size = 10
+    embed_dim = 4
+    batch_size = 2
+    seq_len = 3
+
+    indices_np = np.random.randint(0, vocab_size, size=(batch_size, seq_len)).astype(np.int32)
+
+    dl_emb = nn.Embedding(vocab_size, embed_dim)
+    dl_input = Tensor(indices_np.astype(np.float32), device=device)
+
+    dl_out = dl_emb(dl_input)
+
+    grad_np = np.random.randn(*dl_out.shape).astype(np.float32)
+    dl_grad = Tensor(grad_np, device=device)
+
+    (dl_out * dl_grad).sum().backward()
+
+    torch_device = to_torch_device(device)
+    torch_input = torch.tensor(indices_np, dtype=torch.long, device=torch_device)
+    torch_emb = torch.nn.Embedding(vocab_size, embed_dim).to(torch_device)
+
+    with torch.no_grad():
+        torch_emb.weight.copy_(torch.from_numpy(dl_emb.weight.numpy()))
+
+    torch_emb.weight.requires_grad = True
+
+    torch_out = torch_emb(torch_input)
+    torch_grad = torch.tensor(grad_np, device=torch_device)
+
+    torch_out.backward(torch_grad)
+
+    np.testing.assert_allclose(dl_out.numpy(), torch_out.detach().cpu().numpy(), atol=1e-5, rtol=1e-5)
+
+    dl_weight_grad = dl_emb.weight.grad.numpy()
+    torch_weight_grad = torch_emb.weight.grad.detach().cpu().numpy()
+
+    np.testing.assert_allclose(dl_weight_grad, torch_weight_grad, atol=1e-5, rtol=1e-5)
+
