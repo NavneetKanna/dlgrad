@@ -25,7 +25,7 @@ def test_cross_entropy(shapes, device):
 
     dl_out = dl_logits.cross_entropy_loss(dl_target)
 
-    to_crit = torch.nn.CrossEntropyLoss(reduction='sum')
+    to_crit = torch.nn.CrossEntropyLoss(reduction='mean')
     to_out = to_crit(to_logits, to_target)
 
     np.testing.assert_allclose(dl_out.numpy(), to_out.detach().cpu().numpy(), atol=1e-6, rtol=1e-4)

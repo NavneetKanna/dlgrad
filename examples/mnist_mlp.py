@@ -31,6 +31,9 @@ model = Model()
 
 opt = nn.optim.SGD(params=nn.utils.get_parameters(model), lr=1e-3) # or Adam
 
+for i in nn.utils.get_parameters(model):
+    print(i)
+
 for epoch in range(EPOCHS):
     s = 0
     h = BS
@@ -43,6 +46,7 @@ for epoch in range(EPOCHS):
 
         loss.backward()
         opt.step()
+        exit()
 
         # print(epoch, i, s, h)
         s += BS

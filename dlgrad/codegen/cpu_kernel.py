@@ -1135,32 +1135,32 @@ def full(x_numel: int, fill_value: int) -> tuple[str, str]:
 def uniform(x_numel: int, low: int, high: int) -> tuple[str, str]:
     c_code = f"""
         /*
-        * PCG Random Number Generation for C.
+        * pcg random number generation for c.
         *
-        * Copyright 2014 Melissa O'Neill <oneill@pcg-random.org>
+        * copyright 2014 melissa o'neill <oneill@pcg-random.org>
         *
-        * Licensed under the Apache License, Version 2.0 (the "License");
-        * you may not use this file except in compliance with the License.
-        * You may obtain a copy of the License at
+        * licensed under the apache license, version 2.0 (the "license");
+        * you may not use this file except in compliance with the license.
+        * you may obtain a copy of the license at
         *
-        *     http://www.apache.org/licenses/LICENSE-2.0
+        *     http://www.apache.org/licenses/license-2.0
         *
-        * Unless required by applicable law or agreed to in writing, software
-        * distributed under the License is distributed on an "AS IS" BASIS,
-        * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-        * See the License for the specific language governing permissions and
-        * limitations under the License.
+        * unless required by applicable law or agreed to in writing, software
+        * distributed under the license is distributed on an "as is" basis,
+        * without warranties or conditions of any kind, either express or implied.
+        * see the license for the specific language governing permissions and
+        * limitations under the license.
         *
-        * For additional information about the PCG random number generation scheme,
+        * for additional information about the pcg random number generation scheme,
         * including its license and other licensing options, visit
         *
         *     http://www.pcg-random.org
         */
 
         /*
-        * This code is derived from the full C implementation, which is in turn
-        * derived from the canonical C++ PCG implementation. The C++ version
-        * has many additional features and is preferable if you can use C++ in
+        * this code is derived from the full c implementation, which is in turn
+        * derived from the canonical c++ pcg implementation. the c++ version
+        * has many additional features and is preferable if you can use c++ in
         * your project.
         */
 
@@ -1172,17 +1172,17 @@ def uniform(x_numel: int, low: int, high: int) -> tuple[str, str]:
         #include <unistd.h>
         #include <stdint.h>
 
-        struct pcg_state_setseq_64 {{    // Internals are *Private*.
-            uint64_t state;             // RNG state.  All values are possible.
-            uint64_t inc;               // Controls which RNG sequence (stream) is
-                                        // selected. Must *always* be odd.
+        struct pcg_state_setseq_64 {{    // internals are *private*.
+            uint64_t state;             // rng state.  all values are possible.
+            uint64_t inc;               // controls which rng sequence (stream) is
+                                        // selected. must *always* be odd.
         }};
         typedef struct pcg_state_setseq_64 pcg32_random_t;
 
         uint32_t pcg32_random_r(pcg32_random_t* rng)
         {{
             uint64_t oldstate = rng->state;
-            rng->state = oldstate * 6364136223846793005ULL + rng->inc;
+            rng->state = oldstate * 6364136223846793005ull + rng->inc;
             uint32_t xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
             uint32_t rot = oldstate >> 59u;
             return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
@@ -1190,7 +1190,7 @@ def uniform(x_numel: int, low: int, high: int) -> tuple[str, str]:
 
         void pcg32_srandom_r(pcg32_random_t* rng, uint64_t initstate, uint64_t initseq)
         {{
-            rng->state = 0U;
+            rng->state = 0u;
             rng->inc = (initseq << 1u) | 1u;
             pcg32_random_r(rng);
             rng->state += initstate;
@@ -1201,6 +1201,7 @@ def uniform(x_numel: int, low: int, high: int) -> tuple[str, str]:
 
         int uniform(float *out)
         {{
+            // int fd = open("/dev/random", o_rdonly);
             int fd = open("/dev/random", O_RDONLY);
             if (fd < 0) {{
                 return -1;
@@ -1220,10 +1221,10 @@ def uniform(x_numel: int, low: int, high: int) -> tuple[str, str]:
                 double d = ldexp(pcg32_random_r(&rng), -32);
                 float f = (float) d;
 
-                if ({low} == 0.0f && {high} == 1.0f) {{
+                if ({low}f == 0.0f && {high}f == 1.0f) {{
                     out[i] = f;
                 }} else {{
-                    out[i] = {low} + ({high} - {low}) * f;
+                    out[i] = {low}f + ({high}f - {low}f) * f;
                 }}
             }}
 
@@ -1235,16 +1236,16 @@ def uniform(x_numel: int, low: int, high: int) -> tuple[str, str]:
 
 @cache
 def mnist_loader() -> tuple[str, str]:
-    # TODO: Check if this works
+    # todo: check if this works
     """
     uint8_t *temp_buf = (uint8_t*)malloc(out_size);
-    if (!temp_buf) { free(out); fclose(fp); return NULL; }
+    if (!temp_buf) { free(out); fclose(fp); return null; }
 
     if (safe_fread(temp_buf, 1, out_size, fp) != out_size) {
-        free(temp_buf); free(out); fclose(fp); return NULL;
+        free(temp_buf); free(out); fclose(fp); return null;
     }
 
-    // 3. Cast to float in memory
+    // 3. cast to float in memory
     for (int i=0; i<out_size; i++) {
         out[i] = (float)temp_buf[i];
     }

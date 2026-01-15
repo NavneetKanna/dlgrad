@@ -110,6 +110,29 @@ def cal_cat_out_shape(data: tuple[tuple], cat_dim: int) -> tuple:
     result[cat_dim] = summed_val
     return tuple(result)
 
+def broadcast_shapes(s1: tuple[int, ...], s2: tuple[int, ...]) -> tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...]]:
+    """
+    Returns (padded_shape1, padded_shape2, output_shape)
+    """
+    ndim1, ndim2 = len(s1), len(s2)
+    max_ndim = max(ndim1, ndim2)
+
+    p1 = (1,) * (max_ndim - ndim1) + s1
+    p2 = (1,) * (max_ndim - ndim2) + s2
+
+    out_batch = []
+    for i in range(max_ndim - 2):
+        d1, d2 = p1[i], p2[i]
+        if d1 != d2 and d1 != 1 and d2 != 1:
+            raise ValueError(f"Cannot broadcast batch dims: {s1} and {s2}")
+        out_batch.append(max(d1, d2))
+
+    if p1[-1] != p2[-2]:
+        raise ValueError(f"Matrix inner dims must match: {s1} and {s2}")
+
+    out_shape = tuple(out_batch) + (p1[-2], p2[-1])
+    return p1, p2, out_shape
+
 def get_broadcast_shape(shape1: tuple, shape2: tuple) -> tuple:
     s1 = list(reversed(shape1))
     s2 = list(reversed(shape2))

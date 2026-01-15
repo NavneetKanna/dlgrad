@@ -60,7 +60,7 @@ def run_test(dlgrad_device, torch_device):
 
     # loss
     dl_loss = dl_out.cross_entropy_loss(dlgrad_target)
-    l = torch.nn.CrossEntropyLoss(reduction="sum")
+    l = torch.nn.CrossEntropyLoss(reduction="mean")
     torch_loss = l(to_out, to_target)
 
     # Check forward before backward

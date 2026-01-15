@@ -124,6 +124,8 @@ class Tensor:
 
     def reshape(self, new_shape: tuple) -> Tensor:
         nt = Tensor(data=self.data, requires_grad=self.requires_grad, device=self.device)
+        nt._ctx = self._ctx
+        nt.grad = self.grad
         nt.data.metadata = BufferMetadata(shape=new_shape, numel=prod_(new_shape),
                                           stride=calculate_stride(new_shape), ndim=len(new_shape),
                                           dtype=self.dtype, device=self.device,
@@ -233,6 +235,28 @@ class Tensor:
             data=Buffer.full(shape, fill_value=fill_value, device=device, dtype=dtype),
             requires_grad=requires_grad, device=device
         )
+
+    @staticmethod
+    def ones(shape: tuple, device: Device = Device.CPU,
+                  dtype: DType = DType.FLOAT32, requires_grad: bool = False) -> Tensor:
+        """
+        Creates a tensor filled with ones.
+
+        Parameters
+        ----------
+        shape: tuple
+                The shape of the output tensor
+        device : str | Device | None
+                Default device is CPU
+        dtype : str | DType | None
+                Default dtype is float32
+        requires_grad : bool
+                Default is False
+
+        Returns:
+            A tensor filled with 1.0.
+        """
+        return Tensor.full(shape, 1.0, device, dtype, requires_grad)
 
     @staticmethod
     def ones_like(input: Tensor, device: Device = Device.CPU,
@@ -596,6 +620,7 @@ class Tensor:
         sum_e = e.sum(dim=dim, keepdim=True)
         return e / sum_e
 
+
     def log_softmax(self, dim: int = 1) -> Tensor:
         """
         Applies the log-softmax function to the tensor along `dim`.
@@ -753,6 +778,8 @@ class Tensor:
                 if p.requires_grad:
                     p.grad = g_tensor if not p.grad else p.grad + g_tensor
 
+        del node._ctx
+
     def __getitem__(self, idx: slice) -> Tensor:
         """
         dlgrad only supports slicing indexing.
@@ -769,7 +796,7 @@ class Tensor:
 
     def __repr__(self) -> str:
         # TODO: Add size
-        return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}, size: {self.numel * DType.get_n_bytes(self.dtype) / 1e6}mb>"
+        return f"Tensor<dtype: {self.dtype} device: {self.device}, shape: {self.shape}, ndim: {self.ndim}, size: {self.numel * DType.get_n_bytes(self.dtype) / 1e6}mb, requires_grad: {self.requires_grad}>"
 
     @property
     def T(self) -> Tensor:  # noqa: N802

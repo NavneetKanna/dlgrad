@@ -28,7 +28,7 @@ class Embedding:
 class RMSNorm:
     def __init__(self, dim: int, eps: int = 1e-6, elementwise_affine: bool = True) -> None:
         self.eps = eps
-        self.weight = Tensor.ones_like(Tensor.rand((1, dim))) if elementwise_affine else None
+        self.weight = Tensor.ones_like(Tensor.rand((1, dim)), requires_grad=True) if elementwise_affine else None
 
     def _norm(self, x: Tensor) -> Tensor:
         t = x**2

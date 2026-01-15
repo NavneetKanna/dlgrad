@@ -50,8 +50,8 @@ class Adam(Optimizer):
         self.lr = lr
         self.beta1, self.beta2 = betas
         self.eps = eps
-        self.m = {id(p): Tensor.zeros_like(p) for p in params}
-        self.v = {id(p): Tensor.zeros_like(p) for p in params}
+        self.m = {id(p): Tensor.zeros_like(p, device=p.device, requires_grad=p.requires_grad) for p in params}
+        self.v = {id(p): Tensor.zeros_like(p, device=p.device, requires_grad=p.requires_grad) for p in params}
         self.t = 0
         self.params = params
         self.tensor_one = Tensor(1.0)
@@ -63,6 +63,8 @@ class Adam(Optimizer):
             g = param.grad
             self.m[pid] = (self.m[pid] * self.beta1) + (g * (1.0 - self.beta1))
             self.v[pid] = (self.v[pid] * self.beta2) + ((g ** 2.0) * (1.0 - self.beta2))
+            self.m[pid] = self.m[pid].detach()
+            self.v[pid] = self.v[pid].detach()
             m_hat = self.m[pid] / (1.0 - self.beta1 ** self.t)
             v_hat = self.v[pid] / (1.0 - self.beta2 ** self.t)
             param.data = (param - (m_hat / (v_hat.sqrt() + self.eps)) * self.lr).data

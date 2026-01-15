@@ -11,6 +11,7 @@ from dlgrad.helpers import (
     BufferOps,
     CustomOps,
     UnaryOps,
+    broadcast_shapes,
     cal_sum_max_out_shape,
     calculate_stride,
     check_broadcast,
@@ -45,6 +46,12 @@ class Buffer:
 
     def show(self: Buffer) -> None:
         dispatcher.dispatch(op=CustomOps.PRINT, device=Device.CPU, x=self)
+
+    def reshape(self, new_shape: tuple) -> None:
+        self.metadata = BufferMetadata(shape=new_shape, numel=prod_(new_shape),
+                                       stride=calculate_stride(new_shape), ndim=len(new_shape),
+                                       dtype=self.dtype, device=self.device,
+                                       nbytes=prod_(new_shape)*DType.get_n_bytes(self.dtype))
 
     def numpy(self: Buffer) -> "np.ndarray":  # type: ignore  # noqa: F821
         import numpy as np
@@ -210,6 +217,55 @@ class Buffer:
         return out_buf
 
     def matmul(self, other: Buffer) -> Buffer:
+        p1, p2, out_shape = broadcast_shapes(self.shape, other.shape)
+
+        # Create temporary reshaped buffers if needed (sharing data pointers)
+        x = Buffer(data=self.ptr, shape=p1, device=self.device, dtype=self.dtype) if self.shape != p1 else self
+        y = Buffer(data=other.ptr, shape=p2, device=other.device, dtype=other.dtype) if other.shape != p2 else other
+
+        M, K, N = p1[-2], p1[-1], p2[-1]
+        device = self.device
+        if sys.platform == "darwin" and all(dim % 8 == 0 for dim in (M, K, N)):
+            device = Device.METAL
+
+        return Buffer(
+            data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=device, x=x, y=y),
+            shape=out_shape,
+            device=self.device,
+            dtype=self.dtype
+        )
+
+    def _matmul(self, other: Buffer) -> Buffer:
+        p1, p2, out_shape = broadcast_shapes(self.shape, other.shape)
+
+        old_self_shape = self.shape
+        old_other_shape = other.shape
+
+        if self.shape != p1:
+            self.reshape(p1)
+
+        if other.shape != p2:
+            other.reshape(p2)
+
+        M, K, N = p1[-2], p1[-1], p2[-1]
+
+        device = self.device
+        if sys.platform == "darwin" and all(dim % 8 == 0 for dim in (M, K, N)):
+            device = Device.METAL
+
+        t = Buffer(
+            data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=device, x=self, y=other),
+            shape=out_shape,
+            device=self.device,
+            dtype=self.dtype
+        )
+
+        self.reshape(old_self_shape)
+        other.reshape(old_other_shape)
+
+        return t
+
+        # assert self.ndim == other.ndim, f"self shape ({self.shape}) does not match other shape ({other.shape})"
         # assert self.ndim == 2 and other.ndim == 2, "dlgrad only supports 2d matrix multiplication"
         # if (self.shape[-1] != other.shape[0] and self.ndim != 2 and other.ndim != 2):
         # raise ValueError("Either the Tensors shape dont match or is not 2D")
@@ -230,7 +286,8 @@ class Buffer:
             if self.shape[0] == 1:
                 shape = (other.shape[0], self.shape[1], other.shape[2])
             else:
-                shape = (self.shape[0], self.shape[1], other.shape[2])
+                # shape = (self.shape[0], self.shape[1], other.shape[2])
+                shape = (self.shape[0], self.shape[1], other.shape[-1])
         elif self.shape[0] % 8 == 0 and self.shape[1] % 8 == 0 and other.shape[0] % 8 == 0 and other.shape[1] % 8 == 0 and sys.platform == "darwin":
             device = Device.METAL
             shape = (self.shape[0], other.shape[1])

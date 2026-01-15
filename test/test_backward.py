@@ -220,7 +220,7 @@ def test_cross_entropy_backward(shapes, device):
         th_t = torch.tensor(np_target, device=to_torch_device(device), dtype=torch.long).squeeze()
 
         dl_x.cross_entropy_loss(dl_t).backward()
-        loss = torch.nn.CrossEntropyLoss(reduction="sum")
+        loss = torch.nn.CrossEntropyLoss(reduction="mean")
         loss(th_x, th_t).backward()
 
         np.testing.assert_allclose(dl_x.grad.numpy(), th_x.grad.cpu().numpy(), atol=1e-6, rtol=1e-3)
