@@ -32,11 +32,19 @@ class RMSNorm:
 
     def _norm(self, x: Tensor) -> Tensor:
         t = x**2
+        print("dlgrad pow", t)
         t = t.mean(t.ndim - 1, keepdim=True)
-        return x * (t + self.eps).rsqrt()
+        print("dlgrad mean", t)
+        t = (t + self.eps).rsqrt()
+        print("dlgrad rsqrt", t)
+        tt = x * t
+        print("dlgrad norm", tt)
+        return tt
 
     def __call__(self, x: Tensor) -> Tensor:
         x = self._norm(x)
-        return x if self.weight is None else x * self.weight
+        t = x*self.weight
+        print("dlgrad final mul", t)
+        return x if self.weight is None else t
 
 

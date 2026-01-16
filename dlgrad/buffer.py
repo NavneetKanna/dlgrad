@@ -47,11 +47,22 @@ class Buffer:
     def show(self: Buffer) -> None:
         dispatcher.dispatch(op=CustomOps.PRINT, device=Device.CPU, x=self)
 
-    def reshape(self, new_shape: tuple) -> None:
-        self.metadata = BufferMetadata(shape=new_shape, numel=prod_(new_shape),
-                                       stride=calculate_stride(new_shape), ndim=len(new_shape),
-                                       dtype=self.dtype, device=self.device,
-                                       nbytes=prod_(new_shape)*DType.get_n_bytes(self.dtype))
+    # def reshape(self, new_shape: tuple) -> None:
+    #     self.metadata = BufferMetadata(shape=new_shape, numel=prod_(new_shape),
+    #                                    stride=calculate_stride(new_shape), ndim=len(new_shape),
+    #                                    dtype=self.dtype, device=self.device,
+    #                                    nbytes=prod_(new_shape)*DType.get_n_bytes(self.dtype))
+
+    def reshape(self, new_shape: tuple) -> "Buffer":
+        if prod_(new_shape) != self.metadata.numel:
+            raise ValueError(f"Cannot reshape {self.shape} ({self.metadata.numel} elements) to {new_shape} ({prod_(new_shape)} elements)")
+
+        return Buffer(
+            data=self.ptr,
+            shape=new_shape,
+            device=self.device,
+            dtype=self.dtype
+        )
 
     def numpy(self: Buffer) -> "np.ndarray":  # type: ignore  # noqa: F821
         import numpy as np
@@ -350,7 +361,7 @@ class Buffer:
 
     def rsqrt(self) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.RSQRT, device=self.device if self.ndim !=0 else Device.CPU, x=self),
+            data=dispatcher.dispatch(op=UnaryOps.RSQRT, device=Device.CPU, x=self),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 

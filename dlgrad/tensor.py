@@ -3,10 +3,10 @@ from __future__ import annotations
 import platform
 from functools import reduce
 
-from dlgrad.buffer import Buffer, BufferMetadata
+from dlgrad.buffer import Buffer
 from dlgrad.device import Device
 from dlgrad.dtype import DType, Scalar
-from dlgrad.helpers import calculate_stride, ffi, prod_
+from dlgrad.helpers import ffi
 from dlgrad.runtime import cpu  # needed to register all the cpu runtime functions  # noqa: F401
 
 if platform.system() == 'Darwin':
@@ -123,14 +123,15 @@ class Tensor:
             raise ValueError("The data must be of type Buffer, np.ndarray or float")
 
     def reshape(self, new_shape: tuple) -> Tensor:
-        nt = Tensor(data=self.data, requires_grad=self.requires_grad, device=self.device)
-        nt._ctx = self._ctx
-        nt.grad = self.grad
-        nt.data.metadata = BufferMetadata(shape=new_shape, numel=prod_(new_shape),
-                                          stride=calculate_stride(new_shape), ndim=len(new_shape),
-                                          dtype=self.dtype, device=self.device,
-                                          nbytes=prod_(new_shape)*DType.get_n_bytes(self.dtype))
-        return nt
+        return ops.Reshape.execute(self, shape=new_shape)
+        # nt = Tensor(data=self.data, requires_grad=self.requires_grad, device=self.device)
+        # nt._ctx = self._ctx
+        # nt.grad = self.grad
+        # nt.data.metadata = BufferMetadata(shape=new_shape, numel=prod_(new_shape),
+        #                                   stride=calculate_stride(new_shape), ndim=len(new_shape),
+        #                                   dtype=self.dtype, device=self.device,
+        #                                   nbytes=prod_(new_shape)*DType.get_n_bytes(self.dtype))
+        # return nt
 
     # TODO: Print in python using indexing, rather than printf in C
     def show(self: Tensor) -> None:
@@ -821,7 +822,10 @@ class Tensor:
         return Tensor.div(self, other)
 
     def __pow__(self, val: Scalar) -> Tensor:
-        return Tensor(data=self.data**val, requires_grad=self.requires_grad)
+        if isinstance(val, int):
+            val = float(val)
+        return ops.Pow.execute(self, y=val)
+        # return Tensor(data=self.data**val, requires_grad=self.requires_grad)
 
     def __neg__(self) -> Tensor:
         return Tensor(data=-self.data, requires_grad=self.requires_grad)

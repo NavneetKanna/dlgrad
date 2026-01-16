@@ -198,7 +198,7 @@ def test_causal_mask(seq_len, device):
     ty = tx.masked_fill(tmask == 0, fill_val)
 
     # 3. Softmax
-    z = y.softmax(dim=-1)
+    z = y.softmax(dim=y.ndim-1)
     tz = ty.softmax(dim=-1)
 
     check_val(z, tz)

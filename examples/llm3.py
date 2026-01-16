@@ -16,10 +16,10 @@ class GPTConfig:
     n_layer = 4
     n_head = 4
     n_embd = 256
-    dropout = 0.2
+    dropout = 0.0
     learning_rate = 3e-4
-    max_iters = 3000
-    batch_size = 8
+    max_iters = 800
+    batch_size = 16
     eval_interval = 10
     device = "cpu"
 
@@ -306,7 +306,7 @@ if __name__ == "__main__":
 
         loss.backward()
 
-        clip_gradients(model, max_norm=1.0)
+        # clip_gradients(model, max_norm=1.0)
 
         opt.step()
 

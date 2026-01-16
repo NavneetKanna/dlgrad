@@ -3,7 +3,34 @@ from dlgrad.dtype import Scalar
 from dlgrad.helpers import CustomOps, broadcast_shapes, check_broadcast
 from dlgrad.tensor import OP
 
+
 # ------------ Unary Ops -----------
+class Pow(OP):
+    def forward(self, x: Buffer, y: float) -> Buffer:
+        self.x = x
+        self.y = y  # We assume y is a scalar float/int for RMSNorm (x**2)
+        return x**y
+
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        # Equation: grad * p * x^(p-1)
+
+        # 1. Calculate x^(p-1)
+        # Note: We rely on the buffer's pow method
+        base_derivative = self.x ** (self.y - 1.0)
+
+        # 2. Multiply by p
+        scale = base_derivative * self.y
+
+        # 3. Multiply by upstream gradient
+        return (upstream_grad * scale,)
+
+class Reshape(OP):
+    def forward(self, x: Buffer, shape: tuple) -> Buffer:
+        self.input_shape = x.shape
+        return x.reshape(shape)
+
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        return (upstream_grad.reshape(self.input_shape),)
 
 class Transpose(OP):
     def forward(self, x: Buffer, dim0: int, dim1: int) -> Buffer:
@@ -12,6 +39,7 @@ class Transpose(OP):
         return x.transpose(dim0, dim1)
 
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        print("transpose backward upstream_grad shape", upstream_grad.shape)
         return (upstream_grad.transpose(self.dim1, self.dim0),)
 
 class Sum(OP):
@@ -265,9 +293,38 @@ class MatMul(OP):
         return x @ y
 
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        # 1. Fix: Catch the return value of reshape!
+        # If upstream_grad has prepended dims that were squeezed out or diff shape, align it.
+        if upstream_grad.shape != self.out_shape:
+            upstream_grad = upstream_grad.reshape(self.out_shape)
+
+        # 2. Fix: Use .reshape() method instead of manual Buffer()
+        # This uses your new logic to create a proper View with correct metadata/strides.
+        # This handles the case where shapes differ only by singleton dimensions (e.g. (3,4) -> (1,3,4))
+        x_reshaped = self.x.reshape(self.p1)
+        y_reshaped = self.y.reshape(self.p2)
+
+        # 3. Compute transposes (Standard Backprop)
+        # Gradient wrt A = Grad @ B.T
+        # Gradient wrt B = A.T @ Grad
+        # We use ndim-2 and ndim-1 to always swap the last two matrix dimensions
+        t1 = x_reshaped.transpose(x_reshaped.ndim - 2, x_reshaped.ndim - 1)
+        t2 = y_reshaped.transpose(y_reshaped.ndim - 2, y_reshaped.ndim - 1)
+
+        # 4. Compute gradients via MatMul
+        grad_x = upstream_grad @ t2
+        grad_y = t1 @ upstream_grad
+
+        # 5. Unbroadcast back to original shapes (Sum out the broadcasted dims)
+        grad_x = unbroadcast(grad_x, self.x_old_shape)
+        grad_y = unbroadcast(grad_y, self.y_old_shape)
+
+        return (grad_x, grad_y)
+
+    def _backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
         # 1. Ensure upstream_grad matches the logical output shape
         if upstream_grad.shape != self.out_shape:
-            upstream_grad.reshape(self.out_shape)
+            upstream_grad = upstream_grad.reshape(self.out_shape)
 
         # 2. Create temporary buffers with reshaped metadata (sharing the same ptr)
         x_reshaped = Buffer(
