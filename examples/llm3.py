@@ -262,8 +262,8 @@ def clip_gradients(model, max_norm=1.0):
                 p.grad.data = p.grad.data * clip_coef
 
 if __name__ == "__main__":
-    if not os.path.exists('input.txt'):
-        os.system('wget https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt')
+    if not os.path.exists('london-bridge-is-falling-down.txt'):
+        os.system('wget https://raw.githubusercontent.com/terrybroad/nursery-rhymes-dataset/refs/heads/main/data/london-bridge-is-falling-down.txt')
 
     with open('london-bridge-is-falling-down.txt') as f:
         text = f.read()
