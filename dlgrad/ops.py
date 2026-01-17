@@ -39,7 +39,6 @@ class Transpose(OP):
         return x.transpose(dim0, dim1)
 
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-        print("transpose backward upstream_grad shape", upstream_grad.shape)
         return (upstream_grad.transpose(self.dim1, self.dim0),)
 
 class Sum(OP):
