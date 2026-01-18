@@ -15,10 +15,10 @@ class GPTConfig:
     block_size = 128 # Context length
     n_layer = 4
     n_head = 4
-    n_embd = 256
+    n_embd = 128
     dropout = 0.0
-    learning_rate = 3e-4
-    max_iters = 800
+    learning_rate = 1e-4
+    max_iters = 3800
     batch_size = 16
     eval_interval = 10
     device = "cpu"
@@ -223,6 +223,46 @@ class GPT:
 
         return Tensor(idx_np.astype(np.float32), device=self.config.device)
 
+    def generate_endless(self, idx):
+        """
+        Generates text infinitely until Ctrl+C is pressed.
+        """
+        idx_np = idx.numpy().astype(np.int32)
+
+        # Print the prompt first
+        for i in idx_np[0]:
+            print(tokenizer.itos[i], end='', flush=True)
+
+        try:
+            while True:
+                # Crop context if it gets too long
+                if idx_np.shape[1] > self.config.block_size:
+                    idx_np = idx_np[:, -self.config.block_size:]
+
+                # Forward Pass
+                idx_cond = Tensor(idx_np.astype(np.float32), device=self.config.device)
+
+                # Get logits for the last token
+                logits, _ = self(idx_cond)
+
+                # Extract last token logits: (B, T, V) -> (V,)
+                next_token_logits = logits.numpy()[0, -1, :]
+
+                # Sample
+                next_token_logits = next_token_logits - np.max(next_token_logits)
+                probs = np.exp(next_token_logits) / np.sum(np.exp(next_token_logits))
+
+                idx_next = np.random.choice(len(probs), p=probs)
+
+                # Print immediately
+                token_char = tokenizer.itos[idx_next]
+                print(token_char, end='', flush=True)
+
+                # Append and continue
+                idx_np = np.concatenate((idx_np, [[idx_next]]), axis=1)
+        except KeyboardInterrupt:
+            print("\n\n--- Generation stopped by user ---")
+
 class CharTokenizer:
     """Character-level tokenizer - much smaller vocab!"""
     def __init__(self, text):
@@ -240,33 +280,16 @@ class CharTokenizer:
         """Convert list of integers to string"""
         return ''.join([self.itos[i] for i in l])
 
-def clip_gradients(model, max_norm=1.0):
-    # Calculate the total norm (length) of the gradient vector
-    total_norm_sq = 0.0
-    for p in nn.utils.get_parameters(model):
-        if p.grad is not None:
-            grad_val = p.grad.numpy()
-            total_norm_sq += np.sum(grad_val ** 2)
-
-    total_norm = np.sqrt(total_norm_sq)
-
-    # Calculate scaling coefficient
-    # If norm is small (e.g. 0.5), clip_coef > 1 (we don't scale up)
-    # If norm is huge (e.g. 100.0), clip_coef < 1 (we shrink it)
-    clip_coef = max_norm / (total_norm + 1e-6)
-
-    # Scale gradients if they are exploding
-    if clip_coef < 1.0:
-        for p in nn.utils.get_parameters(model):
-            if p.grad is not None:
-                p.grad.data = p.grad.data * clip_coef
-
 if __name__ == "__main__":
-    if not os.path.exists('london-bridge-is-falling-down.txt'):
-        os.system('wget https://raw.githubusercontent.com/terrybroad/nursery-rhymes-dataset/refs/heads/main/data/london-bridge-is-falling-down.txt')
+    if not os.path.exists('TinyStories-valid.txt'):
+        os.system('wget https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories-valid.txt')
 
-    with open('london-bridge-is-falling-down.txt') as f:
+    with open('TinyStories-valid.txt') as f:
         text = f.read()
+
+    subset_lines = lines[:1000]
+    text = "".join(subset_lines)
+    text = text.replace("<|endoftext|>", "\n\n")
 
     tokenizer = CharTokenizer(text)
     print(f"Vocab size: {tokenizer.vocab_size}")
@@ -324,14 +347,22 @@ if __name__ == "__main__":
     plt.ylabel('loss')
     plt.savefig('loss.png')
 
-    print("\n=== Generating text ===")
-    context = Tensor(np.array([[0]], dtype=np.float32), device=config.device)
+    print("\n=== Generating Text ===")
+    # Start with a common word from TinyStories to give it a hint
+    start_token = tokenizer.stoi['O'] # for "Once upon a time"
+    context = Tensor(np.array([[start_token]], dtype=np.float32), device=config.device)
 
-    # Generate 500 tokens
-    generated = model.generate(context, max_new_tokens=50)
+    # This will run until Ctrl+C is pressed
+    model.generate_endless(context)
 
-    # Decode and print
-    generated_tokens = generated.numpy()[0].astype(np.int32).tolist()
-    print(tokenizer.decode(generated_tokens))
+    # print("\n=== Generating text ===")
+    # context = Tensor(np.array([[0]], dtype=np.float32), device=config.device)
+
+    # # Generate 500 tokens
+    # generated = model.generate(context, max_new_tokens=50)
+
+    # # Decode and print
+    # generated_tokens = generated.numpy()[0].astype(np.int32).tolist()
+    # print(tokenizer.decode(generated_tokens))
 
 
