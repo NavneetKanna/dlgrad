@@ -132,7 +132,7 @@ class Tensor:
         """
         Copies raw Python bytes into the C memory pointer.
         """
-        if len(source_bytes) != self.metadata.nbytes:
+        if len(source_bytes) != self.nbytes:
             raise ValueError(f"Buffer size mismatch! Expected {self.metadata.nbytes} bytes, got {len(source_bytes)}")
 
         cpu.CPU.ffi.memmove(self.data.ptr, source_bytes, len(source_bytes))
