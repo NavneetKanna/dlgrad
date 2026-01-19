@@ -122,16 +122,23 @@ class Tensor:
         else:
             raise ValueError("The data must be of type Buffer, np.ndarray or float")
 
+    def tobytes(self) -> bytes:
+        """
+        Copies the raw C memory data into a Python bytes object.
+        """
+        return bytes(cpu.CPU.ffi.buffer(self.data.ptr, self.nbytes))
+
+    def copy_from(self, source_bytes: bytes) -> None:
+        """
+        Copies raw Python bytes into the C memory pointer.
+        """
+        if len(source_bytes) != self.metadata.nbytes:
+            raise ValueError(f"Buffer size mismatch! Expected {self.metadata.nbytes} bytes, got {len(source_bytes)}")
+
+        cpu.CPU.ffi.memmove(self.data.ptr, source_bytes, len(source_bytes))
+
     def reshape(self, new_shape: tuple) -> Tensor:
         return ops.Reshape.execute(self, shape=new_shape)
-        # nt = Tensor(data=self.data, requires_grad=self.requires_grad, device=self.device)
-        # nt._ctx = self._ctx
-        # nt.grad = self.grad
-        # nt.data.metadata = BufferMetadata(shape=new_shape, numel=prod_(new_shape),
-        #                                   stride=calculate_stride(new_shape), ndim=len(new_shape),
-        #                                   dtype=self.dtype, device=self.device,
-        #                                   nbytes=prod_(new_shape)*DType.get_n_bytes(self.dtype))
-        # return nt
 
     # TODO: Print in python using indexing, rather than printf in C
     def show(self: Tensor) -> None:
@@ -862,3 +869,7 @@ class Tensor:
     @property
     def device(self) -> int:
         return self.data.device
+
+    @property
+    def nbytes(self) -> int:
+        return self.data.nbytes

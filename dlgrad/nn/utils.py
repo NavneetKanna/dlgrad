@@ -60,7 +60,7 @@ def save_model(model, path: str):
     raw_data_chunks = []
 
     for name, tensor in state_dict.items():
-        data_bytes = tensor.data.tobytes()
+        data_bytes = tensor.tobytes()
         length = len(data_bytes)
 
         header[name] = {
