@@ -285,7 +285,7 @@ if __name__ == "__main__":
         os.system('wget https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories-valid.txt')
 
     with open('TinyStories-valid.txt') as f:
-        text = f.read()
+        lines = f.read()
 
     subset_lines = lines[:1000]
     text = "".join(subset_lines)
@@ -298,6 +298,10 @@ if __name__ == "__main__":
 
     model = GPT(config)
 
+    d = nn.utils.get_state_dict(model)
+    for i in d:
+        print(i, d[i])
+    exit()
     total_params = 0
     for param in nn.utils.get_parameters(model):
         total_params += param.numel

@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 
+from dlgrad.cpu import CPU
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, DType, Scalar
@@ -43,6 +44,21 @@ class Buffer:
                                        stride=kwargs.get("stride", calculate_stride(shape)),
                                        ndim=kwargs.get("ndim", len(shape)),
                                        dtype=dtype, device=device, nbytes=prod_(shape)*DType.get_n_bytes(dtype))
+
+    def tobytes(self) -> bytes:
+        """
+        Copies the raw C memory data into a Python bytes object.
+        """
+        return bytes(CPU.ffi.buffer(self.ptr, self.metadata.nbytes))
+
+    def copy_from(self, source_bytes: bytes) -> None:
+        """
+        Copies raw Python bytes into the C memory pointer.
+        """
+        if len(source_bytes) != self.metadata.nbytes:
+            raise ValueError(f"Buffer size mismatch! Expected {self.metadata.nbytes} bytes, got {len(source_bytes)}")
+
+        CPU.ffi.memmove(self.ptr, source_bytes, len(source_bytes))
 
     def show(self: Buffer) -> None:
         dispatcher.dispatch(op=CustomOps.PRINT, device=Device.CPU, x=self)

@@ -17,6 +17,9 @@ from dlgrad.helpers import CACHE_DIR, BinaryOps, UnaryOps, cal_sum_max_out_shape
 from dlgrad.buffer import Buffer
 from dlgrad.dtype import Scalar
 
+# TODO: The code is ugly, need to clean it up, but i guess it also depends on the kernels
+# need to clean up the kernels and then this file
+
 device = Metal.MTLCreateSystemDefaultDevice()
 commandQueue = device.newCommandQueue()
 
