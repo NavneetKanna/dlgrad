@@ -3,7 +3,6 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 
-from dlgrad.cpu import CPU
 from dlgrad.device import Device
 from dlgrad.dispatch import dispatcher
 from dlgrad.dtype import CDataPtr, DType, Scalar
@@ -20,6 +19,7 @@ from dlgrad.helpers import (
     get_broadcast_shape,
     prod_,
 )
+from dlgrad.runtime.cpu import CPU
 
 
 @dataclass
