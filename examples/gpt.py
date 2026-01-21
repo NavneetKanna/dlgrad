@@ -11,6 +11,9 @@ from dlgrad import Tensor, nn
 import argparse
 from dlgrad.nn.utils import save_model, load_model
 
+import warnings
+warnings.simplefilter("ignore", UserWarning)
+
 
 class GPTConfig:
     vocab_size = 0
