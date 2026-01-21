@@ -389,6 +389,10 @@ if __name__ == "__main__":
         plt.ylabel('loss')
         plt.savefig('loss.png')
     elif args.infer:
+        if not os.path.exists("gpt.safetensors"):
+            print("safetensors file not present in current dir, downloading...")
+            os.system("wget https://huggingface.co/NavneetKanna/gpt_small/resolve/main/gpt.safetensors")
+
         start_token = tokenizer.stoi['O']
         context = Tensor(np.array([[start_token]], dtype=np.float32), device=config.device)
         model.generate_endless(context)
