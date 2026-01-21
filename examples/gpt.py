@@ -8,6 +8,7 @@ import numpy as np
 from tqdm import tqdm
 
 from dlgrad import Tensor, nn
+import argparse
 
 
 class GPTConfig:
@@ -248,6 +249,10 @@ class GPT:
                 # Extract last token logits: (B, T, V) -> (V,)
                 next_token_logits = logits.numpy()[0, -1, :]
 
+                # Temperature
+                temperature = 0.7
+                next_token_logits = next_token_logits / temperature
+
                 # Sample
                 next_token_logits = next_token_logits - np.max(next_token_logits)
                 probs = np.exp(next_token_logits) / np.sum(np.exp(next_token_logits))
@@ -280,84 +285,113 @@ class CharTokenizer:
         """Convert list of integers to string"""
         return ''.join([self.itos[i] for i in l])
 
+def clean_tiny_stories_text(text):
+    replacements = {
+        '“': '"',
+        '”': '"',
+        '‘': "'",
+        '’': "'",
+        '–': '-',
+        '—': '-',
+        '…': '...',
+        '´': "'",
+        'é': 'e',
+        'ñ': 'n',
+        '\u200b': '',
+        '\u00ad': '',
+    }
+
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+
+    allowed_chars = set(
+        "abcdefghijklmnopqrstuvwxyz"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "0123456789"
+        " !\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~\n"
+    )
+
+    text = "".join(c for c in text if c in allowed_chars)
+
+    return text
+
 if __name__ == "__main__":
     if not os.path.exists('TinyStories-valid.txt'):
+        print("TinyStories dataset not present in current dir, downloading...")
         os.system('wget https://huggingface.co/datasets/roneneldan/TinyStories/resolve/main/TinyStories-valid.txt')
 
     with open('TinyStories-valid.txt') as f:
         lines = f.read()
 
-    subset_lines = lines[:1000]
-    text = "".join(subset_lines)
+    text = "".join(lines)
     text = text.replace("<|endoftext|>", "\n\n")
+
+    text = clean_tiny_stories_text(text)
 
     tokenizer = CharTokenizer(text)
     print(f"Vocab size: {tokenizer.vocab_size}")
-    print(f"Characters: {''.join(tokenizer.chars)}")
     config.vocab_size = tokenizer.vocab_size
 
     model = GPT(config)
 
-    d = nn.utils.get_state_dict(model)
-    for i in d:
-        print(i, d[i])
-    exit()
-    total_params = 0
-    for param in nn.utils.get_parameters(model):
-        total_params += param.numel
-    print(f"\nTotal parameters: {total_params/1e6:.2f}M")
-    print("--")
+    parser = argparse.ArgumentParser(description="Args for training or running inference using the GPT model.")
 
-    opt = nn.optim.Adam(params=nn.utils.get_parameters(model), lr=config.learning_rate)
-    data = np.array(tokenizer.encode(text), dtype=np.int32)
+    parser.add_argument("--train", action="store_true", help="This will download the dataset and start training using the parameters specified in GPTConfig.")
+    parser.add_argument("--infer", action="store_true", help="This will generate tokens (chars) endlessly until stopped by ctrl+c.")
 
-    print("Starting training...")
-    l = []
+    args = parser.parse_args()
 
-    pbar = tqdm(range(config.max_iters), desc="Training", unit="step")
-    for i in pbar:
-        ix = np.random.randint(0, len(data) - config.block_size, (config.batch_size,))
-        x_batch = np.stack([data[j : j+config.block_size] for j in ix]).astype(np.float32)
-        y_batch = np.stack([data[j+1 : j+config.block_size+1] for j in ix]).astype(np.float32)
+    if args.train:
+        total_params = 0
+        for param in nn.utils.get_parameters(model):
+            total_params += param.numel
+        print(f"\nTotal parameters: {total_params/1e6:.2f}M")
+        print("--")
 
-        x_t = Tensor(x_batch, device=config.device)
-        y_t = Tensor(y_batch, device=config.device)
+        opt = nn.optim.Adam(params=nn.utils.get_parameters(model), lr=config.learning_rate)
+        data = np.array(tokenizer.encode(text), dtype=np.int32)
 
-        opt.zero_grad()
-        logits, loss = model(x_t, y_t)
-        loss_np = loss.numpy()
-        l.append(loss_np)
-        if np.isnan(loss_np):
-            print(f"NaN detected in loss at step {i}! Breaking.")
-            break
+        print("Starting training...")
+        l = []
 
-        loss.backward()
+        pbar = tqdm(range(config.max_iters), desc="Training", unit="step")
+        for i in pbar:
+            ix = np.random.randint(0, len(data) - config.block_size, (config.batch_size,))
+            x_batch = np.stack([data[j : j+config.block_size] for j in ix]).astype(np.float32)
+            y_batch = np.stack([data[j+1 : j+config.block_size+1] for j in ix]).astype(np.float32)
 
-        # clip_gradients(model, max_norm=1.0)
+            x_t = Tensor(x_batch, device=config.device)
+            y_t = Tensor(y_batch, device=config.device)
 
-        opt.step()
+            opt.zero_grad()
+            logits, loss = model(x_t, y_t)
+            loss_np = loss.numpy()
+            l.append(loss_np)
+            if np.isnan(loss_np):
+                print(f"NaN detected in loss at step {i}! Breaking.")
+                break
 
-        loss_val = float(loss.numpy())
-        pbar.set_postfix({"loss": f"{loss_val:.4f}"})
+            loss.backward()
 
-        if i % config.eval_interval == 0:
-            tqdm.write(f"Step {i}/{config.max_iters} | Loss: {loss_val:.4f}")
+            opt.step()
 
-    print("\nTraining finished!")
+            loss_val = float(loss.numpy())
+            pbar.set_postfix({"loss": f"{loss_val:.4f}"})
 
-    plt.plot(l)
-    plt.title('Loss')
-    plt.xlabel('iters')
-    plt.ylabel('loss')
-    plt.savefig('loss.png')
+            if i % config.eval_interval == 0:
+                tqdm.write(f"Step {i}/{config.max_iters} | Loss: {loss_val:.4f}")
 
-    print("\n=== Generating Text ===")
-    # Start with a common word from TinyStories to give it a hint
-    start_token = tokenizer.stoi['O'] # for "Once upon a time"
-    context = Tensor(np.array([[start_token]], dtype=np.float32), device=config.device)
+        print("\nTraining finished!")
 
-    # This will run until Ctrl+C is pressed
-    model.generate_endless(context)
+        plt.plot(l)
+        plt.title('Loss')
+        plt.xlabel('iters')
+        plt.ylabel('loss')
+        plt.savefig('loss.png')
+    elif args.infer:
+        start_token = tokenizer.stoi['O']
+        context = Tensor(np.array([[start_token]], dtype=np.float32), device=config.device)
+        model.generate_endless(context)
 
     # print("\n=== Generating text ===")
     # context = Tensor(np.array([[0]], dtype=np.float32), device=config.device)
