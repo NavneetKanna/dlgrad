@@ -329,7 +329,6 @@ if __name__ == "__main__":
     text = clean_tiny_stories_text(text)
 
     tokenizer = CharTokenizer(text)
-    print(f"Vocab size: {tokenizer.vocab_size}")
     config.vocab_size = tokenizer.vocab_size
 
     model = GPT(config)
@@ -337,11 +336,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Args for training or running inference using the GPT model.")
 
     parser.add_argument("--train", action="store_true", help="This will download the dataset and start training using the parameters specified in GPTConfig.")
-    parser.add_argument("--infer", action="store_true", help="This will generate tokens (chars) endlessly until stopped by ctrl+c.")
+    parser.add_argument("--infer", action="store_true", help="This will downalod the weights file if not present and generate tokens (chars) endlessly until stopped by ctrl+c.")
 
     args = parser.parse_args()
 
     if args.train:
+        print(f"Vocab size: {tokenizer.vocab_size}")
+
         total_params = 0
         for param in nn.utils.get_parameters(model):
             total_params += param.numel
