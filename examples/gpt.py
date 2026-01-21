@@ -9,19 +9,20 @@ from tqdm import tqdm
 
 from dlgrad import Tensor, nn
 import argparse
+from dlgrad.nn.utils import save_model, load_model
 
 
 class GPTConfig:
     vocab_size = 0
     block_size = 128 # Context length
-    n_layer = 4
+    n_layer = 6
     n_head = 4
     n_embd = 128
-    dropout = 0.0
+    dropout = 0.2
     learning_rate = 1e-4
-    max_iters = 3800
+    max_iters = 10000
     batch_size = 16
-    eval_interval = 10
+    eval_interval = 500
     device = "cpu"
 
 config = GPTConfig()
@@ -384,6 +385,8 @@ if __name__ == "__main__":
 
         print("\nTraining finished!")
 
+        save_model(model, "gpt.safetensors")
+
         plt.plot(l)
         plt.title('Loss')
         plt.xlabel('iters')
@@ -393,6 +396,8 @@ if __name__ == "__main__":
         if not os.path.exists("gpt.safetensors"):
             print("safetensors file not present in current dir, downloading...")
             os.system("wget https://huggingface.co/NavneetKanna/gpt_small/resolve/main/gpt.safetensors")
+
+        load_model(model, "gpt.safetensors")
 
         start_token = tokenizer.stoi['O']
         context = Tensor(np.array([[start_token]], dtype=np.float32), device=config.device)
