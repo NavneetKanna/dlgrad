@@ -68,9 +68,15 @@ def reduce_source(op: str, ndim: int, reduce_dim: int) -> tuple[str, str]:
     if op == "sum":
         init_val = "float val = 0;"
         update_op = "val += v;"
+        final_op = "val"
     elif op == "max":
         init_val = "float val = -FLT_MAX;"
         update_op = "if (v > val) val = v;"
+        final_op = "val"
+    elif op == "mean":
+        init_val = "float val = 0;"
+        update_op = "val += v;"
+        final_op = f"val / shape[{reduce_dim}]"
     else:
         raise ValueError(f"Unknown reduce op: {op}")
 
@@ -118,7 +124,7 @@ def reduce_source(op: str, ndim: int, reduce_dim: int) -> tuple[str, str]:
     body += f"{indent * depth}}}\n"
 
     # Write Back Result
-    body += f"{indent * depth}out[{calc_out_idx}] = val;\n"
+    body += f"{indent * depth}out[{calc_out_idx}] = {final_op};\n"
 
     # Close Outer Loops (in reverse)
     for i in range(len(outer_dims) - 1, -1, -1):
@@ -137,75 +143,32 @@ def reduce_source(op: str, ndim: int, reduce_dim: int) -> tuple[str, str]:
 
 @cache
 def reduce(op: str) -> tuple[str, str]:
-    if op == "sum":
-        op1 = "float val = 0;"
-        op2 = "val += v;"
-    else:
-        op1 = "float val = -FLT_MAX;"
-        op2 = "if (v > val)\nval = v;"
+    if op == "mean":
+        init = "float val = 0;"
+        update = "val += x[i];"
+        finalize = "out[0] = val / numel;"
+    elif op == "sum":
+        init = "float val = 0;"
+        update = "val += x[i];"
+        finalize = "out[0] = val;"
+    elif op == "max":
+        init = "float val = -FLT_MAX;"
+        update = "if (x[i] > val) val = x[i];"
+        finalize = "out[0] = val;"
+
+    func_name = f"reduce_{op}"
     c_code = f"""
-        #include <stdlib.h>
-        #include <float.h>
-        void {op}(const float *x, float *out, int *x_shape, int *x_stride, int *out_stride, int x_numel) {{
-            {op1}
-            for (size_t i=0; i<x_numel; i++) {{
-                float v = x[i];
-                {op2}
-            }}
-            out[0] = val;
+    #include <float.h>
+    void {func_name}(const float *x, float *out, int numel) {{
+        {init}
+        for (int i = 0; i < numel; i++) {{
+            {update}
         }}
-    """
-    return c_code, f"void {op}(const float *x, float *out, int *x_shape, int *x_stride, int *out_stride, int x_numel);"
-
-@cache
-def mean(x_shape: tuple, x_stride: tuple, x_numel: int, dim: int, out_numel: int) -> tuple[str, str]:
-    if dim == -1:
-        code = f"""
-            void mean(float *x, float *out) {{
-                float s = 0.0;
-                for (int i=0; i<{x_numel}; i++) {{
-                    s += x[i];
-                }}
-                out[0] = s / {x_numel};
-            }}
-        """
-
-        return code, "void mean(float *x, float *out);"
-
-    code  = f"""
-    void mean(float *x, float *out) {{
-        int shape_dim = {x_shape[dim]};
-        int stride_dim = {x_stride[dim]};
-        int numel = {x_numel};
-
-        int out_start = 0;
-        for (int j = 0; j < numel; j += stride_dim) {{
-            if ((j % (stride_dim * shape_dim)) == 0) {{
-                if (j != 0) {{
-                    out_start += stride_dim;
-                }} else {{
-                    out_start = 0;
-                }}
-                // copy
-                for (int i = 0; i < stride_dim; i++) {{
-                    out[out_start + i] = x[j + i];
-                }}
-            }} else {{
-                // mean
-                for (int i = 0; i < stride_dim; i++) {{
-                    float val = x[j + i];
-                    out[out_start + i] += val;
-                }}
-            }}
-        }}
-
-        for (int i=0; i<{out_numel}; i++) {{
-            out[i] = out[i] / shape_dim;
-        }}
+        {finalize}
     }}
     """
-
-    return code, "void mean(float *x, float *out);"
+    cdef = f"void {func_name}(const float *x, float *out, int numel);"
+    return c_code, cdef
 
 @cache
 def transpose_4d_23(out_shape: tuple, out_stride: tuple, x_stride: tuple) -> tuple[str, str]:
