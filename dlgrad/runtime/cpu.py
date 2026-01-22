@@ -783,6 +783,43 @@ class CPU:
     @staticmethod
     @dispatcher.register(UnaryOps.MASKED_FILL, Device.CPU)
     def masked_fill(x: Buffer, mask: Buffer, val: Scalar, out_shape: tuple) -> CDataPtr:
+        out_shape = broadcast_shapes_2(x.shape, mask.shape)
+        ndim = len(out_shape)
+
+        out_numel = prod_(out_shape)
+        out_ptr = CPU.malloc(num=out_numel)
+
+        out_stride = calculate_stride(out_shape)
+
+        # Broadcasted strides for inputs
+        x_strides_eff = get_broadcast_strides_2(out_shape, x.shape, x.stride)
+        mask_strides_eff = get_broadcast_strides_2(out_shape, mask.shape, mask.stride)
+
+        # Get Kernel
+        c_code, cdef = cpu_kernel.masked_fill(ndim)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"masked_fill_{ndim}d_{key}.so"
+
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+        CPU._ensure_sig(cdef)
+
+        func_name = f"masked_fill_{ndim}d"
+        func = getattr(lib, func_name)
+
+        # Pack Arguments
+        shape_c = CPU.ffi.new("int[]", out_shape)
+        x_stride_c = CPU.ffi.new("int[]", x_strides_eff)
+        mask_stride_c = CPU.ffi.new("int[]", mask_strides_eff)
+        out_stride_c = CPU.ffi.new("int[]", out_stride)
+
+        func(x.ptr, mask.ptr, out_ptr, shape_c, x_stride_c, mask_stride_c, out_stride_c, val)
+
+        return out_ptr
+
         out_ptr = CPU.malloc(num=prod_(out_shape))
 
         out_stride = calculate_stride(out_shape)

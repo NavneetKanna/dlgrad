@@ -726,6 +726,55 @@ def cal_out_steps(cat_dim: int, first_inp_shape: tuple) -> int:
     return steps
 
 @cache
+def masked_fill(ndim: int) -> tuple[str, str]:
+    """
+    Generates a generic N-dimensional masked_fill kernel.
+    """
+    func_name = f"masked_fill_{ndim}d"
+    cdef = f"void {func_name}(const float *x, const float *mask, float *out, int *shape, int *x_stride, int *mask_stride, int *out_stride, float fill_value);"
+
+    # Generate Nested Loops (Iterate over Output Shape)
+    loops = ""
+    indent = "    "
+    for d in range(ndim):
+        loops += f"{indent * (d + 1)}for (int i{d} = 0; i{d} < shape[{d}]; i{d}++) {{\n"
+
+    # Calculate Indices
+    body_indent = indent * (ndim + 1)
+
+    # Input X Index
+    x_idx_parts = [f"i{d}*x_stride[{d}]" for d in range(ndim)]
+    calc_x_idx = " + ".join(x_idx_parts)
+
+    # Mask Index
+    mask_idx_parts = [f"i{d}*mask_stride[{d}]" for d in range(ndim)]
+    calc_mask_idx = " + ".join(mask_idx_parts)
+
+    # Output Index
+    out_idx_parts = [f"i{d}*out_stride[{d}]" for d in range(ndim)]
+    calc_out_idx = " + ".join(out_idx_parts)
+
+    # Close Loops
+    closing_braces = ""
+    for k in range(ndim - 1, -1, -1):
+        depth = k + 1
+        closing_braces += f"{indent * depth}}}\n"
+
+    c_code = f"""
+        void {func_name}(const float *x, const float *mask, float *out, int *shape, int *x_stride, int *mask_stride, int *out_stride, float fill_value) {{
+            {loops}
+                {body_indent}int x_idx = {calc_x_idx};
+                {body_indent}int mask_idx = {calc_mask_idx};
+                {body_indent}int out_idx = {calc_out_idx};
+
+                // If mask is true (>0), fill with value. Else copy x.
+                {body_indent}out[out_idx] = (mask[mask_idx] > 0) ? fill_value : x[x_idx];
+            {closing_braces}
+        }}
+    """
+    return c_code, cdef
+
+@cache
 def masked_fill_4d(out_shape: tuple, out_stride: tuple, x_stride: tuple, mask_stride: tuple, val: Scalar) -> tuple[str, str]:
     if val == float('inf'):
         val = 'FLT_MAX'
