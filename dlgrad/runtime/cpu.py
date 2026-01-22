@@ -821,20 +821,26 @@ class CPU:
             case "<=":
                 x_stride = tuple([0 if i== 1 else 1 for i in x.shape])
                 y_stride = tuple([0 if i== 1 else 1 for i in y.shape])
-                c_code, cdef = cpu_kernel.cmp_2d(mode, out_shape, calculate_stride(out_shape), x.shape, x_stride, y_stride)
+                c_code, cdef = cpu_kernel.cmp_2d(mode)
 
-        key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"cmp_{key}.so"
-        if not os.path.exists(so_fp):
-            CPU._build_shared_object(c_code, so_fp)
+                key = CPU._hash_code(c_code)
+                so_fp = pathlib.Path(CACHE_DIR) / f"cmp_{key}.so"
+                if not os.path.exists(so_fp):
+                    CPU._build_shared_object(c_code, so_fp)
 
-        lib = CPU._get_handle(str(so_fp))
+                lib = CPU._get_handle(str(so_fp))
 
-        CPU._ensure_sig(cdef)
+                CPU._ensure_sig(cdef)
 
-        lib.cmp(x.ptr, y.ptr,  out_ptr)
+                # Pack & Call
+                out_stride = CPU.ffi.new("int[]", calculate_stride(out_shape))
+                out_shape = CPU.ffi.new("int[]", out_shape)
+                x_stride = CPU.ffi.new("int[]", x_stride)
+                y_stride = CPU.ffi.new("int[]", y_stride)
 
-        return out_ptr
+                lib.cmp(x.ptr, y.ptr, out_ptr, out_shape, x_stride, y_stride, out_stride)
+
+                return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.WHERE, Device.CPU)

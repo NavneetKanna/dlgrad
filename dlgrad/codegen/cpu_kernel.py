@@ -780,22 +780,22 @@ def masked_fill_3d(out_shape: tuple, out_stride: tuple, x_stride: tuple, y_strid
     return c_code, "void masked_fill(float *x, float *y, float *out);"
 
 @cache
-def cmp_2d(mode: str, out_shape: tuple, out_stride: tuple, x_shape: tuple, x_stride: tuple, y_stride: tuple) -> tuple[str, str]:
+def cmp_2d(mode: str) -> tuple[str, str]:
     match mode:
         case "<=":
-            c_code = f"""
+            c_code = """
                 #include <stdio.h>
-                void cmp(float *x, float *y, float *out) {{
-                    for (int i=0; i<{out_shape[0]}; i++) {{
-                        for (int j=0; j<{out_shape[1]}; j++) {{
-                            int x_idx = i*{x_stride[0]} + j*{x_stride[1]};
-                            int y_idx = i*{y_stride[0]} + j*{y_stride[1]};
-                            out[i*{out_stride[0]} + j*{out_stride[1]}] = x[x_idx] <= y[y_idx] ? 1.0 : 0.0;
-                        }}
-                    }}
-                }}
+                void cmp(float *x, float *y, float *out, int *out_shape, int *x_stride, int *y_stride, int *out_stride) {
+                    for (int i=0; i<out_shape[0]; i++) {
+                        for (int j=0; j<out_shape[1]; j++) {
+                            int x_idx = i*x_stride[0] + j*x_stride[1];
+                            int y_idx = i*y_stride[0] + j*y_stride[1];
+                            out[i*out_stride[0] + j*out_stride[1]] = x[x_idx] <= y[y_idx] ? 1.0 : 0.0;
+                        }
+                    }
+                }
             """
-            return c_code, "void cmp(float *x, float *y, float *out);"
+            return c_code, "void cmp(float *x, float *y, float *out, int *out_shape, int *x_stride, int *y_stride, int *out_stride);"
 
 @cache
 def uninitialized_memory() -> tuple[str, str]:
