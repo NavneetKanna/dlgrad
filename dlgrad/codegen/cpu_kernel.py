@@ -171,99 +171,42 @@ def reduce(op: str) -> tuple[str, str]:
     return c_code, cdef
 
 @cache
-def transpose_4d_23(out_shape: tuple, out_stride: tuple, x_stride: tuple) -> tuple[str, str]:
-    c_code = f"""
-        void transpose(float *x, float *out) {{
-            for (int B=0; B<{out_shape[0]}; B++) {{
-                for (int C=0; C<{out_shape[1]}; C++) {{
-                    for (int H=0; H<{out_shape[2]}; H++) {{
-                        for (int W=0; W<{out_shape[3]}; W++) {{
-                            int out_idx = B*{out_stride[0]} + C*{out_stride[1]} + H*{out_stride[2]} + W*{out_stride[3]};
-                            int x_idx = B*{x_stride[0]} + C*{x_stride[1]} + W*{x_stride[2]} + H*{x_stride[3]};
-                            out[out_idx] = x[x_idx];
-                        }}
-                    }}
-                }}
-            }}
-        }}
-    """
-    return c_code, "void transpose(float *x, float *out);"
+def permute(ndim: int) -> tuple[str, str]:
+    func_name = f"permute_{ndim}d"
+    cdef = f"void {func_name}(const float *x, float *out, int *shape, int *in_strides, int *out_strides);"
 
-@cache
-def transpose_4d_12(out_shape: tuple, out_stride: tuple, x_stride: tuple) -> tuple[str, str]:
-    c_code = f"""
-        #include <string.h>
+    # Generate Nested Loops based on Output Shape
+    loops = ""
+    indent = "    "
+    for d in range(ndim):
+        loops += f"{indent * (d + 1)}for (int i{d} = 0; i{d} < shape[{d}]; i{d}++) {{\n"
 
-        void transpose(float *x, float *out) {{
-            for (int B=0; B<{out_shape[0]}; B++) {{
-                for (int C=0; C<{out_shape[1]}; C++) {{
-                    for (int H=0; H<{out_shape[2]}; H++) {{
-                        int out_idx = B*{out_stride[0]} + C*{out_stride[1]} + H*{out_stride[2]};
-                        int x_idx = B*{x_stride[0]} + H*{x_stride[1]} + C*{x_stride[2]};
-                        memcpy(&out[out_idx], &x[x_idx], {out_shape[3]}*sizeof(float));
-                    }}
-                }}
-            }}
-        }}
-    """
-    return c_code, "void transpose(float *x, float *out);"
+    # Calculate Indices
+    # The 'in_strides' passed to this function will be the PERMUTED strides
+    body_indent = indent * (ndim + 1)
 
-@cache
-def transpose_3d_01(x_shape: tuple, out_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int) -> tuple[str, str]:
-    c_code = f"""
-        void transpose(float *x, float *out) {{
-            int out_idx = 0;
-            int x_idx = 0;
-            for (int i=0; i<{out_shape[0]}; i++) {{
-                for (int j=0; j<{out_shape[1]}; j++) {{
-                    for (int k=0; k<{out_shape[2]}; k++) {{
-                        x_idx = i*{x_stride[1]} + j*{x_stride[0]} + k*{x_stride[2]};
-                        out_idx = i*{out_stride[0]} + j*{out_stride[1]} + k*{out_stride[2]};
-                        out[out_idx] = x[x_idx];
-                    }}
-                }}
-            }}
-        }}
-    """
-    return c_code, "void transpose(float *x, float *out);"
+    in_offset_parts = [f"i{d}*in_strides[{d}]" for d in range(ndim)]
+    calc_in_idx = " + ".join(in_offset_parts)
 
-@cache
-def transpose_3d_12(x_shape: tuple, out_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int) -> tuple[str, str]:
-    c_code = f"""
-        void transpose(float *x, float *out) {{
-            int out_idx = 0;
-            int x_idx = 0;
-            for (int k=0; k<{x_shape[0]}; k++) {{
-                int out_idx = 0;
-                int x_idx = 0;
-                for (int i=0; i<{x_shape[1]}; i++) {{
-                    for (int j=0; j<{x_shape[2]}; j++) {{
-                        out_idx = k*{out_stride[0]} + {out_stride[1]}*j + {out_stride[2]}*i;
-                        x_idx = k*{x_stride[0]} + {x_stride[1]}*i + {x_stride[2]}*j;
-                        out[out_idx] = x[x_idx];
-                    }}
-                }}
-            }}
-        }}
-    """
-    return c_code, "void transpose(float *x, float *out);"
+    out_offset_parts = [f"i{d}*out_strides[{d}]" for d in range(ndim)]
+    calc_out_idx = " + ".join(out_offset_parts)
 
-@cache
-def transpose_2d(x_shape: tuple, x_stride: tuple,  out_stride: tuple, x_numel: int) -> tuple[str, str]:
+    # Close Loops
+    closing_braces = ""
+    for k in range(ndim - 1, -1, -1):
+        depth = k + 1
+        closing_braces += f"{indent * depth}}}\n"
+
     c_code = f"""
-        void transpose(float *x, float *out) {{
-            int out_idx = 0;
-            int x_idx = 0;
-            for (int i=0; i<{x_shape[0]}; i++) {{
-                for (int j=0; j<{x_shape[1]}; j++) {{
-                    out_idx = {out_stride[0]}*j + {out_stride[1]}*i;
-                    x_idx = {x_stride[0]}*i + {x_stride[1]}*j;
-                    out[out_idx] = x[x_idx];
-                }}
-            }}
-        }}
+    void {func_name}(const float *x, float *out, int *shape, int *in_strides, int *out_strides) {{
+        {loops}
+            {body_indent}int in_idx = {calc_in_idx};
+            {body_indent}int out_idx = {calc_out_idx};
+            {body_indent}out[out_idx] = x[in_idx];
+        {closing_braces}
+    }}
     """
-    return c_code, "void transpose(float *x, float *out);"
+    return c_code, cdef
 
 @cache
 def embedding(idx_numel: int, x_width: int) -> tuple[str, str]:

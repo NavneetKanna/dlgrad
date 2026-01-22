@@ -276,41 +276,6 @@ class Buffer:
 
         return t
 
-        # assert self.ndim == other.ndim, f"self shape ({self.shape}) does not match other shape ({other.shape})"
-        # assert self.ndim == 2 and other.ndim == 2, "dlgrad only supports 2d matrix multiplication"
-        # if (self.shape[-1] != other.shape[0] and self.ndim != 2 and other.ndim != 2):
-        # raise ValueError("Either the Tensors shape dont match or is not 2D")
-        if self.ndim == 4:
-            device = self.device
-            B = max(self.shape[0], other.shape[0])
-            C = max(self.shape[1], other.shape[1])
-            M = self.shape[2]
-            N = other.shape[3] # Corrected N
-
-            shape = (B, C, M, N)
-            # if self.shape[0] == 1:
-            #     shape = (other.shape[0], self.shape[1], self.shape[2], other.shape[3])
-            # else:
-            #     shape = (self.shape[0], self.shape[1], self.shape[2], other.shape[3])
-        elif self.ndim == 3:
-            device = self.device
-            if self.shape[0] == 1:
-                shape = (other.shape[0], self.shape[1], other.shape[2])
-            else:
-                # shape = (self.shape[0], self.shape[1], other.shape[2])
-                shape = (self.shape[0], self.shape[1], other.shape[-1])
-        elif self.shape[0] % 8 == 0 and self.shape[1] % 8 == 0 and other.shape[0] % 8 == 0 and other.shape[1] % 8 == 0 and sys.platform == "darwin":
-            device = Device.METAL
-            shape = (self.shape[0], other.shape[1])
-        else:
-            device = Device.CPU
-            shape = (self.shape[0], other.shape[1])
-
-        return Buffer(
-            data=dispatcher.dispatch(op=BinaryOps.MATMUL, device=device, x=self, y=other),
-            shape=shape, device=self.device, dtype=self.dtype
-        )
-
     @staticmethod
     def swap_indices(inp: tuple, tmp: tuple) -> tuple:
         lst = list(inp)
@@ -320,32 +285,25 @@ class Buffer:
                 lst[idx1], lst[idx2] = lst[idx2], lst[idx1]
             return tuple(lst)
 
-    def transpose(self, dim0: int, dim1: int) -> Buffer:
-        # assert self.ndim == 2, "Only 2D Tensors can be transposed"
-
-        if self.ndim == 4 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
-            out_shape = (self.shape[0], self.shape[2], self.shape[1], self.shape[3])
-        elif self.ndim == 4 and ((dim0 == 2 and dim1 == 3) or (dim0 == 3 and dim1 == 2)):
-            out_shape = (self.shape[0], self.shape[1], self.shape[3], self.shape[2])
-        elif self.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
-            out_shape = (self.shape[1], self.shape[0], self.shape[2])
-        elif self.ndim == 3 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
-            out_shape = (self.shape[0], self.shape[2], self.shape[1])
-        else:
-            out_shape = (self.shape[1], self.shape[0])
+    def permute(self, order: tuple) -> Buffer:
+        out_shape = tuple(self.shape[i] for i in order)
 
         return Buffer(
             data=dispatcher.dispatch(
-                op=UnaryOps.TRANSPOSE,
-                device=self.device,
+                op=UnaryOps.PERMUTE,
+                device=Device.CPU,
                 x=self,
-                dim0=dim0,
-                dim1=dim1,
-                out_stride=calculate_stride(out_shape),
-                out_shape=out_shape
+                order=order
             ),
-            shape=out_shape, device=self.device, dtype=self.dtype
+            shape=out_shape,
+            device=self.device,
+            dtype=self.dtype
         )
+
+    def transpose(self, dim0: int, dim1: int) -> Buffer:
+        order = list(range(self.ndim))
+        order[dim0], order[dim1] = order[dim1], order[dim0]
+        return self.permute(tuple(order))
 
     def exp(self) -> Buffer:
         return Buffer(

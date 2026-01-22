@@ -31,6 +31,7 @@ class UnaryOps(Enum):
     MEAN = auto()
     CLAMP = auto()
     MASKED_FILL = auto()
+    PERMUTE = auto()
 
 class BufferOps(Enum):
     CREATE = auto()

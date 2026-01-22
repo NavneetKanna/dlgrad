@@ -332,31 +332,39 @@ class CPU:
         return out_ptr
 
     @staticmethod
-    @dispatcher.register(UnaryOps.TRANSPOSE, Device.CPU)
-    def transpose(x: Buffer, out_stride: tuple, out_shape: tuple, dim0: int, dim1: int) -> CDataPtr:
-        out_ptr = CPU.malloc(num=x.numel)
+    @dispatcher.register(UnaryOps.PERMUTE, Device.CPU)
+    def permute(x: Buffer, order: tuple) -> CDataPtr:
+        ndim = x.ndim
 
-        if x.ndim == 4 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
-            c_code, cdef = cpu_kernel.transpose_4d_12(out_shape, out_stride, x.stride)
-        elif x.ndim == 4 and ((dim0 == 2 and dim1 == 3) or (dim0 == 3 and dim1 == 2)):
-            c_code, cdef = cpu_kernel.transpose_4d_23(out_shape, out_stride, x.stride)
-        elif x.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
-            c_code, cdef = cpu_kernel.transpose_3d_01(x.shape, (x.shape[1], x.shape[0], x.shape[2]), x.stride, out_stride, x.numel)
-        elif x.ndim == 3 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
-            c_code, cdef = cpu_kernel.transpose_3d_12(x.shape, (x.shape[1], x.shape[0], x.shape[2]), x.stride, out_stride, x.numel)
-        else:
-            c_code, cdef = cpu_kernel.transpose_2d(x.shape, x.stride, out_stride, x.numel)
+        out_shape = tuple(x.shape[i] for i in order)
+        out_stride = calculate_stride(out_shape) # Contiguous output
+        out_numel = prod_(out_shape)
+        out_ptr = CPU.malloc(num=out_numel)
 
-        key   = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"transpose_{key}.so"
+        # Reorder Input Strides
+        # If order is (0, 2, 1), we reorder x.stride to (stride[0], stride[2], stride[1])
+        permuted_in_strides = tuple(x.stride[i] for i in order)
+
+        # Get Kernel
+        c_code, cdef = cpu_kernel.permute(ndim)
+
+        # Compile/Load
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"permute_{ndim}d_{key}.so"
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
-
         CPU._ensure_sig(cdef)
+        func = getattr(lib, f"permute_{ndim}d")
 
-        lib.transpose(x.ptr, out_ptr)
+        # Pack Arguments
+        shape_c = CPU.ffi.new("int[]", out_shape)
+        out_strides_c = CPU.ffi.new("int[]", out_stride)
+        in_strides_c = CPU.ffi.new("int[]", permuted_in_strides) # Pass the REORDERED strides
+
+        # Call
+        func(x.ptr, out_ptr, shape_c, in_strides_c, out_strides_c)
 
         return out_ptr
 

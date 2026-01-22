@@ -32,6 +32,21 @@ class Reshape(OP):
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
         return (upstream_grad.reshape(self.input_shape),)
 
+class Permute(OP):
+    def forward(self, x: Buffer, order: tuple) -> Buffer:
+        self.order = order
+        return x.permute(order)
+
+    def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
+        # The gradient of a permute is the inverse permute.
+        # Example: Forward order (0, 2, 1) -> Backward order (0, 2, 1)
+
+        inv_order = [0] * len(self.order)
+        for i, p in enumerate(self.order):
+            inv_order[p] = i
+
+        return (upstream_grad.permute(tuple(inv_order)),)
+
 class Transpose(OP):
     def forward(self, x: Buffer, dim0: int, dim1: int) -> Buffer:
         self.dim0 = dim0

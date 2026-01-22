@@ -431,6 +431,9 @@ class Tensor:
         """
         return ops.MatMul.execute(x, y)
 
+    def permute(self, order: tuple) -> "Tensor":
+        return ops.Permute.execute(self, order=order)
+
     def transpose(self, dim0: int, dim1: int) -> Tensor:
         """
         Transpose `x` tensor. Returns a new tensor.
@@ -442,6 +445,23 @@ class Tensor:
         Returns:
             The transposed tensor
         """
+        ndim = self.ndim
+
+        # Handle negative dims
+        if dim0 < 0:
+            dim0 += ndim
+        if dim1 < 0:
+            dim1 += ndim
+
+        # Start with default order: (0, 1, 2, 3...)
+        order = list(range(ndim))
+
+        # Swap the two requested dimensions
+        order[dim0], order[dim1] = order[dim1], order[dim0]
+
+        # Delegate to Permute
+        return self.permute(tuple(order))
+
         return ops.Transpose.execute(self, dim0=dim0, dim1=dim1)
 
     def sum(self, dim: int = -1, keepdim: bool = False) -> Tensor:
