@@ -41,11 +41,32 @@ Documentation can be found in this [folder](docs/README.md).
 
 ## Examples
 
-The MNIST MLP and GAN examples can be found in the [examples folder](examples/).
+[examples folder](examples/) contains the implementations of MLP, GAN and GPT.
+
+A GPT Model implemented from scratch, capable of generating English text. To run
 
 ```python3
-python3 examples/mnist_mlp.py
-python3 examples/mnist_gan.py
+# Train the model (Automatically downloads dataset)
+python3 gpt.py --train
+
+# Run inference (Automatically downloads weights, infinite generation)
+python3 gpt.py --infer
+```
+
+The final loss reached was around `1.28`. The trained model parameters are 
+
+```
+vocab_size = 0
+block_size = 128 # Context length
+n_layer = 6
+n_head = 4
+n_embd = 128
+dropout = 0.2
+learning_rate = 1e-4
+max_iters = 10000
+batch_size = 16
+eval_interval = 500
+device = "cpu"
 ```
 
 The MNIST example gets to around 95% accuracy in ~5 seconds on an M2 CPU.

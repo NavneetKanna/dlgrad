@@ -271,3 +271,64 @@ def get_color(color: str) -> str:
             return Colors.RED
         case "end":
             return Colors.END
+
+def get_broadcast_strides_2(out_shape: tuple, in_shape: tuple, in_stride: tuple) -> tuple:
+    """
+    Computes effective strides for an input to match the output shape
+    according to broadcasting rules.
+    """
+    ndim_out = len(out_shape)
+    ndim_in = len(in_shape)
+
+    # 1. Align Ranks: Pad smaller shape with 1s on the left
+    # If out=(4, 3, 2) and in=(3, 2), diff=1.
+    # effective_in_shape becomes (1, 3, 2)
+    # effective_in_stride becomes (0, stride_0, stride_1)
+    diff = ndim_out - ndim_in
+
+    # Pad strides with 0 for the missing leading dimensions
+    # (The value doesn't strictly matter since the shape is 1, but 0 is safe)
+    padded_in_shape = (1,) * diff + in_shape
+    padded_in_stride = (0,) * diff + in_stride
+
+    new_strides = []
+
+    # 2. Compute Broadcasting Strides
+    for out_d, in_d, in_s in zip(out_shape, padded_in_shape, padded_in_stride):
+        if in_d == 1 and out_d > 1:
+            # Broadcasting: This dim is 1 in input but >1 in output.
+            # We want to repeat the value, so stride must be 0.
+            new_strides.append(0)
+        elif in_d == out_d:
+            # Dimensions match, keep original stride
+            new_strides.append(in_s)
+        else:
+            raise ValueError(f"Shape mismatch: cannot broadcast {in_shape} to {out_shape}")
+
+    return tuple(new_strides)
+
+def broadcast_shapes_2(s1: tuple, s2: tuple) -> tuple:
+    """
+    Standard broadcasting logic to find the resulting shape.
+    Example: (3, 1) + (3, 4) -> (3, 4)
+    """
+    # 1. Align ranks
+    ndim = max(len(s1), len(s2))
+
+    # Prepend 1s
+    s1_filled = (1,) * (ndim - len(s1)) + s1
+    s2_filled = (1,) * (ndim - len(s2)) + s2
+
+    out_shape = []
+    for d1, d2 in zip(s1_filled, s2_filled):
+        if d1 == d2:
+            out_shape.append(d1)
+        elif d1 == 1:
+            out_shape.append(d2)
+        elif d2 == 1:
+            out_shape.append(d1)
+        else:
+            raise ValueError(f"Operands could not be broadcast together with shapes {s1} {s2}")
+
+    return tuple(out_shape)
+

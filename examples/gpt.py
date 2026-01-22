@@ -238,37 +238,75 @@ class GPT:
         for i in idx_np[0]:
             print(tokenizer.itos[i], end='', flush=True)
 
+        import time
         try:
             while True:
+                print("===")
                 # Crop context if it gets too long
                 if idx_np.shape[1] > self.config.block_size:
+                    s = time.perf_counter()
                     idx_np = idx_np[:, -self.config.block_size:]
+                    e = time.perf_counter()
+                    ms = round(e-s, 4) * 1e3
+                    print(f"1 {ms}")
 
                 # Forward Pass
+                s = time.perf_counter()
                 idx_cond = Tensor(idx_np.astype(np.float32), device=self.config.device)
+                e = time.perf_counter()
+                ms = round(e-s, 4) * 1e3
+                print(f"2 {ms}")
 
                 # Get logits for the last token
+                s = time.perf_counter()
                 logits, _ = self(idx_cond)
+                e = time.perf_counter()
+                ms = round(e-s, 4) * 1e3
+                print(f"3 {ms}")
 
                 # Extract last token logits: (B, T, V) -> (V,)
+                s = time.perf_counter()
                 next_token_logits = logits.numpy()[0, -1, :]
+                e = time.perf_counter()
+                ms = round(e-s, 4) * 1e3
+                print(f"4 {ms}")
 
                 # Temperature
+                s = time.perf_counter()
                 temperature = 0.7
                 next_token_logits = next_token_logits / temperature
+                e = time.perf_counter()
+                ms = round(e-s, 4) * 1e3
+                print(f"5 {ms}")
 
                 # Sample
+                s = time.perf_counter()
                 next_token_logits = next_token_logits - np.max(next_token_logits)
                 probs = np.exp(next_token_logits) / np.sum(np.exp(next_token_logits))
+                e = time.perf_counter()
+                ms = round(e-s, 4) * 1e3
+                print(f"6 {ms}")
 
+                s = time.perf_counter()
                 idx_next = np.random.choice(len(probs), p=probs)
+                e = time.perf_counter()
+                ms = round(e-s, 4) * 1e3
+                print(f"7 {ms}")
 
                 # Print immediately
+                s = time.perf_counter()
                 token_char = tokenizer.itos[idx_next]
-                print(token_char, end='', flush=True)
+                e = time.perf_counter()
+                ms = round(e-s, 4) * 1e3
+                print(f"8 {ms}")
+                # print(token_char, end='', flush=True)
 
                 # Append and continue
+                s = time.perf_counter()
                 idx_np = np.concatenate((idx_np, [[idx_next]]), axis=1)
+                e = time.perf_counter()
+                ms = round(e-s, 4) * 1e3
+                print(f"9 {ms}")
         except KeyboardInterrupt:
             print("\n\n--- Generation stopped by user ---")
 

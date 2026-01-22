@@ -20,9 +20,11 @@ from dlgrad.helpers import (
    BufferOps,
    CustomOps,
    UnaryOps,
+   broadcast_shapes_2,
    cal_sum_max_out_shape,
    calculate_stride,
    get_broadcast_strides,
+   get_broadcast_strides_2,
    prod_,
 )
 
@@ -253,22 +255,39 @@ class CPU:
         return out_ptr
 
     @staticmethod
-    def _binary_op(x: Buffer, y: Buffer, op: str) -> CDataPtr:
-        c_code, cdef = cpu_kernel.arithmetic(x.shape, x.stride, y.shape, y.stride, op)
+    def _binary_op(x: Buffer, y: Buffer, op: str) -> "CDataPtr":
+        # Prepare Shape Info
+        out_shape = broadcast_shapes_2(x.shape, y.shape)
+        ndim = len(out_shape)
+
+        # Get Kernel
+        c_code, cdef = cpu_kernel.arithmetic(op, ndim)
 
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"{op}_{key}.so"
+        so_fp = pathlib.Path(CACHE_DIR) / f"{op}_{ndim}d_{key}.so"
 
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
-
         CPU._ensure_sig(cdef)
 
-        func = getattr(lib, op)
-        outptr = CPU.malloc(num=x.numel)
-        func(x.ptr, y.ptr, outptr)
+        func_name = f"{op}_{ndim}d"
+        func = getattr(lib, func_name)
+
+        # Setup Args
+        out_numel = prod_(out_shape)
+        outptr = CPU.malloc(num=out_numel)
+
+        x_strides_eff = get_broadcast_strides_2(out_shape, x.shape, x.stride)
+        y_strides_eff = get_broadcast_strides_2(out_shape, y.shape, y.stride)
+
+        # Pack & Call
+        shape_c = CPU.ffi.new("int[]", out_shape)
+        x_stride_c = CPU.ffi.new("int[]", x_strides_eff)
+        y_stride_c = CPU.ffi.new("int[]", y_strides_eff)
+
+        func(x.ptr, y.ptr, outptr, shape_c, x_stride_c, y_stride_c)
 
         return outptr
 
@@ -290,7 +309,7 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.DIV, Device.CPU)
     def div(x: Buffer, y: Buffer) -> CDataPtr:
-        return CPU._binary_op(x, y, op="divv")
+        return CPU._binary_op(x, y, op="div")
 
     @staticmethod
     @dispatcher.register(UnaryOps.NEG, Device.CPU)
@@ -537,30 +556,59 @@ class CPU:
     @staticmethod
     @dispatcher.register(UnaryOps.SUM, Device.CPU)
     def sum(x: Buffer, dim: int) -> CDataPtr:
+
         out_shape = cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape)
         out_stride = calculate_stride(out_shape)
         num = prod_(out_shape)
-        out_ptr = CPU.calloc(num=num)
+        out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
 
-        if x.ndim == 4:
-            c_code, cdef = cpu_kernel.reduce_4d(x.shape, x.stride, out_stride, x.numel, dim, "sum")
-        elif x.ndim == 3:
-            c_code, cdef = cpu_kernel.reduce_3d(x.shape, x.stride, out_stride, x.numel, dim, "sum")
-        elif x.ndim == 2:
-            c_code, cdef = cpu_kernel.reduce_2d(x.shape, x.stride, out_stride, x.numel, dim, "sum")
-        elif x.ndim == 1 and dim == -1:
-            c_code, cdef = cpu_kernel.reduce(x.numel, "sum")
+        if dim is None or dim == -1:
+            c_code, cdef = cpu_kernel.reduce("sum")
 
+            key = CPU._hash_code(c_code)
+            so_fp = pathlib.Path(CACHE_DIR) / f"max_{key}.so"
+            if not os.path.exists(so_fp):
+                CPU._build_shared_object(c_code, so_fp)
+
+            lib = CPU._get_handle(str(so_fp))
+
+            CPU._ensure_sig(cdef)
+
+            # Pack & Call
+            out_stride = CPU.ffi.new("int[]", out_stride)
+            x_shape = CPU.ffi.new("int[]", x.shape)
+            x_stride = CPU.ffi.new("int[]", x.stride)
+
+            lib.sum(x.ptr, out_ptr, x_shape, x_stride, out_stride, x.numel)
+
+            return out_ptr
+
+        if dim < 0:
+            dim += x.ndim
+
+        # Generate Kernel
+        c_code, cdef = cpu_kernel.reduce_source("sum", x.ndim, dim)
+
+        # Compile/Load
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"sum_{key}.so"
+        so_fp = pathlib.Path(CACHE_DIR) / f"sum_{x.ndim}d_axis{dim}_{key}.so"
+
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
-
         CPU._ensure_sig(cdef)
 
-        lib.sum(x.ptr, out_ptr)
+        # 5. Call
+        func_name = f"reduce_sum_{x.ndim}d_axis{dim}"
+        func = getattr(lib, func_name)
+
+        # Pack C Args
+        x_shape_c = CPU.ffi.new("int[]", x.shape)
+        x_stride_c = CPU.ffi.new("int[]", x.stride)
+        out_stride_c = CPU.ffi.new("int[]", out_stride)
+
+        func(x.ptr, out_ptr, x_shape_c, x_stride_c, out_stride_c)
 
         return out_ptr
 
@@ -593,25 +641,53 @@ class CPU:
         num = prod_(out_shape)
         out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
 
-        if x.ndim == 4:
-            c_code, cdef = cpu_kernel.reduce_4d(x.shape, x.stride, out_stride, x.numel, dim, "max")
-        elif x.ndim == 3:
-            c_code, cdef = cpu_kernel.reduce_3d(x.shape, x.stride, out_stride, x.numel, dim, "max")
-        elif x.ndim == 2:
-            c_code, cdef = cpu_kernel.reduce_2d(x.shape, x.stride, out_stride, x.numel, dim, "max")
-        elif x.ndim == 1 and dim == -1:
-            c_code, cdef = cpu_kernel.reduce(x.numel, "max")
+        if dim is None or dim == -1:
+            c_code, cdef = cpu_kernel.reduce("max")
 
+            key = CPU._hash_code(c_code)
+            so_fp = pathlib.Path(CACHE_DIR) / f"max_{key}.so"
+            if not os.path.exists(so_fp):
+                CPU._build_shared_object(c_code, so_fp)
+
+            lib = CPU._get_handle(str(so_fp))
+
+            CPU._ensure_sig(cdef)
+
+            # Pack & Call
+            out_stride = CPU.ffi.new("int[]", out_stride)
+            x_shape = CPU.ffi.new("int[]", x.shape)
+            x_stride = CPU.ffi.new("int[]", x.stride)
+
+            lib.max(x.ptr, out_ptr, x_shape, x_stride, out_stride, x.numel)
+
+            return out_ptr
+
+        if dim < 0:
+            dim += x.ndim
+
+        # Generate Kernel
+        c_code, cdef = cpu_kernel.reduce_source("max", x.ndim, dim)
+
+        # Compile/Load
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"max_{key}.so"
+        so_fp = pathlib.Path(CACHE_DIR) / f"max_{x.ndim}d_axis{dim}_{key}.so"
+
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
-
         CPU._ensure_sig(cdef)
 
-        lib.max(x.ptr, out_ptr)
+        # 5. Call
+        func_name = f"reduce_max_{x.ndim}d_axis{dim}"
+        func = getattr(lib, func_name)
+
+        # Pack C Args
+        x_shape_c = CPU.ffi.new("int[]", x.shape)
+        x_stride_c = CPU.ffi.new("int[]", x.stride)
+        out_stride_c = CPU.ffi.new("int[]", out_stride)
+
+        func(x.ptr, out_ptr, x_shape_c, x_stride_c, out_stride_c)
 
         return out_ptr
 
