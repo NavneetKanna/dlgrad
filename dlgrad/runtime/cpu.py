@@ -23,7 +23,6 @@ from dlgrad.helpers import (
    broadcast_shapes_2,
    cal_sum_max_out_shape,
    calculate_stride,
-   get_broadcast_strides,
    get_broadcast_strides_2,
    prod_,
 )
@@ -820,34 +819,6 @@ class CPU:
 
         return out_ptr
 
-        out_ptr = CPU.malloc(num=prod_(out_shape))
-
-        out_stride = calculate_stride(out_shape)
-
-        x_stride = get_broadcast_strides(x.shape, out_shape)
-        mask_stride = get_broadcast_strides(mask.shape, out_shape)
-
-        ndim = len(out_shape)
-
-        if ndim == 4:
-            c_code, cdef = cpu_kernel.masked_fill_4d(out_shape, out_stride, x_stride, mask_stride, val)
-        elif ndim == 3:
-            c_code, cdef = cpu_kernel.masked_fill_3d(out_shape, out_stride, x_stride, mask_stride, val)
-
-        key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"masked_fill_{key}.so"
-        if not os.path.exists(so_fp):
-            #CPU._build_shared_object(c_code, so_fp, ["-ffast-math"] if val in [float('inf'), float('-inf')] else [])
-            CPU._build_shared_object(c_code, so_fp)
-
-        lib = CPU._get_handle(str(so_fp))
-
-        CPU._ensure_sig(cdef)
-
-        lib.masked_fill(x.ptr, mask.ptr, out_ptr)
-
-        return out_ptr
-
     # TODO: Add to docs once testing
     @staticmethod
     @dispatcher.register(BinaryOps.CMP, Device.CPU)
@@ -902,24 +873,7 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.EQT, Device.CPU)
     def eqt(x: Buffer, y: Buffer) -> CDataPtr:
-        # NOTE: Assumes x.numel > y.numel
-        # TODO: Add check that the numel should be the same
-        out_ptr = CPU.malloc(num=x.numel)
-
-        c_code, cdef = cpu_kernel.eqt(x.numel, True if y.ndim == 0 else False, x.shape, x.stride, y.shape, y.stride, x.ndim)
-
-        key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"eqt_{key}.so"
-        if not os.path.exists(so_fp):
-            CPU._build_shared_object(c_code, so_fp)
-
-        lib = CPU._get_handle(str(so_fp))
-
-        CPU._ensure_sig(cdef)
-
-        lib.eqt(x.ptr, y.ptr, out_ptr)
-
-        return out_ptr
+        return CPU._binary_op(x, y, op="eq")
 
     @staticmethod
     @dispatcher.register(UnaryOps.ARGMAX, Device.CPU)

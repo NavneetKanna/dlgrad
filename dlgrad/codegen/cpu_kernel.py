@@ -16,7 +16,15 @@ def arithmetic(op: str, ndim: int) -> tuple[str, str]:
     Generates a readable, rank-specific C kernel with nested loops.
     Example: ndim=2 -> Generates 2 nested loops.
     """
-    ops = {'add': '+', 'sub': '-', 'mul': '*', 'div': '/'}
+    ops = {
+        'add': '+',
+        'sub': '-',
+        'mul': '*',
+        'div': '/',
+        'eq': '==',
+        'lt': '<',
+        'gt': '>'
+    }
     c_op = ops[op]
 
     # Generate the Function Signature
@@ -607,111 +615,6 @@ def where(x_numel: int, inp: bool, other: bool) -> tuple[str, str]:
     return code, "void where(float *arr, float *out, float *inp, float *other);"
 
 @cache
-def eqt(x_numel: int, y_scalar: bool, x_shape: tuple, x_stride: tuple, y_shape: tuple, y_stride: tuple, x_dim: int) -> tuple[str, str]:  # noqa: C901
-    if y_scalar:
-        code = f"""
-            void eqt(float *x, float *y, float *out)
-            {{
-                for (int i=0; i<{x_numel}; i++) {{
-                    if (x[i] == y[0]) {{
-                        out[i] = 1.0;
-                    }} else {{
-                        out[i] = 0.0;
-                    }}
-                }}
-            }}
-        """
-        return code, "void eqt(float *x, float *y, float *out);"
-
-    if x_dim == 4:
-        c = ""
-        for d, i, j in zip(["B", "C", "H", "W"], y_shape, y_stride):
-            if i != 1:
-                c += f"{d}*{j} + "
-
-        c = c[:-3] if c else "0"
-
-        c_code = f"""
-            #include <stdlib.h>
-            void eqt(float *x, float *y, float *out)
-            {{
-                for (size_t B = 0; B < {x_shape[0]}; B++) {{
-                    for (size_t C = 0; C < {x_shape[1]}; C++) {{
-                        for (size_t H = 0; H < {x_shape[2]}; H++) {{
-                            for (size_t W=0; W<{x_shape[3]}; W++) {{
-                                int x_idx = B*{x_stride[0]} + C*{x_stride[1]} + H*{x_stride[2]} + W*{x_stride[3]};
-                                int y_idx = {c};
-
-                                if (x[x_idx] == y[y_idx]) {{
-                                    out[x_idx] = 1.0;
-                                }} else {{
-                                    out[x_idx] = 0.0;
-                                }}
-                            }}
-                        }}
-                    }}
-                }}
-            }}
-        """
-        return c_code, "void eqt(float *x, float *y, float *out);"
-    elif x_dim == 3:
-        c = ""
-        for d, i, j in zip(["C", "H", "W"], y_shape, y_stride):
-            if i != 1:
-                c += f"{d}*{j} + "
-
-        c = c[:-3] if c else "0"
-
-        c_code = f"""
-            #include <stdlib.h>
-            void eqt(float *x, float *y, float *out)
-            {{
-                for (size_t C = 0; C < {x_shape[0]}; C++) {{
-                    for (size_t H = 0; H < {x_shape[1]}; H++) {{
-                        for (size_t W=0; W<{x_shape[2]}; W++) {{
-                            int x_idx = C*{x_stride[0]} + H*{x_stride[1]} + W*{x_stride[2]};
-                            int y_idx = {c};
-
-                            if (x[x_idx] == y[y_idx]) {{
-                                out[x_idx] = 1.0;
-                            }} else {{
-                                out[x_idx] = 0.0;
-                            }}
-                        }}
-                    }}
-                }}
-            }}
-        """
-        return c_code, "void eqt(float *x, float *y, float *out);"
-    elif x_dim == 2:
-        c = ""
-        for d, i, j in zip(["H", "W"], y_shape, y_stride):
-            if i != 1:
-                c += f"{d}*{j} + "
-
-        c = c[:-3] if c else "0"
-
-        c_code = f"""
-            #include <stdlib.h>
-            void eqt(float *x, float *y, float *out)
-            {{
-                for (size_t H = 0; H < {x_shape[0]}; H++) {{
-                    for (size_t W=0; W<{x_shape[1]}; W++) {{
-                        int x_idx = H*{x_stride[0]} + W*{x_stride[1]};
-                        int y_idx = {c};
-
-                        if (x[x_idx] == y[y_idx]) {{
-                            out[x_idx] = 1.0;
-                        }} else {{
-                            out[x_idx] = 0.0;
-                        }}
-                    }}
-                }}
-            }}
-        """
-        return c_code, "void eqt(float *x, float *y, float *out);"
-
-@cache
 def cal_stride(first_inp_shape: tuple, cat_dim: int) -> int:
     stride = 1
     for i in range(cat_dim, len(first_inp_shape)):
@@ -773,60 +676,6 @@ def masked_fill(ndim: int) -> tuple[str, str]:
         }}
     """
     return c_code, cdef
-
-@cache
-def masked_fill_4d(out_shape: tuple, out_stride: tuple, x_stride: tuple, mask_stride: tuple, val: Scalar) -> tuple[str, str]:
-    if val == float('inf'):
-        val = 'FLT_MAX'
-    elif val == float('-inf'):
-        val = '-FLT_MAX'
-
-    c_code = f"""
-        #include <math.h>
-        #include <float.h>
-
-        void masked_fill(float *x, float *y, float *out) {{
-            for (int i=0; i<{out_shape[0]}; i++) {{
-                for (int j=0; j<{out_shape[1]}; j++) {{
-                    for (int k=0; k<{out_shape[2]}; k++) {{
-                        for (int l=0; l<{out_shape[3]}; l++) {{
-                            int x_idx = i*{x_stride[0]} + j*{x_stride[1]} + k*{x_stride[2]} + l*{x_stride[3]};
-                            int y_idx = i*{mask_stride[0]} + j*{mask_stride[1]} + k*{mask_stride[2]} + l*{mask_stride[3]};
-                            int out_idx = i*{out_stride[0]} + j*{out_stride[1]} + k*{out_stride[2]} + l*{out_stride[3]};
-
-                            out[out_idx] = y[y_idx] > 0 ? {val}: x[x_idx];
-                        }}
-                    }}
-                }}
-            }}
-        }}
-    """
-    return c_code, "void masked_fill(float *x, float *y, float *out);"
-
-
-def masked_fill_3d(out_shape: tuple, out_stride: tuple, x_stride: tuple, y_stride: tuple, val: Scalar) -> tuple[str, str]:
-    if val == float('inf'):
-        val = 'FLT_MAX'
-    elif val == float('-inf'):
-        val = '-FLT_MAX'
-
-    c_code = f"""
-        #include <math.h>
-        #include <float.h>
-
-        void masked_fill(float *x, float *y, float *out) {{
-            for (int i=0; i<{out_shape[0]}; i++) {{
-                for (int j=0; j<{out_shape[1]}; j++) {{
-                    for (int k=0; k<{out_shape[2]}; k++) {{
-                        int x_idx = i*{x_stride[0]} + j*{x_stride[1]} + k*{x_stride[2]};
-                        int y_idx = i*{y_stride[0]} + j*{y_stride[1]} + k*{y_stride[2]};
-                        out[i*{out_stride[0]} + j*{out_stride[1]} + k*{out_stride[2]}] = y[y_idx] > 0 ? {val}: x[x_idx] ;
-                    }}
-                }}
-            }}
-        }}
-    """
-    return c_code, "void masked_fill(float *x, float *y, float *out);"
 
 @cache
 def cmp_2d(mode: str) -> tuple[str, str]:
