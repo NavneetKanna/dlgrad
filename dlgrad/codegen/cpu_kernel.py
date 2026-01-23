@@ -13,8 +13,7 @@ def n_gen() -> Generator[str, Any, None]:
 @cache
 def arithmetic(op: str, ndim: int) -> tuple[str, str]:
     """
-    Generates a readable, rank-specific C kernel with nested loops.
-    Example: ndim=2 -> Generates 2 nested loops.
+    Generates a kernel for the unary ops.
     """
     ops = {
         'add': '+',
@@ -70,7 +69,7 @@ def arithmetic(op: str, ndim: int) -> tuple[str, str]:
 @cache
 def reduce_source(op: str, ndim: int, reduce_dim: int) -> tuple[str, str]:
     """
-    Generates a readable C kernel for reduction operations (sum, max).
+    Generates a kernel for reduction operations (sum, max).
     """
     # Setup Ops
     if op == "sum":
@@ -582,37 +581,58 @@ def gte(x_numel: int, val: int | float) -> tuple[str, str]:
     return code, "void gte_with_scalar(float *arr, float *out);"
 
 @cache
-def where(x_numel: int, inp: bool, other: bool) -> tuple[str, str]:
-    # if inp or other is True it is scalar
-    s = ""
-
-    code = f"""
-        void where(float *arr, float *out, float *inp, float *other)
-        {{
-            for (int i=0; i<{x_numel}; i++) {{
-                if (arr[i] > 0.0)
+def where(ndim: int) -> tuple[str, str]:
     """
-    code = s + code
-    if inp:
-        ss = "out[i] = inp[0];"
-    else:
-        ss = "out[i] = inp[i];"
+    Generates a where kernel.
+    out = (cond > 0) ? x : y
+    """
+    func_name = f"where_{ndim}d"
+    cdef = f"void {func_name}(const float *cond, const float *x, const float *y, float *out, int *shape, int *c_stride, int *x_stride, int *y_stride, int *out_stride);"
 
-    code += ss
+    # Generate Nested Loops
+    loops = ""
+    indent = "    "
+    for d in range(ndim):
+        loops += f"{indent * (d + 1)}for (int i{d} = 0; i{d} < shape[{d}]; i{d}++) {{\n"
 
-    code += "\nelse\n"
+    # Calculate Indices
+    body_indent = indent * (ndim + 1)
 
-    if other:
-        ss = "out[i] = other[0];"
-    else:
-        ss = "out[i] = other[i];"
+    # Calculate index for Condition
+    c_idx_parts = [f"i{d}*c_stride[{d}]" for d in range(ndim)]
+    calc_c_idx = " + ".join(c_idx_parts)
 
-    code += ss
+    # Calculate index for X (True branch)
+    x_idx_parts = [f"i{d}*x_stride[{d}]" for d in range(ndim)]
+    calc_x_idx = " + ".join(x_idx_parts)
 
-    code += "}"
-    code += "}"
+    # Calculate index for Y (False branch)
+    y_idx_parts = [f"i{d}*y_stride[{d}]" for d in range(ndim)]
+    calc_y_idx = " + ".join(y_idx_parts)
 
-    return code, "void where(float *arr, float *out, float *inp, float *other);"
+    # Calculate index for Output
+    out_idx_parts = [f"i{d}*out_stride[{d}]" for d in range(ndim)]
+    calc_out_idx = " + ".join(out_idx_parts)
+
+    # Close Loops
+    closing_braces = ""
+    for k in range(ndim - 1, -1, -1):
+        depth = k + 1
+        closing_braces += f"{indent * depth}}}\n"
+
+    c_code = f"""
+        void {func_name}(const float *cond, const float *x, const float *y, float *out, int *shape, int *c_stride, int *x_stride, int *y_stride, int *out_stride) {{
+            {loops}
+                {body_indent}int c_idx = {calc_c_idx};
+                {body_indent}int x_idx = {calc_x_idx};
+                {body_indent}int y_idx = {calc_y_idx};
+                {body_indent}int out_idx = {calc_out_idx};
+
+                {body_indent}out[out_idx] = (cond[c_idx] > 0) ? x[x_idx] : y[y_idx];
+            {closing_braces}
+        }}
+    """
+    return c_code, cdef
 
 @cache
 def cal_stride(first_inp_shape: tuple, cat_dim: int) -> int:
@@ -631,7 +651,7 @@ def cal_out_steps(cat_dim: int, first_inp_shape: tuple) -> int:
 @cache
 def masked_fill(ndim: int) -> tuple[str, str]:
     """
-    Generates a generic N-dimensional masked_fill kernel.
+    Generates a masked_fill kernel.
     """
     func_name = f"masked_fill_{ndim}d"
     cdef = f"void {func_name}(const float *x, const float *mask, float *out, int *shape, int *x_stride, int *mask_stride, int *out_stride, float fill_value);"

@@ -852,21 +852,42 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.WHERE, Device.CPU)
-    def where(x: Buffer, inp: Buffer, other: Buffer) -> CDataPtr:
-        out_ptr = CPU.malloc(num=x.numel)
+    def where(cond: Buffer, x: Buffer, y: Buffer) -> CDataPtr:
+        temp_shape = broadcast_shapes_2(x.shape, y.shape)
+        out_shape = broadcast_shapes_2(temp_shape, cond.shape)
 
-        c_code, cdef = cpu_kernel.where(x.numel, inp=True if inp.ndim == 0 else False, other=True if other.ndim == 0 else False)
+        ndim = len(out_shape)
+        out_numel = prod_(out_shape)
+        out_ptr = CPU.malloc(num=out_numel)
+
+        out_stride = calculate_stride(out_shape)
+
+        # Get effective strides for ALL inputs mapping to the final out_shape
+        cond_strides = get_broadcast_strides_2(out_shape, cond.shape, cond.stride)
+        x_strides = get_broadcast_strides_2(out_shape, x.shape, x.stride)
+        y_strides = get_broadcast_strides_2(out_shape, y.shape, y.stride)
+
+        # Get Kernel
+        c_code, cdef = cpu_kernel.where(ndim)
 
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"where_{key}.so"
+        so_fp = pathlib.Path(CACHE_DIR) / f"where_{ndim}d_{key}.so"
+
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
-
         CPU._ensure_sig(cdef)
+        func = getattr(lib, f"where_{ndim}d")
 
-        lib.where(x.ptr, out_ptr, inp.ptr, other.ptr)
+        # Pack Arguments
+        shape_c = CPU.ffi.new("int[]", out_shape)
+        c_stride_c = CPU.ffi.new("int[]", cond_strides)
+        x_stride_c = CPU.ffi.new("int[]", x_strides)
+        y_stride_c = CPU.ffi.new("int[]", y_strides)
+        out_stride_c = CPU.ffi.new("int[]", out_stride)
+
+        func(cond.ptr, x.ptr, y.ptr, out_ptr, shape_c, c_stride_c, x_stride_c, y_stride_c, out_stride_c)
 
         return out_ptr
 
