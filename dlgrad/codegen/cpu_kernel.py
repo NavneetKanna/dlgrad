@@ -443,30 +443,30 @@ def matmul_2d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple) 
     return c_code, "void matmul_2d(float *x, float *y, float *out);"
 
 @cache
-def ce_forward(n_rows: int, x_stride: tuple) -> tuple[str, str]:
-    c_code = f"""
-    void ce_forward(float *x, float *target, float *out)
-    {{
-        for (int i=0; i<{n_rows}; i++) {{
-            out[i] = x[(int)target[i]+({x_stride[0]}*i)];
-        }}
-    }}
+def ce_forward() -> tuple[str, str]:
+    c_code = """
+    void ce_forward(float *x, float *target, float *out, int n_rows, int *x_stride)
+    {
+        for (int i=0; i<n_rows; i++) {
+            out[i] = x[(int)target[i]+(x_stride[0]*i)];
+        }
+    }
     """
 
-    return c_code, "void ce_forward(float *x, float *target, float *out);"
+    return c_code, "void ce_forward(float *x, float *target, float *out, int n_rows, int *x_stride);"
 
 @cache
-def ce_backward(x_shape: tuple, x_stride: tuple) -> tuple[str, str]:
-    c_code = f"""
-    void ce_backward(float *x, float *target)
-    {{
-        int rows = {x_shape[0]};
-        int cols = {x_shape[1]};
+def ce_backward() -> tuple[str, str]:
+    c_code = """
+    void ce_backward(float *x, float *target, int *x_shape, int *x_stride)
+    {
+        int rows = x_shape[0];
+        int cols = x_shape[1];
 
-        for (int i=0; i<rows; i++) {{
-            x[(int)target[i]+({x_stride[0]}*i)] -= 1;
-        }}
-    }}
+        for (int i=0; i<rows; i++) {
+            x[(int)target[i]+(x_stride[0]*i)] -= 1;
+        }
+    }
     """
 
     return c_code, "void ce_backward(float *x, float *target);"

@@ -922,7 +922,7 @@ class CPU:
     def ce_forward(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.shape[0])
 
-        c_code, cdef = cpu_kernel.ce_forward(x.shape[0], x.stride)
+        c_code, cdef = cpu_kernel.ce_forward()
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"ce_forward_{key}.so"
@@ -933,14 +933,16 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.ce_forward(x.ptr, y.ptr, out_ptr)
+        x_stride = CPU.ffi.new("int[]", x.stride)
+
+        lib.ce_forward(x.ptr, y.ptr, out_ptr, x.shape[0], x_stride)
 
         return out_ptr
 
     @staticmethod
     @dispatcher.register(CustomOps.CE_BACKWARD, Device.CPU)
     def ce_backward(x: Buffer, target: Buffer) -> CDataPtr:
-        c_code, cdef = cpu_kernel.ce_backward(x.shape, x.stride)
+        c_code, cdef = cpu_kernel.ce_backward()
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"ce_backward_{key}.so"
@@ -951,7 +953,10 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.ce_backward(x.ptr, target.ptr)
+        x_shape = CPU.ffi.new("int[]", x.shape)
+        x_stride = CPU.ffi.new("int[]", x.stride)
+
+        lib.ce_backward(x.ptr, target.ptr, x_shape, x_stride)
 
     @staticmethod
     @dispatcher.register(CustomOps.PRINT, Device.CPU)
