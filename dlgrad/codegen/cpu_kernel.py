@@ -22,7 +22,8 @@ def arithmetic(op: str, ndim: int) -> tuple[str, str]:
         'div': '/',
         'eq': '==',
         'lt': '<',
-        'gt': '>'
+        'gt': '>',
+        'gte': '>=',
     }
     c_op = ops[op]
 
@@ -565,20 +566,20 @@ def gt(x_numel: int, val: int | float) -> tuple[str, str]:
 
     return code, "void gt_with_scalar(float *arr, float *out);"
 
-@cache
-def gte(x_numel: int, val: int | float) -> tuple[str, str]:
-    code = f"""
-        void gte_with_scalar(float *arr, float *out)
-        {{
-            for (int i=0; i<{x_numel}; i++) {{
-                if (arr[i] >= {val})
-                    out[i] = 1.0;
-                else
-                    out[i] = 0.0;
-            }}
-        }}
-    """
-    return code, "void gte_with_scalar(float *arr, float *out);"
+# @cache
+# def gte(x_numel: int, val: int | float) -> tuple[str, str]:
+#     code = f"""
+#         void gte_with_scalar(float *arr, float *out)
+#         {{
+#             for (int i=0; i<{x_numel}; i++) {{
+#                 if (arr[i] >= {val})
+#                     out[i] = 1.0;
+#                 else
+#                     out[i] = 0.0;
+#             }}
+#         }}
+#     """
+#     return code, "void gte_with_scalar(float *arr, float *out);"
 
 @cache
 def where(ndim: int) -> tuple[str, str]:
