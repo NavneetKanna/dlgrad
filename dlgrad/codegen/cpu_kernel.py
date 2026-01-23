@@ -472,114 +472,80 @@ def ce_backward(x_shape: tuple, x_stride: tuple) -> tuple[str, str]:
     return c_code, "void ce_backward(float *x, float *target);"
 
 @cache
-def argmax(x_shape: tuple, dim: int) -> tuple[str, str]:
-    if dim == 1:
-        code = f"""
-            void argmax2d(float *x, float *out)
-            {{
-                int rows = {x_shape[0]};
-                int cols = {x_shape[1]};
-                if ({dim} == 1) {{
-                    for (int i = 0; i < rows; i++) {{
-                        float max = x[i * cols + 0];
-                        int idx = 0;
-                        for (int j = 1; j < cols; j++) {{
-                            if (x[i * cols + j] > max) {{
-                                max = x[i * cols + j];
-                                idx = j;
-                            }}
-                        }}
-                        out[i] = idx;
-                    }}
-                }}
-            }}
-        """
-        return code, "void argmax2d(float *x, float *out);"
-    elif dim == 0:
-        f"""
-            void argmax2d(float *x, float *out)
-            {{
-                int rows = {x_shape[0]};
-                int cols = {x_shape[1]};
-                for (int j = 0; j < cols; j++) {{
-                    float max = x[0 * cols + j];
-                    int idx = 0;
-                    for (int i = 1; i < rows; i++) {{
-                        if (x[i * cols + j] > max) {{
-                            max = x[i * cols + j];
-                            idx = i;
-                        }}
-                    }}
-                    out[j] = idx;
-                }}
-            }}
-        """
-        return code, "void argmax2d(float *x, float *out);"
-    else:
-        f"""
-            void argmax2d(float *x, float *out)
-            {{
-                int rows = {x_shape[0]};
-                int cols = {x_shape[1]};
-                float max = -999;
-                int idx = 0;
-                for (int i=0; i<rows*cols; i++) {{
-                    if (x[i] > max) {{
-                        max = x[i];
-                        idx = i;
-                    }}
-                }}
-                out[0] = idx;
-            }}
-        """
-        return code, "void argmax2d(float *x, float *out);"
+def argmax(ndim: int, reduce_dim: int) -> tuple[str, str]:
+    """
+    Generates a argmax kernel.
+    """
+    func_name = f"argmax_{ndim}d_axis{reduce_dim}"
+    cdef = f"void {func_name}(const float *x, float *out, int *shape, int *x_stride, int *out_stride);"
+
+    # Identify Dimensions
+    all_dims = range(ndim)
+    outer_dims = [d for d in all_dims if d != reduce_dim]
+
+    # Pre-calculate Index Math
+    x_idx_parts = [f"i{d}*x_stride[{d}]" for d in all_dims]
+    calc_x_idx = " + ".join(x_idx_parts)
+
+    out_idx_parts = [f"i{d}*out_stride[{k}]" for k, d in enumerate(outer_dims)]
+    calc_out_idx = " + ".join(out_idx_parts) if out_idx_parts else "0"
+
+    body = ""
+    indent = "    "
+
+    # Open Outer Loops
+    for i, d in enumerate(outer_dims):
+        body += f"{indent * (i + 1)}for (int i{d} = 0; i{d} < shape[{d}]; i{d}++) {{\n"
+
+    depth = len(outer_dims) + 1
+
+    # Init Accumulator
+    # We track BOTH the max value found so far AND the index where we found it.
+    body += f"{indent * depth}float max_val = -3.402823466e+38F; // -FLT_MAX\n"
+    body += f"{indent * depth}int best_idx = 0;\n"
+
+    # Open Reduction Loop
+    body += f"{indent * depth}for (int i{reduce_dim} = 0; i{reduce_dim} < shape[{reduce_dim}]; i{reduce_dim}++) {{\n"
+
+    # Update Logic
+    body += f"{indent * (depth + 1)}float v = x[{calc_x_idx}];\n"
+    body += f"{indent * (depth + 1)}if (v > max_val) {{\n"
+    body += f"{indent * (depth + 2)}max_val = v;\n"
+    body += f"{indent * (depth + 2)}best_idx = i{reduce_dim};\n"
+    body += f"{indent * (depth + 1)}}}\n"
+
+    # Close Reduction Loop
+    body += f"{indent * depth}}}\n"
+
+    # Write Result (The Index, not the Value)
+    body += f"{indent * depth}out[{calc_out_idx}] = (float)best_idx;\n"
+
+    # Close Outer Loops
+    for i in range(len(outer_dims) - 1, -1, -1):
+        body += f"{indent * (i + 1)}}}\n"
+
+    final_code = f"""
+        void {func_name}(const float *x, float *out, int *shape, int *x_stride, int *out_stride) {{
+            {body}
+        }}
+    """
+    return final_code, cdef
 
 @cache
-def relu(x_numel: int) -> tuple[str, str]:
-    code = f"""
-        void relu(float *arr, float *out) {{
-            for (int i=0; i<{x_numel}; i++) {{
-                if (arr[i] <= 0) {{
+def relu() -> tuple[str, str]:
+    code = """
+        void relu(float *arr, float *out, int x_numel) {
+            for (int i=0; i<x_numel; i++) {
+                if (arr[i] <= 0) {
                     out[i] = 0.0;
-                }} else {{
+                } else {
                     out[i] = arr[i];
-                }}
-            }}
-        }}
+                }
+            }
+        }
     """
 
     return code, "void relu(float *arr, float *out);"
-
-@cache
-def gt(x_numel: int, val: int | float) -> tuple[str, str]:
-    code = f"""
-        void gt_with_scalar(float *arr, float *out)
-        {{
-            for (int i=0; i<{x_numel}; i++) {{
-                if (arr[i] > {val})
-                    out[i] = 1.0;
-                else
-                    out[i] = 0.0;
-            }}
-        }}
-    """
-
-    return code, "void gt_with_scalar(float *arr, float *out);"
-
-# @cache
-# def gte(x_numel: int, val: int | float) -> tuple[str, str]:
-#     code = f"""
-#         void gte_with_scalar(float *arr, float *out)
-#         {{
-#             for (int i=0; i<{x_numel}; i++) {{
-#                 if (arr[i] >= {val})
-#                     out[i] = 1.0;
-#                 else
-#                     out[i] = 0.0;
-#             }}
-#         }}
-#     """
-#     return code, "void gte_with_scalar(float *arr, float *out);"
 
 @cache
 def where(ndim: int) -> tuple[str, str]:

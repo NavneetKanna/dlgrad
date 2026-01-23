@@ -831,10 +831,12 @@ class Tensor:
         return self.transpose(1, 0)
 
     def __gt__(self, other: Scalar) -> Tensor:
-        return Tensor(data=self.data>other)
+        other = Tensor(other)
+        return Tensor(data=self.data>other.data)
 
     def __ge__(self, other: Scalar) -> Tensor:
-        return Tensor(data=self.data>=other)
+        other = Tensor(other)
+        return Tensor(data=self.data>=other.data)
 
     def __add__(self, other: Tensor | Scalar) -> Tensor:
         return Tensor.add(self, other)

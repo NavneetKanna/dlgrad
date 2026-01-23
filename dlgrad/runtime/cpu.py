@@ -724,7 +724,7 @@ class CPU:
     def relu(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.relu(x.numel)
+        c_code, cdef = cpu_kernel.relu()
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"relu_{key}.so"
@@ -735,29 +735,14 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.relu(x.ptr, out_ptr)
+        lib.relu(x.ptr, out_ptr, x.numel)
 
         return out_ptr
 
     @staticmethod
     @dispatcher.register(BinaryOps.GT, Device.CPU)
     def gt(x: Buffer, y: int | float) -> CDataPtr:
-        out_ptr = CPU.malloc(num=x.numel)
-
-        c_code, cdef = cpu_kernel.gt(x.numel, y)
-
-        key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"gt_with_scalar_{key}.so"
-        if not os.path.exists(so_fp):
-            CPU._build_shared_object(c_code, so_fp)
-
-        lib = CPU._get_handle(str(so_fp))
-
-        CPU._ensure_sig(cdef)
-
-        lib.gt_with_scalar(x.ptr, out_ptr)
-
-        return out_ptr
+        return CPU._binary_op(x, y, "gt")
 
     @staticmethod
     @dispatcher.register(BinaryOps.GTE, Device.CPU)
@@ -884,26 +869,51 @@ class CPU:
     @staticmethod
     @dispatcher.register(UnaryOps.ARGMAX, Device.CPU)
     def argmax(x: Buffer, dim: int) -> CDataPtr:
-        if dim==0:
-            n = x.shape[1]
-        elif dim==1:
-            n = x.shape[0]
+        if dim is None:
+            ndim = 1
+            dim = 0
+            x_shape_args = (x.numel,)
+            x_stride_args = (1,)
+            out_shape = (1,)
         else:
-            n = 1
-        out_ptr = CPU.malloc(num=n)
+            if dim < 0:
+                dim += x.ndim
+            ndim = x.ndim
+            x_shape_args = x.shape
+            x_stride_args = x.stride
 
-        c_code, cdef = cpu_kernel.argmax(x.shape, dim)
+            # Output shape removes the reduction dimension
+            out_shape = list(x.shape)
+            out_shape.pop(dim)
+            out_shape = tuple(out_shape)
+
+        # Alloc Output
+        out_numel = prod_(out_shape) if out_shape else 1
+        out_ptr = CPU.malloc(num=out_numel)
+        out_stride = calculate_stride(out_shape)
+
+        # Get Kernel
+        c_code, cdef = cpu_kernel.argmax_source(ndim, dim)
 
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"argmax_{key}.so"
+        so_fp = pathlib.Path(CACHE_DIR) / f"argmax_{ndim}d_axis{dim}_{key}.so"
+
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
-
         CPU._ensure_sig(cdef)
 
-        lib.argmax2d(x.ptr, out_ptr)
+        func_name = f"argmax_{ndim}d_axis{dim}"
+        func = getattr(lib, func_name)
+
+        # Pack Arguments
+        # Note: We pass the "virtual" shape args calculated above
+        shape_c = CPU.ffi.new("int[]", x_shape_args)
+        x_stride_c = CPU.ffi.new("int[]", x_stride_args)
+        out_stride_c = CPU.ffi.new("int[]", out_stride)
+
+        func(x.ptr, out_ptr, shape_c, x_stride_c, out_stride_c)
 
         return out_ptr
 
