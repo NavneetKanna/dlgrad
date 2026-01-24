@@ -517,29 +517,57 @@ class CPU:
             if y.shape[1] == 1 and C > 1:
                 y_strides[1] = 0
 
-            c_code, cdef = cpu_kernel.matmul_4d(
-                (B, C, M, K, N),
-                tuple(x_strides),
-                tuple(y_strides),
-                out_stride
-            )
+            dims = CPU.ffi.new("int[]", [B, C, M, K, N])
+            x_strides = CPU.ffi.new("int[]", x_strides)
+            y_strides = CPU.ffi.new("int[]", y_strides)
+            out_strides = CPU.ffi.new("int[]", out_stride)
+
+            c_code, cdef = cpu_kernel.matmul_4d()
         elif x.ndim == 3:
-            if x.shape[0] != 1:
-                out_shape = x.shape[0]*x.shape[1]*y.shape[2]
-                out_stride = calculate_stride((x.shape[0], x.shape[1], y.shape[2]))
-            else:
-                out_shape = y.shape[0]*x.shape[1]*y.shape[2]
-                out_stride = calculate_stride((y.shape[0], x.shape[1], y.shape[2]))
-            out_ptr = CPU.init_with_scalar(num=out_shape, scalar=0)
-            broadcast_x, broadcast_y = False, False
-            if x.shape[0] == 1:
-                broadcast_x = True
-            if y.shape[0] == 1:
-                broadcast_y = True
-            c_code, cdef = cpu_kernel.matmul_3d(x.shape, y.shape, x.stride, y.stride, out_stride, broadcast_x, broadcast_y)
-        else:
+            M, K = x.shape[1], x.shape[2]
+            N = y.shape[2]
+            B = max(x.shape[0], y.shape[0]) # Broadcasted Batch Size
+
+            out_shape = (B, M, N)
+            out_stride = calculate_stride(out_shape)
+            out_numel = B * M * N
+
+            out_ptr = CPU.calloc(num=out_numel)
+
+            # Handle Broadcasting (Zeroing Strides)
+            # If x is (1, M, K) and B > 1, set x batch stride to 0
+            sx = list(x.stride)
+            sy = list(y.stride)
+
+            if x.shape[0] == 1 and B > 1:
+                sx[0] = 0
+            if y.shape[0] == 1 and B > 1:
+                sy[0] = 0
+
+            # Get Kernel
+            c_code, cdef = cpu_kernel.matmul_3d()
+
+            key = CPU._hash_code(c_code)
+            so_fp = pathlib.Path(CACHE_DIR) / f"matmul_3d_{key}.so"
+
+            if not os.path.exists(so_fp):
+                CPU._build_shared_object(c_code, so_fp)
+
+            lib = CPU._get_handle(str(so_fp))
+            CPU._ensure_sig(cdef)
+
+            # Pack Args
+            sx_c = CPU.ffi.new("int[]", sx)
+            sy_c = CPU.ffi.new("int[]", sy)
+            so_c = CPU.ffi.new("int[]", out_stride)
+
+        elif x.ndim == 2:
             out_ptr = CPU.init_with_scalar(num=x.shape[0]*y.shape[1], scalar=0)
-            c_code, cdef = cpu_kernel.matmul_2d(x.shape, y.shape, x.stride, y.stride)
+            x_shape = CPU.ffi.new("int[]", x.shape)
+            y_shape = CPU.ffi.new("int[]", y.shape)
+            y_stride = CPU.ffi.new("int[]", y.stride)
+            x_stride = CPU.ffi.new("int[]", x.stride)
+            c_code, cdef = cpu_kernel.matmul_2d()
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"matmul_{key}.so"
@@ -551,12 +579,11 @@ class CPU:
         CPU._ensure_sig(cdef)
 
         if x.ndim == 4:
-            lib.matmul_4d(x.ptr, y.ptr, out_ptr)
+            lib.matmul_4d(x.ptr, y.ptr, out_ptr, dims, x_strides, y_strides, out_strides)
         elif x.ndim == 3:
-            lib.matmul_3d(x.ptr, y.ptr, out_ptr)
+            lib.matmul_3d(x.ptr, y.ptr, out_ptr, B, M, K, N, sx_c, sy_c, so_c)
         else:
-            lib.matmul_2d(x.ptr, y.ptr, out_ptr)
-
+            lib.matmul_2d(x.ptr, y.ptr, out_ptr, x_shape, x_stride, y_shape, y_stride)
 
         return out_ptr
 

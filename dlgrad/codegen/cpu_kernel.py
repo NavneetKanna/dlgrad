@@ -362,85 +362,83 @@ def clamp(x_numel: int, min_val: int, max_val: int) -> tuple[str, str]:
     return c_code, "void clamp(float *x, float *out);"
 
 @cache
-def matmul_4d(dims: tuple, x_stride: tuple, y_stride: tuple, out_stride: tuple) -> tuple[str, str]:
-    B, C, M, K, N = dims
-
-    c_code = f"""
+def matmul_4d() -> tuple[str, str]:
+    c_code = """
         #include <stdint.h>
 
-        void matmul_4d(const float* x, const float* y, float* out)
-        {{
-            for (int b = 0; b < {B}; ++b) {{
-                for (int c = 0; c < {C}; ++c) {{
-                    const float* A_ptr = x + (b * {x_stride[0]}) + (c * {x_stride[1]});
-                    const float* B_ptr = y + (b * {y_stride[0]}) + (c * {y_stride[1]});
-                    float* out_ptr = out + (b * {out_stride[0]}) + (c * {out_stride[1]});
+        void matmul_4d(const float* x, const float* y, float* out, int *dims, int *x_stride, int *y_stride,  int *out_stride)
+        {
+            int B = dims[0];
+            int C = dims[1];
+            int M = dims[2];
+            int K = dims[3];
+            int N = dims[4];
 
-                    for (int h = 0; h < {M}; ++h) {{
-                        const float* A_row = A_ptr + (h * {x_stride[2]});
-                        float* out_row = out_ptr + (h * {out_stride[2]});
+            for (int b = 0; b < B; ++b) {
+                for (int c = 0; c < C; ++c) {
+                    const float* A_ptr = x + (b * x_stride[0]) + (c * x_stride[1]);
+                    const float* B_ptr = y + (b * y_stride[0]) + (c * y_stride[1]);
+                    float* out_ptr = out + (b * out_stride[0]) + (c * out_stride[1]);
 
-                        for (int k = 0; k < {K}; ++k) {{
-                            float a_val = A_row[k * {x_stride[3]}];
-                            const float* B_row_k = B_ptr + (k * {y_stride[2]});
+                    for (int h = 0; h < M; ++h) {
+                        const float* A_row = A_ptr + (h * x_stride[2]);
+                        float* out_row = out_ptr + (h * out_stride[2]);
 
-                            for (int w = 0; w < {N}; ++w) {{
-                                out_row[w * {out_stride[3]}] += a_val * B_row_k[w * {y_stride[3]}];
-                            }}
-                        }}
-                    }}
-                }}
-            }}
-        }}
+                        for (int k = 0; k < K; ++k) {
+                            float a_val = A_row[k * x_stride[3]];
+                            const float* B_row_k = B_ptr + (k * y_stride[2]);
+
+                            for (int w = 0; w < N; ++w) {
+                                out_row[w * out_stride[3]] += a_val * B_row_k[w * y_stride[3]];
+                            }
+                        }
+                    }
+                }
+            }
+        }
     """
-    return c_code, "void matmul_4d(const float* x, const float* y, float* out);"
+    return c_code, "void matmul_4d(const float* x, const float* y, float* out, int *dims, int *x_strude, int *y_stride,  int *out_stride);"
 
 @cache
-def matmul_3d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple, out_stride: tuple, broadcast_x: bool = False, broadcast_y: bool = False) -> tuple[str, str]:
-    B = x_shape[0] if not broadcast_x else y_shape[0]
-    M = x_shape[1]
-    K = x_shape[2]
-    N = y_shape[2]
+def matmul_3d() -> tuple[str, str]:
+    c_code = """
+        void matmul_3d(const float *x, const float *y, float *out,
+                       int B, int M, int K, int N,
+                       int *sx, int *sy, int *so) {
+            for (int b = 0; b < B; b++) {
+                for (int i = 0; i < M; i++) {
+                    for (int k = 0; k < K; k++) {
+                        // sx[0] will be 0 if we are broadcasting X over batch
+                        float a = x[b*sx[0] + i*sx[1] + k*sx[2]];
 
-    tx = f"b*{x_stride[0]} + i*{x_stride[1]} + k*{x_stride[2]}"
-    ty = f"b*{y_stride[0]} + k*{y_stride[1]} + j*{y_stride[2]}"
-
-    if broadcast_x:
-        tx = f"i*{x_stride[1]} + k*{x_stride[2]}"
-    if broadcast_y:
-        ty = f"k*{y_stride[1]} + j*{y_stride[2]}"
-
-    c_code = f"""
-    void matmul_3d(float *x, float *y, float *out) {{
-    for (int b=0; b<{B}; b++) {{
-        for (int i=0; i<{M}; i++) {{
-            for (int k=0; k<{K}; k++) {{
-                float a = x[{tx}];
-                for (int j=0; j<{N}; j++) {{
-                    out[b*{out_stride[0]} + i*{out_stride[1]} + j*{out_stride[2]}] += a * y[{ty}];
-                        }}
-                    }}
-                }}
-            }}
-        }}
+                        for (int j = 0; j < N; j++) {
+                            int y_idx = b*sy[0] + k*sy[1] + j*sy[2];
+                            int out_idx = b*so[0] + i*so[1] + j*so[2];
+                            out[out_idx] += a * y[y_idx];
+                        }
+                    }
+                }
+            }
+        }
     """
-    return c_code, "void matmul_3d(float *x, float *y, float *out);"
+    cdef = "void matmul_3d(const float *x, const float *y, float *out, int B, int M, int K, int N, int *sx, int *sy, int *so);"
+    return c_code, cdef
 
 @cache
-def matmul_2d(x_shape: tuple, y_shape: tuple, x_stride: tuple, y_stride: tuple) -> tuple[str, str]:
-    c_code = f"""
-    void matmul_2d(float *x, float *y, float *out) {{
-        for (int i=0; i<{x_shape[0]}; i++) {{
-            for (int k=0; k<{x_shape[1]}; k++) {{
-                float a = x[i*{x_stride[0]} + k*{x_stride[1]}];
-                for (int j=0; j<{y_shape[1]}; j++) {{
-                    out[i*{y_shape[1]} + j] += a * y[k*{y_stride[0]} + j*{y_stride[1]}];
-                }}
-            }}
-        }}
-    }}
+def matmul_2d() -> tuple[str, str]:
+    c_code = """
+    void matmul_2d(float *x, float *y, float *out, int *x_shape, int *x_stride, int *y_shape, int *y_stride) {
+        for (int i=0; i<x_shape[0]; i++) {
+            for (int k=0; k<x_shape[1]; k++) {
+                float a = x[i*x_stride[0] + k*x_stride[1]];
+                for (int j=0; j<y_shape[1]; j++) {
+                    out[i*y_shape[1] + j] += a * y[k*y_stride[0] + j*y_stride[1]];
+                }
+            }
+        }
+    }
     """
-    return c_code, "void matmul_2d(float *x, float *y, float *out);"
+    return c_code, "void matmul_2d(float *x, float *y, float *out, int *x_shape, int *x_stride, int *y_shape, int *y_stride);"
 
 @cache
 def ce_forward() -> tuple[str, str]:
@@ -469,7 +467,7 @@ def ce_backward() -> tuple[str, str]:
     }
     """
 
-    return c_code, "void ce_backward(float *x, float *target);"
+    return c_code, "void ce_backward(float *x, float *target, int *x_shape, int *x_stride);"
 
 @cache
 def argmax(ndim: int, reduce_dim: int) -> tuple[str, str]:
