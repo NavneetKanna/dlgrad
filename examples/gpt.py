@@ -238,6 +238,8 @@ class GPT:
         for i in idx_np[0]:
             print(tokenizer.itos[i], end='', flush=True)
 
+        chars_generated = 0
+        start_time = time.perf_counter()
         try:
             while True:
                 # Crop context if it gets too long
@@ -264,17 +266,19 @@ class GPT:
                 idx_next = np.random.choice(len(probs), p=probs)
 
                 # Print immediately
-                s = time.perf_counter()
                 token_char = tokenizer.itos[idx_next]
                 print(token_char, end='', flush=True)
+
+                chars_generated += 1
 
                 # Append and continue
                 idx_np = np.concatenate((idx_np, [[idx_next]]), axis=1)
         except KeyboardInterrupt:
-            print("\n\n--- Generation stopped by user ---")
+            end_time = time.perf_counter()
+            chars_per_sec = chars_generated / (end_time - start_time)
+            print(f"\n {chars_per_sec:.2f} chars/sec")
 
 class CharTokenizer:
-    """Character-level tokenizer - much smaller vocab!"""
     def __init__(self, text):
         # Get all unique characters
         self.chars = sorted(list(set(text)))
