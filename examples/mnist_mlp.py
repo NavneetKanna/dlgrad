@@ -4,7 +4,7 @@ from dlgrad import Tensor, nn
 from dlgrad.nn.datasets import mnist
 
 BS, in_dim, HS, ncls = 128, 784, 64, 10
-EPOCHS = 3
+EPOCHS = 5
 STEPS = int(60000/BS) * EPOCHS
 
 device = "cpu" # or metal
@@ -31,9 +31,6 @@ model = Model()
 
 opt = nn.optim.SGD(params=nn.utils.get_parameters(model), lr=1e-3) # or Adam
 
-for i in nn.utils.get_parameters(model):
-    print(i)
-
 for epoch in range(EPOCHS):
     s = 0
     h = BS
@@ -46,7 +43,6 @@ for epoch in range(EPOCHS):
 
         loss.backward()
         opt.step()
-        exit()
 
         # print(epoch, i, s, h)
         s += BS
@@ -61,5 +57,5 @@ for epoch in range(EPOCHS):
     correct = (y_pred==x_test_labels).sum()
     total = float(x_test_labels.shape[0])
     test_acc = ((correct/total) * 100.0)
-    print("test acc")
-    test_acc.show()
+    tqdm.write(f"test acc: {test_acc.numpy()} ")
+    # test_acc.show()

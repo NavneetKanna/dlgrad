@@ -50,6 +50,8 @@ class CPU:
 
     @staticmethod
     def _build_shared_object(source: str, so_path: pathlib.Path, rm_flags: list = []) -> None:
+        print(f"[DEBUG] Compiling new kernel: {so_path.name}")
+
         c_path = so_path.with_suffix(".c")
         c_path.write_text(source)
 
@@ -218,7 +220,7 @@ class CPU:
     def arange(shape: tuple) -> CDataPtr:
         out_ptr = CPU.malloc(num=prod_(shape))
 
-        c_code, cdef = cpu_kernel.arange(prod_(shape))
+        c_code, cdef = cpu_kernel.arange()
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"arange_{key}.so"
@@ -229,7 +231,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.arange(out_ptr)
+        lib.arange(out_ptr, prod_(shape))
 
         return out_ptr
 
@@ -238,7 +240,7 @@ class CPU:
     def full(shape: tuple, fill_value: Scalar) -> CDataPtr:
         out_ptr = CPU.malloc(num=prod_(shape))
 
-        c_code, cdef = cpu_kernel.full(prod_(shape), fill_value)
+        c_code, cdef = cpu_kernel.full()
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"full_{key}.so"
@@ -249,7 +251,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.full(out_ptr)
+        lib.full(out_ptr, prod_(shape), int(fill_value))
 
         return out_ptr
 
@@ -934,7 +936,7 @@ class CPU:
         out_stride = calculate_stride(out_shape)
 
         # Get Kernel
-        c_code, cdef = cpu_kernel.argmax_source(ndim, dim)
+        c_code, cdef = cpu_kernel.argmax(ndim, dim)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"argmax_{ndim}d_axis{dim}_{key}.so"
@@ -1029,7 +1031,7 @@ class CPU:
     def embedding(x: Buffer, idx: Buffer, out_numel: int, backward: bool = False, upstream_grad: Buffer = None) -> CDataPtr:
         if backward:
             out_ptr = CPU.init_with_scalar(num=x.numel, scalar=0)
-            c_code, cdef = cpu_kernel.embedding_backward(idx.numel, x.shape[-1])
+            c_code, cdef = cpu_kernel.embedding_backward()
             key = CPU._hash_code(c_code)
             so_fp = pathlib.Path(CACHE_DIR) / f"embedding_backward_{key}.so"
             if not os.path.exists(so_fp):
@@ -1039,13 +1041,13 @@ class CPU:
 
             CPU._ensure_sig(cdef)
 
-            lib.embedding_backward(out_ptr, upstream_grad.ptr, idx.ptr)
+            lib.embedding_backward(out_ptr, upstream_grad.ptr, idx.ptr, idx.numel, x.shape[-1])
 
             return out_ptr
 
         out_ptr = CPU.malloc(num=out_numel)
 
-        c_code, cdef = cpu_kernel.embedding(idx.numel, x.shape[-1])
+        c_code, cdef = cpu_kernel.embedding()
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"embedding_{key}.so"
@@ -1056,6 +1058,6 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.embedding(x.ptr, idx.ptr, out_ptr)
+        lib.embedding(x.ptr, idx.ptr, out_ptr, idx.numel, x.shape[-1])
 
         return out_ptr

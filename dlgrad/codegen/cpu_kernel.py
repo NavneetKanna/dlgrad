@@ -215,32 +215,32 @@ def permute(ndim: int) -> tuple[str, str]:
     return c_code, cdef
 
 @cache
-def embedding(idx_numel: int, x_width: int) -> tuple[str, str]:
-    c_code = f"""
+def embedding() -> tuple[str, str]:
+    c_code = """
         #include <string.h>
-        void embedding(float *x, float *idx, float *out) {{
-            for (int i=0; i<{idx_numel}; i++) {{
-                int x_idx = idx[i]*{x_width};
-                memcpy(&out[i * {x_width}], &x[x_idx], {x_width} * sizeof(float));
-            }}
-        }}
+        void embedding(float *x, float *idx, float *out, int idx_numel, int x_width) {
+            for (int i=0; i<idx_numel; i++) {
+                int x_idx = idx[i]*x_width;
+                memcpy(&out[i * x_width], &x[x_idx], x_width * sizeof(float));
+            }
+        }
 
     """
-    return c_code, "void embedding(float *x, float *idx, float *out);"
+    return c_code, "void embedding(float *x, float *idx, float *out, int idx_numel, int x_width);"
 
 @cache
-def embedding_backward(idx_numel: int, x_width: int) -> tuple[str, str]:
-    c_code = f"""
-        void embedding_backward(float *out, float *upstream_grad, float *idx) {{
-            for (int i=0; i<{idx_numel}; i++) {{
-                for (int j=0; j<{x_width}; j++) {{
-                    int x_idx = idx[i]*{x_width}+j;
-                    out[x_idx] += upstream_grad[i*{x_width}+j];
-                }}
-            }}
-        }}
+def embedding_backward() -> tuple[str, str]:
+    c_code = """
+        void embedding_backward(float *out, float *upstream_grad, float *idx, int idx_numel, int x_width) {
+            for (int i=0; i<idx_numel; i++) {
+                for (int j=0; j<x_width; j++) {
+                    int x_idx = idx[i]*x_width+j;
+                    out[x_idx] += upstream_grad[i*x_width+j];
+                }
+            }
+        }
     """
-    return c_code, "void embedding_backward(float *out, float *upstream_grad, float *idx);"
+    return c_code, "void embedding_backward(float *out, float *upstream_grad, float *idx, int idx_numel, int x_width);"
 
 @cache
 def utils(func: str) -> tuple[str, str]:
@@ -740,34 +740,34 @@ def free_ptr() -> tuple[str, str]:
     return c_code, "void free_ptr(float *ptr);"
 
 @cache
-def arange(x_numel: int) -> tuple[str, str]:
-    c_code = f"""
+def arange() -> tuple[str, str]:
+    c_code = """
         #include <stdlib.h>
 
-        void arange(float *out)
-        {{
-            for (int i=0; i<{x_numel}; i++) {{
+        void arange(float *out, int x_numel)
+        {
+            for (int i=0; i<x_numel; i++) {
                 out[i] = i;
-            }}
-        }}
+            }
+        }
     """
 
-    return c_code, "void arange(float *out);"
+    return c_code, "void arange(float *out, int x_numel);"
 
 @cache
-def full(x_numel: int, fill_value: int) -> tuple[str, str]:
-    c_code = f"""
+def full() -> tuple[str, str]:
+    c_code = """
         #include <stdlib.h>
 
-        void full(float *out)
-        {{
-            for (int i=0; i<{x_numel}; i++) {{
-                out[i] = {fill_value};
-            }}
-        }}
+        void full(float *out, int x_numel, int fill_value)
+        {
+            for (int i=0; i<x_numel; i++) {
+                out[i] = fill_value;
+            }
+        }
     """
 
-    return c_code, "void full(float *out);"
+    return c_code, "void full(float *out, int x_numel, int fill_value);"
 
 
 @cache
