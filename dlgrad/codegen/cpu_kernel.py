@@ -320,46 +320,35 @@ def utils(x_numel: int, func: str, val: Scalar = None) -> tuple[str, str]:
             """
             return code, "void c_rsqrt(float *x, float *out);"
 @cache
-def clamp(x_numel: int, min_val: int, max_val: int) -> tuple[str, str]:
-    c_code = f"""
-    void clamp(float *x, float *out) {{
-        for (int i=0; i<{x_numel}; i++) {{
+def clamp(has_min: bool, has_max: bool) -> tuple[str, str]:
     """
-    if min_val is not None and max_val is not None:
-        c_code += f"""
-        if (x[i] < {min_val}) {{
-            out[i] = {min_val};
-        }} else if (x[i] > {max_val}) {{
-            out[i] = {max_val};
-        }} else {{
-            out[i] = x[i];
+    Generates a clamp kernel.
+    """
+    func_name = f"clamp_{'min' if has_min else ''}_{'max' if has_max else ''}"
+
+    args = "const float *x, float *out, int numel"
+    if has_min:
+        args += ", float min_val"
+    if has_max:
+        args += ", float max_val"
+
+    cdef = f"void {func_name}({args});"
+
+    logic = "float val = x[i];"
+    if has_min:
+        logic += "\n        if (val < min_val) val = min_val;"
+    if has_max:
+        logic += "\n        if (val > max_val) val = max_val;"
+
+    c_code = f"""
+    void {func_name}({args}) {{
+        for (int i = 0; i < numel; i++) {{
+            {logic}
+            out[i] = val;
         }}
-        """
-    elif min_val is not None:
-        c_code += f"""
-        if (x[i] < {min_val}) {{
-            out[i] = {min_val};
-        }} else {{
-            out[i] = x[i];
-        }}
-        """
-    elif max_val is not None:
-        c_code += f"""
-        if (x[i] > {max_val}) {{
-            out[i] = {max_val};
-        }} else {{
-            out[i] = x[i];
-        }}
-        """
-    else:
-        c_code += """
-        out[i] = x[i];
-        """
-    c_code += """
-                }
-            }
-        """
-    return c_code, "void clamp(float *x, float *out);"
+    }}
+    """
+    return c_code, cdef
 
 @cache
 def matmul_4d() -> tuple[str, str]:

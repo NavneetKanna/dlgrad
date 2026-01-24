@@ -325,7 +325,7 @@ class Buffer:
 
     def clamp(self, min: int | None = None, max: int | None = None) -> Buffer:
         return Buffer(
-            data=dispatcher.dispatch(op=UnaryOps.CLAMP, device=Device.CPU, x=self, min=min, max=max),
+            data=dispatcher.dispatch(op=UnaryOps.CLAMP, device=Device.CPU, x=self, min_val=min, max_val=max),
             shape=self.shape, device=self.device, dtype=self.dtype
         )
 

@@ -429,21 +429,35 @@ class CPU:
 
     @staticmethod
     @dispatcher.register(UnaryOps.CLAMP, Device.CPU)
-    def clamp(x: Buffer, min: int | None, max: int | None) -> CDataPtr:
+    def clamp(x: Buffer, min_val: int | None, max_val: int | None) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.clamp(x.numel, min, max)
+        has_min = min_val is not None
+        has_max = max_val is not None
+
+        # Get Kernel
+        c_code, cdef = cpu_kernel.clamp(has_min, has_max)
 
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"clamp_{key}.so"
+        so_fp = pathlib.Path(CACHE_DIR) / f"clamp_{int(has_min)}{int(has_max)}_{key}.so"
+
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
-
         CPU._ensure_sig(cdef)
 
-        lib.clamp(x.ptr, out_ptr)
+        func_name = f"clamp_{'min' if has_min else ''}_{'max' if has_max else ''}"
+        func = getattr(lib, func_name)
+
+        if has_min and has_max:
+            func(x.ptr, out_ptr, x.numel, float(min_val), float(max_val))
+        elif has_min:
+            func(x.ptr, out_ptr, x.numel, float(min_val))
+        elif has_max:
+            func(x.ptr, out_ptr, x.numel, float(max_val))
+        else:
+            func(x.ptr, out_ptr, x.numel)
 
         return out_ptr
 
