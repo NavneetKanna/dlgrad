@@ -20,10 +20,9 @@ from dlgrad.helpers import (
    BufferOps,
    CustomOps,
    UnaryOps,
-   broadcast_shapes_2,
    cal_sum_max_out_shape,
    calculate_stride,
-   get_broadcast_strides_2,
+   get_broadcast_strides,
    prod_,
 )
 
@@ -218,7 +217,7 @@ class CPU:
     def arange(shape: tuple) -> CDataPtr:
         out_ptr = CPU.malloc(num=prod_(shape))
 
-        c_code, cdef = cpu_kernel.arange()
+        c_code, cdef = cpu_kernel.arange(prod_(shape))
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"arange_{key}.so"
@@ -229,7 +228,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.arange(out_ptr, prod_(shape))
+        lib.arange(out_ptr)
 
         return out_ptr
 
@@ -238,7 +237,7 @@ class CPU:
     def full(shape: tuple, fill_value: Scalar) -> CDataPtr:
         out_ptr = CPU.malloc(num=prod_(shape))
 
-        c_code, cdef = cpu_kernel.full()
+        c_code, cdef = cpu_kernel.full(prod_(shape), fill_value)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"full_{key}.so"
@@ -249,44 +248,27 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.full(out_ptr, prod_(shape), int(fill_value))
+        lib.full(out_ptr)
 
         return out_ptr
 
     @staticmethod
-    def _binary_op(x: Buffer, y: Buffer, op: str) -> "CDataPtr":
-        # Prepare Shape Info
-        out_shape = broadcast_shapes_2(x.shape, y.shape)
-        ndim = len(out_shape)
-
-        # Get Kernel
-        c_code, cdef = cpu_kernel.arithmetic(op, ndim)
+    def _binary_op(x: Buffer, y: Buffer, op: str) -> CDataPtr:
+        c_code, cdef = cpu_kernel.arithmetic(x.shape, x.stride, y.shape, y.stride, op)
 
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"{op}_{ndim}d_{key}.so"
+        so_fp = pathlib.Path(CACHE_DIR) / f"{op}_{key}.so"
 
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
+
         CPU._ensure_sig(cdef)
 
-        func_name = f"{op}_{ndim}d"
-        func = getattr(lib, func_name)
-
-        # Setup Args
-        out_numel = prod_(out_shape)
-        outptr = CPU.malloc(num=out_numel)
-
-        x_strides_eff = get_broadcast_strides_2(out_shape, x.shape, x.stride)
-        y_strides_eff = get_broadcast_strides_2(out_shape, y.shape, y.stride)
-
-        # Pack & Call
-        shape_c = CPU.ffi.new("int[]", out_shape)
-        x_stride_c = CPU.ffi.new("int[]", x_strides_eff)
-        y_stride_c = CPU.ffi.new("int[]", y_strides_eff)
-
-        func(x.ptr, y.ptr, outptr, shape_c, x_stride_c, y_stride_c)
+        func = getattr(lib, op)
+        outptr = CPU.malloc(num=x.numel)
+        func(x.ptr, y.ptr, outptr)
 
         return outptr
 
@@ -308,14 +290,14 @@ class CPU:
     @staticmethod
     @dispatcher.register(BinaryOps.DIV, Device.CPU)
     def div(x: Buffer, y: Buffer) -> CDataPtr:
-        return CPU._binary_op(x, y, op="div")
+        return CPU._binary_op(x, y, op="divv")
 
     @staticmethod
     @dispatcher.register(UnaryOps.NEG, Device.CPU)
     def neg(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils("neg")
+        c_code, cdef = cpu_kernel.utils(x.numel, "neg")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"neg_{key}.so"
@@ -326,44 +308,36 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_neg(x.ptr, out_ptr, x.numel)
+        lib.c_neg(x.ptr, out_ptr)
 
         return out_ptr
 
     @staticmethod
-    @dispatcher.register(UnaryOps.PERMUTE, Device.CPU)
-    def permute(x: Buffer, order: tuple) -> CDataPtr:
-        ndim = x.ndim
+    @dispatcher.register(UnaryOps.TRANSPOSE, Device.CPU)
+    def transpose(x: Buffer, out_stride: tuple, out_shape: tuple, dim0: int, dim1: int) -> CDataPtr:
+        out_ptr = CPU.malloc(num=x.numel)
 
-        out_shape = tuple(x.shape[i] for i in order)
-        out_stride = calculate_stride(out_shape) # Contiguous output
-        out_numel = prod_(out_shape)
-        out_ptr = CPU.malloc(num=out_numel)
+        if x.ndim == 4 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
+            c_code, cdef = cpu_kernel.transpose_4d_12(out_shape, out_stride, x.stride)
+        elif x.ndim == 4 and ((dim0 == 2 and dim1 == 3) or (dim0 == 3 and dim1 == 2)):
+            c_code, cdef = cpu_kernel.transpose_4d_23(out_shape, out_stride, x.stride)
+        elif x.ndim == 3 and ((dim0 == 0 and dim1 == 1) or (dim0 == 1 and dim1 == 0)):
+            c_code, cdef = cpu_kernel.transpose_3d_01(x.shape, (x.shape[1], x.shape[0], x.shape[2]), x.stride, out_stride, x.numel)
+        elif x.ndim == 3 and ((dim0 == 1 and dim1 == 2) or (dim0 == 2 and dim1 == 1)):
+            c_code, cdef = cpu_kernel.transpose_3d_12(x.shape, (x.shape[1], x.shape[0], x.shape[2]), x.stride, out_stride, x.numel)
+        else:
+            c_code, cdef = cpu_kernel.transpose_2d(x.shape, x.stride, out_stride, x.numel)
 
-        # Reorder Input Strides
-        # If order is (0, 2, 1), we reorder x.stride to (stride[0], stride[2], stride[1])
-        permuted_in_strides = tuple(x.stride[i] for i in order)
-
-        # Get Kernel
-        c_code, cdef = cpu_kernel.permute(ndim)
-
-        # Compile/Load
-        key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"permute_{ndim}d_{key}.so"
+        key   = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"transpose_{key}.so"
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
+
         CPU._ensure_sig(cdef)
-        func = getattr(lib, f"permute_{ndim}d")
 
-        # Pack Arguments
-        shape_c = CPU.ffi.new("int[]", out_shape)
-        out_strides_c = CPU.ffi.new("int[]", out_stride)
-        in_strides_c = CPU.ffi.new("int[]", permuted_in_strides) # Pass the REORDERED strides
-
-        # Call
-        func(x.ptr, out_ptr, shape_c, in_strides_c, out_strides_c)
+        lib.transpose(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -372,7 +346,7 @@ class CPU:
     def exp(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils("exp")
+        c_code, cdef = cpu_kernel.utils(x.numel, "exp")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"exp_{key}.so"
@@ -383,7 +357,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_exp(x.ptr, out_ptr, x.numel)
+        lib.c_exp(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -392,7 +366,7 @@ class CPU:
     def rsqrt(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils("rsqrt")
+        c_code, cdef = cpu_kernel.utils(x.numel, "rsqrt")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"rsqrt_{key}.so"
@@ -403,7 +377,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_rsqrt(x.ptr, out_ptr, x.numel)
+        lib.c_rsqrt(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -412,7 +386,7 @@ class CPU:
     def sqrt(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils("sqrt")
+        c_code, cdef = cpu_kernel.utils(x.numel, "sqrt")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"sqrt_{key}.so"
@@ -423,41 +397,27 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_sqrt(x.ptr, out_ptr, x.numel)
+        lib.c_sqrt(x.ptr, out_ptr)
 
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.CLAMP, Device.CPU)
-    def clamp(x: Buffer, min_val: int | None, max_val: int | None) -> CDataPtr:
+    def clamp(x: Buffer, min: int | None, max: int | None) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        has_min = min_val is not None
-        has_max = max_val is not None
-
-        # Get Kernel
-        c_code, cdef = cpu_kernel.clamp(has_min, has_max)
+        c_code, cdef = cpu_kernel.clamp(x.numel, min, max)
 
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"clamp_{int(has_min)}{int(has_max)}_{key}.so"
-
+        so_fp = pathlib.Path(CACHE_DIR) / f"clamp_{key}.so"
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
+
         CPU._ensure_sig(cdef)
 
-        func_name = f"clamp_{'min' if has_min else ''}_{'max' if has_max else ''}"
-        func = getattr(lib, func_name)
-
-        if has_min and has_max:
-            func(x.ptr, out_ptr, x.numel, float(min_val), float(max_val))
-        elif has_min:
-            func(x.ptr, out_ptr, x.numel, float(min_val))
-        elif has_max:
-            func(x.ptr, out_ptr, x.numel, float(max_val))
-        else:
-            func(x.ptr, out_ptr, x.numel)
+        lib.clamp(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -466,7 +426,7 @@ class CPU:
     def log(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils("log")
+        c_code, cdef = cpu_kernel.utils(x.numel, "log")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"log_{key}.so"
@@ -477,7 +437,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_log(x.ptr, out_ptr, x.numel)
+        lib.c_log(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -486,7 +446,7 @@ class CPU:
     def pow(x: Buffer, val: Scalar) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils("pow")
+        c_code, cdef = cpu_kernel.utils(x.numel, "pow", int(val))
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"pow_{key}.so"
@@ -497,7 +457,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_pow(x.ptr, out_ptr, x.numel, int(val))
+        lib.c_pow(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -531,57 +491,29 @@ class CPU:
             if y.shape[1] == 1 and C > 1:
                 y_strides[1] = 0
 
-            dims = CPU.ffi.new("int[]", [B, C, M, K, N])
-            x_strides = CPU.ffi.new("int[]", x_strides)
-            y_strides = CPU.ffi.new("int[]", y_strides)
-            out_strides = CPU.ffi.new("int[]", out_stride)
-
-            c_code, cdef = cpu_kernel.matmul_4d()
+            c_code, cdef = cpu_kernel.matmul_4d(
+                (B, C, M, K, N),
+                tuple(x_strides),
+                tuple(y_strides),
+                out_stride
+            )
         elif x.ndim == 3:
-            M, K = x.shape[1], x.shape[2]
-            N = y.shape[2]
-            B = max(x.shape[0], y.shape[0]) # Broadcasted Batch Size
-
-            out_shape = (B, M, N)
-            out_stride = calculate_stride(out_shape)
-            out_numel = B * M * N
-
-            out_ptr = CPU.calloc(num=out_numel)
-
-            # Handle Broadcasting (Zeroing Strides)
-            # If x is (1, M, K) and B > 1, set x batch stride to 0
-            sx = list(x.stride)
-            sy = list(y.stride)
-
-            if x.shape[0] == 1 and B > 1:
-                sx[0] = 0
-            if y.shape[0] == 1 and B > 1:
-                sy[0] = 0
-
-            # Get Kernel
-            c_code, cdef = cpu_kernel.matmul_3d()
-
-            key = CPU._hash_code(c_code)
-            so_fp = pathlib.Path(CACHE_DIR) / f"matmul_3d_{key}.so"
-
-            if not os.path.exists(so_fp):
-                CPU._build_shared_object(c_code, so_fp)
-
-            lib = CPU._get_handle(str(so_fp))
-            CPU._ensure_sig(cdef)
-
-            # Pack Args
-            sx_c = CPU.ffi.new("int[]", sx)
-            sy_c = CPU.ffi.new("int[]", sy)
-            so_c = CPU.ffi.new("int[]", out_stride)
-
-        elif x.ndim == 2:
+            if x.shape[0] != 1:
+                out_shape = x.shape[0]*x.shape[1]*y.shape[2]
+                out_stride = calculate_stride((x.shape[0], x.shape[1], y.shape[2]))
+            else:
+                out_shape = y.shape[0]*x.shape[1]*y.shape[2]
+                out_stride = calculate_stride((y.shape[0], x.shape[1], y.shape[2]))
+            out_ptr = CPU.init_with_scalar(num=out_shape, scalar=0)
+            broadcast_x, broadcast_y = False, False
+            if x.shape[0] == 1:
+                broadcast_x = True
+            if y.shape[0] == 1:
+                broadcast_y = True
+            c_code, cdef = cpu_kernel.matmul_3d(x.shape, y.shape, x.stride, y.stride, out_stride, broadcast_x, broadcast_y)
+        else:
             out_ptr = CPU.init_with_scalar(num=x.shape[0]*y.shape[1], scalar=0)
-            x_shape = CPU.ffi.new("int[]", x.shape)
-            y_shape = CPU.ffi.new("int[]", y.shape)
-            y_stride = CPU.ffi.new("int[]", y.stride)
-            x_stride = CPU.ffi.new("int[]", x.stride)
-            c_code, cdef = cpu_kernel.matmul_2d()
+            c_code, cdef = cpu_kernel.matmul_2d(x.shape, y.shape, x.stride, y.stride)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"matmul_{key}.so"
@@ -593,11 +525,12 @@ class CPU:
         CPU._ensure_sig(cdef)
 
         if x.ndim == 4:
-            lib.matmul_4d(x.ptr, y.ptr, out_ptr, dims, x_strides, y_strides, out_strides)
+            lib.matmul_4d(x.ptr, y.ptr, out_ptr)
         elif x.ndim == 3:
-            lib.matmul_3d(x.ptr, y.ptr, out_ptr, B, M, K, N, sx_c, sy_c, so_c)
+            lib.matmul_3d(x.ptr, y.ptr, out_ptr)
         else:
-            lib.matmul_2d(x.ptr, y.ptr, out_ptr, x_shape, x_stride, y_shape, y_stride)
+            lib.matmul_2d(x.ptr, y.ptr, out_ptr)
+
 
         return out_ptr
 
@@ -607,100 +540,48 @@ class CPU:
         out_shape = cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape)
         out_stride = calculate_stride(out_shape)
         num = prod_(out_shape)
-        out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
+        out_ptr = CPU.calloc(num=num)
 
-        if dim is None or dim == -1:
-            c_code, cdef = cpu_kernel.reduce("sum")
+        if x.ndim == 4:
+            c_code, cdef = cpu_kernel.reduce_4d(x.shape, x.stride, out_stride, x.numel, dim, "sum")
+        elif x.ndim == 3:
+            c_code, cdef = cpu_kernel.reduce_3d(x.shape, x.stride, out_stride, x.numel, dim, "sum")
+        elif x.ndim == 2:
+            c_code, cdef = cpu_kernel.reduce_2d(x.shape, x.stride, out_stride, x.numel, dim, "sum")
+        elif x.ndim == 1 and dim == -1:
+            c_code, cdef = cpu_kernel.reduce(x.numel, "sum")
 
-            key = CPU._hash_code(c_code)
-            so_fp = pathlib.Path(CACHE_DIR) / f"max_{key}.so"
-            if not os.path.exists(so_fp):
-                CPU._build_shared_object(c_code, so_fp)
-
-            lib = CPU._get_handle(str(so_fp))
-
-            CPU._ensure_sig(cdef)
-
-            # Pack & Call
-            out_stride = CPU.ffi.new("int[]", out_stride)
-
-            lib.reduce_sum(x.ptr, out_ptr, x.numel)
-
-            return out_ptr
-
-        if dim < 0:
-            dim += x.ndim
-
-        # Generate Kernel
-        c_code, cdef = cpu_kernel.reduce_source("sum", x.ndim, dim)
-
-        # Compile/Load
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"sum_{x.ndim}d_axis{dim}_{key}.so"
-
+        so_fp = pathlib.Path(CACHE_DIR) / f"sum_{key}.so"
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
+
         CPU._ensure_sig(cdef)
 
-        # 5. Call
-        func_name = f"reduce_sum_{x.ndim}d_axis{dim}"
-        func = getattr(lib, func_name)
-
-        # Pack C Args
-        x_shape_c = CPU.ffi.new("int[]", x.shape)
-        x_stride_c = CPU.ffi.new("int[]", x.stride)
-        out_stride_c = CPU.ffi.new("int[]", out_stride)
-
-        func(x.ptr, out_ptr, x_shape_c, x_stride_c, out_stride_c)
+        lib.sum(x.ptr, out_ptr)
 
         return out_ptr
 
     @staticmethod
     @dispatcher.register(UnaryOps.MEAN, Device.CPU)
     def mean(x: Buffer, dim: int) -> CDataPtr:
-        out_shape = cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape)
-        out_stride = calculate_stride(out_shape)
-        num = prod_(out_shape)
-        out_ptr = CPU.malloc(num=num)
+        num = prod_(cal_sum_max_out_shape(ndim=x.ndim, dim=dim, inp_shape=x.shape))
+        out_ptr = CPU.calloc(num=num)
 
-        if dim is None or dim == -1:
-            c_code, cdef = cpu_kernel.reduce("mean")
-            key = CPU._hash_code(c_code)
-            so_fp = pathlib.Path(CACHE_DIR) / f"mean_global_{key}.so"
+        c_code, cdef = cpu_kernel.mean(x.shape, x.stride, x.numel, dim, num)
 
-            if not os.path.exists(so_fp):
-                CPU._build_shared_object(c_code, so_fp)
-
-            lib = CPU._get_handle(str(so_fp))
-            CPU._ensure_sig(cdef)
-
-            lib.reduce_mean(x.ptr, out_ptr, x.numel)
-
-            return out_ptr
-
-        if dim < 0:
-            dim += x.ndim
-
-        c_code, cdef = cpu_kernel.reduce_source("mean", x.ndim, dim)
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"mean_{x.ndim}d_axis{dim}_{key}.so"
-
+        so_fp = pathlib.Path(CACHE_DIR) / f"mean_{key}.so"
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
+
         CPU._ensure_sig(cdef)
 
-        func_name = f"reduce_mean_{x.ndim}d_axis{dim}"
-        func = getattr(lib, func_name)
-
-        x_shape_c = CPU.ffi.new("int[]", x.shape)
-        x_stride_c = CPU.ffi.new("int[]", x.stride)
-        out_stride_c = CPU.ffi.new("int[]", out_stride)
-
-        func(x.ptr, out_ptr, x_shape_c, x_stride_c, out_stride_c)
+        lib.mean(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -712,51 +593,25 @@ class CPU:
         num = prod_(out_shape)
         out_ptr = CPU.init_with_scalar(num=num, scalar=-999)
 
-        if dim is None or dim == -1:
-            c_code, cdef = cpu_kernel.reduce("max")
+        if x.ndim == 4:
+            c_code, cdef = cpu_kernel.reduce_4d(x.shape, x.stride, out_stride, x.numel, dim, "max")
+        elif x.ndim == 3:
+            c_code, cdef = cpu_kernel.reduce_3d(x.shape, x.stride, out_stride, x.numel, dim, "max")
+        elif x.ndim == 2:
+            c_code, cdef = cpu_kernel.reduce_2d(x.shape, x.stride, out_stride, x.numel, dim, "max")
+        elif x.ndim == 1 and dim == -1:
+            c_code, cdef = cpu_kernel.reduce(x.numel, "max")
 
-            key = CPU._hash_code(c_code)
-            so_fp = pathlib.Path(CACHE_DIR) / f"max_{key}.so"
-            if not os.path.exists(so_fp):
-                CPU._build_shared_object(c_code, so_fp)
-
-            lib = CPU._get_handle(str(so_fp))
-
-            CPU._ensure_sig(cdef)
-
-            # Pack & Call
-            out_stride = CPU.ffi.new("int[]", out_stride)
-
-            lib.reduce_max(x.ptr, out_ptr, x.numel)
-
-            return out_ptr
-
-        if dim < 0:
-            dim += x.ndim
-
-        # Generate Kernel
-        c_code, cdef = cpu_kernel.reduce_source("max", x.ndim, dim)
-
-        # Compile/Load
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"max_{x.ndim}d_axis{dim}_{key}.so"
-
+        so_fp = pathlib.Path(CACHE_DIR) / f"max_{key}.so"
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
+
         CPU._ensure_sig(cdef)
 
-        # 5. Call
-        func_name = f"reduce_max_{x.ndim}d_axis{dim}"
-        func = getattr(lib, func_name)
-
-        # Pack C Args
-        x_shape_c = CPU.ffi.new("int[]", x.shape)
-        x_stride_c = CPU.ffi.new("int[]", x.stride)
-        out_stride_c = CPU.ffi.new("int[]", out_stride)
-
-        func(x.ptr, out_ptr, x_shape_c, x_stride_c, out_stride_c)
+        lib.max(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -765,7 +620,7 @@ class CPU:
     def relu(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.relu()
+        c_code, cdef = cpu_kernel.relu(x.numel)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"relu_{key}.so"
@@ -776,57 +631,78 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.relu(x.ptr, out_ptr, x.numel)
+        lib.relu(x.ptr, out_ptr)
 
         return out_ptr
 
     @staticmethod
     @dispatcher.register(BinaryOps.GT, Device.CPU)
     def gt(x: Buffer, y: int | float) -> CDataPtr:
-        return CPU._binary_op(x, y, "gt")
+        out_ptr = CPU.malloc(num=x.numel)
 
-    @staticmethod
-    @dispatcher.register(BinaryOps.GTE, Device.CPU)
-    def gte(x: Buffer, y: int | float) -> CDataPtr:
-        return CPU._binary_op(x, y, "gte")
-
-    @staticmethod
-    @dispatcher.register(UnaryOps.MASKED_FILL, Device.CPU)
-    def masked_fill(x: Buffer, mask: Buffer, val: Scalar, out_shape: tuple) -> CDataPtr:
-        out_shape = broadcast_shapes_2(x.shape, mask.shape)
-        ndim = len(out_shape)
-
-        out_numel = prod_(out_shape)
-        out_ptr = CPU.malloc(num=out_numel)
-
-        out_stride = calculate_stride(out_shape)
-
-        # Broadcasted strides for inputs
-        x_strides_eff = get_broadcast_strides_2(out_shape, x.shape, x.stride)
-        mask_strides_eff = get_broadcast_strides_2(out_shape, mask.shape, mask.stride)
-
-        # Get Kernel
-        c_code, cdef = cpu_kernel.masked_fill(ndim)
+        c_code, cdef = cpu_kernel.gt(x.numel, y)
 
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"masked_fill_{ndim}d_{key}.so"
-
+        so_fp = pathlib.Path(CACHE_DIR) / f"gt_with_scalar_{key}.so"
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
+
         CPU._ensure_sig(cdef)
 
-        func_name = f"masked_fill_{ndim}d"
-        func = getattr(lib, func_name)
+        lib.gt_with_scalar(x.ptr, out_ptr)
 
-        # Pack Arguments
-        shape_c = CPU.ffi.new("int[]", out_shape)
-        x_stride_c = CPU.ffi.new("int[]", x_strides_eff)
-        mask_stride_c = CPU.ffi.new("int[]", mask_strides_eff)
-        out_stride_c = CPU.ffi.new("int[]", out_stride)
+        return out_ptr
 
-        func(x.ptr, mask.ptr, out_ptr, shape_c, x_stride_c, mask_stride_c, out_stride_c, val)
+    @staticmethod
+    @dispatcher.register(BinaryOps.GTE, Device.CPU)
+    def gte(x: Buffer, y: int | float) -> CDataPtr:
+        out_ptr = CPU.malloc(num=x.numel)
+
+        c_code, cdef = cpu_kernel.gte(x.numel, y)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"gte_with_scalar_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.gte_with_scalar(x.ptr, out_ptr)
+
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.MASKED_FILL, Device.CPU)
+    def masked_fill(x: Buffer, mask: Buffer, val: Scalar, out_shape: tuple) -> CDataPtr:
+        out_ptr = CPU.malloc(num=prod_(out_shape))
+
+        out_stride = calculate_stride(out_shape)
+
+        x_stride = get_broadcast_strides(x.shape, out_shape)
+        mask_stride = get_broadcast_strides(mask.shape, out_shape)
+
+        ndim = len(out_shape)
+
+        if ndim == 4:
+            c_code, cdef = cpu_kernel.masked_fill_4d(out_shape, out_stride, x_stride, mask_stride, val)
+        elif ndim == 3:
+            c_code, cdef = cpu_kernel.masked_fill_3d(out_shape, out_stride, x_stride, mask_stride, val)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"masked_fill_{key}.so"
+        if not os.path.exists(so_fp):
+            #CPU._build_shared_object(c_code, so_fp, ["-ffast-math"] if val in [float('inf'), float('-inf')] else [])
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.masked_fill(x.ptr, mask.ptr, out_ptr)
 
         return out_ptr
 
@@ -840,121 +716,86 @@ class CPU:
             case "<=":
                 x_stride = tuple([0 if i== 1 else 1 for i in x.shape])
                 y_stride = tuple([0 if i== 1 else 1 for i in y.shape])
-                c_code, cdef = cpu_kernel.cmp_2d(mode)
-
-                key = CPU._hash_code(c_code)
-                so_fp = pathlib.Path(CACHE_DIR) / f"cmp_{key}.so"
-                if not os.path.exists(so_fp):
-                    CPU._build_shared_object(c_code, so_fp)
-
-                lib = CPU._get_handle(str(so_fp))
-
-                CPU._ensure_sig(cdef)
-
-                # Pack & Call
-                out_stride = CPU.ffi.new("int[]", calculate_stride(out_shape))
-                out_shape = CPU.ffi.new("int[]", out_shape)
-                x_stride = CPU.ffi.new("int[]", x_stride)
-                y_stride = CPU.ffi.new("int[]", y_stride)
-
-                lib.cmp(x.ptr, y.ptr, out_ptr, out_shape, x_stride, y_stride, out_stride)
-
-                return out_ptr
-
-    @staticmethod
-    @dispatcher.register(UnaryOps.WHERE, Device.CPU)
-    def where(cond: Buffer, x: Buffer, y: Buffer) -> CDataPtr:
-        temp_shape = broadcast_shapes_2(x.shape, y.shape)
-        out_shape = broadcast_shapes_2(temp_shape, cond.shape)
-
-        ndim = len(out_shape)
-        out_numel = prod_(out_shape)
-        out_ptr = CPU.malloc(num=out_numel)
-
-        out_stride = calculate_stride(out_shape)
-
-        # Get effective strides for ALL inputs mapping to the final out_shape
-        cond_strides = get_broadcast_strides_2(out_shape, cond.shape, cond.stride)
-        x_strides = get_broadcast_strides_2(out_shape, x.shape, x.stride)
-        y_strides = get_broadcast_strides_2(out_shape, y.shape, y.stride)
-
-        # Get Kernel
-        c_code, cdef = cpu_kernel.where(ndim)
+                c_code, cdef = cpu_kernel.cmp_2d(mode, out_shape, calculate_stride(out_shape), x.shape, x_stride, y_stride)
 
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"where_{ndim}d_{key}.so"
-
+        so_fp = pathlib.Path(CACHE_DIR) / f"cmp_{key}.so"
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
+
         CPU._ensure_sig(cdef)
-        func = getattr(lib, f"where_{ndim}d")
 
-        # Pack Arguments
-        shape_c = CPU.ffi.new("int[]", out_shape)
-        c_stride_c = CPU.ffi.new("int[]", cond_strides)
-        x_stride_c = CPU.ffi.new("int[]", x_strides)
-        y_stride_c = CPU.ffi.new("int[]", y_strides)
-        out_stride_c = CPU.ffi.new("int[]", out_stride)
+        lib.cmp(x.ptr, y.ptr,  out_ptr)
 
-        func(cond.ptr, x.ptr, y.ptr, out_ptr, shape_c, c_stride_c, x_stride_c, y_stride_c, out_stride_c)
+        return out_ptr
+
+    @staticmethod
+    @dispatcher.register(UnaryOps.WHERE, Device.CPU)
+    def where(x: Buffer, inp: Buffer, other: Buffer) -> CDataPtr:
+        out_ptr = CPU.malloc(num=x.numel)
+
+        c_code, cdef = cpu_kernel.where(x.numel, inp=True if inp.ndim == 0 else False, other=True if other.ndim == 0 else False)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"where_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.where(x.ptr, out_ptr, inp.ptr, other.ptr)
 
         return out_ptr
 
     @staticmethod
     @dispatcher.register(BinaryOps.EQT, Device.CPU)
     def eqt(x: Buffer, y: Buffer) -> CDataPtr:
-        return CPU._binary_op(x, y, op="eq")
+        # NOTE: Assumes x.numel > y.numel
+        # TODO: Add check that the numel should be the same
+        out_ptr = CPU.malloc(num=x.numel)
 
-    @staticmethod
-    @dispatcher.register(UnaryOps.ARGMAX, Device.CPU)
-    def argmax(x: Buffer, dim: int) -> CDataPtr:
-        if dim is None:
-            ndim = 1
-            dim = 0
-            x_shape_args = (x.numel,)
-            x_stride_args = (1,)
-            out_shape = (1,)
-        else:
-            if dim < 0:
-                dim += x.ndim
-            ndim = x.ndim
-            x_shape_args = x.shape
-            x_stride_args = x.stride
-
-            # Output shape removes the reduction dimension
-            out_shape = list(x.shape)
-            out_shape.pop(dim)
-            out_shape = tuple(out_shape)
-
-        # Alloc Output
-        out_numel = prod_(out_shape) if out_shape else 1
-        out_ptr = CPU.malloc(num=out_numel)
-        out_stride = calculate_stride(out_shape)
-
-        # Get Kernel
-        c_code, cdef = cpu_kernel.argmax(ndim, dim)
+        c_code, cdef = cpu_kernel.eqt(x.numel, True if y.ndim == 0 else False, x.shape, x.stride, y.shape, y.stride, x.ndim)
 
         key = CPU._hash_code(c_code)
-        so_fp = pathlib.Path(CACHE_DIR) / f"argmax_{ndim}d_axis{dim}_{key}.so"
-
+        so_fp = pathlib.Path(CACHE_DIR) / f"eqt_{key}.so"
         if not os.path.exists(so_fp):
             CPU._build_shared_object(c_code, so_fp)
 
         lib = CPU._get_handle(str(so_fp))
+
         CPU._ensure_sig(cdef)
 
-        func_name = f"argmax_{ndim}d_axis{dim}"
-        func = getattr(lib, func_name)
+        lib.eqt(x.ptr, y.ptr, out_ptr)
 
-        # Pack Arguments
-        # Note: We pass the "virtual" shape args calculated above
-        shape_c = CPU.ffi.new("int[]", x_shape_args)
-        x_stride_c = CPU.ffi.new("int[]", x_stride_args)
-        out_stride_c = CPU.ffi.new("int[]", out_stride)
+        return out_ptr
 
-        func(x.ptr, out_ptr, shape_c, x_stride_c, out_stride_c)
+    @staticmethod
+    @dispatcher.register(UnaryOps.ARGMAX, Device.CPU)
+    def argmax(x: Buffer, dim: int) -> CDataPtr:
+        if dim==0:
+            n = x.shape[1]
+        elif dim==1:
+            n = x.shape[0]
+        else:
+            n = 1
+        out_ptr = CPU.malloc(num=n)
+
+        c_code, cdef = cpu_kernel.argmax(x.shape, dim)
+
+        key = CPU._hash_code(c_code)
+        so_fp = pathlib.Path(CACHE_DIR) / f"argmax_{key}.so"
+        if not os.path.exists(so_fp):
+            CPU._build_shared_object(c_code, so_fp)
+
+        lib = CPU._get_handle(str(so_fp))
+
+        CPU._ensure_sig(cdef)
+
+        lib.argmax2d(x.ptr, out_ptr)
 
         return out_ptr
 
@@ -963,7 +804,7 @@ class CPU:
     def ce_forward(x: Buffer, y: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.shape[0])
 
-        c_code, cdef = cpu_kernel.ce_forward()
+        c_code, cdef = cpu_kernel.ce_forward(x.shape[0], x.stride)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"ce_forward_{key}.so"
@@ -974,16 +815,14 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        x_stride = CPU.ffi.new("int[]", x.stride)
-
-        lib.ce_forward(x.ptr, y.ptr, out_ptr, x.shape[0], x_stride)
+        lib.ce_forward(x.ptr, y.ptr, out_ptr)
 
         return out_ptr
 
     @staticmethod
     @dispatcher.register(CustomOps.CE_BACKWARD, Device.CPU)
     def ce_backward(x: Buffer, target: Buffer) -> CDataPtr:
-        c_code, cdef = cpu_kernel.ce_backward()
+        c_code, cdef = cpu_kernel.ce_backward(x.shape, x.stride)
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"ce_backward_{key}.so"
@@ -994,10 +833,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        x_shape = CPU.ffi.new("int[]", x.shape)
-        x_stride = CPU.ffi.new("int[]", x.stride)
-
-        lib.ce_backward(x.ptr, target.ptr, x_shape, x_stride)
+        lib.ce_backward(x.ptr, target.ptr)
 
     @staticmethod
     @dispatcher.register(CustomOps.PRINT, Device.CPU)
@@ -1029,7 +865,7 @@ class CPU:
     def embedding(x: Buffer, idx: Buffer, out_numel: int, backward: bool = False, upstream_grad: Buffer = None) -> CDataPtr:
         if backward:
             out_ptr = CPU.init_with_scalar(num=x.numel, scalar=0)
-            c_code, cdef = cpu_kernel.embedding_backward()
+            c_code, cdef = cpu_kernel.embedding_backward(idx.numel, x.shape[-1])
             key = CPU._hash_code(c_code)
             so_fp = pathlib.Path(CACHE_DIR) / f"embedding_backward_{key}.so"
             if not os.path.exists(so_fp):
@@ -1039,13 +875,13 @@ class CPU:
 
             CPU._ensure_sig(cdef)
 
-            lib.embedding_backward(out_ptr, upstream_grad.ptr, idx.ptr, idx.numel, x.shape[-1])
+            lib.embedding_backward(out_ptr, upstream_grad.ptr, idx.ptr)
 
             return out_ptr
 
         out_ptr = CPU.malloc(num=out_numel)
 
-        c_code, cdef = cpu_kernel.embedding()
+        c_code, cdef = cpu_kernel.embedding(idx.numel, x.shape[-1])
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"embedding_{key}.so"
@@ -1056,6 +892,6 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.embedding(x.ptr, idx.ptr, out_ptr, idx.numel, x.shape[-1])
+        lib.embedding(x.ptr, idx.ptr, out_ptr)
 
         return out_ptr
