@@ -315,7 +315,7 @@ class CPU:
     def neg(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils(x.numel, "neg")
+        c_code, cdef = cpu_kernel.utils("neg")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"neg_{key}.so"
@@ -326,7 +326,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_neg(x.ptr, out_ptr)
+        lib.c_neg(x.ptr, out_ptr, x.numel)
 
         return out_ptr
 
@@ -372,7 +372,7 @@ class CPU:
     def exp(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils(x.numel, "exp")
+        c_code, cdef = cpu_kernel.utils("exp")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"exp_{key}.so"
@@ -383,7 +383,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_exp(x.ptr, out_ptr)
+        lib.c_exp(x.ptr, out_ptr, x.numel)
 
         return out_ptr
 
@@ -392,7 +392,7 @@ class CPU:
     def rsqrt(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils(x.numel, "rsqrt")
+        c_code, cdef = cpu_kernel.utils("rsqrt")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"rsqrt_{key}.so"
@@ -403,7 +403,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_rsqrt(x.ptr, out_ptr)
+        lib.c_rsqrt(x.ptr, out_ptr, x.numel)
 
         return out_ptr
 
@@ -412,7 +412,7 @@ class CPU:
     def sqrt(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils(x.numel, "sqrt")
+        c_code, cdef = cpu_kernel.utils("sqrt")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"sqrt_{key}.so"
@@ -423,7 +423,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_sqrt(x.ptr, out_ptr)
+        lib.c_sqrt(x.ptr, out_ptr, x.numel)
 
         return out_ptr
 
@@ -466,7 +466,7 @@ class CPU:
     def log(x: Buffer) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils(x.numel, "log")
+        c_code, cdef = cpu_kernel.utils("log")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"log_{key}.so"
@@ -477,7 +477,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_log(x.ptr, out_ptr)
+        lib.c_log(x.ptr, out_ptr, x.numel)
 
         return out_ptr
 
@@ -486,7 +486,7 @@ class CPU:
     def pow(x: Buffer, val: Scalar) -> CDataPtr:
         out_ptr = CPU.malloc(num=x.numel)
 
-        c_code, cdef = cpu_kernel.utils(x.numel, "pow", int(val))
+        c_code, cdef = cpu_kernel.utils("pow")
 
         key = CPU._hash_code(c_code)
         so_fp = pathlib.Path(CACHE_DIR) / f"pow_{key}.so"
@@ -497,7 +497,7 @@ class CPU:
 
         CPU._ensure_sig(cdef)
 
-        lib.c_pow(x.ptr, out_ptr)
+        lib.c_pow(x.ptr, out_ptr, x.numel, int(val))
 
         return out_ptr
 

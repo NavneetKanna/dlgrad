@@ -2,8 +2,6 @@ from collections.abc import Generator
 from functools import cache
 from typing import Any
 
-from dlgrad.dtype import Scalar
-
 
 # NOTE: Assumes max 4D tensor
 def n_gen() -> Generator[str, Any, None]:
@@ -245,80 +243,80 @@ def embedding_backward(idx_numel: int, x_width: int) -> tuple[str, str]:
     return c_code, "void embedding_backward(float *out, float *upstream_grad, float *idx);"
 
 @cache
-def utils(x_numel: int, func: str, val: Scalar = None) -> tuple[str, str]:
+def utils(func: str) -> tuple[str, str]:
     match func:
         case "neg":
-            code = f"""
+            code = """
             #include <math.h>
 
-            void c_neg(float *x, float *out)
-            {{
-                for (int i=0; i<{x_numel}; i++) {{
+            void c_neg(float *x, float *out, int x_numel)
+            {
+                for (int i=0; i<x_numel; i++) {
                     out[i] = -1 * x[i];
-                }}
-            }}
+                }
+            }
             """
-            return code, "void c_neg(float *x, float *out);"
+            return code, "void c_neg(float *x, float *out, int x_numel);"
         case "exp":
-            code = f"""
+            code = """
             #include <math.h>
 
-            void c_exp(float *x, float *out)
-            {{
-                for (int i=0; i<{x_numel}; i++) {{
+            void c_exp(float *x, float *out, int x_numel)
+            {
+                for (int i=0; i<x_numel; i++) {
                     out[i] = exp(x[i]);
-                }}
-            }}
+                }
+            }
             """
-            return code, "void c_exp(float *x, float *out);"
+            return code, "void c_exp(float *x, float *out, int x_numel);"
         case "log":
-            code = f"""
+            code = """
             #include <math.h>
 
-            void c_log(float *x, float *out)
-            {{
-                for (int i=0; i<{x_numel}; i++) {{
+            void c_log(float *x, float *out, int x_numel)
+            {
+                for (int i=0; i<x_numel; i++) {
                     out[i] = log(x[i]);
-                }}
-            }}
+                }
+            }
             """
-            return code, "void c_log(float *x, float *out);"
+            return code, "void c_log(float *x, float *out, int x_numel);"
         case "pow":
-            code = f"""
+            code = """
             #include <math.h>
 
-            void c_pow(float *x, float *out)
-            {{
-                for (int i=0; i<{x_numel}; i++) {{
-                    out[i] = powf(x[i], {val});
-                }}
-            }}
+            void c_pow(float *x, float *out, int x_numel, int val)
+            {
+                for (int i=0; i<x_numel; i++) {
+                    out[i] = powf(x[i], val);
+                }
+            }
             """
-            return code, "void c_pow(float *x, float *out);"
+            return code, "void c_pow(float *x, float *out, int x_numel, int val);"
         case "sqrt":
-            code = f"""
+            code = """
             #include <math.h>
 
-            void c_sqrt(float *x, float *out)
-            {{
-                for (int i=0; i<{x_numel}; i++) {{
+            void c_sqrt(float *x, float *out, int x_numel)
+            {
+                for (int i=0; i<x_numel; i++) {
                     out[i] = sqrtf(x[i]);
-                }}
-            }}
+                }
+            }
             """
-            return code, "void c_sqrt(float *x, float *out);"
+            return code, "void c_sqrt(float *x, float *out, int x_numel);"
         case "rsqrt":
-            code = f"""
+            code = """
             #include <math.h>
 
-            void c_rsqrt(float *x, float *out)
-            {{
-                for (int i=0; i<{x_numel}; i++) {{
+            void c_rsqrt(float *x, float *out, int x_numel)
+            {
+                for (int i=0; i<x_numel; i++) {
                     out[i] = 1.0/sqrtf(x[i]);
-                }}
-            }}
+                }
+            }
             """
-            return code, "void c_rsqrt(float *x, float *out);"
+            return code, "void c_rsqrt(float *x, float *out, int x_numel);"
 @cache
 def clamp(has_min: bool, has_max: bool) -> tuple[str, str]:
     """
