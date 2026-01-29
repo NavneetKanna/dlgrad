@@ -39,7 +39,6 @@ class Permute(OP):
 
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
         # The gradient of a permute is the inverse permute.
-        # Example: Forward order (0, 2, 1) -> Backward order (0, 2, 1)
 
         inv_order = [0] * len(self.order)
         for i, p in enumerate(self.order):
@@ -334,82 +333,6 @@ class MatMul(OP):
         grad_y = unbroadcast(grad_y, self.y_old_shape)
 
         return (grad_x, grad_y)
-
-    def _backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-        # 1. Ensure upstream_grad matches the logical output shape
-        if upstream_grad.shape != self.out_shape:
-            upstream_grad = upstream_grad.reshape(self.out_shape)
-
-        # 2. Create temporary buffers with reshaped metadata (sharing the same ptr)
-        x_reshaped = Buffer(
-            data=self.x.ptr, shape=self.p1,
-            device=self.x.device, dtype=self.x.dtype
-        )
-        y_reshaped = Buffer(
-            data=self.y.ptr, shape=self.p2,
-            device=self.y.device, dtype=self.y.dtype
-        )
-
-        # 3. Compute transposes
-        t1 = x_reshaped.transpose(x_reshaped.ndim - 2, x_reshaped.ndim - 1)
-        t2 = y_reshaped.transpose(y_reshaped.ndim - 2, y_reshaped.ndim - 1)
-
-        # 4. Compute gradients
-        grad_x = upstream_grad @ t2
-        grad_y = t1 @ upstream_grad
-
-        # 5. Unbroadcast back to original shapes
-        grad_x = unbroadcast(grad_x, self.x_old_shape)
-        grad_y = unbroadcast(grad_y, self.y_old_shape)
-
-        return (grad_x, grad_y)
-
-    def _backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-        # 1. Ensure upstream_grad matches the logical output shape of the forward pass.
-        # This handles cases where a Loss function flattened the dimensions.
-        if upstream_grad.shape != self.out_shape:
-            upstream_grad.reshape(self.out_shape)
-
-        # 2. Use the padded/broadcasted views for the backward matmuls.
-        # This ensures that if we did (1, 128) @ (128, 25670),
-        # the gradients are calculated with aligned ranks.
-        self.x.reshape(self.p1)
-        self.y.reshape(self.p2)
-
-        t1 = self.x.transpose(self.x.ndim - 2, self.x.ndim - 1)
-        t2 = self.y.transpose(self.y.ndim - 2, self.y.ndim - 1)
-
-        # grad_x calculation
-        grad_x = upstream_grad @ t2
-        # grad_y calculation
-        grad_y = t1 @ upstream_grad
-
-        # 3. Unbroadcast back to original shapes
-        grad_x = unbroadcast(grad_x, self.x.shape)
-        grad_y = unbroadcast(grad_y, self.y.shape)
-
-        self.x.reshape(self.x_old_shape)
-        self.y.reshape(self.y_old_shape)
-
-        return (grad_x, grad_y)
-
-# class MatMul(OP):
-#     def forward(self, x: Buffer, y: Buffer) -> Buffer:
-#         self.x = x
-#         self.y = y
-#         return x@y
-
-#     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
-#         t1 = self.x.transpose(self.x.ndim - 2, self.x.ndim - 1)
-#         t2 = self.y.transpose(self.y.ndim - 2, self.y.ndim - 1)
-
-#         grad_x = upstream_grad @ t2
-#         grad_y = t1 @ upstream_grad
-
-#         grad_x = unbroadcast(grad_x, self.x.shape)
-#         grad_y = unbroadcast(grad_y, self.y.shape)
-
-#         return (grad_x, grad_y)
 
 class CrossEntropy(OP):
     def forward(self, logits: Buffer, target: Buffer, dim: int = 1) -> Buffer:

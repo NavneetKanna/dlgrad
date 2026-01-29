@@ -53,6 +53,7 @@ With the tensors created, any of the following ops can be performed on them, the
 | matmul | &check; | &check; | 2D-4D |
 | transpose | &check; | &check; | 2D-4D |
 | permute | &check; | &cross; | 2D-4D |
+| permute | &check; | &cross; | 2D-4D |
 | sum | &check; | &check; | 1D-4D | Metal supports sum along last dim or full tensor |
 | relu | &check; | &check; | 1D-4D |
 | sigmoid | &check; | &check; | 1D-4D |
