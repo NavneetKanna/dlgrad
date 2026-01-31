@@ -354,7 +354,7 @@ class CrossEntropy(OP):
         self.N = float(logits.shape[0])
 
         # Mean reduction
-        return -tmp.mean()
+        return -tmp.sum()
 
     def backward(self, upstream_grad: Buffer) -> tuple[Buffer]:
         # Recompute softmax probs (N, V)
@@ -365,8 +365,6 @@ class CrossEntropy(OP):
 
         # Scale for mean reduction and chain rule
         grad_out = tmp * upstream_grad  # upstream_grad usually 1.0 (scalar), broadcasts
-        # print("self.N", self.N)
-        # exit()
         grad_out = grad_out / float(self.N)
 
         return (grad_out,)

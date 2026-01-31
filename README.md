@@ -69,8 +69,6 @@ eval_interval = 500
 device = "cpu"
 ```
 
-The MNIST example gets to around 95% accuracy in ~5 seconds on an M2 CPU.
-
 ## Features
 
 - Reverse-mode autodiff with broadcasting support.
